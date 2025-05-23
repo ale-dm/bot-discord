@@ -1,0 +1,8 @@
+[2024-11-15T11:45:56.224Z] - someFunctionThatMightFail is not defined
+[2024-11-15T11:46:41.228Z] - Hubo un error al contactar con la API.
+[2024-11-15T11:47:27.533Z] - Hubo un error al contactar con la API.
+[2024-11-15T11:47:42.153Z] - Hubo un error al contactar con la API.
+[2024-11-15T11:48:55.286Z] - logError is not defined
+[2024-11-15T11:49:25.618Z] - Error al llamar la API:
+[2024-11-15T11:49:25.620Z] - Hubo un error al contactar con la API.
+[2024-11-15T11:57:34.473Z] - Error al llamar la API:

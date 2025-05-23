@@ -2,3 +2,6 @@
 node_modules/
 # Archivos sensibles
 .env
+# Archivos de configuración de Docker
+Dockerfile
+.dockerignore
