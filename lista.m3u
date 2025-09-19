@@ -1,4 +1,3 @@
 #EXTM3U
-
-#EXTINF1:-1, TC
-https://wowza.cableworld.es/T3l3cr3v1ll3nt_HD_2021/smil:myStream_4567btyHE32.smil/playlist.m3u8
+#EXTINF:-1 tvg-id="Telecrevillent" tvg-number="999" group-title="Local",Telecrevillent
+https://cdn.cableworld.es/tele_crevillent.m3u8
