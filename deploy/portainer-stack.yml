@@ -4,7 +4,8 @@
 # seguiría usando la imagen anterior).
 #
 # Las variables (.env) se cargan en el propio stack: Environment variables → "Load variables from
-# .env file". Portainer las guarda como stack.env junto a este fichero.
+# .env file". Portainer las guarda en stack.env en la raíz del repo clonado (no junto a este
+# fichero): por eso ../stack.env. Si no hay ninguna variable cargada, Portainer no crea el fichero.
 services:
   bot:
     build:
@@ -14,7 +15,7 @@ services:
     pull_policy: build
     container_name: duende-bot
     env_file:
-      - stack.env
+      - ../stack.env
     restart: unless-stopped
     volumes:
       - /compose/duende-bot/data:/app/data

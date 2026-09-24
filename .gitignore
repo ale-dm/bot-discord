@@ -6,6 +6,7 @@ vosk/.venv/
 .env
 .env.*
 !.env.example
+stack.env
 
 # Datos y logs en tiempo de ejecución (en Docker son volúmenes)
 data/

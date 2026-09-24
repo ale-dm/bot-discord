@@ -25,7 +25,7 @@ La configuración (`.env`) se guarda en el propio stack de Portainer, no en un f
    - Repository reference: `refs/heads/main`
    - Compose path: `deploy/portainer-stack.yml`
    - **Authentication**: activado; usuario `ale-dm` y el token del paso 1.
-   - Environment variables → **Load variables from .env file** → subir el `.env` (se guardan como `stack.env`).
+   - Environment variables → **Load variables from .env file** → subir el `.env` (Portainer las guarda en `stack.env`, en la raíz del repo clonado).
 4. **Deploy the stack**. La primera vez tarda varios minutos (dependencias del sistema, modelo de voz de
    ~40 MB, módulos de Node).
 5. Comprobar: `docker logs -f duende-bot` y, en Discord, `/diagnostico`.
