@@ -1,26 +1,13 @@
 # Tareas
 
-Cosas que hay que **hacer a mano** (no son cambios de código): subir el trabajo, desplegar y comprobar
-en Discord. Los errores pendientes están en [ERRORES.md](ERRORES.md), la deuda técnica en [DEUDA_TECNICA.md](DEUDA_TECNICA.md) y
+Cosas que hay que **hacer a mano** (no son cambios de código): desplegar y comprobar en Discord. Los errores pendientes están en [ERRORES.md](ERRORES.md), la deuda técnica en [DEUDA_TECNICA.md](DEUDA_TECNICA.md) y
 las ideas en [FEATURES.md](FEATURES.md).
 
 | ID | Tarea | Prioridad |
 |---|---|---|
-| [T-01](#t-01-subir-el-trabajo-a-git) | Subir el trabajo a git | 🔴 Urgente |
 | [T-02](#t-02-desplegar-y-probar-en-discord) | Desplegar y probar en Discord | 🔴 Alta |
 
 ---
-
-## T-01 Subir el trabajo a git
-
-Casi todo el código solo existe en local (y en `el-duende-backup-2026-09-24.tar.gz`, fuera del repo).
-El `.gitignore` ya está preparado para no subir datos, logs, modelos ni secretos.
-
-- [ ] `npm run check` en verde (lint + formato + tests).
-- [ ] `git status`: que no aparezca nada de `data/`, `logs/`, `models/` ni `.env`.
-- [ ] Commit de la nueva estructura. Los ficheros borrados de la raíz (`api.js`, `bot.js`, `comandos/`,
-      `deploy-commands.js`...) también forman parte del commit.
-- [ ] Subir a un remoto privado (GitHub/Gitea) para tener copia fuera del PC.
 
 ## T-02 Desplegar y probar en Discord
 

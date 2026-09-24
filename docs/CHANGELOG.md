@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-24 (subido a GitHub)
+
+- Todo el trabajo subido a `github.com/ale-dm/bot-discord` (rama `main`), que pasa a ser **privado**
+  (la documentación incluye nombres y apodos del grupo y detalles del servidor).
+- Borrados `lista.m3u` e `images (1).png`, subidos antes desde la web y que el bot no usa.
+- `.gitattributes`: todo el texto con LF, también en Windows (si no, un clon nuevo fallaba en
+  `npm run check` por Prettier).
+
 ## 2026-09-24 (panel de perfiles del Duende)
 
 - **Panel admin → Duende → 🧠 Perfiles → Ver / editar**: se elige un perfil de la lista (o a cualquier
