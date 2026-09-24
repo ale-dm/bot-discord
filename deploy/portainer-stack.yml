@@ -1,7 +1,10 @@
-version: "3.8"
+# Stack de Portainer. La imagen se construye en el servidor (docker build -t el-duende:latest .
+# desde /compose/duende-bot/codigo): pull_policy never para que no la busque en Docker Hub.
+# Al actualizar: "Update the stack" con "Re-pull image" desactivado.
 services:
   bot:
     image: el-duende:latest
+    pull_policy: never
     container_name: duende-bot
     env_file:
       - /compose/duende-bot/.env
