@@ -1,0 +1,9 @@
+node_modules/
+data/
+logs/
+models/
+vosk/.venv/
+coverage/
+package-lock.json
+# La documentación se escribe a mano (tablas, saltos de línea).
+*.md

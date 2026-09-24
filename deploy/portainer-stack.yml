@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  bot:
+    image: el-duende:latest
+    container_name: duende-bot
+    env_file:
+      - /compose/duende-bot/.env
+    restart: unless-stopped
+    volumes:
+      - /compose/duende-bot/data:/app/data
+      - /compose/duende-bot/logs:/app/logs

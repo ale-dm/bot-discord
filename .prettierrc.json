@@ -1,0 +1,8 @@
+{
+    "tabWidth": 4,
+    "printWidth": 140,
+    "singleQuote": false,
+    "trailingComma": "all",
+    "endOfLine": "lf",
+    "overrides": [{ "files": ["package.json", "*.yml", "*.yaml"], "options": { "tabWidth": 2 } }]
+}

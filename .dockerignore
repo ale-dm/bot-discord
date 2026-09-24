@@ -1,0 +1,23 @@
+# Solo entra en la imagen el código y lo necesario para construirla.
+# Datos, logs y modelos van por volumen o se descargan en el build.
+node_modules
+.git
+.env
+.env.*
+!.env.example
+.claude
+.vscode
+data
+logs
+models
+tmp
+vosk/.venv
+docs
+tests
+coverage
+*.md
+*.pcm
+*.wav
+*.zip
+*.tar.gz
+__pycache__

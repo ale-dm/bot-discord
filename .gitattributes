@@ -1,0 +1,8 @@
+# Todo el texto con LF, también en Windows: Prettier lo exige (endOfLine: lf) y el entrypoint se
+# ejecuta en Linux (Docker), donde con CRLF sh falla al arrancar.
+* text=auto eol=lf
+*.sh text eol=lf
+
+*.png binary
+*.jpg binary
+*.db binary

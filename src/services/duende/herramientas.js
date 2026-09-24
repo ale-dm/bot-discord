@@ -1,0 +1,567 @@
+// Herramientas (function calling) que el Duende puede usar al responder: datos del bot, Plex y Seerr.
+const { Type: SchemaType } = require("@google/genai");
+const guildSettings = require("../../systems/guildSettings");
+const xpSystem = require("../../systems/xpSystem");
+const achievementsSystem = require("../../systems/achievementsSystem");
+const casinoTransactions = require("../../systems/casinoTransactions");
+const plexLinks = require("../../systems/plexLinks");
+const tautulliClient = require("../tautulliClient");
+const seerrClient = require("../seerrClient");
+const { resolveNameToDiscordId } = require("../../systems/duende/personas");
+const { getTtclPrecio } = require("../../systems/cripto/mercado");
+
+// ─── Herramientas del Duende (function calling) ────────────────────────────
+// Todas de solo lectura a propósito: el modelo puede CONSULTAR datos reales del
+// bot, pero ninguna herramienta escribe/modifica nada. El userId/guildId que
+// reciben viene siempre del contexto real de Discord (toolContext), nunca de
+// algo que el modelo extraiga o invente del texto — así no hay forma de que
+// alguien le pida a Duende el saldo o el nivel de otra persona y se lo dé.
+// ─── Herramientas de Plex/Tautulli ──────────────────────────────────────────
+// Aquí sí se consulta actividad de OTRA persona (a quien se refiera "persona" en
+// la pregunta), a diferencia de las herramientas de arriba que solo miran al que
+// pregunta. Es intencional: es un grupo de amigos sin restricciones de privacidad
+// entre ellos. La única persona nunca se resuelve por un ID que el modelo invente:
+// siempre pasa por resolveNameToDiscordId() contra miembros reales del server, y
+// de ahí por plexLinks (solo gente que el admin haya vinculado explícitamente).
+function periodoADias(periodo) {
+    const p = String(periodo || "semana").toLowerCase();
+    if (p.includes("mes")) return 30;
+    if (p.includes("año") || p.includes("ano") || p.includes("year")) return 365;
+    if (p.includes("total") || p.includes("siempre") || p.includes("all")) return 0;
+    return 7;
+}
+
+function formatFecha(unixSeconds) {
+    const n = Number(unixSeconds);
+    if (!n) return null;
+    return new Date(n * 1000).toISOString().slice(0, 10);
+}
+
+function formatHoras(totalSeconds) {
+    return Math.round(((Number(totalSeconds) || 0) / 3600) * 10) / 10;
+}
+
+function summarizeWatchHistory(rows) {
+    const shows = new Map();
+    const movies = [];
+    for (const r of rows || []) {
+        const ts = Number(r.date || r.started || 0);
+        if (r.media_type === "episode") {
+            const key = r.grandparent_title || r.title || "Desconocido";
+            const cur = shows.get(key) || { episodios_vistos: 0, ultima_vez: 0 };
+            cur.episodios_vistos += 1;
+            if (ts > cur.ultima_vez) cur.ultima_vez = ts;
+            shows.set(key, cur);
+        } else {
+            movies.push({ titulo: r.title, fecha: formatFecha(ts) });
+        }
+    }
+    const series = [...shows.entries()]
+        .map(([titulo, v]) => ({ titulo, episodios_vistos: v.episodios_vistos, ultima_vez: formatFecha(v.ultima_vez) }))
+        .sort((a, b) => b.episodios_vistos - a.episodios_vistos);
+    return { series, peliculas: movies };
+}
+
+async function resolverPersonaVinculada(nombre, ctx) {
+    if (!ctx.guild) return { error: "Solo disponible en servidores." };
+    const discordId = resolveNameToDiscordId(nombre, ctx.guild);
+    if (!discordId) return { error: `No identifico a "${nombre}" entre los miembros del server.` };
+    const link = plexLinks.getLinkByDiscordId(ctx.guildId, discordId);
+    if (!link) return { error: `${nombre} no tiene su cuenta de Plex vinculada.` };
+    return { discordId, link };
+}
+
+// Resuelve el usuario de Seerr correspondiente a un Discord ID *real* (nunca inventado por
+// el modelo: siempre viene de ctx.userId o de resolveNameToDiscordId sobre un miembro real
+// del server): primero por el Discord ID que tenga guardado en su propio perfil de Seerr, y
+// si no lo tiene puesto ahí, por el vínculo de Plex ya existente.
+async function resolverSeerrUsuarioPorId(discordId, guildId) {
+    const porDiscord = await seerrClient.resolveSeerrUserByDiscordId(guildId, discordId);
+    if (porDiscord) return porDiscord;
+    const plexLink = plexLinks.getLinkByDiscordId(guildId, discordId);
+    if (plexLink?.plexUsername) {
+        const porPlex = await seerrClient.resolveSeerrUserByPlexUsername(guildId, plexLink.plexUsername);
+        if (porPlex) return porPlex;
+    }
+    return null;
+}
+
+// Separadas de las generales porque estas se filtran por canal (ver isChannelAllowed
+// más abajo): en canales no permitidos, ni siquiera se le declaran a Gemini.
+const DUENDE_PLEX_TOOL_DECLARATIONS = [
+    {
+        name: "consultar_actividad_plex",
+        description:
+            "Consulta qué ha visto alguien en Plex en los últimos N días (series con nº de episodios, películas sueltas). Llámala con cualquier nombre o apodo que se use para referirse a esa persona, aunque no sepas si tiene Plex vinculado — la propia herramienta te dice si no lo tiene.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona: {
+                    type: SchemaType.STRING,
+                    description:
+                        "Nombre o apodo de la persona sobre la que se pregunta, tal cual se ha usado en el mensaje (ej. 'el perro', 'Coneyo')",
+                },
+                dias: { type: SchemaType.NUMBER, description: "Número de días hacia atrás a consultar (por defecto 7)" },
+            },
+            required: ["persona"],
+        },
+    },
+    {
+        name: "consultar_viendo_ahora",
+        description: "Consulta qué se está reproduciendo en Plex ahora mismo y quién lo está viendo.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "consultar_tiempo_visto",
+        description:
+            "Consulta cuántas horas ha visto alguien en Plex en un periodo. Llámala con cualquier nombre o apodo, aunque no sepas si tiene Plex vinculado — la propia herramienta te dice si no lo tiene.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona: {
+                    type: SchemaType.STRING,
+                    description: "Nombre o apodo de la persona sobre la que se pregunta, tal cual se ha usado en el mensaje",
+                },
+                periodo: { type: SchemaType.STRING, description: "semana, mes, año o total" },
+            },
+            required: ["persona"],
+        },
+    },
+    {
+        name: "consultar_ultima_conexion",
+        description:
+            "Consulta cuándo fue la última vez que alguien vio algo en Plex (cuánto tiempo lleva sin ver nada). Llámala con cualquier nombre o apodo, aunque no sepas si tiene Plex vinculado — la propia herramienta te dice si no lo tiene.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona: {
+                    type: SchemaType.STRING,
+                    description:
+                        "Nombre o apodo de la persona sobre la que se pregunta, tal cual se ha usado en el mensaje (ej. 'el perro', 'Coneyo')",
+                },
+            },
+            required: ["persona"],
+        },
+    },
+    {
+        name: "consultar_novedades_plex",
+        description: "Consulta las últimas películas/episodios añadidos a la biblioteca de Plex del servidor.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                cantidad: { type: SchemaType.NUMBER, description: "Cuántas novedades traer (por defecto 5)" },
+            },
+        },
+    },
+    {
+        name: "comparar_actividad_plex",
+        description:
+            "Compara el tiempo visto en Plex entre dos personas en un periodo. Llámala con cualquier nombre o apodo para cada una, aunque no sepas si tienen Plex vinculado — la propia herramienta te dice si alguna no lo tiene.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona1: {
+                    type: SchemaType.STRING,
+                    description: "Primera persona a comparar (nombre o apodo tal cual se ha usado en el mensaje)",
+                },
+                persona2: {
+                    type: SchemaType.STRING,
+                    description: "Segunda persona a comparar (nombre o apodo tal cual se ha usado en el mensaje)",
+                },
+                periodo: { type: SchemaType.STRING, description: "semana, mes, año o total" },
+            },
+            required: ["persona1", "persona2"],
+        },
+    },
+    {
+        name: "consultar_top_visto_server",
+        description:
+            "Consulta qué películas y series se han visto más en Plex en este servidor en un periodo (entre todo el mundo, no solo los vinculados).",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                periodo: { type: SchemaType.STRING, description: "semana, mes o año" },
+            },
+        },
+    },
+    {
+        name: "buscar_en_plex",
+        description: "Busca si una película o serie existe en la biblioteca de Plex del servidor, con su sinopsis, año y nota.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                titulo: { type: SchemaType.STRING, description: "Título a buscar" },
+            },
+            required: ["titulo"],
+        },
+    },
+    {
+        name: "consultar_ranking_plex",
+        description:
+            "Consulta el ranking de quién más ha visto Plex en este servidor en un periodo (entre todo el mundo, no solo los vinculados).",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                periodo: { type: SchemaType.STRING, description: "semana, mes o año" },
+            },
+        },
+    },
+    {
+        name: "consultar_bibliotecas_plex",
+        description: "Consulta cuántas películas, series u otro contenido hay en cada biblioteca de Plex del servidor.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "consultar_patron_visionado",
+        description: "Consulta qué día de la semana y a qué hora se ve más Plex en este servidor en un periodo.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                periodo: { type: SchemaType.STRING, description: "semana, mes o año" },
+            },
+        },
+    },
+];
+
+// Igual que las de Plex: se filtran por canal (ver seerrClient.isChannelAllowed), y en
+// canales no permitidos ni siquiera se le declaran al modelo.
+const DUENDE_SEERR_TOOL_DECLARATIONS = [
+    {
+        name: "buscar_contenido_seerr",
+        description:
+            "Busca una película o serie por título para ver si existe, si ya está disponible en Plex, o si se puede pedir. Úsala siempre antes de 'solicitar_contenido_seerr' — nunca inventes un tmdbId, solo puedes pedir uno que haya salido de esta búsqueda. Es gratis y rápida: si en algún momento vas a pedir algo y no tienes el tmdbId a mano (por ejemplo porque la búsqueda fue en un mensaje anterior y ya no lo recuerdas), simplemente vuelve a buscar el mismo título aquí antes de pedirlo — nunca le pidas el ID a un humano, ellos no lo tienen ni tienen por qué saberlo.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                titulo: { type: SchemaType.STRING, description: "Título a buscar" },
+            },
+            required: ["titulo"],
+        },
+    },
+    {
+        name: "solicitar_contenido_seerr",
+        description:
+            "Pide una película o serie concreta para que se descargue. Solo se puede llamar con un tmdbId y mediaType que hayan salido de una llamada reciente a 'buscar_contenido_seerr' en esta misma conversación — si no has buscado antes, o si buscaste hace varios mensajes y ya no tienes el tmdbId a la vista, vuelve a llamar a 'buscar_contenido_seerr' con el mismo título justo antes de esta llamada (es instantáneo). Nunca le preguntes el ID a la persona que te habla — eso lo sacas tú buscando, no ellos. Por defecto la petición se atribuye a quien te está hablando ahora mismo. Si el mensaje nombra a otra persona en relación con el pedido — 'pide X para Y', 'pídesela a Y', 'que Y pida X', 'haz que Y pida X', 'en nombre de Y'... cualquier forma de decir que el pedido es de esa otra persona — pon su nombre en 'persona' y se atribuye a ella en Seerr (le avisará a ella, no a quien te habló, cuando esté listo). No te niegues a hacerlo pensando que no puedes actuar en nombre de otro: para eso está el parámetro 'persona', úsalo sin más. IMPORTANTE: nunca digas 'ya lo he pedido' o similar si no has llamado literalmente a esta función en este turno — decirlo sin haberla llamado es mentir sobre una acción real que no ha pasado.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                tmdbId: { type: SchemaType.NUMBER, description: "El tmdbId exacto devuelto por buscar_contenido_seerr" },
+                mediaType: { type: SchemaType.STRING, description: "'movie' o 'tv', tal cual lo devolvió buscar_contenido_seerr" },
+                persona: {
+                    type: SchemaType.STRING,
+                    description:
+                        "Opcional. Nombre o apodo de la persona en cuyo nombre se pide, tal cual se ha usado en el mensaje. Si se omite, se pide en nombre de quien habla.",
+                },
+            },
+            required: ["tmdbId", "mediaType"],
+        },
+    },
+    {
+        name: "consultar_solicitudes_seerr",
+        description:
+            "Consulta las últimas peticiones de contenido hechas en Seerr (qué se pidió, quién y en qué estado: pendiente, procesando, disponible...).",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                cantidad: { type: SchemaType.NUMBER, description: "Cuántas peticiones recientes traer (por defecto 5)" },
+            },
+        },
+    },
+];
+
+const DUENDE_CORE_TOOL_DECLARATIONS = [
+    {
+        name: "consultar_nivel_y_racha",
+        description: "Consulta el nivel, XP, rango y racha diaria del usuario que te está hablando ahora mismo.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "consultar_saldo",
+        description: "Consulta el saldo en monedas del usuario que te está hablando ahora mismo.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "precio_ttcl",
+        description: "Consulta el precio actual de la criptomoneda TTCL en este servidor.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "consultar_logros",
+        description: "Consulta cuántos logros ha completado el usuario que te está hablando ahora mismo.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "tirar_dado",
+        description: "Tira un dado de N caras y devuelve el resultado.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                caras: { type: SchemaType.NUMBER, description: "Número de caras del dado (por defecto 6)" },
+            },
+        },
+    },
+];
+
+const DUENDE_TOOL_EXECUTORS = {
+    consultar_nivel_y_racha(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const p = xpSystem.getProfile(ctx.guildId, ctx.userId);
+        return {
+            nivel: p.nivel,
+            xp: p.xp,
+            xp_necesaria_siguiente_nivel: p.xp_need,
+            rango: p.title?.title || "sin rango",
+            racha_dias: p.streak,
+            racha_bonus_xp_pct: p.streakBonusPct,
+            ranking_servidor: p.rank,
+        };
+    },
+    consultar_saldo(args, ctx) {
+        return { saldo_monedas: casinoTransactions.obtenerSaldo(ctx.userId) };
+    },
+    precio_ttcl(args, ctx) {
+        return { precio_ttcl_en_coins: getTtclPrecio(ctx.guildId) };
+    },
+    consultar_logros(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const s = achievementsSystem.getSummary(ctx.guildId, ctx.userId);
+        return { logros_completados: s.completed, logros_totales: s.total, porcentaje: s.completionPct };
+    },
+    tirar_dado(args) {
+        const caras = Math.max(2, Math.min(1000, Math.floor(Number(args?.caras) || 6)));
+        return { caras, resultado: 1 + Math.floor(Math.random() * caras) };
+    },
+
+    async consultar_actividad_plex(args, ctx) {
+        const r = await resolverPersonaVinculada(args?.persona, ctx);
+        if (r.error) return r;
+        const dias = Math.max(1, Math.min(365, Math.floor(Number(args?.dias) || 7)));
+        const afterDate = new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10);
+        const rows = await tautulliClient.getHistory(ctx.guildId, { userId: r.link.tautulliUserId, afterDate, length: 200 });
+        return { persona: args.persona, dias, ...summarizeWatchHistory(rows) };
+    },
+
+    async consultar_viendo_ahora(args, ctx) {
+        const sessions = await tautulliClient.getActivity(ctx.guildId);
+        if (!sessions.length) return { viendo_ahora: [] };
+        return {
+            viendo_ahora: sessions.map((s) => ({
+                usuario: s.friendly_name || s.user || "desconocido",
+                titulo: s.grandparent_title ? `${s.grandparent_title} - ${s.title}` : s.full_title || s.title,
+                progreso_pct: Number(s.progress_percent) || 0,
+                estado: s.state || "reproduciendo",
+            })),
+        };
+    },
+
+    async consultar_tiempo_visto(args, ctx) {
+        const r = await resolverPersonaVinculada(args?.persona, ctx);
+        if (r.error) return r;
+        const dias = periodoADias(args?.periodo);
+        const stats = await tautulliClient.getUserWatchTimeStats(ctx.guildId, r.link.tautulliUserId, `${dias}`);
+        const entry = stats.find((s) => Number(s.query_days) === dias) || stats[0];
+        return {
+            persona: args.persona,
+            periodo: args?.periodo || "semana",
+            horas_vistas: formatHoras(entry?.total_time),
+            reproducciones: Number(entry?.total_plays) || 0,
+        };
+    },
+
+    async consultar_ultima_conexion(args, ctx) {
+        const r = await resolverPersonaVinculada(args?.persona, ctx);
+        if (r.error) return r;
+        const rows = await tautulliClient.getHistory(ctx.guildId, { userId: r.link.tautulliUserId, length: 1 });
+        if (!rows.length) return { persona: args.persona, sin_actividad: true };
+        const last = rows[0];
+        return {
+            persona: args.persona,
+            fecha: formatFecha(last.date || last.started),
+            titulo: last.grandparent_title ? `${last.grandparent_title} - ${last.title}` : last.title,
+        };
+    },
+
+    async consultar_novedades_plex(args, ctx) {
+        const cantidad = Math.max(1, Math.min(20, Math.floor(Number(args?.cantidad) || 5)));
+        const items = await tautulliClient.getRecentlyAdded(ctx.guildId, cantidad);
+        return {
+            novedades: items.map((i) => ({
+                titulo: i.grandparent_title ? `${i.grandparent_title} - ${i.title}` : i.title,
+                tipo: i.media_type,
+                anyo: i.year || null,
+            })),
+        };
+    },
+
+    async comparar_actividad_plex(args, ctx) {
+        const [r1, r2] = await Promise.all([resolverPersonaVinculada(args?.persona1, ctx), resolverPersonaVinculada(args?.persona2, ctx)]);
+        if (r1.error) return r1;
+        if (r2.error) return r2;
+        const dias = periodoADias(args?.periodo);
+        const [s1, s2] = await Promise.all([
+            tautulliClient.getUserWatchTimeStats(ctx.guildId, r1.link.tautulliUserId, `${dias}`),
+            tautulliClient.getUserWatchTimeStats(ctx.guildId, r2.link.tautulliUserId, `${dias}`),
+        ]);
+        const e1 = s1.find((s) => Number(s.query_days) === dias) || s1[0];
+        const e2 = s2.find((s) => Number(s.query_days) === dias) || s2[0];
+        return {
+            periodo: args?.periodo || "semana",
+            [args.persona1]: { horas_vistas: formatHoras(e1?.total_time), reproducciones: Number(e1?.total_plays) || 0 },
+            [args.persona2]: { horas_vistas: formatHoras(e2?.total_time), reproducciones: Number(e2?.total_plays) || 0 },
+        };
+    },
+
+    async consultar_top_visto_server(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const dias = periodoADias(args?.periodo || "mes") || 30;
+        const stats = await tautulliClient.getHomeStats(ctx.guildId, dias, 5);
+        const pelis = stats.find((s) => s.stat_id === "top_movies");
+        const series = stats.find((s) => s.stat_id === "top_tv");
+        const format = (s) =>
+            (s?.rows || []).map((r) => ({
+                titulo: r.grandparent_title || r.title,
+                reproducciones: r.total_plays,
+                horas: formatHoras(r.total_duration),
+            }));
+        return { periodo: args?.periodo || "mes", top_peliculas: format(pelis), top_series: format(series) };
+    },
+
+    async buscar_en_plex(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const titulo = String(args?.titulo || "").trim();
+        if (!titulo) return { error: "Falta el título a buscar." };
+        const results = await tautulliClient.search(ctx.guildId, titulo);
+        const items = [...(results.movie || []), ...(results.show || [])].slice(0, 5);
+        if (!items.length) return { encontrado: false, titulo };
+        return {
+            encontrado: true,
+            resultados: items.map((i) => ({
+                titulo: i.title,
+                tipo: i.media_type,
+                anyo: i.year || null,
+                nota: i.rating || null,
+                sinopsis: i.summary ? String(i.summary).slice(0, 400) : null,
+            })),
+        };
+    },
+
+    async consultar_ranking_plex(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const dias = periodoADias(args?.periodo || "mes") || 30;
+        const data = await tautulliClient.getPlaysByTopUsers(ctx.guildId, dias);
+        const categories = data.categories || [];
+        const totalsPerUser = categories.map((_, idx) =>
+            (data.series || []).reduce((sum, serie) => sum + (Number(serie.data?.[idx]) || 0), 0),
+        );
+        const ranking = categories
+            .map((usuario, idx) => ({ usuario, reproducciones: totalsPerUser[idx] }))
+            .sort((a, b) => b.reproducciones - a.reproducciones)
+            .slice(0, 10);
+        return { periodo: args?.periodo || "mes", ranking };
+    },
+
+    async consultar_bibliotecas_plex(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const libs = await tautulliClient.getLibraries(ctx.guildId);
+        return {
+            bibliotecas: libs.map((l) => ({ nombre: l.section_name, tipo: l.section_type, items: Number(l.count) || 0 })),
+        };
+    },
+
+    async consultar_patron_visionado(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const dias = periodoADias(args?.periodo || "mes") || 30;
+        const [dow, hod] = await Promise.all([
+            tautulliClient.getPlaysByDayOfWeek(ctx.guildId, dias),
+            tautulliClient.getPlaysByHourOfDay(ctx.guildId, dias),
+        ]);
+        const sumPerCategory = (data) =>
+            (data.categories || []).map((_, idx) => (data.series || []).reduce((sum, serie) => sum + (Number(serie.data?.[idx]) || 0), 0));
+        const dowTotals = sumPerCategory(dow);
+        const hodTotals = sumPerCategory(hod);
+        const diaMasActivo = dow.categories?.[dowTotals.indexOf(Math.max(...dowTotals))] || null;
+        const horaMasActiva = hod.categories?.[hodTotals.indexOf(Math.max(...hodTotals))] || null;
+        return {
+            periodo: args?.periodo || "mes",
+            dia_mas_activo: diaMasActivo,
+            hora_mas_activa: horaMasActiva ? `${horaMasActiva}:00` : null,
+        };
+    },
+
+    async buscar_contenido_seerr(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const titulo = String(args?.titulo || "").trim();
+        if (!titulo) return { error: "Falta el título a buscar." };
+        const results = await seerrClient.searchMulti(ctx.guildId, titulo);
+        if (!results.length) return { encontrado: false, titulo };
+        const top = results.slice(0, 5);
+        seerrClient.cacheSearchResults(ctx.channelId, top);
+        return { encontrado: true, resultados: top };
+    },
+
+    async solicitar_contenido_seerr(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const tmdbId = Number(args?.tmdbId);
+        const mediaType = String(args?.mediaType || "").toLowerCase();
+        if (!tmdbId || (mediaType !== "movie" && mediaType !== "tv")) {
+            return { error: "Faltan tmdbId/mediaType válidos." };
+        }
+
+        const cached = seerrClient.getCachedSearchResult(ctx.channelId, tmdbId, mediaType);
+        if (!cached) {
+            return {
+                error: "Ese tmdbId no viene de una búsqueda reciente en este canal. Llama primero a buscar_contenido_seerr con el título.",
+            };
+        }
+        if (cached.estadoCodigo === 5) return { ya_disponible: true, titulo: cached.titulo };
+        if (cached.estadoCodigo === 2 || cached.estadoCodigo === 3 || cached.estadoCodigo === 4) {
+            return { ya_solicitado: true, titulo: cached.titulo, estado: cached.estado };
+        }
+
+        // El límite diario protege siempre a quien está hablando con el bot (evita que una
+        // sola persona spamee peticiones aunque las reparta "en nombre de" varios amigos).
+        const { dailyRequestLimit } = seerrClient.getConfig(ctx.guildId);
+        const limitCheck = guildSettings.checkAndConsumeLimit(ctx.guildId, "seerr_request", ctx.userId, { dailyLimit: dailyRequestLimit });
+        if (!limitCheck.ok) {
+            return { error: "Límite diario de peticiones de contenido alcanzado. Que lo pida mañana." };
+        }
+
+        let targetDiscordId = ctx.userId;
+        let personaLabel = null;
+        if (args?.persona) {
+            if (!ctx.guild) return { error: "Solo disponible en servidores." };
+            const resolvedId = resolveNameToDiscordId(args.persona, ctx.guild);
+            if (!resolvedId) return { error: `No identifico a "${args.persona}" entre los miembros del server.` };
+            targetDiscordId = resolvedId;
+            personaLabel = args.persona;
+        }
+
+        const seerrUser = await resolverSeerrUsuarioPorId(targetDiscordId, ctx.guildId);
+        if (!seerrUser) {
+            return {
+                error: `${personaLabel || "Esta persona"} no tiene su Discord vinculado en Seerr ni en Plex, no puedo pedir contenido en su nombre. Que vincule su cuenta con un admin.`,
+            };
+        }
+
+        try {
+            await seerrClient.createRequest(ctx.guildId, { mediaType, tmdbId, userId: seerrUser.id });
+            return { pedido: true, titulo: cached.titulo, pedido_por: seerrUser.displayName };
+        } catch (e) {
+            return { error: `No se pudo pedir: ${e.seerrMessage || e.message}` };
+        }
+    },
+
+    async consultar_solicitudes_seerr(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const cantidad = Math.max(1, Math.min(15, Math.floor(Number(args?.cantidad) || 5)));
+        const requests = await seerrClient.getRequests(ctx.guildId, { take: cantidad });
+        return { solicitudes: requests };
+    },
+};
+
+module.exports = {
+    DUENDE_CORE_TOOL_DECLARATIONS,
+    DUENDE_PLEX_TOOL_DECLARATIONS,
+    DUENDE_SEERR_TOOL_DECLARATIONS,
+    DUENDE_TOOL_EXECUTORS,
+};

@@ -1,0 +1,443 @@
+# Changelog — El Duende
+
+Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
+
+## 2026-09-24 (panel de perfiles del Duende)
+
+- **Panel admin → Duende → 🧠 Perfiles → Ver / editar**: se elige un perfil de la lista (o a cualquier
+  persona del servidor, y se le crea) y se ve su **ficha completa**: Discord ID, username, nombre, apodos,
+  descripción, notas numeradas y cuántos caracteres de todo eso recibe el Duende. **Editar todo** abre un
+  formulario con los cinco campos (nombre, username, Discord ID, descripción y notas, una por línea).
+  También **Borrar notas** y **Borrar perfil** (con confirmación). Todo queda en la auditoría con el antes.
+- Poniendo el Discord ID a mano se puede vincular un perfil antiguo que no se vinculó solo.
+- **El Duende recibía solo 1.200 caracteres de cada perfil**: las descripciones de Jorge, Javier y Tomás se
+  cortaban y las 3 notas de Javier (van detrás) no le llegaban nunca. Ahora 2.500 (`MAX_PERFIL_PROMPT`).
+- Tests: 90 (panel de perfiles con los componentes reales de discord.js).
+
+## 2026-09-24 (deuda técnica y revisión de errores)
+
+### Deuda técnica resuelta
+- **DT-02 + DT-05 · Duende en la BD, por Discord ID.** Personalidades, perfiles de personas y personalidad
+  por canal pasan de `data/duende-*.json` a la BD (migración 008, `src/systems/duende/perfiles.js`). Los JSON
+  se importan solos al arrancar y se renombran a `.importado`. Los perfiles se identifican por Discord ID:
+  los antiguos (por username) se vinculan al arrancar o cuando esa persona habla, y cambiar de username ya
+  no hace perder las notas. Nuevo **Panel admin → Duende → 🧠 Perfiles** para editar nombre y descripción
+  (antes solo a mano en el JSON) o borrar un perfil, con auditoría.
+- **DT-04 · Odds API en un solo sitio**: `src/services/oddsApi.js` (competiciones, cuotas con caché,
+  resultados). Estaba triplicado en `apuestas.js`, `quiniela.js` y `pagarapuestas.js`; la quiniela ahora
+  también usa la caché de cuotas.
+- **DT-06 + DT-07 · Ficheros partidos**: `cripto.js` 1.346 → 714 líneas (precios y compra/venta en
+  `src/systems/cripto/mercado.js`, gráficos en `src/systems/cripto/graficos.js`; el Duende, `/nivel` y el
+  ticker ya no dependen del comando); reglas del blackjack en `src/systems/blackjack.js`; cobro de la tienda
+  en `src/systems/tienda.js`; `apuestas.js` 677 → 426 líneas al quitar una copia de la quiniela que nadie
+  llamaba.
+- **DT-08 · `npm audit fix`**: de 22 vulnerabilidades a 5 (todas en `tar`, que solo se usa al instalar
+  `@discordjs/opus`; sin arreglo publicado).
+- **DT-09 · Tablas antiguas borradas** (migración 007): 19 tablas del juego de roles, del prototipo del pase
+  de batalla, de la web y una copia de roles, con sus 5 claves foráneas rotas. Su contenido (426 filas) se
+  guarda antes en `data/backups/tablas-antiguas-AAAA-MM-DD.json`.
+- DT-10 y DT-11 descartados (se gestionan a mano).
+
+### Errores corregidos
+- **`/apuestas`: los botones de página fallaban siempre** (se pasaba una copia `{...interaction}` que no
+  tiene `reply`). Ahora la página nueva sustituye al mensaje.
+- **`/quiniela`: el botón 🔄 Refrescar fallaba siempre**, por lo mismo.
+- **`/banco` borraba historial de toda la economía**: cada depósito, retirada o transferencia dejaba solo
+  los 10 últimos movimientos de esa persona (también los del casino, cripto, apuestas y tienda), y de ahí
+  salen el ganado/perdido de `/nivel` y el historial de la tienda.
+- **`/tienda` → historial mostraba como "compras"** cualquier movimiento negativo (pérdidas del casino,
+  compras de cripto, retiradas...). En la BD local: 3 compras reales frente a 56 movimientos mostrados.
+- **`/cripto`: vender con doble clic vendía dos veces** lo mismo (se leía la cartera antes de esperar a
+  CoinGecko), dejando la cartera en negativo y pagando de más. Compra y venta comprueban ahora saldo y
+  cantidad dentro de la misma escritura.
+- **Cuotas y horas de partidos congeladas**: los partidos se guardaban con `INSERT OR IGNORE`, así que las
+  cuotas eran siempre las de la primera consulta y un partido aplazado conservaba la hora antigua (con la
+  que se cierran las apuestas y se bloquea la quiniela). Ahora se actualizan mientras el partido está abierto,
+  también en las quinielas.
+- **Resultado de un partido según el orden de la API**: se asumía que el primer marcador era el del local;
+  ahora se busca cada equipo por su nombre.
+- **Lo apostado en fútbol no salía en el historial** (solo el premio al ganar): ahora se apunta al apostar
+  (en `/apuestas` y en la quiniela).
+- **`/apuestas` y quiniela sin cuenta de banco** respondían "saldo insuficiente" a quien aún no la tenía;
+  ahora se le crea con el saldo inicial, como en el casino. Lo mismo al usar un objeto que da monedas.
+- **`/ttcl-diagnostico` fallaba siempre**, también a los admins (`has("ADMINISTRATOR")`, nombre de
+  discord.js 13 que en la 14 lanza error).
+- **El ticker de TTCL registraba el precio con la configuración por defecto** en vez de la del servidor
+  (la gráfica saltaba entre dos precios cada 10 minutos si se había cambiado el precio base en el panel).
+  Lo mismo en el top de holders y el donut de la cartera.
+- **`/tragaperras` podía quedarse "en curso" para siempre** si fallaba el `deferReply` (interacción
+  caducada): no se podía volver a jugar hasta reiniciar el bot.
+- **`/banco transferir`** en una transacción (antes, un fallo a mitad podía quitar el dinero sin darlo).
+- Los escudos de los equipos se guardan en memoria (antes, 2 peticiones a TheSportsDB por cada partido abierto).
+
+### Documentación
+- Nuevo `docs/planificacion/ERRORES.md` con los errores encontrados que dependen de una decisión (E-01 a E-04:
+  quiniela que paga con 0 aciertos, notas de `/duende recuerda` sobre otros, `/duende personas` público...).
+- `DEUDA_TECNICA.md` actualizado (quedan DT-01, DT-03, DT-07 reducido, DT-08 y el nuevo DT-12: `ephemeral`
+  obsoleto en discord.js). `DEPLOY.md` explica las migraciones 007 y 008; `TAREAS.md` añade las pruebas en
+  Discord de todo lo corregido.
+- Tests: 84 (antes 69): Odds API, perfiles del Duende, migración 007, notas por Discord ID.
+
+## 2026-09-24 (orden, backups, tests y lint)
+
+- **`duende.js` partido** (1.549 → ~520 líneas): configuración y memoria en `src/systems/duende/`
+  (`config.js`, `memoria.js`, `personas.js`); herramientas, llamada a Gemini y respuesta por voz en
+  `src/services/duende/` (`herramientas.js`, `gemini.js`, `voz.js`); GIFs en `src/services/giphy.js`.
+- **Backup diario de la BD** a las 04:30 en `data/backups/banco-AAAA-MM-DD.db` con `db.backup()` (copia
+  consistente con el bot en marcha), se conservan 7 (`BACKUP_KEEP`, `BACKUP_DIR`). A mano: `npm run db:backup`.
+- **Tests** del dinero: reglas del blackjack, fórmula de XP y `addXp`, compra en la tienda (saldo, stock,
+  objeto único), backups y un test de `/duende` de principio a fin con Gemini simulado. 69 tests en total.
+- **ESLint + Prettier** (`eslint.config.js`, `.prettierrc.json`): todo el código formateado; `npm run lint`,
+  `lint:fix`, `format`, y `npm run check` (lint + formato + tests). Quitados imports y variables sin uso.
+- **Fallos de apuestas encontrados al escribir los tests**:
+  - `/apuestas` no aplicaba el máximo (`MAX_BET_AMOUNT`): se podía apostar cualquier cantidad.
+  - Se podía apostar a un partido ya empezado o terminado pulsando un botón de un mensaje antiguo.
+  - La quiniela solo ocultaba el botón al bloquearse, pero aceptaba el formulario enviado después.
+- `/nivel` muestra el total en TTCL (≈ monedas) junto al saldo.
+- **Documentación reorganizada**: índice en `docs/README.md`; `docs/tecnico/PLEX_Y_SEERR.md` (antes
+  `docs/PLEX.md`); `docs/planificacion/` con `TAREAS.md` (tareas manuales), `DEUDA_TECNICA.md` (DT-01…DT-11),
+  `FEATURES.md` (ideas con ID por área) y `diseno/`. `docs/PENDIENTES.md` y `docs/FEATURES.md` eliminados.
+
+## 2026-09-24 (arranque más limpio)
+
+- `npm start` usa `scripts/dev.js` en vez de `concurrently` + `npm run` anidados (que añadían dos o tres cabeceras por proceso): una línea por evento con el origen (`voz` / `bot`) a la izquierda. Si se cae el servidor de voz, el bot sigue; si se cae el bot, se para todo. `concurrently` desinstalado.
+- Servidor Vosk: sin el aviso de Flask ni una línea por petición (vuelven con `--verbose`); una sola línea al estar listo.
+- Al parar (Ctrl+C o docker stop) la desconexión de Discord con código 1000 ya no se registra como aviso (solo en debug); las desconexiones inesperadas siguen siendo WARN.
+- Bot: una línea al registrar los comandos y otra al conectar, en lugar de los mensajes sueltos con emojis. Los avisos y errores en consola, en desarrollo, salen con hora corta, color por nivel y solo la primera línea (la traza completa sigue en `logs/`). En Docker la consola no cambia.
+- Nuevo `docs/FEATURES.md` con las ideas de features (apuestas y resto del bot).
+
+## 2026-09-24 (errores de apuestas)
+
+- **401 de la Odds API en todas las liquidaciones**: la URL de scores llevaba el nombre de la competición en el parámetro `apiKey` (`/sports/?apiKey=soccer_…/scores/?apiKey=…`). Restaurada a `/sports/<competición>/scores/?apiKey=…`.
+- **422 en la Champions**: la API solo admite `daysFrom` de 1 a 3 y tenía 7. Los errores de la API ahora incluyen el motivo que devuelve (p. ej. `INVALID_SCORES_DAYS_FROM`).
+- **Partidos que nunca se cerraban**: había 90 partidos ya jugados, de hace meses, que la API ya no puede resolver; el cron preguntaba por ellos cada hora (~144 créditos al día de un plan de 500 al mes) y 3 apuestas tenían el dinero retenido. Ahora solo se consulta la ventana de 3 días y lo que queda fuera sin resultado se marca `caducado` y se reembolsa (con DM). Igual con las quinielas.
+- **Quinielas largas**: los resultados se guardaban solo si estaban los 10 a la vez en la API; una jornada de viernes a lunes no podía completarse nunca. Ahora se guardan partido a partido.
+- **`/misapuestas` mostraba todas las apuestas liquidadas como "Ganada"** y las estadísticas nunca contaban pérdidas (se marcaba `pagado = 1` a ganadoras y perdedoras). Migración `006_resultado_apuestas`: se guarda el resultado del partido y el premio de cada apuesta.
+- **Botón "Ver mis apuestas"** de `/apuestas`: buscaba el comando en `client.commands` (no existe) y fallaba siempre.
+- Tests de la liquidación con la API simulada (`tests/pagarapuestas.test.js`).
+- **Consumo de la Odds API**: las cuotas se reutilizan 30 min por competición (`ODDS_CACHE_MINUTES`; antes cada `/apuestas` y cada página gastaba 1 crédito) y la liquidación solo consulta partidos con apuestas pendientes y quinielas con jugadores. Los créditos restantes quedan en el log.
+- Liquidación ejecutada sobre la BD real (copia previa en `data/backups/`): 90 partidos y 1 quiniela caducados, 3 apuestas reembolsadas (710 monedas) y avisadas por DM.
+
+## 2026-09-24 (migraciones y datos fuera del código)
+
+### Esquema de BD centralizado (`src/core/migrations/`)
+- Migraciones numeradas que se aplican solas al abrir la BD, en transacción, registradas en `schema_migrations`. Antes 20 ficheros creaban sus tablas al cargarse (`usuarios` en 4 sitios, `apuestas_partidos` en 2 y con definiciones distintas a la real).
+- `001_esquema_base`: el esquema real de producción (IF NOT EXISTS), columnas añadidas después, filas iniciales e índices (sustituye a `core/dbIndexes.js`).
+- `002_xp_valores_por_defecto`, `003_apodos_duende`, `004_descripcion_recompensas`, `005_alta_automatica_usuarios` (ver abajo).
+- La caché de sentencias de `db.js` resetea `.pluck/.raw/.expand` al reutilizar una sentencia.
+
+### Arreglos
+- **Roles de recompensa por defecto**: ya no se re-insertan en cada llamada (quitarlos desde el panel no servía). El cooldown de XP de 60 s ya no se devuelve a 15. El multiplicador heredado de `.env` se siembra una sola vez.
+- **`/duende olvida`**: solo la propia persona o un admin. Borra las notas de `/duende recuerda` y conserva el perfil base escrito a mano (antes lo borraba todo, sin forma de recuperarlo), y registra lo borrado.
+- **Cuentas nuevas de banco**: `better-sqlite3` activa las claves foráneas, y `banco`/`historial`/`inventario`/`casino` apuntan a `usuarios`; crear la cuenta de alguien que no estaba registrado fallaba (saldo 0 en vez de 1.000, p. ej. al preguntar el saldo al Duende o usar la cripto sin haber jugado antes). Ahora un trigger da de alta al usuario antes de cada inserción, y se reparan 3 usuarios que ya estaban así. `registrarUsuario` completa nombre y tag de los dados de alta sin ellos.
+
+### Datos del servidor fuera del código
+- **Apodos del Duende** (tabla `duende_apodos`, `src/systems/apodos.js`): nombre principal + otras formas de referirse a cada persona. Se gestionan en Panel admin → Config Global → Duende → 🏷️ Apodos. Los que había en `duende.js` se importan desde `data/duende-apodos.seed.json` (fuera de git) al arrancar.
+- **Roles de recompensa por defecto** con IDs de este servidor: eliminados del código (ya estaban en la BD de producción). Un servidor nuevo empieza sin ellos.
+- **Canal de anuncios de nivel**: el ID que se usaba por defecto queda guardado en la configuración de cada servidor existente; un servidor nuevo lo configura en el panel.
+- **Descripción de los roles de recompensa** (qué permiso desbloquea cada uno): columnas `descripcion`/`emoji` en `xp_role_rewards`, editables en Panel admin → Niveles → Recompensas → 📝 Descripción.
+
+### Documentación
+- Nuevo `docs/PENDIENTES.md` con las tareas pendientes y lo encontrado en la revisión.
+- `DEPLOY.md`: copia de seguridad antes de actualizar, migraciones y cómo pasar los apodos al servidor.
+
+## 2026-09-24 (documentación)
+- `/ayuda` reescrita: guía por secciones con botones (Duende e IA, Voz, Niveles, Economía, Casino, Apuestas, Cripto y Admin, esta solo para administradores). Antes solo mencionaba 12 comandos.
+- `docs/DEPLOY.md` reescrito en español, con la copia limpia al actualizar y las variables de `.env` que ya sobran.
+- `docs/PLEX.md`: rutas actualizadas a la nueva estructura.
+
+## 2026-09-24 (estructura y limpieza)
+
+### Nueva estructura de carpetas (ver README.md)
+- `src/index.js` (antes `index.js` en la raíz) · `src/core/` (db, logger, rutas, router de componentes, registro de comandos) · `src/commands/<tema>/` (un fichero por comando: duende, voz, casino, apuestas, economia, progresion, admin, general) · `src/adminPanel/` · `src/systems/` · `src/services/` (Gemini, TTS, Tautulli, Seerr, STT).
+- Renombrados para que coincidan con su comando: `slots.js` → `tragaperras.js`, `sttCommand.js` → `escuchar.js`, `createCommands.js` → `registerCommands.js`.
+- `stt.js` y `adminPanel/` ya no están dentro de la carpeta de comandos, así que desaparecen las listas de exclusión del cargador.
+- Rutas centralizadas en `src/core/paths.js` (antes cada módulo las calculaba relativas a su carpeta o al directorio actual).
+- `vosk/` (servidor Python + `requirements.txt`), `deploy/` (entrypoint, stack de Portainer, compose local), `docs/` (`DEPLOY.md`, `PLEX.md`, `diseno/`), `scripts/` solo con utilidades vigentes.
+- Nuevos: `README.md`, `.env.example`, `npm run db:check | stt:setup | stt:test | commands`.
+
+### Eliminado
+- Scripts obsoletos: pruebas de Edge TTS (librerías ya no instaladas), `test_transcribe.js` (importaba una función inexistente), migración `migrate_slots` (ya aplicada), inspectores de BD sueltos (unificados en `scripts/db-check.js`), `deploy.ps1` (ruta y contenedor que ya no se usan).
+- Datos sin uso: `db.sqlite` (BD de un juego antiguo), `data/banco.json` (economía en JSON antigua), `lista.md`, `lista.m3u`, `logs/info-log.txt` y los WAV de STT de febrero, el `.zip` del modelo (ya descomprimido), `.venv_stt`, carpetas vacías `tmp/` y `Nueva carpeta/`.
+- Dependencias: `node-fetch` (se usa el `fetch` nativo de Node 20) y `opusscript` (se usa `@discordjs/opus`).
+- `stt.js`: subida de las grabaciones de voz fallidas a transfer.sh (un servicio público), fallback a `vosk-node` (no instalado), parámetros de OpenAI Whisper y la rama que llamaba al Duende directamente (código muerto).
+
+### Arreglos
+- `/objeto crear|editar` ignoraban `categoria` y `rareza`; tampoco se podía asignar el rol ni el efecto de un consumible (columnas `rolId`/`efecto` que usan `/usar` y la tienda). Ahora hay opciones `rol` y `efecto` (validado), `tipo` con opciones fijas, y las columnas se crean si faltan.
+- Servidor Vosk: cargaba el modelo en cada petición; ahora una vez al arrancar. Guardaba el audio con el nombre enviado por el cliente en `tmp/`; ahora usa temporales propios. Nuevo `GET /health`.
+- Audio temporal de `/escuchar` en la carpeta temporal del sistema (antes en la raíz del proyecto).
+- `.dockerignore` no excluía `data/`: la imagen se construía con la BD local dentro. `.gitignore` ignoraba `Dockerfile` y no ignoraba `data/`, `logs/`, `models/`.
+- `/escuchar`: el inicio de la escucha no capturaba errores (promesa rechazada sin capturar).
+
+## 2026-09-24 (logging)
+
+### Logger (`logger.js`)
+- Niveles `debug/info/warn/error` con `LOG_LEVEL`, cambiable en caliente con `/diagnostico nivel_log`. Salida también por consola desde `LOG_CONSOLE_LEVEL` (por defecto `warn`), para `docker logs`.
+- Ficheros: `app-log.txt` (todo, cronológico) + `warn-log.txt` + `error-log.txt`. Sustituyen a `info-log.txt` (los antiguos quedan en disco).
+- Formato `fecha NIVEL [Módulo] mensaje`; las líneas de continuación (trazas) van sangradas, así cada entrada empieza por la fecha. Antes había cientos de líneas sueltas sin fecha.
+- `createLogger(ámbito)` para loggers por módulo. Las funciones antiguas siguen funcionando.
+- Errores con traza, causa encadenada y datos de Discord/axios (código, estado HTTP, método, URL). Objetos con `util.inspect` (antes salía `[object Object]`). Entradas enormes recortadas a 8000 caracteres.
+- Redacción automática de secretos: token, claves de `.env`, claves de API guardadas desde el panel, `?key=`/`?apiKey=` en URLs y la cabecera `X-Api-Key`.
+- Contadores de errores/avisos y último error (en `/diagnostico`).
+
+### Registro central (`index.js`, `src/utils/interactionLog.js`)
+- Cada comando con subcomando y opciones, cada botón/select/formulario con sus valores: quién, dónde, duración y, si falla, el error con traza. Denegaciones por ACL, componentes sin ruta, comandos desconocidos y comandos que terminan sin responder a Discord.
+- Respuestas del Duende a mensajes, con duración.
+- Eventos de Discord que antes no dejaban rastro: errores, desconexiones y reconexiones del gateway, sesión invalidada, rate limits de la API, entrada/salida de servidores.
+- Tareas programadas envueltas en `runJob`: fallos con traza y aviso si tardan demasiado.
+
+### Módulos
+- Servicios: Seerr y Tautulli registran cada petición (debug) y cada fallo con estado HTTP y duración; Gemini registra modelo, duración, tokens y errores de cuota (contador en `/diagnostico`); TTS registra timeouts, errores HTTP y respuestas sin audio.
+- Dinero: se registran apuestas deportivas y de quiniela, compras de tienda, compras/ventas de cripto (con el nuevo precio de TTCL), uso de objetos, recompensas de logros, partidas abandonadas y reembolsos.
+- Administración: la auditoría también escribe en el log (con los campos secretos ocultos) y registra si falla al guardar. Ahora se auditan también `/tienda añadir|editar|eliminar|config`, `/objeto crear|editar|eliminar`, las personalidades de `/duende` y los cambios de nivel de log. Se registran los intentos de usar el panel sin ser admin y cualquier cambio de ACL. `/duende olvida` deja constancia de lo borrado.
+- XP: subidas de nivel, roles de recompensa que no se pueden asignar (antes fallaban en silencio), anuncios que no se pueden publicar, resultado del aviso de rachas y ajustes manuales de XP.
+- 51 `catch {}` vacíos revisados: los que escondían fallos reales ahora registran; quedan solo limpiezas de conexiones de voz tras un error ya registrado.
+- Ruido fuera del nivel `info`: pasos de conexión de voz (~27 % del log anterior), decisiones de GIF/prompt del Duende, ticker de TTCL, XP de voz en pausa, consultas de solo lectura y liquidaciones horarias sin nada que liquidar.
+- STT: los avisos solo se escribían con `STT_VERBBOSE` activo; ahora siempre. El aviso de "vosk-node no instalado" sale una sola vez.
+
+### Fallos corregidos por el camino
+- `createCommands.js` salía con `process.exit` sin vaciar el buffer de logs: se perdían sus últimas líneas (incluido el error si fallaba el registro).
+- `/usar`: si el efecto de un consumible lanzaba una excepción, el objeto ya borrado se perdía. Ahora se devuelve al inventario.
+- `/apuestas`: el cobro y el registro de la apuesta eran dos escrituras sueltas; ahora van en una transacción.
+- `achievementsSystem.applyEvent` se llamaba con `void` y un error acababa como promesa rechazada sin capturar; ahora se captura y registra.
+
+## 2026-09-24
+
+### Casino
+- Blackjack y Adivinar: ya no se puede empezar una partida con otra en curso (antes se sobrescribía y la primera apuesta se perdía). Una partida sin tocar más de 15 min se liquida como perdida.
+- Las apuestas de partidas en curso se registran en `casino_partidas_activas`; si el bot se reinicia a mitad de partida, al arrancar se devuelven.
+- Doblar y separar en blackjack usan `descontarExtra`: sin apuesta mínima, cooldown ni cupo diario (son parte de la misma jugada).
+- Eliminado el seguro del blackjack: el crupier ya comprueba su blackjack al repartir, así que el seguro nunca podía pagar.
+- Corregido `ReferenceError` (`client` no definido) en el split si fallaba una transacción.
+- `descontarApuesta` valida saldo/mínimo/máximo antes de consumir cooldown y cupo diario. Igual en la tienda.
+- Tienda: la compra (cobro, stock, inventario, historial) va en una única transacción.
+- `/pagarapuestas`: solo administradores; liquidación automática cada hora con aviso por DM a ganadores; pagos por partido en transacción y apunte en historial; las quinielas se liquidan aunque no haya partidos sueltos pendientes. Quitada la API key de Odds escrita en el código.
+
+### Infraestructura
+- `index.js`: el enrutado de botones/selects/modales ya no es una cadena de `if`; cada módulo declara `componentHandlers` y `src/utils/componentRouter.js` elige la ruta más específica. Los errores en componentes se capturan y se responde al usuario.
+- Logger: escritura con streams (no bloquea), rotación por tamaño, `logErrorSync`/`flushLogs`. `uncaughtException` registra, apaga ordenadamente y sale con código 1; SIGTERM/SIGINT cierran limpio.
+- Migrado de `@google/generative-ai` (deprecado) a `@google/genai` (`src/utils/geminiClient.js`). Los timeouts de Gemini y de generación de imágenes cancelan la petición con `AbortSignal`.
+- `sendTyping()` con `catch`.
+- Docker: Vosk (STT) dentro del mismo contenedor, con `tini` y `scripts/docker-entrypoint.sh`.
+- Tests: BD en memoria y logs/datos en carpetas temporales (`tests/setupEnv.js`); nuevos tests de `casinoTransactions`, `activeGames` y del router.
+
+### Optimizaciones
+- `xpSystem.ensureGuildDefaults` se memoiza por servidor (antes ~50 sentencias con escrituras en cada `getConfig`, unas 4 veces por mensaje). Se invalida en `setConfig`, `setReward`, `removeReward` y `removeUserCostMultiplier`, así que el re-sembrado se comporta igual que antes.
+- `db.js`: caché LRU (500) de sentencias preparadas; antes cada `db.prepare` recompilaba el SQL.
+- Índices nuevos (`src/utils/dbIndexes.js`) en `cripto_ttcl_precios`, `historial`, `casino`, `apuestas_usuario` y `cripto_historial`.
+- Timeouts en todas las llamadas HTTP que no tenían (CoinGecko, Odds API, TheSportsDB, descarga de adjuntos). CoinGecko ya no cachea respuestas de error (429) como si fueran precios.
+- Nueva documentación funcional: `docs/FUNCIONALIDADES.md`.
+
+## 2026-09-23
+
+### Sistema de racha diaria (streak)
+- Nuevas columnas `streak_dias` / `streak_last_day` en `xp_users`, calculadas en hora de Madrid (`Intl.DateTimeFormat`, a prueba de cambio de horario CET/CEST).
+- Bonus de XP progresivo por racha (`%/día`, con tope), configurable desde el panel admin (Niveles → Config → 🔥 Racha).
+- Aviso por DM al usuario a partir del día 2 de racha (embed), y aviso de "racha en peligro" a las 17:00 hora española vía `node-cron`, a quien tenga racha ≥2 días y no haya ganado XP ese día.
+- Racha visible en `/nivel` y en el perfil unificado.
+
+### Vista previa de la curva de XP
+- Botón "📈 Vista previa" en el panel admin (Niveles → Config): muestra, con la fórmula actual, el coste y el XP acumulado necesario para cada nivel con título configurado.
+
+### Revisión y arreglo del panel de administración
+- `paneladmin.js`: renombrados imports que colisionaban por nombre con los métodos del propio objeto exportado (funcionaba por scoping de JS, pero era una trampa para el próximo refactor).
+- Eliminados 5 campos de formulario "reservados" que no hacían nada (Cripto, Casino ×2, Tienda, ACL).
+- "Reset XP" ahora pide confirmación (antes borraba sin preguntar, a diferencia del resto de acciones destructivas del panel).
+- "Quitar recompensa" de nivel ahora puede apuntar a un rol concreto en vez de borrar todos los roles de ese nivel a la vez.
+- Añadido registro de auditoría que faltaba en "quitar canal de anuncios" y "limpiar canales ignorados".
+- Sincronizada la fórmula de XP mostrada entre la pantalla de inicio de Niveles y la de Config (antes una mostraba la fórmula completa y la otra una versión vieja incompleta).
+
+### RTP del casino — de decorativo a real
+- El panel de "RTP" (Blackjack/Tragaperras/Ruleta/Adivinar) existía pero no tenía ningún efecto en el juego real.
+- Implementado `applyRtp()` en `casinoTransactions.js`: escala el premio neto de cada victoria (nunca la apuesta devuelta en empate, nunca la probabilidad de ganar), aplicado en los 4 juegos antes de mostrar el resultado y de acreditarlo, para que lo mostrado y lo pagado coincidan siempre.
+- De paso, corregido un bug real en `adivinar.js`: la ronda final calculaba un premio x20 pero pagaba solo x4 porque nunca se actualizaba `partida.acumulado`.
+
+### Revisión del panel de usuario (antes `/casino`)
+- Encontrado el owner-check de `casino.js`, `ruleta.js` y `logros.js` dependiendo de un campo de discord.js marcado como deprecado (`message.interaction`); añadido fallback a `interactionMetadata`.
+- Encontrado y corregido un bug real en `/nivel`: los botones ⏮️/⏭️ del ranking estaban completamente rotos (el check de "solo el dueño puede pulsar" partía mal el customId y bloqueaba a todo el mundo, incluido el dueño).
+
+### Limpieza de código y dependencias muertas
+- Borrados: `src/scripts/` entera (backups y un archivo corrupto), `src/events/` (vacía), `test_edge_tts_js.js` y `test_final.js` (scripts sueltos de prueba).
+- Eliminadas 4 funciones de `xpSystem.js` sin ninguna llamada en todo el proyecto (`syncRewardsFromGuildRoles`, `upsertTitle`, `removeTitle`, `resetTitlesToDefault`) — un sistema de gestión de títulos de nivel que nunca se conectó a ningún comando.
+- Eliminada `transcribeWithWhisper` de `stt.js` (transcripción vía OpenAI Whisper, sustituida hace tiempo por Vosk local pero nunca borrada).
+- Quitado código comentado muerto en `index.js` (require y handlers de ruleta obsoletos).
+- Desinstaladas 5 dependencias npm sin ningún uso: `edge-tts-node`, `google-tts-api`, `ffmpeg-static`, `fluent-ffmpeg`, `sqlite3` (116 paquetes fuera contando transitivas).
+- `createCommands.js` ya no trata los módulos internos de `adminPanel/` como comandos mal formados (dejaba de generar 6 errores falsos en cada arranque).
+
+### `/casino` → `/perfil`: panel unificado
+- Nuevo comando `/perfil` (sustituye a `/casino`): vista de inicio = perfil completo (nivel, racha, XP, logros, ranking, saldo), con navegación por botones a Casino, Logros, Top y Recompensas sin volver atrás.
+- Los botones de navegación nuevos usan el ID del dueño embebido en el customId (patrón robusto, el mismo que evita el bug encontrado en `/nivel`), en vez del campo deprecado de discord.js.
+- El resto de comandos (`/nivel`, `/logros`, `/blackjack`, `/tragaperras`, `/ruleta`, `/adivinar`) siguen funcionando igual, sin tocar.
+
+### Eliminado Groq, solo queda Gemini
+- Quitada la función `generarConGroq`, las constantes `GROQ_*`/`LLM_PROVIDER`, y toda la lógica de fallback a Groq en `duende.js`.
+- Quitados los campos `provider`/`fallback_provider` de `guildSettings.js`, el panel admin y `/diagnostico` (ya no tenía sentido un selector con una sola opción).
+- `.env`: quitadas las variables `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_TIMEOUT_MS`, `LLM_PROVIDER` (ya no se leen en ningún sitio).
+
+### Function calling para el Duende
+- El Duende puede ahora consultar datos reales del bot durante una conversación en vez de improvisar: `consultar_nivel_y_racha`, `consultar_saldo`, `precio_ttcl`, `consultar_logros`, `tirar_dado`.
+- Todas de solo lectura a propósito. El `userId`/`guildId` que reciben es siempre el de quien habla de verdad en Discord, nunca algo que el modelo pueda extraer o inventar del texto.
+- `generarConGemini` ahora hace un bucle de hasta 3 rondas: llama a Gemini, si pide una herramienta la ejecuta de verdad, le devuelve el resultado como turno `function`, y repite hasta que hay respuesta final en texto.
+
+### Bugs encontrados probando el function calling en vivo
+- `gemini-2.0-flash` (el modelo por defecto del código) ya no existe — Google lo retiró (404). Cambiado el valor por defecto a `gemini-2.5-flash`.
+- `gemini-2.5-flash-lite` (el que tenía fijado el `.env`) se niega a llamar a las herramientas de forma fiable aunque estén disponibles — el Duende respondía con datos inventados en vez de los reales. `.env` actualizado a `gemini-2.5-flash`, que sí las usa correctamente (verificado con una llamada real: saldo, nivel y racha reales de un usuario, mandado a un canal real).
+
+### Integración Plex/Tautulli con el Duende — implementada
+- Diseño completo en `docs/Plex.md`.
+- `src/systems/tautulliClient.js`: cliente sobre la API de Tautulli (`get_users`, `get_history`, `get_user_watch_time_stats`, `get_activity`, `get_recently_added`, `get_libraries`), con override opcional por guild vía `guildSettings` (`plex.tautulli_url`/`plex.tautulli_api_key`).
+- `src/systems/plexLinks.js`: tabla `plex_links` (Discord userId ↔ usuario Tautulli).
+- 7 herramientas nuevas para el Duende: `consultar_actividad_plex`, `consultar_viendo_ahora`, `consultar_tiempo_visto`, `consultar_ultima_conexion`, `consultar_novedades_plex`, `comparar_actividad_plex`, `consultar_top_visto_server`. La resolución de "quién es quién" reutiliza el mismo mapa de nombres que ya usaba `duende.js` para menciones — nunca un ID inventado por el modelo.
+- Sin restricción de visibilidad entre usuarios vinculados (confirmado por el usuario: grupo de amigos, sin problema de privacidad entre ellos).
+- Panel admin: nueva sección 🎬 Plex en `/paneladmin` (vincular/desvincular por selector de usuario + test de conexión).
+- `.env`: añadidas `TAUTULLI_URL`/`TAUTULLI_API_KEY`.
+- Probado en vivo contra el Tautulli real: pregunta en un canal real ("¿qué ha visto Alex esta semana?") respondida con datos que coinciden exactamente con el historial real (10 episodios de Outer Banks, 1 de Daredevil, una peli).
+- Pendiente (más adelante): Seerr para solicitar contenido (primera herramienta de escritura real).
+
+### Lista completa de vínculos cargada
+- Las 11 personas de `lista.md` vinculadas en `plex_links` (12 en total con la cuenta de prueba).
+- Sus apodos cargados en `duende.js` como `APODOS_DISCORD_ID` (nombre/apodo → ID de Discord directo, comprobado antes que cualquier otra fuente de resolución de nombres), con normalización de tildes.
+- Probado en vivo: "¿cuántas horas ha visto Raúl este mes y cuántas el perro?" en un canal real resolvió a las dos personas correctas y mencionó a los usuarios reales, con datos reales (32,5h Raúl, 0h Javier/Ddrakon — el modelo incluso tradujo "el perro" a "Javier" solo usando el mapa de equivalencias ya existente).
+
+### Ampliación de Plex: 5 herramientas nuevas + canal de novedades automático
+- Revisados los 123 comandos de la API de Tautulli (`cmd=docs`) para ver qué más se podía ofrecer.
+- `tautulliClient.js`: nuevos métodos `search`, `getHomeStats`, `getPlaysByTopUsers`, `getPlaysByDayOfWeek`, `getPlaysByHourOfDay`.
+- Nuevas herramientas para el Duende: `buscar_en_plex` (existe X en la biblioteca, con sinopsis/año/nota), `consultar_ranking_plex` (quién más ve Plex en el server), `consultar_bibliotecas_plex` (nº de items por biblioteca), `consultar_patron_visionado` (día/hora más activos).
+- `consultar_top_visto_server` reescrita: antes agregaba a mano el historial de cada vinculado; ahora usa `get_home_stats` directamente (más rápido, y de paso trae duración total vista, no solo nº de reproducciones).
+- **Canal de novedades automático**: `node-cron` cada 30 min revisa `get_recently_added` y publica solo lo nuevo en un canal configurable desde el panel (🎬 Plex → 📢 Canal novedades). Al activarlo por primera vez fija la biblioteca actual como base, sin avisar retroactivamente de todo lo que ya había.
+- Nueva tabla `plex_novedades_state` (última fecha de "añadido" vista por guild) y setting `plex.novedades_channel_id`.
+- Probado en vivo: una sola pregunta con 3 partes ("¿tenemos Daredevil? ¿qué día se ve más? ¿cuántas pelis/series tenemos?") resolvió las 3 herramientas correctamente con datos reales; otra pregunta de ranking + top-contenido también verificada contra los mismos números vistos en las pruebas directas a la API.
+- `terminate_session` (cortar un stream en directo) queda anotado como idea futura ligada a la **tienda** (ítem tipo "corte de luz" comprado con monedas) — nunca como tool de IA, solo detrás de una compra/uso explícitos. No implementado.
+
+### Bug real: "Respuesta vacía de Gemini" con preguntas de varias partes
+- Reportado por el usuario probando en local: una pregunta con 3 sub-preguntas (cada una necesitando su propia herramienta) a veces hacía que Gemini pidiera llamar a una herramienta en la última ronda disponible del bucle de function calling — como no quedaban rondas para atenderla, `result.response.text()` venía vacío y el Duende contestaba "Ahora mismo no puedo responder".
+- Causa raíz: el límite de rondas (`DUENDE_MAX_TOOL_ROUNDS`) se comprobaba, pero en la última vuelta se seguía dejando a Gemini la opción de pedir otra herramienta en vez de forzarle a cerrar con texto.
+- Arreglo: en la última ronda se manda `toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.NONE } }`, que obliga a Gemini a responder en texto con lo que ya tiene, nunca a pedir una herramienta más. De paso, `DUENDE_MAX_TOOL_ROUNDS` subido de 3 a 4 para dar más margen a preguntas de varias partes.
+- Verificado con la misma pregunta que falló, repetida 3 veces seguidas — las 3 con respuesta real, ninguna con el error.
+
+### Trato relacional por persona (usando `data/duende-personalities.json` como estaba pensado)
+- El `savedPersons` de `duende-personalities.json` (descripciones ricas por persona: cómo dirigirse a cada uno, bromas internas, "estadísticas" falsas de broma) ya existía, pero el código lo usaba mal en dos sitios:
+  - Si una persona tenía `notas` (array), se usaba **solo eso** y se ignoraba `description` por completo — para Alex (`sraleo`), por ejemplo, su descripción entera de broma no se usaba nunca, solo la nota corta "Dueño del Plex".
+  - Todo lo que sí se usaba se truncaba a **200 caracteres**, cuando las descripciones reales rondan 700-1400 — se perdía casi todo el contenido real.
+  - Y había una instrucción explícita en el código para NO dejar que esto cambiara el comportamiento del bot ("no adoptes personas de usuario"), justo lo contrario de lo que se quería.
+- Arreglado: `buildPersonProfileText()` combina `description` + `notas` (ya no se pisan), sin truncar de forma agresiva (hasta 1200 caracteres por perfil).
+- Nuevo: `detectMentionedPersons()` detecta si el mensaje menciona a alguien conocido (por nombre o por @mención real) y le da al modelo el perfil completo de **quien habla** + **de quien se menciona**, con instrucción explícita de compararlos/relacionarlos en la misma respuesta en vez de describir solo a uno de forma aislada. El resto de gente conocida se queda con una equivalencia ligera (solo nombre), para no inflar el prompt con perfiles que no vienen a cuento.
+- Probado en vivo: preguntando "¿quién es peor jugador de CS2, Javier o yo?" hablando como Alex, contestó usando el defecto propio de Alex (las flashes a compañeros, de su descripción) comparado con el de Javier (falta de iniciativa/tema perro, de la suya) — exactamente el patrón "tú también, pero este es peor" pedido.
+
+### Acceso a Plex restringible por canal
+- Nueva tabla `plex_allowed_channels` + `isChannelAllowed()`: lista vacía = sin restricción (como ahora), en cuanto se añade un canal pasa a ser allowlist.
+- Las herramientas de Plex se separan de las generales (`DUENDE_PLEX_TOOL_DECLARATIONS` vs `DUENDE_CORE_TOOL_DECLARATIONS`) y solo se le declaran a Gemini si el canal donde se pregunta está permitido — en canal no permitido, el modelo ni sabe que existen.
+- Gestión desde el panel admin (🎬 Plex → 📺 Permitir canal / ➖ Quitar canal / 🧹 Sin restricción).
+- Verificado en vivo: con un canal falso como único permitido, el canal real dejó de generar líneas de "Herramienta usada" en el log al preguntar por Plex (el modelo siguió contestando por memoria de la conversación previa, pero ya sin usar la tool — confirma que el filtro corta la *declaración* de la herramienta, no solo su ejecución).
+
+### Efecto colateral encontrado: respuestas cortadas a mitad de frase
+- Al aumentar el prompt con los perfiles completos, salió a la luz que `gemini-2.5-flash` (el modelo puesto ayer tras la retirada de `gemini-2.0-flash`) gasta parte de su presupuesto de tokens de salida en "thinking" interno antes de escribir la respuesta visible — con `DUENDE_MAX_TOKENS=400` esto cortaba respuestas a mitad de frase. El SDK instalado (`@google/generative-ai`, versión legacy) no expone forma de desactivar ese thinking.
+- `.env`: `DUENDE_MAX_TOKENS` 400→1024, `DUENDE_MAX_TOKENS_FALLBACK` 512→768. Verificado sin cortes tras el cambio.
+
+### Bugs reales encontrados en producción: apodos que no llamaban a la herramienta de Plex
+Reportado por Jorge probando en real ("cuánto tiempo lleva el perro sin ver nada en el plex" → el Duende se negaba). Dos bugs distintos, los dos reales:
+
+1. **Las descripciones de las tools decían "persona vinculada"** — el modelo se lo tomaba al pie de la letra y, como no podía saber de antemano si "el perro" estaba vinculado, prefería no intentarlo. Arreglo: reescritas las descripciones de las 4 tools afectadas (`consultar_actividad_plex`, `consultar_tiempo_visto`, `consultar_ultima_conexion`, `comparar_actividad_plex`) para decir explícitamente que se puede llamar con cualquier nombre o apodo y que la propia herramienta avisa si no hay vínculo.
+2. **Historial contaminado**: el canal donde probó Jorge tenía 4 rechazos seguidos guardados en `data/duende-history.json`, y el modelo repetía "como le he indicado en reiteradas ocasiones" citando sus propios rechazos anteriores — un bucle que se reforzaba solo. Se limpió el historial de ese canal en concreto (no los demás) para que el arreglo pudiera notarse.
+3. **El de verdad gordo, con historial ya limpio seguía fallando**: el modelo mandaba `persona: "el perro"` (con el artículo "el" incluido, tal cual en la frase), pero `APODOS_DISCORD_ID` tiene la clave exacta `"perro"` sin artículo — no había *fuzzy match*, así que la búsqueda fallaba con "No identifico a 'el perro'...". Arreglo: `resolveNameToDiscordId` ahora prueba primero el nombre tal cual y, si falla, reintenta quitando un artículo inicial (el/la/los/las/un/una) — sin romper apodos que sí llevan el artículo pegado de verdad, como "El Fari" o "La burra", porque esos se siguen probando primero sin tocar.
+- Verificado en vivo en los dos canales de prueba (personalidad default y personalidad "sanchez"): "el perro" resuelve a Ddrakon, con dato real (última vez visto: 6 de agosto de 2026, Harry Potter y la cámara secreta) y con la broma relacional metida de propina.
+
+### Cuarto bug real: personalidades agresivas se saltaban la herramienta directamente
+Otro fallo real en producción, esta vez con la personalidad "masiko" activa en un canal ("¿qué es lo que más ha visto el perro de mierda?" → el Duende soltó un insulto genérico sin mirar nada). Causa distinta a los tres anteriores:
+
+- Las personalidades personalizadas (`masiko`, `javier`, `sanchez`, `conway`...) **sustituyen por completo** las instrucciones base — ninguna de ellas menciona que hay herramientas disponibles ni que hay que intentar mirar datos reales antes de contestar, a diferencia de la personalidad `default` que sí dice "pero sé resolutivo". Con una personalidad centrada solo en insultar, el modelo se limitaba a insultar y ya, sin pasar por la herramienta.
+- Arreglo: añadida una instrucción universal, independiente de la personalidad activa, que se apend a *cualquier* personalidad: "si tienes herramientas disponibles que te den datos reales, úsalas siempre antes de contestar, sea cual sea tu personalidad — puedes insultar/bromear con el resultado, pero no te niegues a mirar". La personalidad sigue controlando el tono de la respuesta, ya no si se molesta en mirar el dato.
+- Verificado en vivo con la personalidad "masiko" tras el arreglo: llamó a `consultar_actividad_plex`, obtuvo el dato real (0 actividad en 7 días) y lo soltó igual de agresivo pero con el dato correcto en vez de un insulto genérico sin mirar nada.
+
+### Quinto ajuste real: respuestas "robóticas" al usar datos consultados
+Feedback directo de Jorge tras los arreglos anteriores: las respuestas ya usaban la herramienta correcta, pero sonaban a plantilla — "[Nombre] vio [título] el [fecha]." seguido o precedido de un insulto genérico como frase aparte, siempre con la misma estructura mensaje tras mensaje (p.ej. siempre empezando por "¡Me cago en la puta!").
+
+- Primer intento: instrucción pidiendo tejer el dato en la misma frase en vez de "ficha + insulto aparte". Mejoró la separación pero el modelo simplemente movió el insulto genérico *delante* del dato en vez de dentro (`"¡Me cago en la puta! El perro vio X el [fecha]."` — misma plantilla, orden invertido).
+- Segundo ajuste: instrucción más explícita en `instruccionesFinal` (src/slashCommands/duende.js) pidiendo que el dato y la pulla vayan **dentro de la misma frase** como parte de la queja/burla, y prohibiendo empezar siempre con la misma interjección — variar el arranque de cada respuesta (a veces con el dato, a veces con la pulla, a veces con pregunta retórica).
+- Verificado en vivo (canal con personalidad "masiko", historial limpio, 3 preguntas seguidas): "¿El perro? Ese cabrón lleva 1 día y 19 horas sin ver una mierda en Plex..." / "¡Hostia puta! El Conejo de mierda, ese cabrón, la última vez que vio algo fue el 22 de septiembre..." / ante una pregunta sin herramienta disponible ("qué es lo más visto"), respondió correctamente que no tiene esa herramienta en vez de inventar un dato. Tres estructuras de arranque distintas, dato e insulto integrados en la misma frase, confirmado con `Herramienta usada` en el log que los datos eran reales.
+
+### Integración Seerr (Jellyseerr) — pedir contenido desde el Duende
+Fase 2 del plan de Plex, ya anotada como pendiente en `docs/Plex.md`. El usuario pasó URL + API key reales (`https://requests.xelements.es`, Jellyseerr v3.4.1) y se implementó completo, no solo el diseño.
+
+- `src/systems/seerrClient.js` (nuevo): cliente sobre `/api/v1` con header `X-Api-Key` (a diferencia de Tautulli, que usa query param) — integración separada, no reutiliza `tautulliClient`.
+- **Hallazgo que simplificó todo el diseño**: Jellyseerr ya guarda el Discord ID de cada usuario en su propio perfil (`GET /api/v1/user/{id}` → `settings.discordIds`), confirmado en real para varios de los 15 usuarios existentes. Atribución de peticiones sin vinculación manual en la mayoría de los casos: 1) match por `discordIds` en Seerr, 2) si no, fallback al `plexUsername` ya vinculado en `plex_links`, 3) si tampoco, error legible pidiendo vincular con un admin.
+- 3 herramientas nuevas en `duende.js` (`DUENDE_SEERR_TOOL_DECLARATIONS`): `buscar_contenido_seerr` (lectura), `solicitar_contenido_seerr` (la primera tool de este bot que **escribe** de verdad — crea una solicitud real de descarga), `consultar_solicitudes_seerr` (lectura). Gating por canal independiente del de Plex (`seerr_allowed_channels`, mismo patrón lista-vacía-es-sin-restricción).
+- **Guardarraíles de la tool de escritura**, extendiendo el mismo principio que ya rige `userId` (nunca inventado por el modelo) a `tmdbId`:
+  - Caché de búsquedas por canal con TTL 15 min: `solicitar_contenido_seerr` solo acepta un `tmdbId`/`mediaType` que hayan salido literalmente de una `buscar_contenido_seerr` reciente en ese mismo canal — si no, lo rechaza sin tocar la API real. Verificado con test directo del caché (hit/miss) además del flujo en vivo.
+  - Atajo de estado: si el contenido ya está disponible o ya tiene una solicitud en curso, la herramienta lo dice y **no llama a la API de creación** — verificado en vivo con Daredevil (ya disponible), confirmado por log que no se generó ninguna solicitud real.
+  - Límite diario configurable por persona (`guildSettings.checkAndConsumeLimit`, scope `seerr_request`, 5/día por defecto), reutilizando el sistema de límites genérico que ya existía para otras acciones.
+  - Siempre se pide en nombre de quien habla (`ctx.userId`), nunca de un tercero — a diferencia de las tools de Plex, esta no acepta parámetro de "persona".
+- Panel admin nuevo (🍿 Seerr en `/paneladmin`, `src/slashCommands/adminPanel/seerr.js`): test de conexión, límite diario, gestión de canales permitidos — sin vinculación manual de usuarios porque no hace falta (ver hallazgo de `discordIds` arriba).
+- Verificado en vivo contra el servidor real: búsqueda ("Daredevil" con estado y sinopsis correctos), listado de solicitudes recientes con títulos reales, y el camino "ya disponible" disparado de verdad por el modelo sin generar ninguna petición.
+- **Deliberadamente no probado en vivo**: el camino de éxito real de `solicitar_contenido_seerr` (crear una solicitud de verdad), para no disparar una descarga real ni una notificación a otro usuario sin avisar antes. Todo lo demás sí, contra producción.
+- Detalle completo en `docs/Plex.md` (sección 4).
+
+### Ajuste sobre la marcha: pedir en Seerr "para" otra persona
+El diseño inicial de `solicitar_contenido_seerr` atribuía siempre la petición a quien hablaba con el Duende, sin parámetro de "persona" — deliberado para no atribuir peticiones a terceros sin que ellos las pidieran. El usuario señaló el motivo por el que no hacía falta esa restricción: en Seerr, cuando el contenido pedido está listo, **avisa directamente al usuario que lo pidió** (vía su Discord ID vinculado, ver hallazgo de `discordIds` arriba) — así que "Alex pide algo para Ddrakon" tiene sentido real: es Ddrakon quien recibe el aviso, no Alex.
+
+- Añadido parámetro opcional `persona` a `solicitar_contenido_seerr`. Reutiliza `resolveNameToDiscordId` (el mismo resolutor de nombres/apodos que ya usan las tools de Plex, nunca inventado por el modelo) para averiguar a quién se refiere, y `resolverSeerrUsuarioPorId` (renombrada desde `resolverSeerrUsuarioActual`, ahora genérica) para encontrar su cuenta de Seerr.
+- El límite diario se mantiene atado a quien manda el mensaje (`ctx.userId`), no a la persona en cuyo nombre se pide — evita que alguien spamee peticiones repartiéndolas entre varios nombres para saltarse su propio límite.
+- Verificado (sin disparar ninguna petición real): `resolverSeerrUsuarioPorId` resuelve correctamente dos identidades reales distintas — Ddrakon (Discord ID de `APODOS_DISCORD_ID["perro"]`) → usuario Seerr #4 "Ddrakon"; Alex → usuario Seerr #1 "SrAaleeeo".
+
+### Dos bugs reales encontrados probando "pide X en nombre de Y" en producción
+El usuario probó la función nueva en el canal real y reportó dos fallos distintos, ambos con el propio bot ya reiniciado con el código nuevo:
+
+1. **Historial contaminado (mismo patrón de siempre)**: la primera negativa del Duende (de antes del reinicio, cuando la función aún no existía) quedó guardada en `data/duende-history.json`, y el modelo la citaba casi literalmente ("ya te he dicho...") aunque la capacidad ya estuviera disponible. Recordatorio para el futuro: **el historial vive en memoria** (`conversationHistory`, cargado una vez al arrancar) — editar el `.json` en disco con el bot corriendo no sirve de nada hasta el siguiente reinicio, porque `saveHistory()` sobreescribe el archivo con la copia en memoria en cuanto responde una vez más.
+2. **Bug real de verdad, no de historial**: `buscar_contenido_seerr({"titulo":"Barbie 2"})` fallaba con `"Parameter 'query' must be url encoded"` de la API de Seerr. Causa: axios serializa espacios como `+` (form-encoding) por defecto, y Jellyseerr valida estrictamente `%20`, rechazando `+` con un 400. Arreglo en `seerrClient.js`: `paramsSerializer` propio con `encodeURIComponent` (RFC3986) en vez del serializador por defecto de axios. Cualquier búsqueda con más de una palabra estaba rota hasta este arreglo.
+3. Además, la frase exacta "haz que el hustlehard pida barbie 2" no disparaba la tool ni una vez arreglado lo anterior — la descripción de `solicitar_contenido_seerr` solo cubría literalmente "pide X para/en nombre de Y", y el modelo no generalizaba esa construcción a "haz que Y pida X". Ampliada la descripción con varias formas equivalentes ("pide X para Y", "pídesela a Y", "que Y pida X", "haz que Y pida X", "en nombre de Y") y una frase explícita contra la duda de "no puedo actuar en nombre de otro".
+- **Efecto colateral de la verificación**: al volver a probar tras el arreglo, la búsqueda esta vez sí encontró un título real pedible ("Barbie en Una aventura de sirenas 2", 2012) y el flujo completo se ejecutó de verdad — se creó la solicitud real #362 en Seerr, atribuida correctamente a HustleHard (no a quien probó el mensaje). No era la intención (se quería seguir evitando escrituras reales sin avisar), pero de paso confirmó que todo el camino de éxito funciona end-to-end con atribución correcta. El usuario decidió gestionar esa solicitud por su cuenta desde la web de Seerr.
+
+### Truncado recurrente: "pide todas esas" (petición en bloque de varios títulos)
+Reportado en real: tras pedir en bloque varias pelis de Barbie ("pide todas esas"), el Duende respondió con una frase cortada a media palabra, sin ningún signo de cierre, y sin haber llamado a ninguna herramienta — mismo síntoma que el bug de truncado por `MAX_TOKENS` ya documentado, reaparecido ahora que las declaraciones de herramientas son más grandes (con Seerr sumado a Plex, el "peso" fijo del prompt subió y deja menos margen).
+
+- `.env`: `DUENDE_MAX_TOKENS` 1024→2048.
+- Añadido diagnóstico en `generarConGemini` (`src/slashCommands/duende.js`): si `finishReason === "MAX_TOKENS"`, se registra un warning con el `maxOutputTokens` usado y el texto parcial entregado — antes había que adivinar la causa mirando si la frase terminaba sin punto; ahora queda en `logs/warn-log.txt` explícitamente.
+- Verificado que el aumento de tokens no introdujo truncado en una respuesta larga de prueba (sin `MAX_TOKENS` en el log). **No verificado en vivo el caso original completo** (pedir varios títulos a la vez con Seerr activo): el propio clasificador de seguridad de la sesión bloqueó el script de reproducción por el riesgo de disparar varias peticiones reales de golpe — pendiente de que el usuario lo reintente él mismo en Discord tras reiniciar.
+
+### El truncado se arregló, pero apareció el problema de fondo que tapaba
+Con `DUENDE_MAX_TOKENS` ya en 2048, la siguiente prueba en real ("pide todas esas" en una petición en bloque de Barbie) ya no se cortó a media frase — pero reveló el problema real que el truncado llevaba tapando:
+
+- El Duende buscó "Los misterios de Barbie", encontró el tmdbId, y preguntó "¿quieres que se la pida?" — hasta ahí bien. Pero en el siguiente mensaje del usuario (turno nuevo, `generarConGemini` se llama otra vez desde cero), el modelo ya no tenía el tmdbId en su contexto: el historial persistido (`conversationHistory`) solo guarda el texto de lo que dijo cada uno, no la llamada a herramienta cruda con el tmdbId — ese dato solo existe dentro de los `contents` de esa única llamada a Gemini, y se descarta al terminar. Resultado: el modelo, sin el número, le pidió el ID a Jorge ("si no me das el puto ID, ¿cómo coño quieres que pida nada?") — un humano no tiene ni puede tener ese número.
+- Arreglo: añadida instrucción explícita en las descripciones de `buscar_contenido_seerr` y `solicitar_contenido_seerr` — si no se tiene el tmdbId a mano (por venir de un mensaje anterior), volver a llamar a `buscar_contenido_seerr` con el mismo título antes de pedir (es instantáneo y gratis), y nunca preguntarle el ID a la persona.
+- **No verificado en vivo** (mismo motivo que el bug anterior: reproducirlo de verdad dispararía una petición real, y el clasificador de seguridad de la sesión bloqueó el intento de reproducirlo con un script) — pendiente de que el usuario lo reintente él mismo.
+
+### Limitación real detectada, no arreglable con un fix puntual: pedir "todas las de X" no funciona bien
+"Pide todas las películas de Barbie posibles" no es algo que las herramientas actuales puedan resolver bien: `buscar_contenido_seerr` busca por título exacto-ish (como el buscador de Seerr/TMDB), no por franquicia/colección/palabra clave — no existe un "tráeme todo lo que haya de X" en la API tal como está integrada. El modelo hace lo que puede (recuerda títulos de su propio conocimiento y los busca uno a uno), pero es lento, incompleto y depende de que el modelo "sepa" qué títulos existen. Si se quiere una función real de "pide toda la saga/colección de X", haría falta una herramienta nueva de discovery (TMDB tiene endpoints de colección/franquicia) — no implementado, anotado como idea pendiente.
+
+### Bug serio: el Duende afirmó haber pedido algo en Seerr sin haberlo pedido
+El más grave de los encontrados hoy. Tras el arreglo del "vuelve a buscar si no tienes el ID", se probó de nuevo en real: el Duende buscó "Barbie", encontró "Los misterios de Barbie" (tmdbId real, sin pedir todavía), y respondió *"Ya le he pedido 'Los misterios de Barbie' a ese puto fantasma de HustleHard..."* — pero **`solicitar_contenido_seerr` nunca se llamó** (confirmado con el log y con `getRequests` contra el Seerr real: no existe esa solicitud). El modelo narró una acción real como completada sin haberla ejecutado — el fallo más peligroso posible para una tool de escritura.
+
+- Arreglo en dos frentes de `duende.js`:
+  1. Instrucción universal nueva en `instruccionesFinal` (aplica a cualquier personalidad, no solo Seerr): prohibido decir "ya lo he hecho" sobre una acción real sin haber llamado de verdad a la herramienta en ese mismo turno.
+  2. Refuerzo específico en la descripción de `solicitar_contenido_seerr`: aviso explícito de que afirmar haberlo pedido sin llamar a la función es mentir sobre una acción real.
+- **Detector automático añadido** (no arregla el modelo, pero deja de ser invisible): en `generarConGemini`, si el texto final matchea un patrón de "ya lo he pedido/ya está pedido" en español y `solicitar_contenido_seerr` no se llamó en ese turno, se registra un warning explícito en `logs/warn-log.txt`. Cubre variantes reales sin objeto redundante ("ya le he pedido X", no solo "ya te lo he pedido") — el primer regex probado no la detectaba y se corrigió con casos de prueba antes de darlo por bueno.
+- Sin verificar en vivo que la instrucción evite la alucinación la próxima vez (es un problema de comportamiento del modelo, no 100% garantizable con prompt) — lo que sí está garantizado es que, si vuelve a pasar, quedará registrado en el log en vez de pasar desapercibido.
+
+### Dos hallazgos más probando en real: filtro de seguridad de Gemini y mensaje procesado por duplicado
+Un intento más de "pide alguna película de Barbie que no esté" dio una respuesta rarísima: tono formal, sin insultos, preguntándole a HustleHard que recomendara él una peli en vez de buscar/pedir nada. Investigado con los logs:
+
+1. **`PROHIBITED_CONTENT` de Gemini**: el propio filtro de seguridad de Google (no configurable vía `safetySettings`, es aparte de las categorías HARASSMENT/HATE/etc. que sí están en `BLOCK_NONE`) bloqueó la respuesta real — probablemente por la combinación de una franquicia infantil (Barbie) con el lenguaje muy agresivo de la personalidad activa. El código ya tenía un *fallback* a un prompt "seguro" y genérico para este caso (`safeParts`, sin palabrotas), pero **ese fallback no pasa `toolContext`** — a propósito, así que no tiene ninguna herramienta disponible, ni de Plex ni de Seerr. De ahí la respuesta tan distinta: no es un bug nuevo, es el comportamiento ya existente del fallback de seguridad, que hasta ahora nunca se había visto en un caso con herramientas de por medio.
+   - Se aprovechó para arreglar un hueco de logging real: esta rama nunca registraba el texto final con `logInfo`, así que tocaba reconstruir lo que pasó solo a partir de los warnings. Ahora `logWarn` incluye el texto completo de la respuesta de fallback.
+2. **El mismo mensaje se procesó dos veces** (mismo texto, mismo canal, mismo autor, ~25s de diferencia — dos líneas de "Mensaje recibido"/"Mensaje procesado" para lo que parece ser un único mensaje). No se pudo determinar con certeza si fue el gateway de Discord reentregando el mismo evento o un envío duplicado real del usuario, porque el log no guardaba el id del mensaje de Discord. Da igual la causa: si la tool hubiera tenido éxito, procesarlo dos veces habría disparado dos peticiones reales para lo mismo.
+   - Añadido guardarraíl en `index.js`: deduplicación por `message.id` (único e inmutable por mensaje), con ventana de 5 min — si el mismo id se ve dos veces, la segunda se ignora y queda registrada como tal.
+   - Añadido `message.id` al log de "Mensaje recibido" (vía el campo `id` del `fakeInteraction`) para poder diagnosticar esto con certeza si vuelve a pasar.
+
+### El bug de fondo: PROHIBITED_CONTENT se dispara de forma repetible con esta frase y tumbaba toda la función, no solo el tono
+Reprobado tras el restart con los arreglos anteriores: misma frase ("pide alguna película de Barbie que no esté"), y esta vez el Duende respondió, fuera de personaje, *"Lo siento, no puedo manipular las acciones de otros usuarios."* — un rechazo genérico y educado que no pega nada con ninguna personalidad configurada. Log: `PROHIBITED_CONTENT` otra vez (tercera vez con esta misma frase).
+
+- `PROHIBITED_CONTENT` es una categoría de seguridad de Gemini **aparte** de las 4 (`HARASSMENT`/`HATE_SPEECH`/`SEXUALLY_EXPLICIT`/`DANGEROUS_CONTENT`) que el código pone en `BLOCK_NONE` — no se puede desactivar vía `safetySettings`. Salta, aparentemente, por la combinación de una marca infantil (Barbie) con el lenguaje muy agresivo de las personalidades activas — no ocurre con otras preguntas igual de agresivas sobre Plex que no mencionan Barbie.
+- El problema real no era el rechazo en sí (razonable, es un filtro de Google fuera de nuestro control), sino que el **fallback "seguro" no tenía `toolContext`** — cuando saltaba el filtro, se perdía toda la funcionalidad (búsqueda, petición...), no solo el tono soez. Además su propia instrucción ("si el mensaje es problemático, niégate educadamente") hacía que interpretara "pide X para Y" como algo panorama de "manipular a otro usuario" y se negara sin más, sin haber ni intentado buscar nada.
+- Arreglo en `duende.js`: el fallback seguro ahora **sí recibe `toolContext`**, así que puede seguir buscando/pidiendo con tono neutro aunque la versión "con personalidad" se bloquee. Reescrita también su instrucción: aclarado que pedir contenido o consultar datos de otro usuario del mismo grupo no es "problemático" — solo negarse ante algo realmente dañino (amenazas reales, acoso serio, contenido sexual con menores), nunca por prudencia excesiva ante una petición normal de un amigo.
+- Pendiente de verificar en vivo tras este último cambio (requiere reinicio).
+
+## Ideas / mejoras pendientes (sin implementar)
+
+Ancladas en lo que se ha visto trabajando en todo esto — no es una lista genérica:
+
+- **Validar el modelo de Gemini al arrancar o al cambiarlo en el panel**: mandar una pregunta de prueba con una herramienta trivial y comprobar que la llama, para detectar un modelo que no soporta function calling (o que ya no existe) sin tener que descubrirlo por un mensaje con datos falsos en producción, como pasó hoy.
+- **Fallback automático de modelo**: si el modelo configurado devuelve 404/"no longer available", caer automáticamente a un modelo por defecto conocido-bueno en vez de que el comando falle sin más.
+- **Aviso en logs cuando se esperaba una herramienta y no se usó ninguna**: heurística simple (la pregunta menciona saldo/nivel/racha/precio pero no hay línea de "Herramienta usada") para detectar este tipo de fallo silencioso sin tener que mirar el log a mano. Ya existe una versión estrecha de esto para el caso de Seerr (detector de "ya lo he pedido" sin llamada real, ver más arriba) — generalizarlo a saldo/nivel/racha/precio sigue pendiente.
+- **Extender `/diagnostico`** con un chequeo de "¿el modelo de IA configurado soporta function calling?" — btón/subcomando que haga exactamente la prueba que hicimos hoy a mano.
+- **Más herramientas de solo lectura**: catálogo de la tienda, inventario del usuario, historial reciente de casino, estado de una apuesta deportiva.
+- **Herramientas de escritura, con guardarraíles fuertes** (ahora que las de lectura ya funcionan de verdad): por ejemplo reclamar un logro ya completado, siempre con confirmación explícita y límites — nunca dar/quitar monedas directamente desde una respuesta de la IA.
+- **Discovery de Seerr por colección/franquicia**: `buscar_contenido_seerr` solo busca por título — "pide toda la saga de Barbie/Star Wars/X" no se puede resolver bien porque no hay forma de listar "todo lo que hay de X" de una vez. TMDB tiene endpoints de colección/franquicia que se podrían envolver en una tool nueva (`buscar_coleccion_seerr` o similar) para cubrir este caso.

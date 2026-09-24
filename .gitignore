@@ -1,7 +1,30 @@
-# Node.js dependencies
+# Dependencias
 node_modules/
-# Archivos sensibles
+vosk/.venv/
+
+# Secretos (la plantilla sí va al repo: .env.example)
 .env
-# Archivos de configuración de Docker
-Dockerfile
-.dockerignore
+.env.*
+!.env.example
+
+# Datos y logs en tiempo de ejecución (en Docker son volúmenes)
+data/
+logs/
+
+# Modelos de Vosk (se descargan con `npm run stt:setup` o en el build de Docker)
+models/
+
+# Temporales
+tmp/
+*.pcm
+*.wav
+*.zip
+*.tar.gz
+coverage/
+
+# Editor / herramientas locales
+.vscode/
+.claude/settings.local.json
+
+# Python
+__pycache__/

@@ -1,0 +1,13 @@
+# Para probar la imagen en local: docker compose -f deploy/docker-compose.local.yml up --build
+# (en el servidor se usa deploy/portainer-stack.yml)
+services:
+  bot:
+    build:
+      context: ..
+    container_name: duende-bot-local
+    env_file:
+      - ../.env
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
