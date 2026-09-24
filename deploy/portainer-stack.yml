@@ -1,13 +1,20 @@
-# Stack de Portainer. La imagen se construye en el servidor (docker build -t el-duende:latest .
-# desde /compose/duende-bot/codigo): pull_policy never para que no la busque en Docker Hub.
-# Al actualizar: "Update the stack" con "Re-pull image" desactivado.
+# Stack de Portainer desde el repositorio de GitHub (Stacks → Add stack → Repository, con
+# "Compose path" = deploy/portainer-stack.yml). Portainer clona el repo y construye la imagen con
+# el Dockerfile de la raíz; pull_policy build la reconstruye en cada "Pull and redeploy" (si no,
+# seguiría usando la imagen anterior).
+#
+# Las variables (.env) se cargan en el propio stack: Environment variables → "Load variables from
+# .env file". Portainer las guarda como stack.env junto a este fichero.
 services:
   bot:
+    build:
+      context: ..
+      dockerfile: Dockerfile
     image: el-duende:latest
-    pull_policy: never
+    pull_policy: build
     container_name: duende-bot
     env_file:
-      - /compose/duende-bot/.env
+      - stack.env
     restart: unless-stopped
     volumes:
       - /compose/duende-bot/data:/app/data

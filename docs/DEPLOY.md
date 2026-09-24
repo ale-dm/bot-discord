@@ -1,60 +1,52 @@
 # Despliegue
 
-El bot corre en Docker en el servidor **elements** (OpenMediaVault + Portainer), gestionado como
-stack de Portainer. En el servidor no se usa git: el código se copia a mano y la imagen se construye allí.
+El bot corre en Docker en el servidor **elements** (OpenMediaVault + Portainer), como stack de Portainer
+**desde el repositorio de GitHub** (`ale-dm/bot-discord`, privado): Portainer clona el repo y construye la
+imagen él mismo. En el servidor no hay que copiar código a mano.
 
-Todo lo del bot en el servidor vive en **`/compose/duende-bot`** (y solo ahí):
+Los datos del bot en el servidor viven en **`/compose/duende-bot`** (y solo ahí):
 
 ```
 /compose/duende-bot/
-├── .env       configuración y claves (plantilla: .env.example)
-├── data/      BD y JSON del Duende → /app/data en el contenedor
+├── data/      BD, backups y JSON del Duende → /app/data en el contenedor
 └── logs/      logs → /app/logs en el contenedor
 ```
 
+La configuración (`.env`) se guarda en el propio stack de Portainer, no en un fichero del servidor.
+
 ## Primera vez
 
-1. Crear las carpetas y copiar el `.env`:
-
-       mkdir -p /compose/duende-bot/data /compose/duende-bot/logs
-       # copiar el .env a /compose/duende-bot/.env
-
-2. Copiar el código al servidor (cualquier carpeta de trabajo) y construir la imagen desde ella:
-
-       docker build -t el-duende:latest .
-
-   El build necesita internet: descarga el modelo de voz (~40 MB) y las dependencias.
-
-3. En Portainer → Stacks → Add stack → nombre `el-duende`, pegar `deploy/portainer-stack.yml` y desplegar.
-
-4. Comprobar: `docker logs -f duende-bot` (muestra avisos y errores) y, dentro de Discord, `/diagnostico`.
+1. **Token de GitHub** para que Portainer pueda leer el repo privado: GitHub → Settings → Developer
+   settings → Personal access tokens → **Fine-grained tokens** → Generate. Repository access: *Only select
+   repositories* → `bot-discord`. Permissions → Repository → **Contents: Read-only**. Copiar el token.
+2. Carpetas de datos: `mkdir -p /compose/duende-bot/data /compose/duende-bot/logs`.
+3. Portainer → Stacks → **Add stack** → nombre `el-duende` → **Repository**:
+   - Repository URL: `https://github.com/ale-dm/bot-discord`
+   - Repository reference: `refs/heads/main`
+   - Compose path: `deploy/portainer-stack.yml`
+   - **Authentication**: activado; usuario `ale-dm` y el token del paso 1.
+   - Environment variables → **Load variables from .env file** → subir el `.env` (se guardan como `stack.env`).
+4. **Deploy the stack**. La primera vez tarda varios minutos (dependencias del sistema, modelo de voz de
+   ~40 MB, módulos de Node).
+5. Comprobar: `docker logs -f duende-bot` y, en Discord, `/diagnostico`.
 
 ## Actualizar
 
-**En el PC** (Git Bash, en la carpeta del repo), con el bot local parado (si no, con el mismo token
-responderían los dos):
+1. En el PC: `npm run check` y `git push`. Para probar en Discord, con el bot local parado (con el mismo
+   token responderían los dos).
+2. **Copia de la BD** en el servidor:
 
-    npm run check
-    tar --exclude=./node_modules --exclude=./data --exclude=./logs --exclude=./models --exclude=./vosk/.venv \
-        --exclude=./.env --exclude=./.git --exclude=./coverage -czf ../el-duende.tar.gz .
-    scp ../el-duende.tar.gz usuario@elements:/compose/duende-bot/
-
-**En el servidor** (`ssh usuario@elements`):
-
-1. Parar el bot y hacer **copia de la BD**:
-
-       docker stop duende-bot
        cp /compose/duende-bot/data/banco.db /compose/duende-bot/data/banco.db.bak-$(date +%F)
 
-2. Código nuevo **en una carpeta limpia** (si se pega encima, ficheros viejos acaban en la imagen) y build:
-
-       rm -rf /compose/duende-bot/codigo && mkdir /compose/duende-bot/codigo
-       tar -xzf /compose/duende-bot/el-duende.tar.gz -C /compose/duende-bot/codigo
-       cd /compose/duende-bot/codigo && docker build -t el-duende:latest .
-
-3. En Portainer → Stacks → `el-duende` → **Update the stack** (o Containers → `duende-bot` → **Recreate**).
-   Ojo: `docker restart` / `docker start` **no** sirven, siguen usando la imagen anterior.
+3. Portainer → Stacks → `el-duende` → **Pull and redeploy**. Baja el último commit de `main`, reconstruye
+   la imagen (`pull_policy: build`) y recrea el contenedor. (`docker restart` no sirve: sigue con la
+   imagen anterior.)
 4. `docker logs -f duende-bot` y probar en Discord (lista en [TAREAS.md](planificacion/TAREAS.md#t-02-desplegar-y-probar-en-discord)).
+
+Para cambiar una variable del `.env`: editarla en las Environment variables del stack y **Update the stack**.
+
+Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despliega solo cada `git push` a
+`main`. Mejor no activarlo si se sube a menudo sin probar.
 
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
