@@ -2,8 +2,8 @@
 // (E-05, E-12), reclamar logros con un menú (E-07) y estadísticas de /misapuestas (E-09, E-10).
 const db = require("../src/core/db");
 const achievements = require("../src/systems/achievementsSystem");
-const nivel = require("../src/commands/progresion/nivel");
-const logros = require("../src/commands/progresion/logros");
+const economia = require("../src/paneles/economia");
+const perfil = require("../src/commands/progresion/perfil");
 const juegos = require("../src/commands/juegos/juegos");
 
 const G = "guild-parte1";
@@ -26,14 +26,18 @@ describe("economía del perfil", () => {
     });
 
     test("ganado y perdido salen solo del casino (E-05)", async () => {
-        const embed = await nivel.buildEconomyEmbed(guild, "eco", null);
+        // Desde la parte 6, en /perfil → 💰 Economía.
+        const embed = (await economia.buildEconomia({ viewerId: "eco", nombre: "eco", guildId: guild.id })).embeds[0];
         expect(campo(embed, "Ganado en casino")).toBe("+150");
         expect(campo(embed, "Perdido en casino")).toBe("-100");
     });
 
     test("todas las criptos tienen valor y cuentan en el total (E-12)", async () => {
-        const cartera = campo(await nivel.buildEconomyEmbed(guild, "eco", null), "Cartera cripto");
-        expect(cartera).toMatch(/BTC\*\* ≈ 5[.,]?000 coins/); // 0,5 × 10 € × 1.000
+        const cartera = campo(
+            (await economia.buildEconomia({ viewerId: "eco", nombre: "eco", guildId: guild.id })).embeds[0],
+            "Cartera cripto",
+        );
+        expect(cartera).toMatch(/BTC\*\* ≈ 5[.,]?000 🪙/); // 0,5 × 10 € × 1.000
         const total = Number(/Total ≈ \*\*([\d.,]+)\*\*/.exec(cartera)[1].replace(/[.,]/g, ""));
         expect(total).toBeGreaterThan(5000); // BTC + TTCL
     });
@@ -51,7 +55,8 @@ describe("reclamar logros con un menú (E-07)", () => {
     });
     const interaccion = (extra) => ({
         guildId: G,
-        user: { id: "logrero" },
+        guild: { id: G },
+        user: { id: "logrero", username: "logrero" },
         message: { embeds: [{}], components: [], interaction: { user: { id: "logrero" } } },
         reply: jest.fn(async () => {}),
         update: jest.fn(async () => {}),
@@ -59,14 +64,15 @@ describe("reclamar logros con un menú (E-07)", () => {
     });
 
     test("el panel trae un menú con los logros pendientes, y al elegir uno se cobra", async () => {
-        const ver = interaccion({ options: { getSubcommand: () => "ver" } });
-        await logros.run(null, ver);
+        // Desde la parte 6, en /perfil → 🏅 Logros.
+        const ver = interaccion({ options: { getUser: () => null, getString: () => "logros" } });
+        await perfil.run(null, ver);
         const menu = ver.reply.mock.calls[0][0].components[1].components[0];
-        expect(menu.data.custom_id).toBe("logros_reclamar");
+        expect(menu.data.custom_id).toBe("perfil_reclamar_logrero_logrero");
         expect(menu.options.map((o) => o.data.value)).toEqual([primero.id, segundo.id]);
 
-        const elegir = interaccion({ customId: "logros_reclamar", values: [primero.id] });
-        await logros.handleButton(null, elegir);
+        const elegir = interaccion({ customId: "perfil_reclamar_logrero_logrero", values: [primero.id] });
+        await perfil.handleSelect(null, elegir);
         expect(elegir.update.mock.calls[0][0].content).toMatch(/Reclamaste/);
         expect(db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = 'logrero'").get().saldo).toBe(
             achievements.rewardCoinsFor(primero, G),
@@ -76,10 +82,10 @@ describe("reclamar logros con un menú (E-07)", () => {
         expect(quedan).toEqual([segundo.id]);
     });
 
-    test("/logros reclamar ya no pide ID: abre el menú", async () => {
-        const i = interaccion({ options: { getSubcommand: () => "reclamar" } });
-        await logros.run(null, i);
-        expect(i.reply.mock.calls[0][0].components[0].components[0].data.custom_id).toBe("logros_reclamar");
+    test("el menú antiguo (logros_reclamar, de mensajes de antes) sigue reclamando", async () => {
+        const i = interaccion({ customId: "logros_reclamar", values: [segundo.id] });
+        await perfil.handleSelect(null, i);
+        expect(i.update.mock.calls[0][0].content).toMatch(/Reclamaste/);
     });
 });
 

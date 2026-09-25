@@ -178,11 +178,8 @@ por defecto volvían solos). Un servidor nuevo empieza con los rangos pero sin r
 - A partir del segundo día, te avisa por DM de que la racha sigue.
 - ⏱️ A las 17:00 avisa por DM a quien tenga racha de 2 días o más y aún no haya ganado XP ese día.
 
-### Comando
-
-| Comando | Qué hace |
-|---|---|
-| `/nivel [usuario]` | Nivel, XP, progreso, rango, racha, puesto en el ranking y últimas subidas de nivel. Tiene botones para navegar. |
+Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en el ranking, próxima recompensa y
+últimas subidas de nivel (antes era `/nivel`).
 
 ---
 
@@ -200,22 +197,28 @@ por defecto volvían solos). Un servidor nuevo empieza con los rangos pero sin r
 
 Las recompensas se multiplican por `logros.reward_multiplier` y se pueden desactivar categorías enteras.
 
-| Comando | Qué hace |
-|---|---|
-| `/logros ver` | Tus logros y progreso |
-| `/logros reclamar` | Menú con los logros completados sin reclamar, para cobrar uno (también en `/logros ver`) |
-| `/logros reclamar_todo` | Cobra todas las pendientes |
-| `/logros top` | Ranking de logros completados |
+Se ven y se reclaman en `/perfil` → 🏅 Logros (antes era `/logros`): lista con páginas y progreso, 👁️ Ver secretos,
+un menú 🎁 para reclamar uno y 🎁 Reclamar todo. En el perfil de otra persona se ven sus logros, sin reclamar. El
+ranking de logros está en 🏆 Rankings.
 
 ---
 
 ## 6. Perfil
 
-`/perfil [usuario]` muestra un perfil unificado con botones de navegación:
+`/perfil [usuario] [seccion]` junta todo lo de una persona en pestañas, que salen siempre en la última fila (la
+actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 
-- **👤 Perfil**: nivel, racha, saldo, logros, estadísticas.
-- **🎰 Casino**: estadísticas de juego (partidas, juego favorito, últimas partidas) y acceso a la ruleta.
-- **🏅 Logros**, **🏆 Top** (rankings) y **🎭 Recompensas** (roles por nivel).
+| Pestaña | Qué hay |
+|---|---|
+| 👤 Perfil | Nivel, XP, rango, racha, ranking, logros X/Y, dinero y próxima recompensa, con el botón 🎭 Recompensas de nivel |
+| 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
+| 🎲 Juegos | Abre `/juegos` (casino, apuestas, mis jugadas y stats) |
+| 🏅 Logros | Ver [Logros](#5-logros) |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL |
+
+**El perfil de otra persona se ve entero** (economía y movimientos incluidos), pero las acciones (ingresar, sacar,
+transferir, reclamar) solo salen en el tuyo, y todos los botones llevan a su perfil, no al tuyo. Los botones de un
+perfil solo los puede usar quien lo abrió.
 
 ---
 
@@ -233,7 +236,7 @@ Cada uno tiene el dinero en dos sitios:
 Todo el mundo empieza con **1.000 monedas en efectivo** (la cuenta se crea al usarla por primera vez). El dinero
 es único para todo el bot (no es por servidor).
 
-**`/banco`** abre el panel 💰 Economía: efectivo, banco y total, con los botones
+**`/perfil` → 💰 Economía** (antes `/banco`): efectivo, banco y total, con los botones
 
 | Botón | Qué hace |
 |---|---|
@@ -241,11 +244,10 @@ es único para todo el bot (no es por servidor).
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
 | 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, objetos, admin |
-| 🏆 Más ricos | Top 10 por efectivo + banco |
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
-pintar con el efectivo nuevo, sin tener que ir a `/banco`.
+pintar con el efectivo nuevo, sin tener que ir al perfil.
 
 El historial global de movimientos está en `/paneladmin` → Banco.
 
@@ -537,7 +539,6 @@ crearles cuenta, historial, inventario o partidas.
 | Comando | Sección |
 |---|---|
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
-| `/banco` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/diagnostico` 🔒 | [Administración](#12-administración) |
@@ -548,8 +549,6 @@ crearles cuenta, historial, inventario o partidas.
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) |
 | `/inventario` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
-| `/logros` | [Logros](#5-logros) |
-| `/nivel` | [Niveles](#4-niveles-y-xp) |
 | `/objeto` 🔒 | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/pagarapuestas` 🔒 | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
 | `/panel` 🔒 | [Administración](#12-administración) |

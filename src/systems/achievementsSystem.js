@@ -470,7 +470,7 @@ async function maybeNotifyUnlocked(guild, userId, unlocked) {
 
     const names = unlocked.map((a) => `🏅 **${a.name}**`).join("\n");
     try {
-        await channel.send(`🎉 <@${userId}> desbloqueó logros:\n${names}\nUsa /logros para reclamarlos.`);
+        await channel.send(`🎉 <@${userId}> desbloqueó logros:\n${names}\nReclámalos en /perfil → 🏅 Logros.`);
     } catch (e) {
         log.warn(`No se pudo anunciar logros desbloqueados en #${channel.name}:`, e.message);
     }

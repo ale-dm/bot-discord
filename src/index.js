@@ -74,7 +74,7 @@ function isLowEffortMessage(text) {
     return false;
 }
 const db = require("./core/db");
-const { ROOT, COMMANDS_DIR, JUEGOS_DIR } = require("./core/paths");
+const { ROOT, COMMANDS_DIR, JUEGOS_DIR, PERFIL_DIR } = require("./core/paths");
 
 // src/commands solo contiene slash commands (un fichero por comando, en subcarpetas por tema).
 function getAllJsFiles(dir) {
@@ -108,8 +108,9 @@ try {
             log.error(`No se pudo cargar el módulo ${path.relative(ROOT, file)}:`, e);
         }
     }
-    // Los juegos y las apuestas no son comandos (se entra por /juegos), pero sus botones sí se atienden.
-    for (const file of getAllJsFiles(JUEGOS_DIR)) {
+    // Los juegos, las apuestas y el dinero no son comandos (se entra por /juegos y /perfil), pero sus
+    // botones sí se atienden.
+    for (const file of [...getAllJsFiles(JUEGOS_DIR), ...getAllJsFiles(PERFIL_DIR)]) {
         try {
             componentRouter.register(require(file), path.relative(ROOT, file));
         } catch (e) {

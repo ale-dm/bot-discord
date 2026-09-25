@@ -12,20 +12,10 @@ Encontrados en el análisis de paneles del 2026-09-25 ([diseno/reorganizacion-pa
 
 | ID | Error | Área | Gravedad | Falta |
 |---|---|---|---|---|
-| [E-11](#e-11-en-el-perfil-de-otro-algunos-botones-llevan-al-tuyo) | En el perfil de otro, algunos botones llevan al tuyo | Perfil | 🟢 | Nada |
 | [E-14](#e-14-panel-cuenta-como-inactivo-a-quien-sí-está-activo) | `/panel` cuenta como inactivo a quien sí está activo | Admin | 🟢 | Nada |
 | [E-15](#e-15-panel-relaciona-objetos-e-historial-por-el-nombre) | `/panel` relaciona objetos e historial por el nombre | Admin | 🟢 | Nada |
 
 ---
-
-## E-11 En el perfil de otro, algunos botones llevan al tuyo
-
-**Qué pasa.** Con `/perfil usuario:X`:
-- 🎰 Casino abre tu casino, no el de X.
-- En 🏆 Top, el botón 👤 Perfil vuelve al tuyo, no al de X.
-- En 🏅 Logros de X sale "Usa `/logros` para obtenerlos", aunque no son tus logros.
-
-**Propuesta.** Llevar el `targetId` en todos los botones y adaptar los textos cuando no eres tú (ver el diseño).
 
 ## E-14 `/panel` cuenta como inactivo a quien sí está activo
 

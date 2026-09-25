@@ -91,7 +91,7 @@ function getRewards(guildId) {
         .all(guildId);
 }
 
-// Qué desbloquea un rol de recompensa (se muestra en /nivel). Vacío = rol de rango, sin descripción.
+// Qué desbloquea un rol de recompensa (se muestra en /perfil). Vacío = rol de rango, sin descripción.
 function setRewardDescription(guildId, nivel, roleId, descripcion, emoji) {
     const r = db
         .prepare(`UPDATE xp_role_rewards SET descripcion = ?, emoji = ? WHERE guildId = ? AND nivel = ? AND roleId = ?`)

@@ -41,9 +41,9 @@ const SECCIONES = {
         texto: [
             "Ganas XP escribiendo (una vez cada 15 s) y en voz (5 XP/min, sin mute y con alguien más en el canal). Al subir de nivel desbloqueas rangos y roles.",
             "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
-            "`/nivel [usuario]` — nivel, progreso, rango y racha.",
-            "`/logros ver` · `/logros reclamar` · `/logros reclamar_todo` · `/logros top` — 36 logros con recompensa en monedas; desde `/logros ver` se reclaman con un menú.",
-            "`/perfil [usuario]` — todo junto: nivel, racha, saldo, logros, casino y rankings.",
+            "`/perfil [usuario] [seccion]` — todo lo tuyo (o de otra persona) en pestañas: 👤 Perfil (nivel, progreso, rango, racha y recompensas de nivel) · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings.",
+            "**Logros**: 36, con recompensa en monedas; en 🏅 Logros se ven (también los secretos) y se reclaman uno a uno o todos.",
+            "**Rankings**: nivel, riqueza, casino, logros y TTCL, en una pantalla con un menú.",
         ],
     },
     economia: {
@@ -52,7 +52,7 @@ const SECCIONES = {
         titulo: "Economía",
         texto: [
             "Empiezas con **1.000 monedas** en 💵 efectivo. Se juega y se compra con el **efectivo**; el 🏦 **banco** es el sitio seguro (hay que sacar el dinero para gastarlo).",
-            "`/banco` — panel de Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro) · 🏆 Más ricos. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
+            "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
             "`/tienda ver [busqueda] [categoria] [rareza]` — compra con los botones. `/tienda historial` — tus compras (Movimientos filtrados por tienda).",
             "`/inventario [categoria] [rareza]` · `/usar id` — tus objetos; los de rol te dan un rol, los consumibles un efecto.",
         ],

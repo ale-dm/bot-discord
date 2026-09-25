@@ -268,7 +268,7 @@ module.exports = {
             return;
         }
 
-        // Tus compras: los Movimientos de /banco filtrados por tienda (con el resto de filtros a mano).
+        // Tus compras: los Movimientos de /perfil → Economía filtrados por tienda (con el resto de filtros a mano).
         if (sub === "historial") {
             await interaction.reply(require("../../paneles/economia").buildMovimientos(interaction.user.id, "tienda", 0));
             return;

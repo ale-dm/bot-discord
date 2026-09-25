@@ -76,6 +76,7 @@ test("todos los módulos reales declaran rutas válidas", () => {
     // Como index.js: los comandos y los juegos (que no son comandos pero tienen botones).
     walk(path.join(__dirname, "../src/commands"));
     walk(path.join(__dirname, "../src/juegos"));
+    walk(path.join(__dirname, "../src/perfil"));
     for (const f of files) r.register(require(f), f);
     expect(r.size).toBeGreaterThan(20);
     expect(r.match(fake("button", "bj_hit")).source).toMatch(/blackjack/);

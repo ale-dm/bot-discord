@@ -2,6 +2,29 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-25 (reorganización de paneles, parte 6: un solo perfil)
+
+Sexta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+- **`/perfil [usuario] [seccion]`** con pestañas en todas sus pantallas: 👤 Perfil · 💰 Economía · 🎲 Juegos ·
+  🏅 Logros · 🏆 Rankings (la actual, resaltada).
+  - **Perfil**: la ficha que antes daba `/nivel`, con el dinero y 🎭 Recompensas de nivel.
+  - **Economía**: lo que antes estaban en `/banco` y en la Economía de `/nivel` juntos (efectivo, banco, ganado y
+    perdido en el casino, cartera cripto valorada, objetos) con Ingresar, Sacar, Transferir y Movimientos.
+  - **Juegos**: abre `/juegos`.
+  - **Logros**: páginas, secretos visibles y reclamar uno (menú) o todos.
+  - **Rankings**: nivel (con páginas), riqueza, casino, logros y TTCL, en una pantalla con un menú.
+- **Perfil de otra persona (D1)**: se ve entero, economía y movimientos incluidos; las acciones solo en el tuyo.
+- **Se borran `/nivel`, `/logros` y `/banco`.** Sus pantallas pasan a `src/paneles/perfil.js` y
+  `src/paneles/economia.js`, y los botones de dinero a `src/perfil/dinero.js` (no es comando; `index.js` registra
+  sus botones como los de `src/juegos/`). Los botones de mensajes antiguos siguen llevando a su pestaña.
+- El aviso de logros desbloqueados dice "Reclámalos en /perfil → 🏅 Logros".
+
+### Errores corregidos
+- **E-11 · En el perfil de otro, algunos botones llevaban al tuyo.** Todos los ids llevan quién mira y de quién es
+  el perfil.
+- Tests: 175.
+
 ## 2026-09-25 (reorganización de paneles, parte 5: efectivo y banco)
 
 Quinta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución), según

@@ -93,7 +93,7 @@ function backBtn() {
 }
 
 function backToPerfilBtn(userId) {
-    return new ButtonBuilder().setCustomId(`perfil_profile_${userId}_${userId}`).setLabel("◄ Perfil").setStyle(ButtonStyle.Secondary);
+    return new ButtonBuilder().setCustomId(`perfil_ver_${userId}_${userId}`).setLabel("◄ Perfil").setStyle(ButtonStyle.Secondary);
 }
 
 // Una fila con un botón por importe (desactivados los que no se puede pagar).

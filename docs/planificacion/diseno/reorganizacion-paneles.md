@@ -315,7 +315,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 - Los tests de casino, tienda, cripto y apuestas pasan a comprobar el efectivo.
 - En Discord: sacar, jugar, ganar (el premio va al efectivo) e ingresar.
 
-### Parte 6 · Un solo perfil (M)
+### Parte 6 · Un solo perfil (M) — ✅ hecha el 2026-09-25
 
 - **`/perfil`** con pestañas 👤 Perfil · 💰 Economía (la de la parte 5) · 🎲 Juegos (abre `/juegos`) · 🏅 Logros ·
   🏆 Rankings.
@@ -373,7 +373,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 | 3 ✅ | Mis jugadas y quiniela visible | E-08, E-13 | M | — |
 | 4 ✅ | `/juegos` | Casino y apuestas separados; borra 8 comandos | M | 2 y 3 |
 | 5 ✅ | Dinero: efectivo y banco | "En mano" sin uso, tres historiales | M | — |
-| 6 | Perfil único | Dos perfiles, logros en tres sitios, cinco rankings, E-11; borra 3 comandos | M | 4 y 5 |
+| 6 ✅ | Perfil único | Dos perfiles, logros en tres sitios, cinco rankings, E-11; borra 3 comandos | M | 4 y 5 |
 | 7 | Tienda + inventario | Tienda, inventario y usar sueltos | S | 5 (historial) |
 | 8 | Admin | Dos paneles y comandos sueltos, E-14, E-15, DT-13 (`/panel`) | M | — |
 | 9 | Ayuda y repaso | Todo público | S | Todas |

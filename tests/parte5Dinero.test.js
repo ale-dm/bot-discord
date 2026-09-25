@@ -2,7 +2,8 @@
 const db = require("../src/core/db");
 const dinero = require("../src/systems/dinero");
 const tx = require("../src/systems/casinoTransactions");
-const banco = require("../src/commands/economia/banco");
+const banco = require("../src/perfil/dinero"); // botones dinero_* (antes el comando /banco)
+const perfil = require("../src/commands/progresion/perfil");
 const casino = require("../src/paneles/casino");
 
 let n = 0;
@@ -63,10 +64,11 @@ test("el casino juega con el efectivo: con dinero solo en el banco no se puede a
     expect(dinero.cuenta(u)).toMatchObject({ efectivo: 0, banco: 4900 });
 });
 
-describe("/banco (panel de Economía)", () => {
+describe("💰 Economía de /perfil (antes /banco)", () => {
     const interaccion = (userId, extra = {}) => ({
         user: { id: userId, username: userId, tag: userId },
         guildId: "g-p5",
+        guild: { id: "g-p5" },
         message: { interaction: { user: { id: userId } } },
         client: { users: { fetch: async (id) => ({ id, username: `nombre-${id}` }) } },
         isFromMessage: () => true,
@@ -82,8 +84,9 @@ describe("/banco (panel de Economía)", () => {
 
     test("enseña efectivo, banco y total, e ingresar actualiza el panel", async () => {
         const u = persona({ efectivo: 1000, enBanco: 200 });
-        const i = interaccion(u);
-        await banco.run(null, i);
+        // /perfil seccion:eco (antes /banco).
+        const i = interaccion(u, { options: { getUser: () => null, getString: () => "eco" } });
+        await perfil.run(null, i);
         const c = campos(i.reply.mock.calls[0][0]);
         expect([num(c["💵 Efectivo"]), num(c["🏦 Banco"]), num(c["💰 Total"])]).toEqual([1000, 200, 1200]);
 
@@ -128,14 +131,14 @@ describe("/banco (panel de Economía)", () => {
         const u = persona({ efectivo: 1000 });
         dinero.ingresar(u, 100);
         tx.procesarPerdida(u, "ruleta", 50, "Ruleta: perdiste 50", {});
-        const filtro = interaccion(u, { customId: "dinero_filtro", values: ["casino"] });
+        const filtro = interaccion(u, { customId: `dinero_filtro_${u}`, values: ["casino"] });
         await banco.handleSelect(null, filtro);
         const texto = filtro.update.mock.calls[0][0].embeds[0].data.description;
         expect(texto).toMatch(/Ruleta: perdiste 50/);
         expect(texto).not.toMatch(/Ingreso/);
 
-        const intruso = interaccion("otro", { customId: "dinero_ricos", message: { interaction: { user: { id: u } } } });
+        const intruso = interaccion("otro", { customId: "dinero_ingresar", message: { interaction: { user: { id: u } } } });
         await banco.handleButton(null, intruso);
-        expect(intruso.update).not.toHaveBeenCalled();
+        expect(intruso.showModal).not.toHaveBeenCalled();
     });
 });

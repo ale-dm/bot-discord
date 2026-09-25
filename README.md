@@ -44,14 +44,15 @@ el-duende/
 │   │   ├── voz/              /tts /escuchar
 │   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
 │   │   ├── apuestas/         /pagarapuestas
-│   │   ├── economia/         /banco /tienda /objeto /inventario /usar /cripto /ttcl-diagnostico
-│   │   ├── progresion/       /nivel /logros /perfil
+│   │   ├── economia/         /tienda /objeto /inventario /usar /cripto /ttcl-diagnostico
+│   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas)
 │   │   ├── admin/            /paneladmin /panel /diagnostico
 │   │   └── general/          /ayuda /ping
 │   ├── juegos/             Juegos del casino y apuestas: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
 │   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas)
-│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /juegos, /tienda y /cripto
+│   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
+│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda y /cripto
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, Plex, Seerr, apodos y
 │   │                         perfiles del Duende, auditoría)
 │   ├── systems/            Lógica del bot que usan varios comandos

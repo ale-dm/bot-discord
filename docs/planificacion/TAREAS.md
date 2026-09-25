@@ -37,10 +37,9 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 
 **En Discord**
 - [ ] Hablar con el Duende y que reconozca apodos ("¿qué ha visto el perro?").
-- [ ] `/nivel` (recompensas con descripción) → 💰 Economía (ganado/perdido del casino y todas las criptos con
-      valor); `/perfil`; `/ayuda` (secciones Casino y Apuestas hablan de `/juegos`).
-- [ ] `/logros ver` → menú 🎁 para reclamar uno; `/logros reclamar`.
-- [ ] Algún mensaje privado (p. ej. un error de `/banco`) sigue saliendo solo para quien lo pide.
+- [ ] `/perfil` → 💰 Economía (ganado/perdido del casino y todas las criptos con valor); `/ayuda` (secciones
+      Casino y Apuestas hablan de `/juegos`).
+- [ ] Algún mensaje privado (p. ej. un error al sacar del banco) sigue saliendo solo para quien lo pide.
 
 **`/juegos` (partes 2 a 4 de paneles)**
 - [ ] `/juegos` sin opciones abre 🎰 Casino; `/juegos seccion:` abre cada pestaña. Las cuatro pestañas de abajo
@@ -51,7 +50,7 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
       Ranking, Historial y Mis stats del casino.
 - [ ] `/perfil` → 🎰 Casino abre la pestaña Casino y se puede jugar desde ahí.
 - [ ] ⚽ Apuestas: cambiar de competición y de página (la segunda vez sin gastar crédito, ver log); apostar a
-      un partido y pulsar 📋 Mis jugadas y ⚽ Más partidos; que la apuesta salga en `/banco` → 📜 Movimientos (filtro Apuestas).
+      un partido y pulsar 📋 Mis jugadas y ⚽ Más partidos; que la apuesta salga en `/perfil` → 💰 Economía → 📜 Movimientos (filtro Apuestas).
 - [ ] 🧾 Quiniela: 🔄 Refrescar; que salga el mínimo de aciertos para cobrar; después de apostar, tus
       pronósticos con ✅/❌ y el botón 📋 Mis jugadas.
 - [ ] 📋 Mis jugadas: ⏳ En juego y 📋 Resueltas (cambian en el mismo mensaje), y el botón 🧾 Quiniela.
@@ -60,12 +59,20 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 
 **Dinero (parte 5 de paneles)**
 - [ ] Al arrancar, `[Migraciones] Aplicada 010_historial_tipo` con cuántos movimientos ha clasificado.
-- [ ] `/banco`: efectivo, banco y total; 🏦 Ingresar y 💵 Sacar; 💸 Transferir a alguien; 📜 Movimientos con el
-      filtro; 🏆 Más ricos.
+- [ ] `/perfil` → 💰 Economía: efectivo, banco y total; 🏦 Ingresar y 💵 Sacar; 💸 Transferir a alguien;
+      📜 Movimientos con el filtro; 🏆 Rankings → Riqueza.
 - [ ] Con todo el dinero en el banco, intentar jugar en el casino: los importes salen desactivados y está
       💵 Sacar del banco; sacar y ver que la pantalla se actualiza. Lo mismo en la tienda y en la compra de cripto.
 - [ ] Ganar algo en el casino y comprobar que el premio llega al efectivo.
 - [ ] Avisar en el servidor: desde ahora se juega y se compra con el efectivo, y el banco es para guardar.
+
+**Perfil (parte 6 de paneles)**
+- [ ] En el registro de comandos ya no están `nivel`, `logros` ni `banco` (21 comandos).
+- [ ] `/perfil`: las cinco pestañas; 🎭 Recompensas de nivel; en 🏅 Logros, reclamar uno y todos, y ver secretos;
+      en 🏆 Rankings, los cinco del menú y pasar páginas en el de nivel.
+- [ ] `/perfil usuario:X`: se ve todo lo suyo (también economía y movimientos) sin botones de acción, y las
+      pestañas no llevan a tu perfil.
+- [ ] 💰 Economía: ingresar, sacar, transferir y movimientos desde el perfil.
 
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %

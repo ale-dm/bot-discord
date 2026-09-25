@@ -1,6 +1,6 @@
 // Mercado de criptomonedas: catálogo, precio de $TTCL (curva según la circulación), precios
 // reales de CoinGecko, historial de precios y compra/venta. Sin nada de Discord: lo usan
-// /cripto, /nivel, las herramientas del Duende y el ticker de index.js.
+// /cripto, /perfil, las herramientas del Duende y el ticker de index.js.
 const db = require("../../core/db");
 const { logError, logInfo, logWarn } = require("../../core/logger");
 const guildSettings = require("../guildSettings");
