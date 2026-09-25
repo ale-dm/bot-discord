@@ -262,16 +262,19 @@ Tipos de objeto:
 
 | Comando | Qué hace |
 |---|---|
-| `/tienda ver [busqueda] [solo_disponibles] [categoria] [rareza]` | Catálogo de la tienda con botones de compra (paginado) |
-| `/tienda historial` | Tus compras |
+| `/tienda ver [busqueda] [solo_disponibles] [categoria] [rareza]` | Pestaña 🛒 Catálogo: la tienda con botones de compra (paginada) |
+| `/tienda inventario [categoria] [rareza]` | Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes) y un botón **Usar** en los que hacen algo (antes `/inventario` y `/usar`) |
+| `/tienda historial` | Pestaña 🧾 Mis compras |
 | `/tienda añadir objeto_id* precio* [stock]` | 🔒 Pone un objeto a la venta (sin stock = ilimitado) |
 | `/tienda editar id* [precio] [stock]` | 🔒 Cambia precio/stock |
 | `/tienda eliminar id*` | 🔒 Lo quita de la tienda |
 | `/tienda config [canal]` | 🔒 Canal donde se anuncian las compras |
 | `/objeto crear nombre* descripcion* [imagen] [tipo] [categoria] [rareza] [unico] [rol] [efecto]` | 🔒 Crea un objeto. `tipo`: rol, consumible o coleccionable · `rol`: el rol que da · `efecto` (consumibles): `monedas:N` o `mensaje:texto` |
 | `/objeto editar id* ...` · `/objeto eliminar id*` · `/objeto ver [busqueda]` | 🔒 Gestiona el catálogo |
-| `/inventario [categoria] [rareza]` | Tus objetos |
-| `/usar id*` | Usa un objeto del inventario |
+
+Las tres pestañas (🛒 Catálogo · 🎒 Inventario · 🧾 Mis compras) salen en la última fila de todas las pantallas
+de la tienda. Después de comprar: ⬅️ Volver a la tienda · 🎒 Ver en inventario · 🔮 Usar ya (en los consumibles).
+Los botones de la tienda solo los puede usar quien la abrió.
 
 Una compra es atómica: o se cobra y se entrega el objeto, o no pasa nada. Se puede limitar con cooldown y
 cupo diario de compras.
@@ -547,7 +550,6 @@ crearles cuenta, historial, inventario o partidas.
 | `/ia` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) |
-| `/inventario` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/objeto` 🔒 | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/pagarapuestas` 🔒 | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
@@ -558,4 +560,3 @@ crearles cuenta, historial, inventario o partidas.
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/ttcl-diagnostico` | [Cripto](#10-criptomonedas) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |
-| `/usar` | [Economía](#7-economía-banco-tienda-e-inventario) |

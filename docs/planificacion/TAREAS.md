@@ -74,10 +74,16 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
       pestañas no llevan a tu perfil.
 - [ ] 💰 Economía: ingresar, sacar, transferir y movimientos desde el perfil.
 
+**Tienda (parte 7 de paneles)**
+- [ ] En el registro de comandos ya no están `inventario` ni `usar` (19 comandos).
+- [ ] `/tienda ver`: comprar un consumible y usar 🔮 Usar ya; 🎒 Ver en inventario; las tres pestañas.
+- [ ] `/tienda inventario`: usar un objeto de rol y uno consumible (el resultado sale en el panel).
+- [ ] Que otra persona no pueda pulsar los botones de tu tienda.
+
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %
       con doble clic rápido: solo debe venderse una vez.
-- [ ] `/tienda`: una compra; historial con solo compras de la tienda.
+- [ ] `/tienda historial` (🧾 Mis compras): solo compras de la tienda.
 - [ ] `/ttcl-diagnostico` como admin (antes fallaba siempre).
 - [ ] `/escuchar` y `/tts` en un canal de voz: que transcriba (el audio ahora se decodifica con `opusscript`).
 - [ ] `/paneladmin`: Duende → Apodos, Duende → 🧠 Perfiles (ver la ficha de alguien, cambiar nombre, descripción

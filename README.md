@@ -44,7 +44,7 @@ el-duende/
 │   │   ├── voz/              /tts /escuchar
 │   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
 │   │   ├── apuestas/         /pagarapuestas
-│   │   ├── economia/         /tienda /objeto /inventario /usar /cripto /ttcl-diagnostico
+│   │   ├── economia/         /tienda (catálogo, inventario y compras) /objeto /cripto /ttcl-diagnostico
 │   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas)
 │   │   ├── admin/            /paneladmin /panel /diagnostico
 │   │   └── general/          /ayuda /ping

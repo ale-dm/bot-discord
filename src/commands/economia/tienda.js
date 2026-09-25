@@ -1,4 +1,5 @@
-// /tienda: ver y comprar objetos, historial de compras y gestión (admins). Los datos y el cobro están en
+// /tienda: en pestañas, 🛒 Catálogo (ver y comprar), 🎒 Inventario (tus objetos, con Usar; antes /inventario y
+// /usar) y 🧾 Mis compras; más la gestión (admins). Los datos y el cobro están en
 // systems/tienda y los mensajes en paneles/tienda.
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
@@ -183,8 +184,8 @@ async function subcomandoAdmin(interaction, sub) {
 
 module.exports = {
     componentHandlers: [
-        { types: ["button"], prefixes: ["tienda_"], method: "handleButton", acl: "tienda" },
-        { types: ["button"], prefixes: ["historial_"], method: "handleButton" },
+        // inv_: botones de mensajes de /inventario (ya no existe), que llevan a la pestaña Inventario.
+        { types: ["button"], prefixes: ["tienda_", "historial_", "inv_"], method: "handleButton", acl: "tienda" },
     ],
     data: new SlashCommandBuilder()
         .setName("tienda")
@@ -222,7 +223,14 @@ module.exports = {
                 .addIntegerOption((opt) => opt.setName("precio").setDescription("Nuevo precio (opcional)").setRequired(false))
                 .addIntegerOption((opt) => opt.setName("stock").setDescription("Nuevo stock (opcional)").setRequired(false)),
         )
-        .addSubcommand((sub) => sub.setName("historial").setDescription("Muestra tu historial de compras en la tienda"))
+        .addSubcommand((sub) => sub.setName("historial").setDescription("Tus compras en la tienda"))
+        .addSubcommand((sub) =>
+            sub
+                .setName("inventario")
+                .setDescription("Tus objetos, con un botón para usar cada uno")
+                .addStringOption((opt) => opt.setName("categoria").setDescription("Filtrar por categoría").setRequired(false))
+                .addStringOption((opt) => opt.setName("rareza").setDescription("Filtrar por rareza").setRequired(false)),
+        )
         .addSubcommand((sub) =>
             sub
                 .setName("config")
@@ -268,9 +276,16 @@ module.exports = {
             return;
         }
 
-        // Tus compras: los Movimientos de /perfil → Economía filtrados por tienda (con el resto de filtros a mano).
+        // Pestaña 🧾 Mis compras (también están en /perfil → Economía → Movimientos, filtro Tienda).
         if (sub === "historial") {
-            await interaction.reply(require("../../paneles/economia").buildMovimientos(interaction.user.id, "tienda", 0));
+            await interaction.reply(paneles.buildHistorialCompras(tienda.historialCompras(interaction.user.id), 1));
+            return;
+        }
+
+        // Pestaña 🎒 Inventario (antes /inventario).
+        if (sub === "inventario") {
+            const filtros = { categoria: interaction.options.getString("categoria"), rareza: interaction.options.getString("rareza") };
+            await interaction.reply(paneles.buildInventario(interaction.user.id, 1, null, filtros));
             return;
         }
 
@@ -289,6 +304,12 @@ module.exports = {
 
     async handleButton(client, interaction) {
         const id = interaction.customId;
+        // Solo quien abrió el panel (el catálogo, el inventario y las compras son de cada uno).
+        const ownerId = interaction.message?.interaction?.user?.id || interaction.message?.interactionMetadata?.user?.id;
+        if (ownerId && ownerId !== interaction.user.id) {
+            await interaction.reply(privado("⛔ Solo quien abrió la tienda puede usar estos botones."));
+            return;
+        }
         try {
             const tiendaCfg = guildSettings.getSettings(interaction.guildId).tienda;
             if (!tiendaCfg.enabled) {
@@ -325,6 +346,29 @@ module.exports = {
                 return;
             }
 
+            // 🎒 Inventario: tienda_inv_{página}, o inv_* de mensajes de /inventario.
+            if (id.startsWith("tienda_inv_") || id.startsWith("inv_prev_") || id.startsWith("inv_next_")) {
+                const [, accion, paginaTxt] = id.split("_");
+                const pagina = (parseInt(paginaTxt, 10) || 1) + (accion === "next" ? 1 : accion === "prev" ? -1 : 0);
+                await interaction.update(paneles.buildInventario(interaction.user.id, pagina));
+                return;
+            }
+            // Usar un objeto (tienda_usar_{objeto}_{página}, o inv_usar_… de mensajes de /inventario).
+            if (id.startsWith("tienda_usar_") || id.startsWith("inv_usar_")) {
+                const [, , objetoTxt, paginaTxt] = id.split("_");
+                const r = await require("../../systems/objetos").usarObjeto(
+                    interaction.user.id,
+                    parseInt(objetoTxt, 10),
+                    interaction.member,
+                    interaction.guild,
+                    interaction.user.tag,
+                );
+                const aviso = `${r.ok ? "✅" : "❌"} ${r.obj ? `**${r.obj.nombre}**: ` : ""}${r.mensaje}`;
+                await interaction.update(paneles.buildInventario(interaction.user.id, parseInt(paginaTxt, 10) || 1, aviso));
+                return;
+            }
+
+            // 🧾 Mis compras: historial_{ver|prev|next}_{página}.
             if (interaction.isButton() && id.startsWith("historial_")) {
                 const [, accion, paginaStr] = id.split("_");
                 const pagina = parseInt(paginaStr) + (accion === "next" ? 1 : accion === "prev" ? -1 : 0);

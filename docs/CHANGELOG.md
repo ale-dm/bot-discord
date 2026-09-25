@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-25 (reorganización de paneles, parte 7: tienda e inventario)
+
+Séptima parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+- **`/tienda` con pestañas** en todas sus pantallas: 🛒 Catálogo · 🎒 Inventario · 🧾 Mis compras.
+- **🎒 Inventario** (antes `/inventario` y `/usar`): tus objetos agrupados y un botón **Usar** por cada uno que haga
+  algo (rol o consumible); al usarlo, el resultado sale en el mismo panel. Subcomando `/tienda inventario
+  [categoria] [rareza]`. La lógica está en `systems/objetos.js`.
+- **Después de comprar**: ⬅️ Volver a la tienda · 🎒 Ver en inventario · 🔮 Usar ya (en los consumibles).
+- **🧾 Mis compras** vuelve a ser la lista de compras de la tienda (con la fila de pestañas); también están en
+  `/perfil` → Economía → Movimientos, filtro Tienda.
+- **Se borran `/inventario` y `/usar`.** Los botones de mensajes de `/inventario` llevan a la pestaña Inventario.
+- Los botones de la tienda solo los puede usar quien la abrió (antes cualquiera podía pulsar los de otro).
+- Tests: 180.
+
 ## 2026-09-25 (reorganización de paneles, parte 6: un solo perfil)
 
 Sexta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).

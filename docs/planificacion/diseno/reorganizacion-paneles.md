@@ -332,7 +332,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 - Tests de navegación del perfil (propio y de otro) y de reclamar desde el perfil.
 - En Discord: `/perfil` y `/perfil usuario:X`.
 
-### Parte 7 · Tienda, inventario y usar en un panel (S)
+### Parte 7 · Tienda, inventario y usar en un panel (S) — ✅ hecha el 2026-09-25
 
 - **`/tienda`** con pestañas 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras (el filtro Tienda de Movimientos).
 - **Tras comprar:** 🎒 Ver en inventario y 🔮 Usar ya.
@@ -374,7 +374,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 | 4 ✅ | `/juegos` | Casino y apuestas separados; borra 8 comandos | M | 2 y 3 |
 | 5 ✅ | Dinero: efectivo y banco | "En mano" sin uso, tres historiales | M | — |
 | 6 ✅ | Perfil único | Dos perfiles, logros en tres sitios, cinco rankings, E-11; borra 3 comandos | M | 4 y 5 |
-| 7 | Tienda + inventario | Tienda, inventario y usar sueltos | S | 5 (historial) |
+| 7 ✅ | Tienda + inventario | Tienda, inventario y usar sueltos | S | 5 (historial) |
 | 8 | Admin | Dos paneles y comandos sueltos, E-14, E-15, DT-13 (`/panel`) | M | — |
 | 9 | Ayuda y repaso | Todo público | S | Todas |
 

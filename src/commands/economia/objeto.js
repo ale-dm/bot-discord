@@ -21,7 +21,7 @@ const TIPOS = [
     { name: "Coleccionable (sin efecto)", value: "coleccionable" },
 ];
 
-// Efectos que entiende /usar para los consumibles.
+// Efectos que entiende "Usar" (tienda → Inventario, systems/objetos) para los consumibles.
 function validarEfecto(efecto) {
     if (!efecto) return null;
     if (/^monedas:-?\d+$/.test(efecto) || /^mensaje:.+/.test(efecto)) return null;

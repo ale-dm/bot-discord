@@ -1,11 +1,28 @@
-// Mensajes de /tienda: páginas del catálogo, confirmación y resultado de una compra, e historial de
-// compras. Solo construyen embeds y botones; los datos y el cobro están en systems/tienda.
+// Mensajes de /tienda, en pestañas: 🛒 Catálogo (páginas, confirmación y resultado de una compra), 🎒 Inventario
+// (tus objetos, con Usar; antes /inventario y /usar) y 🧾 Mis compras. Solo construyen embeds y botones; los
+// datos y el cobro están en systems/tienda y systems/objetos.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const { botonSacar } = require("./economia");
 const dinero = require("../systems/dinero");
+const objetos = require("../systems/objetos");
 
-const ITEMS_POR_PAGINA = 4; // máximo 4 items/página: 4 botones comprar + 1 fila paginación = 5 rows
+const ITEMS_POR_PAGINA = 4; // una fila con un botón de compra por objeto
 const HISTORIAL_POR_PAGINA = 5;
+const INVENTARIO_POR_PAGINA = 5; // una fila con un botón de Usar por objeto
+
+/** Pestañas de /tienda (la actual, resaltada), en la última fila de sus pantallas. */
+function filaPestanasTienda(actual) {
+    const boton = (id, customId, label) =>
+        new ButtonBuilder()
+            .setCustomId(customId)
+            .setLabel(label)
+            .setStyle(id === actual ? ButtonStyle.Primary : ButtonStyle.Secondary);
+    return new ActionRowBuilder().addComponents(
+        boton("catalogo", "tienda_volver_1", "🛒 Catálogo"),
+        boton("inventario", "tienda_inv_1", "🎒 Inventario"),
+        boton("compras", "historial_ver_1", "🧾 Mis compras"),
+    );
+}
 
 function colorPorRareza(rareza) {
     switch ((rareza || "").toLowerCase()) {
@@ -94,7 +111,7 @@ function buildTiendaPage(items, pagina, isAdmin) {
             .setDisabled(pagina >= totalPaginas),
     );
 
-    return { embeds: [embed], components: [compraRow, navRow] };
+    return { content: "", embeds: [embed], components: [compraRow, navRow, filaPestanasTienda("catalogo")] };
 }
 
 function buildConfirmacion(item, saldo, tiendaCfg, userId = null) {
@@ -120,6 +137,7 @@ function buildConfirmacion(item, saldo, tiendaCfg, userId = null) {
 }
 
 function buildCompraRealizada(item, rolMsg, saldo) {
+    // Después de comprar: volver, verlo en el inventario o usarlo ya (si hace algo al usarse).
     const embed = new EmbedBuilder()
         .setTitle("✅ ¡Compra realizada!")
         .setDescription(
@@ -129,12 +147,26 @@ function buildCompraRealizada(item, rolMsg, saldo) {
     if (item.imagen) embed.setThumbnail(item.imagen);
     const volverRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("tienda_volver_1").setLabel("⬅️ Volver a la tienda").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("tienda_inv_1").setLabel("🎒 Ver en inventario").setStyle(ButtonStyle.Secondary),
     );
-    return { embeds: [embed], components: [volverRow] };
+    // Los roles se dan al comprar: "Usar ya" solo para los consumibles.
+    if (String(item.tipo || "").toLowerCase() === "consumible") {
+        volverRow.addComponents(
+            new ButtonBuilder().setCustomId(`tienda_usar_${item.id}_1`).setLabel("🔮 Usar ya").setStyle(ButtonStyle.Success),
+        );
+    }
+    return { content: "", embeds: [embed], components: [volverRow] };
 }
 
-/** Una página del historial de compras (con lo gastado en esa página). */
+/** Pestaña 🧾 Mis compras: una página del historial de compras (con lo gastado en esa página). */
 function buildHistorialCompras(historial, pagina) {
+    if (!historial.length) {
+        const vacio = new EmbedBuilder()
+            .setTitle("🧾 Mis compras")
+            .setDescription("No tienes compras en la tienda todavía.")
+            .setColor(0x95a5a6);
+        return { content: "", embeds: [vacio], components: [filaPestanasTienda("compras")] };
+    }
     const totalPaginas = Math.ceil(historial.length / HISTORIAL_POR_PAGINA);
     if (pagina < 1) pagina = 1;
     if (pagina > totalPaginas) pagina = totalPaginas;
@@ -166,7 +198,76 @@ function buildHistorialCompras(historial, pagina) {
             .setStyle(ButtonStyle.Primary)
             .setDisabled(pagina === totalPaginas),
     );
-    return { embeds: [embed], components: [row] };
+    return { content: "", embeds: [embed], components: [row, filaPestanasTienda("compras")] };
 }
 
-module.exports = { buildTiendaPage, buildConfirmacion, buildCompraRealizada, buildHistorialCompras, colorPorRareza, emojiPorTipo };
+/** Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes) y un botón de Usar por cada uno que haga algo. */
+function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
+    const lista = objetos.inventarioDe(userId, filtros);
+    const totalPaginas = Math.max(1, Math.ceil(lista.length / INVENTARIO_POR_PAGINA));
+    pagina = Math.min(Math.max(1, pagina), totalPaginas);
+    const pagItems = lista.slice((pagina - 1) * INVENTARIO_POR_PAGINA, pagina * INVENTARIO_POR_PAGINA);
+
+    const embed = new EmbedBuilder()
+        .setTitle("🎒 Tu inventario")
+        .setDescription(
+            (aviso ? `${aviso}\n\n` : "") +
+                (lista.length ? `💵 Efectivo: **${dinero.efectivo(userId)}**` : "No tienes objetos todavía. ¡Mira el 🛒 Catálogo!"),
+        )
+        .setColor(colorPorRareza(pagItems[0]?.rareza))
+        .setFooter({ text: `Página ${pagina} de ${totalPaginas} · ${lista.reduce((a, o) => a + o.cantidad, 0)} objetos` });
+    for (const obj of pagItems) {
+        let value = obj.descripcion ? obj.descripcion.slice(0, 512) : "";
+        if (obj.categoria) value += `\nCategoría: ${obj.categoria}`;
+        if (obj.rareza) value += `\nRareza: ${obj.rareza}`;
+        embed.addFields({
+            name: `${obj.cantidad}x ${emojiPorTipo(obj.tipo)} ${obj.nombre}${obj.tipo ? ` (${obj.tipo})` : ""}`.slice(0, 256),
+            value: (value || "—").slice(0, 1024),
+        });
+    }
+    if (pagItems[0]?.imagen) embed.setThumbnail(pagItems[0].imagen);
+
+    const components = [];
+    const usables = pagItems.filter(objetos.esUsable);
+    if (usables.length) {
+        components.push(
+            new ActionRowBuilder().addComponents(
+                usables.map((obj) =>
+                    new ButtonBuilder()
+                        .setCustomId(`tienda_usar_${obj.id}_${pagina}`)
+                        .setLabel(`Usar ${obj.nombre}`.slice(0, 80))
+                        .setStyle(ButtonStyle.Success),
+                ),
+            ),
+        );
+    }
+    if (totalPaginas > 1) {
+        components.push(
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`tienda_inv_${pagina - 1}`)
+                    .setLabel("⬅️ Anterior")
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(pagina <= 1),
+                new ButtonBuilder()
+                    .setCustomId(`tienda_inv_${pagina + 1}`)
+                    .setLabel("Siguiente ➡️")
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(pagina >= totalPaginas),
+            ),
+        );
+    }
+    components.push(filaPestanasTienda("inventario"));
+    return { content: "", embeds: [embed], components };
+}
+
+module.exports = {
+    buildTiendaPage,
+    buildConfirmacion,
+    buildCompraRealizada,
+    buildHistorialCompras,
+    buildInventario,
+    filaPestanasTienda,
+    colorPorRareza,
+    emojiPorTipo,
+};

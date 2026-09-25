@@ -53,8 +53,7 @@ const SECCIONES = {
         texto: [
             "Empiezas con **1.000 monedas** en 💵 efectivo. Se juega y se compra con el **efectivo**; el 🏦 **banco** es el sitio seguro (hay que sacar el dinero para gastarlo).",
             "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
-            "`/tienda ver [busqueda] [categoria] [rareza]` — compra con los botones. `/tienda historial` — tus compras (Movimientos filtrados por tienda).",
-            "`/inventario [categoria] [rareza]` · `/usar id` — tus objetos; los de rol te dan un rol, los consumibles un efecto.",
+            "`/tienda ver | inventario | historial` — en pestañas: 🛒 Catálogo (compra con los botones), 🎒 Inventario (tus objetos, con un botón para usarlos: los de rol te dan un rol, los consumibles un efecto) y 🧾 Mis compras.",
         ],
     },
     casino: {
