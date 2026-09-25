@@ -13,7 +13,7 @@ const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
 const { logInfo, logError } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
-const { minimoAciertosQuiniela } = require("../../commands/apuestas/pagarapuestas");
+const { minimoAciertosQuiniela } = require("../../systems/apuestas/liquidacion");
 const misJugadas = require("../../systems/apuestas/misJugadas");
 const { lineaQuiniela, filaTrasApostar } = require("../../paneles/misJugadas");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
@@ -139,7 +139,55 @@ function renderQuinielaEditorRows(quinielaId, sesion, totalPartidos) {
     return [row1, row2, row3];
 }
 
+/**
+ * Crea la quiniela de la jornada de una competición con sus próximos 10 partidos (mínimo 5). La usan el botón
+ * 🛠️ Crear quiniela de la quiniela y el panel de admin → ⚽ Apuestas. @returns {{ ok: boolean, mensaje: string }}
+ */
+async function crearQuiniela(deporteSeleccionado, creadorId) {
+    if (!DEPORTES[deporteSeleccionado]) return { ok: false, mensaje: "❌ Competición no válida." };
+    const abierta = db.prepare(`SELECT id FROM quinielas WHERE estado = 'abierta' AND deporte = ? LIMIT 1`).get(deporteSeleccionado);
+    if (abierta) return { ok: false, mensaje: "⚠️ Ya existe una quiniela activa para esta competición." };
+
+    try {
+        await sincronizarPartidos(deporteSeleccionado);
+    } catch (e) {
+        logError(`[Quiniela] No se pudieron sincronizar partidos de ${deporteSeleccionado}:`, e);
+        return { ok: false, mensaje: `❌ No se pudo actualizar partidos: ${e.message}` };
+    }
+
+    const ahora = new Date().toISOString();
+    const partidos = db
+        .prepare(
+            `SELECT * FROM apuestas_partidos WHERE deporte = ? AND estado = 'abierto' AND start_time > ? ORDER BY start_time ASC LIMIT ?`,
+        )
+        .all(deporteSeleccionado, ahora, QUINIELA_MATCH_COUNT);
+    if (partidos.length < 5) return { ok: false, mensaje: "❌ No hay suficientes partidos próximos para crear quiniela (mínimo 5)." };
+
+    const jornada = construirNombreJornadaSemanal(deporteSeleccionado, partidos);
+    const mismaSemana = db
+        .prepare(`SELECT id FROM quinielas WHERE deporte = ? AND jornada = ? ORDER BY id DESC LIMIT 1`)
+        .get(deporteSeleccionado, jornada);
+    if (mismaSemana) return { ok: false, mensaje: `⚠️ Ya existe una quiniela para ${jornada}.` };
+
+    const quinielaId = db.transaction(() => {
+        const res = db
+            .prepare(`INSERT INTO quinielas (deporte, jornada, estado, creador_id, creada_en) VALUES (?, ?, 'abierta', ?, ?)`)
+            .run(deporteSeleccionado, jornada, creadorId, ahora);
+        const insertPartido = db.prepare(
+            `INSERT INTO quiniela_partidos (quiniela_id, match_id, orden, home_team, away_team, start_time) VALUES (?, ?, ?, ?, ?, ?)`,
+        );
+        partidos.forEach((p, idx) => insertPartido.run(res.lastInsertRowid, p.match_id, idx + 1, p.home_team, p.away_team, p.start_time));
+        return res.lastInsertRowid;
+    })();
+    logInfo(`[QUINIELA] Creada quiniela ${quinielaId} (${jornada}, ${deporteSeleccionado}) por ${creadorId}`);
+    return {
+        ok: true,
+        mensaje: `✅ Quiniela **${jornada}** creada (${DEPORTES[deporteSeleccionado].name}) con ${partidos.length} partidos.`,
+    };
+}
+
 module.exports = {
+    crearQuiniela,
     componentHandlers: [
         // Prefijos más largos que los de apuestas.js ("apuestas_", "apuestas_modal_"), así que ganan.
         { types: ["button"], prefixes: ["quiniela_"], method: "handleButton", acl: "juegos" },
@@ -266,95 +314,13 @@ module.exports = {
         }
 
         if (customId.startsWith("quiniela_crear_")) {
-            const deporteSeleccionado = customId.replace("quiniela_crear_", "");
             const isAdmin = interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator);
             if (!isAdmin) {
                 await interaction.reply({ content: "❌ Solo administradores pueden crear quinielas.", flags: MessageFlags.Ephemeral });
                 return;
             }
-
-            const abierta = db
-                .prepare(`SELECT id FROM quinielas WHERE estado = 'abierta' AND deporte = ? LIMIT 1`)
-                .get(deporteSeleccionado);
-            if (abierta) {
-                await interaction.reply({ content: "⚠️ Ya existe una quiniela activa para este deporte.", flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            try {
-                await sincronizarPartidos(deporteSeleccionado);
-            } catch (e) {
-                logError(`[Quiniela] No se pudieron sincronizar partidos de ${deporteSeleccionado}:`, e);
-                await interaction.reply({ content: `❌ No se pudo actualizar partidos: ${e.message}`, flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            const ahora = new Date().toISOString();
-            const partidos = db
-                .prepare(
-                    `
-                SELECT * FROM apuestas_partidos
-                WHERE deporte = ? AND estado = 'abierto' AND start_time > ?
-                ORDER BY start_time ASC
-                LIMIT ?
-            `,
-                )
-                .all(deporteSeleccionado, ahora, QUINIELA_MATCH_COUNT);
-
-            if (partidos.length < 5) {
-                await interaction.reply({
-                    content: "❌ No hay suficientes partidos próximos para crear quiniela (mínimo 5).",
-                    flags: MessageFlags.Ephemeral,
-                });
-                return;
-            }
-
-            const jornada = construirNombreJornadaSemanal(deporteSeleccionado, partidos);
-            const mismaSemana = db
-                .prepare(
-                    `
-                SELECT id FROM quinielas
-                WHERE deporte = ? AND jornada = ?
-                ORDER BY id DESC
-                LIMIT 1
-            `,
-                )
-                .get(deporteSeleccionado, jornada);
-
-            if (mismaSemana) {
-                await interaction.reply({ content: `⚠️ Ya existe una quiniela para ${jornada}.`, flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            const tx = db.transaction(() => {
-                const res = db
-                    .prepare(
-                        `
-                    INSERT INTO quinielas (deporte, jornada, estado, creador_id, creada_en)
-                    VALUES (?, ?, 'abierta', ?, ?)
-                `,
-                    )
-                    .run(deporteSeleccionado, jornada, interaction.user.id, ahora);
-
-                const quinielaId = res.lastInsertRowid;
-                const insertPartido = db.prepare(`
-                    INSERT INTO quiniela_partidos (quiniela_id, match_id, orden, home_team, away_team, start_time)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                `);
-
-                partidos.forEach((p, idx) => {
-                    insertPartido.run(quinielaId, p.match_id, idx + 1, p.home_team, p.away_team, p.start_time);
-                });
-
-                return quinielaId;
-            });
-
-            const quinielaId = tx();
-            logInfo(`[QUINIELA] Creada quiniela ${quinielaId} por ${interaction.user.id}`);
-            await interaction.reply({
-                content: `✅ Quiniela creada (ID ${quinielaId}) con ${partidos.length} partidos.`,
-                flags: MessageFlags.Ephemeral,
-            });
+            const r = await crearQuiniela(customId.replace("quiniela_crear_", ""), interaction.user.id);
+            await interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
             return;
         }
 

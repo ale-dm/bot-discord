@@ -80,15 +80,22 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] `/tienda inventario`: usar un objeto de rol y uno consumible (el resultado sale en el panel).
 - [ ] Que otra persona no pueda pulsar los botones de tu tienda.
 
+**Admin (parte 8 de paneles)**
+- [ ] En el registro de comandos quedan 14: ayuda, bola8, cripto, duende, escuchar, ia, imagen, javier, juegos,
+      paneladmin, perfil, ping, tienda y tts.
+- [ ] `/paneladmin` → ⚽ Apuestas: lo pendiente, 💸 Liquidar ahora y crear una quiniela.
+- [ ] `/paneladmin` → 🛒 Catálogo: crear un objeto, editarle un campo, ponerlo a la venta, cambiarle el precio,
+      quitarlo y eliminarlo.
+- [ ] `/paneladmin` → 🩺 Sistema: diagnóstico, 💎 TTCL y cambiar el nivel de log.
+
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %
       con doble clic rápido: solo debe venderse una vez.
 - [ ] `/tienda historial` (🧾 Mis compras): solo compras de la tienda.
-- [ ] `/ttcl-diagnostico` como admin (antes fallaba siempre).
 - [ ] `/escuchar` y `/tts` en un canal de voz: que transcriba (el audio ahora se decodifica con `opusscript`).
 - [ ] `/paneladmin`: Duende → Apodos, Duende → 🧠 Perfiles (ver la ficha de alguien, cambiar nombre, descripción
       y notas con "Editar todo", y que el Duende lo use; vincular un perfil sin vincular poniéndole el Discord ID),
       Niveles → las cuatro pantallas, buscar un rol en Recompensas (pasar de página) y Recompensas → Descripción.
 - [ ] `/duende recuerda` sobre otro sin ser admin (debe negarse) y sobre uno mismo; `/duende personas` sin
       ser admin (solo lo tuyo, en privado) y como admin (todos).
-- [ ] `/diagnostico` y, al día siguiente, que exista `data/backups/banco-AAAA-MM-DD.db`.
+- [ ] Al día siguiente, que exista `data/backups/banco-AAAA-MM-DD.db`.

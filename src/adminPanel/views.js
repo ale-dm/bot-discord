@@ -18,7 +18,13 @@ function buildMainRows() {
         new ButtonBuilder().setCustomId("paneladmin_plex_home").setLabel("🎬 Plex").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_seerr_home").setLabel("🍿 Seerr").setStyle(ButtonStyle.Secondary),
     );
-    return [row1, row2];
+    // Antes comandos sueltos: /pagarapuestas, /objeto y /tienda añadir/editar/eliminar, /diagnostico y /ttcl-diagnostico.
+    const row3 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_apu_home").setLabel("⚽ Apuestas").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_cat_home").setLabel("🛒 Catálogo").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_sis_home").setLabel("🩺 Sistema").setStyle(ButtonStyle.Secondary),
+    );
+    return [row1, row2, row3];
 }
 
 function buildMainEmbed(client) {
@@ -33,7 +39,8 @@ function buildMainEmbed(client) {
             "Resumen general del sistema.\n\n" +
                 "• Banco: saldo, reseteos, historial y búsqueda.\n" +
                 "• Niveles: configuración XP, recompensas por rol, usuarios e ignorados.\n" +
-                "• Config Global: Duende IA, Cripto, Casino, Tienda y ACL de comandos.",
+                "• Config Global: Duende IA, Cripto, Casino, Tienda y ACL de comandos.\n" +
+                "• Apuestas: liquidar ahora y crear quinielas · Catálogo: objetos y lo que está a la venta · Sistema: diagnóstico y logs.",
         )
         .addFields(
             { name: "👥 Usuarios banco", value: fmt(totalUsuarios), inline: true },

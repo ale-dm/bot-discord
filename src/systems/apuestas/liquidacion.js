@@ -1,6 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
+// Liquidación de apuestas a partidos y quinielas (cron de cada hora en index.js, y el botón 💸 Liquidar ahora del
+// panel de admin → ⚽ Apuestas; antes el comando /pagarapuestas).
+const { EmbedBuilder } = require("discord.js");
 const db = require("../../core/db");
-const dinero = require("../../systems/dinero");
+const dinero = require("../dinero");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -317,70 +319,32 @@ async function avisarGanadores(client, pagos) {
     }
 }
 
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName("pagarapuestas")
-        .setDescription("Revisa partidos finalizados y paga las apuestas ganadoras (se hace solo cada hora)")
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+/** Resumen de una liquidación para enseñarlo (panel de admin → ⚽ Apuestas → 💸 Liquidar ahora). */
+function resumenEmbed(resumen) {
+    let descripcionDeportes = "";
+    for (const [deporte, cantidad] of Object.entries(resumen.partidosProcesados)) {
+        const deporteInfo = DEPORTES[deporte];
+        if (deporteInfo && cantidad > 0) descripcionDeportes += `• ${deporteInfo.name}: **${cantidad}** partidos\n`;
+    }
+    const nada = resumen.total === 0 && resumen.quinielasCerradas === 0 && resumen.caducados === 0;
+    return new EmbedBuilder()
+        .setTitle("💸 Pago de apuestas deportivas")
+        .setDescription(
+            `🏆 **Apuestas ganadoras:** ${resumen.pagadas}\n` +
+                `❌ **Apuestas perdedoras:** ${resumen.fallidas}\n` +
+                `📊 **Total procesadas:** ${resumen.total}\n` +
+                `🗓️ **Partidos finalizados:** ${Object.values(resumen.partidosProcesados).reduce((a, b) => a + b, 0)}\n\n` +
+                `🧾 **Quinielas cerradas:** ${resumen.quinielasCerradas}\n` +
+                `🎁 **Premios quiniela repartidos:** ${resumen.premiosQuiniela}\n` +
+                (resumen.caducados
+                    ? `↩️ **Sin resultado (más de 3 días):** ${resumen.caducados} · **apuestas reembolsadas:** ${resumen.reembolsos}\n`
+                    : "") +
+                "\n" +
+                (descripcionDeportes ? `**Deportes procesados:**\n${descripcionDeportes}\n` : "") +
+                (nada ? "📋 No había apuestas pendientes de pago." : "✅ Procesamiento completado."),
+        )
+        .setColor(resumen.total > 0 ? 0x27ae60 : 0x2980b9)
+        .setTimestamp();
+}
 
-    liquidarApuestas,
-    avisarGanadores,
-    minimoAciertosQuiniela,
-    AUTO_MIN_HORAS_DESDE_INICIO,
-
-    async run(client, interaction) {
-        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({
-                content: "⛔ Solo administradores pueden forzar el pago de apuestas.",
-                flags: MessageFlags.Ephemeral,
-            });
-            return;
-        }
-        await interaction.reply({ content: "⏳ Procesando apuestas deportivas...", flags: MessageFlags.Ephemeral });
-        logInfo(`[PAGARAPUESTAS] Iniciado por ${interaction.user.username} (${interaction.user.id})`);
-
-        let resumen;
-        try {
-            resumen = await liquidarApuestas({ origen: `manual:${interaction.user.username}` });
-        } catch (e) {
-            logError(`[PAGARAPUESTAS] Error en la liquidación manual:`, e);
-            await interaction.editReply({ content: `❌ ${e.message}` });
-            return;
-        }
-        if (!resumen) {
-            await interaction.editReply({ content: "⏳ Ya hay una liquidación en marcha, prueba en un momento." });
-            return;
-        }
-        void avisarGanadores(client, resumen.pagos);
-
-        let descripcionDeportes = "";
-        for (const [deporte, cantidad] of Object.entries(resumen.partidosProcesados)) {
-            const deporteInfo = DEPORTES[deporte];
-            if (deporteInfo && cantidad > 0) {
-                descripcionDeportes += `• ${deporteInfo.name}: **${cantidad}** partidos\n`;
-            }
-        }
-
-        const nada = resumen.total === 0 && resumen.quinielasCerradas === 0 && resumen.caducados === 0;
-        const resumenEmbed = new EmbedBuilder()
-            .setTitle("💸 Pago de apuestas deportivas")
-            .setDescription(
-                `🏆 **Apuestas ganadoras:** ${resumen.pagadas}\n` +
-                    `❌ **Apuestas perdedoras:** ${resumen.fallidas}\n` +
-                    `📊 **Total procesadas:** ${resumen.total}\n` +
-                    `🗓️ **Partidos finalizados:** ${Object.values(resumen.partidosProcesados).reduce((a, b) => a + b, 0)}\n\n` +
-                    `🧾 **Quinielas cerradas:** ${resumen.quinielasCerradas}\n` +
-                    `🎁 **Premios quiniela repartidos:** ${resumen.premiosQuiniela}\n` +
-                    (resumen.caducados
-                        ? `↩️ **Sin resultado (más de 3 días):** ${resumen.caducados} · **apuestas reembolsadas:** ${resumen.reembolsos}\n`
-                        : "") +
-                    "\n" +
-                    (descripcionDeportes ? `**Deportes procesados:**\n${descripcionDeportes}\n` : "") +
-                    (nada ? "📋 No había apuestas pendientes de pago." : "✅ Procesamiento completado exitosamente."),
-            )
-            .setColor(resumen.total > 0 ? 0x27ae60 : 0x2980b9)
-            .setTimestamp();
-
-        await interaction.editReply({ content: "", embeds: [resumenEmbed] });
-    },
-};
+module.exports = { liquidarApuestas, avisarGanadores, minimoAciertosQuiniela, resumenEmbed, AUTO_MIN_HORAS_DESDE_INICIO };

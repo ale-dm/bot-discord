@@ -2,7 +2,7 @@
 process.env.ODDS_API_KEY = "clave-de-prueba";
 
 const db = require("../src/core/db");
-const { liquidarApuestas } = require("../src/commands/apuestas/pagarapuestas");
+const { liquidarApuestas } = require("../src/systems/apuestas/liquidacion");
 
 const hace = (horas) => new Date(Date.now() - horas * 3600 * 1000).toISOString();
 const saldo = (id) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(id)?.saldo;

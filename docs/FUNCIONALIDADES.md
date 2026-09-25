@@ -253,7 +253,8 @@ El historial global de movimientos está en `/paneladmin` → Banco.
 
 ### Objetos, tienda e inventario
 
-Los admins crean **objetos** en un catálogo y los ponen a la venta en la **tienda** con precio y stock.
+Los admins crean **objetos** en un catálogo y los ponen a la venta en la **tienda** con precio y stock, desde
+`/paneladmin` → 🛒 Catálogo (ver [Administración](#12-administración)).
 
 Tipos de objeto:
 - **rol**: al comprarlo (o usarlo) te da un rol de Discord (por ID o por nombre igual al del objeto).
@@ -265,12 +266,6 @@ Tipos de objeto:
 | `/tienda ver [busqueda] [solo_disponibles] [categoria] [rareza]` | Pestaña 🛒 Catálogo: la tienda con botones de compra (paginada) |
 | `/tienda inventario [categoria] [rareza]` | Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes) y un botón **Usar** en los que hacen algo (antes `/inventario` y `/usar`) |
 | `/tienda historial` | Pestaña 🧾 Mis compras |
-| `/tienda añadir objeto_id* precio* [stock]` | 🔒 Pone un objeto a la venta (sin stock = ilimitado) |
-| `/tienda editar id* [precio] [stock]` | 🔒 Cambia precio/stock |
-| `/tienda eliminar id*` | 🔒 Lo quita de la tienda |
-| `/tienda config [canal]` | 🔒 Canal donde se anuncian las compras |
-| `/objeto crear nombre* descripcion* [imagen] [tipo] [categoria] [rareza] [unico] [rol] [efecto]` | 🔒 Crea un objeto. `tipo`: rol, consumible o coleccionable · `rol`: el rol que da · `efecto` (consumibles): `monedas:N` o `mensaje:texto` |
-| `/objeto editar id* ...` · `/objeto eliminar id*` · `/objeto ver [busqueda]` | 🔒 Gestiona el catálogo |
 
 Las tres pestañas (🛒 Catálogo · 🎒 Inventario · 🧾 Mis compras) salen en la última fila de todas las pantallas
 de la tienda. Después de comprar: ⬅️ Volver a la tienda · 🎒 Ver en inventario · 🔮 Usar ya (en los consumibles).
@@ -330,7 +325,7 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y
 | 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. |
 | 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
 
-`/pagarapuestas` 🔒 fuerza la liquidación ahora (normalmente no hace falta).
+Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
 
 **Liquidación** ⏱️ cada hora (minuto 15): cierra los partidos terminados (empezados hace más de 2 h),
 paga las apuestas ganadoras (apuesta × cuota) y liquida las quinielas completas: el 90 % del bote se reparte
@@ -355,7 +350,7 @@ cartera, historial, top de inversores e información de $TTCL.
   el precio y vender lo baja. ⏱️ El precio se registra cada 10 minutos para el gráfico.
 - Configurable: comisiones de compra/venta, cooldowns y mínimos/máximos por operación.
 
-`/ttcl-diagnostico` muestra el estado del registro de precios de TTCL.
+El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistema → 💎 TTCL.
 
 ---
 
@@ -386,8 +381,11 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 
 | Sección | Qué se puede hacer |
 |---|---|
-| 🏦 Banco | Modificar saldo (banco o en mano) · resetear usuario (a 1.000) · borrar historial · historial global · buscar usuario |
-| 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/nivel`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
+| 🏦 Banco | Modificar saldo (efectivo o banco) · resetear usuario (como nuevo: 1.000 en efectivo) · borrar historial · historial global · buscar usuario |
+| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions |
+| 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
+| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders |
+| 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
 | ⚙️ Config Global | **🤖 Duende**: modelo, temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades |
@@ -398,13 +396,9 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 Para cada comando se puede: desactivarlo en el servidor, limitarlo a ciertos canales y/o exigir ciertos roles.
 Se aplica también a los botones (por ejemplo, los botones de la tienda respetan el ACL de `/tienda`).
 
-### Otros comandos de admin
-
-| Comando | Qué hace |
-|---|---|
-| `/panel` 🔒 | Panel de administración del banco (menú desplegable) |
-| `/diagnostico [nivel_log]` 🔒 | Estado interno: uptime, memoria, comandos, servidores, DB, errores y avisos desde el arranque, último error, consumo de Gemini (llamadas, errores por cuota, tokens) y ajustes de Duende/cripto/logros/tienda. Con `nivel_log` cambia el nivel de log sin reiniciar |
-| `/pagarapuestas` 🔒 | Ver [apuestas](#9-apuestas-deportivas-y-quinielas) |
+Antes eran comandos sueltos: `/pagarapuestas`, `/objeto` y `/tienda añadir | editar | eliminar | config`,
+`/diagnostico`, `/ttcl-diagnostico` y `/panel` (un panel antiguo del banco, ya repetido aquí). Las personalidades del
+Duende siguen en `/duende set | add | remove`.
 
 ---
 
@@ -493,7 +487,7 @@ Se aplica también a los botones (por ejemplo, los botones de la tienda respetan
 | `BACKUP_KEEP` / `BACKUP_DIR` | 7 / `data/backups/` | Copias diarias de la BD que se conservan y dónde |
 | `QUINIELA_LOCK_MINUTES` | 15 | Bloqueo de la quiniela antes del primer partido |
 | `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada petición gasta 1 crédito de 500 al mes) |
-| `LOG_LEVEL` | info | Nivel mínimo en los ficheros: `debug`, `info`, `warn` o `error`. También se cambia en caliente con `/diagnostico nivel_log` |
+| `LOG_LEVEL` | info | Nivel mínimo en los ficheros: `debug`, `info`, `warn` o `error`. También se cambia en caliente en `/paneladmin` → 🩺 Sistema |
 | `LOG_CONSOLE_LEVEL` | warn | Nivel mínimo que sale por consola (`docker logs`); `off` para nada |
 | `LOG_MAX_BYTES` / `LOG_MAX_FILES` | 5 MB / 5 | Rotación de logs |
 | `LOG_MAX_ENTRY_CHARS` | 8000 | Tamaño máximo de una entrada (se recorta) |
@@ -544,19 +538,14 @@ crearles cuenta, historial, inventario o partidas.
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
-| `/diagnostico` 🔒 | [Administración](#12-administración) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/ia` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
-| `/objeto` 🔒 | [Economía](#7-economía-banco-tienda-e-inventario) |
-| `/pagarapuestas` 🔒 | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
-| `/panel` 🔒 | [Administración](#12-administración) |
 | `/paneladmin` 🔒 | [Administración](#12-administración) |
 | `/perfil` | [Perfil](#6-perfil) |
 | `/ping` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
-| `/ttcl-diagnostico` | [Cripto](#10-criptomonedas) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |

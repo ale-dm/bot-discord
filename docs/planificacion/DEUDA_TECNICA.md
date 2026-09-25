@@ -10,21 +10,12 @@ reutilizan: los que faltan (DT-02, DT-04, DT-05, DT-06, DT-09...) ya están resu
 **Prioridad:** 🔴 alta (riesgo real de perder datos o de comportamiento incorrecto) · 🟠 media (molesta o
 complica el mantenimiento) · 🟢 baja (limpieza). **Esfuerzo:** S (una tarde) · M (un par de días) · L (más).
 
+Ahora mismo no queda ninguna.
+
 | ID | Qué | Área | Prioridad | Esfuerzo |
 |---|---|---|---|---|
-| [DT-13](#dt-13-restos-sin-uso-de-versiones-anteriores) | Restos sin uso de versiones anteriores | Limpieza | 🟢 | S |
 
 Además: [decisiones tomadas](#decisiones-tomadas) que no son deuda pero conviene recordar.
-
----
-
-## DT-13 Restos sin uso de versiones anteriores
-
-**Qué pasa.**
-- `/panel` repite las estadísticas de `/paneladmin`.
-
-**Propuesta.** Quitarlo en la parte del [plan](diseno/reorganizacion-paneles.md#4-plan-de-ejecución) que toque:
-la 8. (Los prefijos antiguos de la quiniela ya se quitaron en la parte 1.) (`banco.enMano` no es un resto: pasa a ser el efectivo, decisión D4.)
 
 ---
 

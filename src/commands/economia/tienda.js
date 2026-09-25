@@ -1,11 +1,11 @@
 // /tienda: en pestañas, 🛒 Catálogo (ver y comprar), 🎒 Inventario (tus objetos, con Usar; antes /inventario y
-// /usar) y 🧾 Mis compras; más la gestión (admins). Los datos y el cobro están en
+// /usar) y 🧾 Mis compras. La gestión (objetos, precios, stock) está en /paneladmin → 🛒 Catálogo, y la configuración
+// (activa, límites, canal de avisos) en /paneladmin → Config Global → Tienda. Los datos y el cobro están en
 // systems/tienda y los mensajes en paneles/tienda.
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
 const guildSettings = require("../../systems/guildSettings");
 const achievements = require("../../systems/achievementsSystem");
-const adminAudit = require("../../systems/adminAudit");
 const tienda = require("../../systems/tienda");
 const paneles = require("../../paneles/tienda");
 const { createLogger } = require("../../core/logger");
@@ -97,91 +97,6 @@ async function comprar(interaction, tiendaCfg) {
     }
 }
 
-// Subcomandos de admin: config, añadir, eliminar, editar.
-async function subcomandoAdmin(interaction, sub) {
-    if (sub === "config") {
-        const canal = interaction.options.getChannel("canal");
-        guildSettings.setSetting(interaction.guildId, "tienda.notif_channel_id", canal ? canal.id : "");
-        adminAudit.logAdminAction({
-            guildId: interaction.guildId,
-            actorId: interaction.user.id,
-            action: "tienda.config.notif_channel",
-            details: { channelId: canal ? canal.id : null },
-        });
-        if (canal) {
-            db.prepare("INSERT OR REPLACE INTO config (clave, valor) VALUES ('tienda_canal_notif', ?)").run(canal.id);
-            await interaction.reply(privado(`✅ Canal de notificaciones de compras configurado: <#${canal.id}>`));
-        } else {
-            db.prepare("DELETE FROM config WHERE clave = 'tienda_canal_notif'").run();
-            await interaction.reply(privado("✅ Notificaciones de compras desactivadas."));
-        }
-        return;
-    }
-
-    if (sub === "añadir") {
-        const objetoId = interaction.options.getInteger("objeto_id");
-        const precio = interaction.options.getInteger("precio");
-        const stock = interaction.options.getInteger("stock");
-        const obj = db.prepare("SELECT nombre FROM objeto WHERE id = ?").get(objetoId);
-        if (!obj) {
-            await interaction.reply(privado("❌ No existe un objeto con ese ID en el catálogo."));
-            return;
-        }
-        db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, ?, ?)").run(objetoId, precio, stock ?? null);
-        adminAudit.logAdminAction({
-            guildId: interaction.guildId,
-            actorId: interaction.user.id,
-            action: "tienda.item.add",
-            details: { objetoId, nombre: obj.nombre, precio, stock },
-        });
-        await interaction.reply(
-            privado(
-                `✅ Objeto **${obj.nombre}** añadido a la tienda por ${precio} monedas${stock ? ` (stock: ${stock})` : " (stock ilimitado)"}.`,
-            ),
-        );
-        return;
-    }
-
-    if (sub === "eliminar") {
-        const id = interaction.options.getInteger("id");
-        const item = db
-            .prepare("SELECT tienda.id, objeto.nombre FROM tienda JOIN objeto ON tienda.objetoId = objeto.id WHERE tienda.id = ?")
-            .get(id);
-        if (!item) {
-            await interaction.reply(privado("❌ No existe un objeto con ese ID en la tienda."));
-            return;
-        }
-        db.prepare("DELETE FROM tienda WHERE id = ?").run(id);
-        adminAudit.logAdminAction({
-            guildId: interaction.guildId,
-            actorId: interaction.user.id,
-            action: "tienda.item.remove",
-            details: { tiendaId: id, nombre: item.nombre },
-        });
-        await interaction.reply(privado(`🗑️ Objeto **${item.nombre}** eliminado de la tienda.`));
-        return;
-    }
-
-    if (sub === "editar") {
-        const id = interaction.options.getInteger("id");
-        const precio = interaction.options.getInteger("precio");
-        const stock = interaction.options.getInteger("stock");
-        const item = db.prepare("SELECT * FROM tienda WHERE id = ?").get(id);
-        if (!item) {
-            await interaction.reply(privado("❌ No existe un objeto con ese ID en la tienda."));
-            return;
-        }
-        db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio ?? item.precio, stock ?? item.stock, id);
-        adminAudit.logAdminAction({
-            guildId: interaction.guildId,
-            actorId: interaction.user.id,
-            action: "tienda.item.edit",
-            details: { tiendaId: id, antes: { precio: item.precio, stock: item.stock }, precio, stock },
-        });
-        await interaction.reply(privado(`✏️ Objeto #${id} actualizado correctamente.`));
-    }
-}
-
 module.exports = {
     componentHandlers: [
         // inv_: botones de mensajes de /inventario (ya no existe), que llevan a la pestaña Inventario.
@@ -201,28 +116,7 @@ module.exports = {
                 .addStringOption((opt) => opt.setName("categoria").setDescription("Filtrar por categoría").setRequired(false))
                 .addStringOption((opt) => opt.setName("rareza").setDescription("Filtrar por rareza").setRequired(false)),
         )
-        .addSubcommand((sub) =>
-            sub
-                .setName("añadir")
-                .setDescription("Añade un objeto del catálogo a la tienda (solo admins)")
-                .addIntegerOption((opt) => opt.setName("objeto_id").setDescription("ID del objeto del catálogo").setRequired(true))
-                .addIntegerOption((opt) => opt.setName("precio").setDescription("Precio en monedas").setRequired(true))
-                .addIntegerOption((opt) => opt.setName("stock").setDescription("Stock (opcional, vacío = ilimitado)").setRequired(false)),
-        )
-        .addSubcommand((sub) =>
-            sub
-                .setName("eliminar")
-                .setDescription("Elimina un objeto de la tienda (solo admins)")
-                .addIntegerOption((opt) => opt.setName("id").setDescription("ID del objeto en la tienda").setRequired(true)),
-        )
-        .addSubcommand((sub) =>
-            sub
-                .setName("editar")
-                .setDescription("Edita un objeto de la tienda (solo admins)")
-                .addIntegerOption((opt) => opt.setName("id").setDescription("ID del objeto en la tienda").setRequired(true))
-                .addIntegerOption((opt) => opt.setName("precio").setDescription("Nuevo precio (opcional)").setRequired(false))
-                .addIntegerOption((opt) => opt.setName("stock").setDescription("Nuevo stock (opcional)").setRequired(false)),
-        )
+
         .addSubcommand((sub) => sub.setName("historial").setDescription("Tus compras en la tienda"))
         .addSubcommand((sub) =>
             sub
@@ -230,22 +124,12 @@ module.exports = {
                 .setDescription("Tus objetos, con un botón para usar cada uno")
                 .addStringOption((opt) => opt.setName("categoria").setDescription("Filtrar por categoría").setRequired(false))
                 .addStringOption((opt) => opt.setName("rareza").setDescription("Filtrar por rareza").setRequired(false)),
-        )
-        .addSubcommand((sub) =>
-            sub
-                .setName("config")
-                .setDescription("Configura el canal de notificaciones de compras (solo admins)")
-                .addChannelOption((opt) =>
-                    opt.setName("canal").setDescription("Canal donde se anuncian las compras (vacío para desactivar)").setRequired(false),
-                ),
         ),
-
     async run(client, interaction) {
         const sub = interaction.options.getSubcommand();
         const tiendaCfg = guildSettings.getSettings(interaction.guildId).tienda;
         const admin = esAdmin(interaction);
-        const adminSubs = ["config", "añadir", "editar", "eliminar"];
-        if (!tiendaCfg.enabled && !(admin && adminSubs.includes(sub))) {
+        if (!tiendaCfg.enabled) {
             await interaction.reply(privado("⛔ La tienda está deshabilitada en este servidor."));
             return;
         }
@@ -288,18 +172,6 @@ module.exports = {
             await interaction.reply(paneles.buildInventario(interaction.user.id, 1, null, filtros));
             return;
         }
-
-        if (!admin) {
-            await interaction.reply(
-                privado(
-                    sub === "config"
-                        ? "Solo los administradores pueden configurar la tienda."
-                        : "Solo los administradores pueden usar este subcomando.",
-                ),
-            );
-            return;
-        }
-        await subcomandoAdmin(interaction, sub);
     },
 
     async handleButton(client, interaction) {

@@ -2,6 +2,25 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-25 (reorganización de paneles, parte 8: administración en un panel)
+
+Octava parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+- **`/paneladmin` con tres secciones nuevas** (tercera fila de la pantalla principal):
+  - **⚽ Apuestas**: apuestas pendientes y quinielas abiertas por competición, 💸 Liquidar ahora (antes
+    `/pagarapuestas`) y 🧾 Crear quiniela de cada competición.
+  - **🛒 Catálogo**: los objetos con si están a la venta, precio y stock; crear, editar un campo, eliminar, poner a
+    la venta (o cambiar precio y stock) y quitar de la venta (antes `/objeto` y `/tienda añadir | editar |
+    eliminar`). La configuración de la tienda sigue en Config Global.
+  - **🩺 Sistema**: el diagnóstico (antes `/diagnostico`), el nivel de log con un menú y 💎 TTCL (antes
+    `/ttcl-diagnostico`).
+- **Se borran** `/panel`, `/pagarapuestas`, `/objeto`, `/diagnostico`, `/ttcl-diagnostico` y los subcomandos
+  `añadir`, `editar`, `eliminar` y `config` de `/tienda`. Quedan **14 comandos**.
+- La liquidación pasa a `systems/apuestas/liquidacion.js` (la usan el cron y el panel), y crear la quiniela a
+  `crearQuiniela` en `juegos/apuestas/quiniela.js` (la usan el botón de la quiniela y el panel).
+- **E-14 y E-15** (estadísticas raras de `/panel`) desaparecen con él, y con eso **DT-13** queda resuelta.
+- Tests: 187.
+
 ## 2026-09-25 (reorganización de paneles, parte 7: tienda e inventario)
 
 Séptima parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).

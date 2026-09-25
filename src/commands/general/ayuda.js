@@ -94,11 +94,8 @@ const SECCIONES = {
         titulo: "Administración",
         soloAdmin: true,
         texto: [
-            "`/paneladmin` — banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), Plex, Seerr y auditoría.",
-            "`/tienda añadir | editar | eliminar | config` · `/objeto crear | editar | eliminar | ver`",
+            "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas), 🛒 Catálogo (objetos y lo que está a la venta), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
             "`/duende set | add | remove` — personalidades del Duende.",
-            "`/diagnostico [nivel_log]` — estado del bot, errores recientes y consumo de Gemini.",
-            "`/pagarapuestas` — forzar ahora el pago de apuestas.",
         ],
     },
 };

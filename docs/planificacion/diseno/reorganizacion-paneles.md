@@ -342,7 +342,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 **Se prueba:**
 - Test de comprar → usar desde el mismo panel.
 
-### Parte 8 · Administración en un solo panel (M)
+### Parte 8 · Administración en un solo panel (M) — ✅ hecha el 2026-09-25
 
 - **Secciones nuevas en `/paneladmin`:**
   - ⚽ Apuestas: liquidar ahora, crear la quiniela, partidos abiertos y caducados.
@@ -375,7 +375,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 | 5 ✅ | Dinero: efectivo y banco | "En mano" sin uso, tres historiales | M | — |
 | 6 ✅ | Perfil único | Dos perfiles, logros en tres sitios, cinco rankings, E-11; borra 3 comandos | M | 4 y 5 |
 | 7 ✅ | Tienda + inventario | Tienda, inventario y usar sueltos | S | 5 (historial) |
-| 8 | Admin | Dos paneles y comandos sueltos, E-14, E-15, DT-13 (`/panel`) | M | — |
+| 8 ✅ | Admin | Dos paneles y comandos sueltos, E-14, E-15, DT-13 (`/panel`) | M | — |
 | 9 | Ayuda y repaso | Todo público | S | Todas |
 
 Es buena idea desplegar y probar en Discord cada dos o tres partes (por ejemplo, tras la 3, la 6 y la 9) para no

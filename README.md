@@ -43,17 +43,16 @@ el-duende/
 │   │   ├── duende/           /duende /ia /imagen /bola8 /javier
 │   │   ├── voz/              /tts /escuchar
 │   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
-│   │   ├── apuestas/         /pagarapuestas
-│   │   ├── economia/         /tienda (catálogo, inventario y compras) /objeto /cripto /ttcl-diagnostico
+│   │   ├── economia/         /tienda (catálogo, inventario y compras) /cripto
 │   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas)
-│   │   ├── admin/            /paneladmin /panel /diagnostico
+│   │   ├── admin/            /paneladmin (banco, niveles, config, apuestas, catálogo, sistema...)
 │   │   └── general/          /ayuda /ping
 │   ├── juegos/             Juegos del casino y apuestas: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
 │   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas)
 │   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
 │   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda y /cripto
-│   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, Plex, Seerr, apodos y
+│   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, apuestas, catálogo, sistema, Plex, Seerr, apodos y
 │   │                         perfiles del Duende, auditoría)
 │   ├── systems/            Lógica del bot que usan varios comandos
 │   │                         XP, logros, apodos, ajustes por servidor, auditoría, transacciones del

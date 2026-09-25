@@ -13,6 +13,9 @@ const {
     handleChannelSelect: handleLevelsChannelSelect,
 } = require("../../adminPanel/levels");
 const { handleSettingsButton, handleSettingsModal } = require("../../adminPanel/settings");
+const { handleApuestasButton } = require("../../adminPanel/apuestas");
+const { handleCatalogoButton, handleCatalogoModal } = require("../../adminPanel/catalogo");
+const { handleSistemaButton, handleSistemaSelect } = require("../../adminPanel/sistema");
 const { handleAuditButton } = require("../../adminPanel/audit");
 const { handlePlexButton, handlePlexUserSelect, handlePlexModal, handlePlexChannelSelect } = require("../../adminPanel/plex");
 const { handleSeerrButton, handleSeerrChannelSelect, handleSeerrModal } = require("../../adminPanel/seerr");
@@ -30,7 +33,7 @@ module.exports = {
         { types: ["modal"], prefixes: ["paneladmin_"], method: "handleModal" },
         {
             types: ["stringSelect"],
-            prefixes: ["paneladmin_levels_reward_search_pick_", "paneladmin_perfiles_"],
+            prefixes: ["paneladmin_levels_reward_search_pick_", "paneladmin_perfiles_", "paneladmin_sis_"],
             method: "handleStringSelect",
         },
         {
@@ -93,6 +96,9 @@ module.exports = {
             if (await handleBankButton(interaction)) return;
             if (await handleApodosButton(interaction)) return;
             if (await handlePerfilesButton(interaction)) return;
+            if (await handleApuestasButton(interaction)) return;
+            if (await handleCatalogoButton(interaction)) return;
+            if (await handleSistemaButton(interaction)) return;
         } catch (err) {
             log.error(`handleButton falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -116,6 +122,7 @@ module.exports = {
             if (await handleBankModal(interaction)) return;
             if (await handleApodosModal(interaction)) return;
             if (await handlePerfilesModal(interaction)) return;
+            if (await handleCatalogoModal(interaction)) return;
         } catch (err) {
             log.error(`handleModal falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -189,6 +196,7 @@ module.exports = {
                 return;
             }
             if (await handlePerfilesStringSelect(interaction)) return;
+            if (await handleSistemaSelect(interaction)) return;
             await handleLevelsStringSelect(interaction);
         } catch (err) {
             log.error(`handleStringSelect falló (${interaction.customId || "/paneladmin"}):`, err);

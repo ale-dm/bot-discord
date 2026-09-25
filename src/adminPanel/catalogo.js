@@ -1,0 +1,208 @@
+// Panel admin → 🛒 Catálogo: los objetos (con si están a la venta, a qué precio y con cuánto stock), y crear,
+// editar, eliminar, poner a la venta y quitar de la venta. Antes eran /objeto y los subcomandos de admin de
+// /tienda (añadir, editar, eliminar). La configuración de la tienda (activa, límites, canal) está en Config Global.
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+const db = require("../core/db");
+const adminAudit = require("../systems/adminAudit");
+const { simpleModal } = require("./common");
+
+const POR_PAGINA = 8;
+const TIPOS = ["rol", "consumible", "coleccionable"];
+const CAMPOS = ["nombre", "descripcion", "tipo", "efecto", "rol", "imagen", "categoria", "rareza", "unico"];
+
+// Efectos que entiende "Usar" (tienda → Inventario, systems/objetos) para los consumibles.
+function validarEfecto(efecto) {
+    if (!efecto) return null;
+    if (/^monedas:-?\d+$/.test(efecto) || /^mensaje:.+/.test(efecto)) return null;
+    return "El efecto debe ser `monedas:N` (da N monedas) o `mensaje:texto`.";
+}
+
+const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
+const idRol = (texto) => String(texto || "").replace(/[<@&>\s]/g, "") || null;
+
+function buildCatalogo(pagina = 1, aviso = "") {
+    const objetos = db
+        .prepare(
+            `SELECT o.*, t.id AS tiendaId, t.precio, t.stock
+             FROM objeto o LEFT JOIN tienda t ON t.objetoId = o.id ORDER BY o.id ASC`,
+        )
+        .all();
+    const paginas = Math.max(1, Math.ceil(objetos.length / POR_PAGINA));
+    pagina = Math.min(Math.max(1, pagina), paginas);
+    const lineas = objetos.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA).map((o) => {
+        const extra = [o.tipo, o.categoria, o.rareza, o.unico ? "único" : null, o.efecto, o.rolId ? `<@&${o.rolId}>` : null]
+            .filter(Boolean)
+            .join(" · ");
+        const venta = o.tiendaId ? `🛒 ${o.precio} 🪙 · stock ${o.stock ?? "∞"}` : "— no está a la venta";
+        return `**#${o.id} ${o.nombre}**${extra ? ` (${extra})` : ""}\n${venta}`;
+    });
+    const embed = new EmbedBuilder()
+        .setTitle("🛒 Catálogo de objetos")
+        .setDescription((aviso ? `${aviso}\n\n` : "") + (lineas.join("\n\n") || "No hay objetos. Crea uno con ➕."))
+        .setFooter({ text: `Página ${pagina} de ${paginas} · ${objetos.length} objetos` })
+        .setColor(0x3498db);
+    const acciones = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cat_crear").setLabel("➕ Crear").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_cat_editar").setLabel("✏️ Editar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cat_eliminar").setLabel("🗑️ Eliminar").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("paneladmin_cat_vender").setLabel("🏷️ A la venta").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cat_quitar").setLabel("❌ Quitar de la venta").setStyle(ButtonStyle.Secondary),
+    );
+    const nav = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`paneladmin_cat_pag_${pagina - 1}`)
+            .setLabel("◀")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina <= 1),
+        new ButtonBuilder()
+            .setCustomId(`paneladmin_cat_pag_${pagina + 1}`)
+            .setLabel("▶")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(pagina >= paginas),
+        new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: "", embeds: [embed], components: [acciones, nav] };
+}
+
+const MODALES = {
+    paneladmin_cat_crear: () =>
+        simpleModal("paneladmin_cat_crear_modal", "Crear objeto", [
+            { id: "nombre", label: "Nombre", maxLength: 100 },
+            { id: "descripcion", label: "Descripción", paragraph: true, maxLength: 1000 },
+            { id: "tipo", label: "Tipo: rol, consumible o coleccionable", placeholder: "consumible" },
+            {
+                id: "extra",
+                label: "Efecto (consumible) o rol (ID o mención)",
+                placeholder: "monedas:500 · mensaje:texto · <@&123…>",
+                required: false,
+            },
+            { id: "imagen", label: "Imagen (URL)", required: false },
+        ]),
+    paneladmin_cat_editar: () =>
+        simpleModal("paneladmin_cat_editar_modal", "Editar objeto", [
+            { id: "id", label: "ID del objeto", placeholder: "12" },
+            { id: "campo", label: `Campo: ${CAMPOS.join(", ")}`.slice(0, 45), placeholder: "precio no: eso es 🏷️ A la venta" },
+            { id: "valor", label: "Valor nuevo (vacío = borrarlo)", paragraph: true, required: false },
+        ]),
+    paneladmin_cat_eliminar: () => simpleModal("paneladmin_cat_eliminar_modal", "Eliminar objeto", [{ id: "id", label: "ID del objeto" }]),
+    paneladmin_cat_vender: () =>
+        simpleModal("paneladmin_cat_vender_modal", "Poner a la venta (o cambiar precio)", [
+            { id: "id", label: "ID del objeto" },
+            { id: "precio", label: "Precio en monedas" },
+            { id: "stock", label: "Stock (vacío = ilimitado)", required: false },
+        ]),
+    paneladmin_cat_quitar: () => simpleModal("paneladmin_cat_quitar_modal", "Quitar de la venta", [{ id: "id", label: "ID del objeto" }]),
+};
+
+async function handleCatalogoButton(interaction) {
+    const id = interaction.customId;
+    if (id === "paneladmin_cat_home") {
+        await interaction.update(buildCatalogo(1));
+        return true;
+    }
+    if (id.startsWith("paneladmin_cat_pag_")) {
+        await interaction.update(buildCatalogo(parseInt(id.replace("paneladmin_cat_pag_", ""), 10) || 1));
+        return true;
+    }
+    if (MODALES[id]) {
+        await interaction.showModal(MODALES[id]());
+        return true;
+    }
+    return false;
+}
+
+// Aplica el formulario y devuelve el aviso para el panel (o { error }).
+function aplicar(interaction) {
+    const id = interaction.customId;
+    const v = (campo) => {
+        try {
+            return interaction.fields.getTextInputValue(campo).trim();
+        } catch {
+            return "";
+        }
+    };
+    const audit = (action, details) =>
+        adminAudit.logAdminAction({ guildId: interaction.guildId, actorId: interaction.user.id, action, details });
+    const objetoId = parseInt(v("id"), 10);
+    const obj = Number.isInteger(objetoId) ? db.prepare("SELECT * FROM objeto WHERE id = ?").get(objetoId) : null;
+
+    if (id === "paneladmin_cat_crear_modal") {
+        const tipo = v("tipo").toLowerCase();
+        if (!TIPOS.includes(tipo)) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
+        const extra = v("extra");
+        const efecto = tipo === "consumible" ? extra || null : null;
+        const rolId = tipo === "rol" ? idRol(extra) : null;
+        const errorEfecto = validarEfecto(efecto);
+        if (errorEfecto) return { error: errorEfecto };
+        const r = db
+            .prepare("INSERT INTO objeto (nombre, descripcion, imagen, tipo, unico, rolId, efecto) VALUES (?, ?, ?, ?, 0, ?, ?)")
+            .run(v("nombre"), v("descripcion"), v("imagen") || null, tipo, rolId, efecto);
+        audit("objeto.create", { id: r.lastInsertRowid, nombre: v("nombre"), tipo, rolId, efecto });
+        return { aviso: `✅ Objeto **#${r.lastInsertRowid} ${v("nombre")}** creado. Ponlo a la venta con 🏷️.` };
+    }
+    if (!obj) return { error: "No existe un objeto con ese ID." };
+
+    if (id === "paneladmin_cat_editar_modal") {
+        const campo = v("campo").toLowerCase();
+        if (!CAMPOS.includes(campo)) return { error: `Campo desconocido. Puede ser: ${CAMPOS.join(", ")}.` };
+        let valor = v("valor") || null;
+        if (campo === "tipo" && valor && !TIPOS.includes(valor.toLowerCase()))
+            return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
+        if (campo === "efecto" && validarEfecto(valor)) return { error: validarEfecto(valor) };
+        if ((campo === "nombre" || campo === "descripcion") && !valor) return { error: `El ${campo} no puede quedar vacío.` };
+        if (campo === "unico") valor = ["si", "sí", "1", "true"].includes(String(valor).toLowerCase()) ? 1 : 0;
+        if (campo === "rol") valor = idRol(valor);
+        const columna = campo === "rol" ? "rolId" : campo;
+        db.prepare(`UPDATE objeto SET ${columna} = ? WHERE id = ?`).run(valor, obj.id);
+        audit("objeto.edit", { id: obj.id, campo, antes: obj[columna], valor });
+        return { aviso: `✏️ **#${obj.id} ${obj.nombre}**: ${campo} actualizado.` };
+    }
+    if (id === "paneladmin_cat_eliminar_modal") {
+        if (db.prepare("SELECT 1 FROM inventario WHERE itemId = ? LIMIT 1").get(obj.id))
+            return { error: "No se puede eliminar: alguien lo tiene en su inventario." };
+        if (db.prepare("SELECT 1 FROM tienda WHERE objetoId = ? LIMIT 1").get(obj.id))
+            return { error: "No se puede eliminar: está a la venta (quítalo antes con ❌)." };
+        db.prepare("DELETE FROM objeto WHERE id = ?").run(obj.id);
+        audit("objeto.delete", { id: obj.id, nombre: obj.nombre });
+        return { aviso: `🗑️ Objeto **${obj.nombre}** eliminado.` };
+    }
+    if (id === "paneladmin_cat_vender_modal") {
+        const precio = parseInt(v("precio"), 10);
+        const stockTxt = v("stock");
+        const stock = stockTxt === "" ? null : parseInt(stockTxt, 10);
+        if (!Number.isInteger(precio) || precio < 0) return { error: "El precio tiene que ser un número (0 o más)." };
+        if (stock !== null && (!Number.isInteger(stock) || stock < 0))
+            return { error: "El stock tiene que ser un número, o vacío para ilimitado." };
+        const enVenta = db.prepare("SELECT * FROM tienda WHERE objetoId = ?").get(obj.id);
+        if (enVenta) {
+            db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio, stock, enVenta.id);
+            audit("tienda.item.edit", { tiendaId: enVenta.id, antes: { precio: enVenta.precio, stock: enVenta.stock }, precio, stock });
+        } else {
+            db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, ?, ?)").run(obj.id, precio, stock);
+            audit("tienda.item.add", { objetoId: obj.id, nombre: obj.nombre, precio, stock });
+        }
+        return { aviso: `🏷️ **${obj.nombre}** a la venta por ${precio} 🪙 (stock ${stock ?? "ilimitado"}).` };
+    }
+    if (id === "paneladmin_cat_quitar_modal") {
+        const r = db.prepare("DELETE FROM tienda WHERE objetoId = ?").run(obj.id);
+        if (!r.changes) return { error: "Ese objeto no estaba a la venta." };
+        audit("tienda.item.remove", { objetoId: obj.id, nombre: obj.nombre });
+        return { aviso: `❌ **${obj.nombre}** ya no está a la venta.` };
+    }
+    return null;
+}
+
+async function handleCatalogoModal(interaction) {
+    if (!interaction.customId.startsWith("paneladmin_cat_")) return false;
+    const r = aplicar(interaction);
+    if (!r) return false;
+    if (r.error) {
+        await interaction.reply(privado(`❌ ${r.error}`));
+        return true;
+    }
+    if (interaction.isFromMessage?.()) await interaction.update(buildCatalogo(1, r.aviso));
+    else await interaction.reply(privado(r.aviso));
+    return true;
+}
+
+module.exports = { buildCatalogo, handleCatalogoButton, handleCatalogoModal };
