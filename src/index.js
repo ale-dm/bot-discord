@@ -1,5 +1,5 @@
 // Importar discord.js
-const { Client, GatewayIntentBits, ActivityType, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, ActivityType, Collection, MessageFlags } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const cron = require("node-cron");
@@ -25,8 +25,8 @@ const client = new Client({
 
 const Estado = process.env.ESTADOS ? process.env.ESTADOS.split(",") : ["Jugando"];
 const duendeCommand = require("./commands/duende/duende");
-const adivinar = require("./commands/casino/adivinar.js");
-const blackjack = require("./commands/casino/blackjack.js");
+const adivinar = require("./juegos/casino/adivinar.js");
+const blackjack = require("./juegos/casino/blackjack.js");
 const pagarapuestas = require("./commands/apuestas/pagarapuestas.js");
 const cripto = require("./systems/cripto/mercado");
 const xpSystem = require("./systems/xpSystem");
@@ -74,7 +74,7 @@ function isLowEffortMessage(text) {
     return false;
 }
 const db = require("./core/db");
-const { ROOT, COMMANDS_DIR } = require("./core/paths");
+const { ROOT, COMMANDS_DIR, JUEGOS_DIR } = require("./core/paths");
 
 // src/commands solo contiene slash commands (un fichero por comando, en subcarpetas por tema).
 function getAllJsFiles(dir) {
@@ -108,6 +108,14 @@ try {
             log.error(`No se pudo cargar el módulo ${path.relative(ROOT, file)}:`, e);
         }
     }
+    // Los juegos y las apuestas no son comandos (se entra por /juegos), pero sus botones sí se atienden.
+    for (const file of getAllJsFiles(JUEGOS_DIR)) {
+        try {
+            componentRouter.register(require(file), path.relative(ROOT, file));
+        } catch (e) {
+            log.error(`No se pudo cargar el módulo ${path.relative(ROOT, file)}:`, e);
+        }
+    }
     log.info(`Cargados ${client.slashCommands.size} comandos y ${componentRouter.size} rutas de componentes.`);
 } catch (err) {
     log.error("Error cargando los comandos:", err);
@@ -134,7 +142,8 @@ const reembolsadas = activeGames.reembolsarPendientes();
 if (reembolsadas > 0) log.info(`${reembolsadas} partidas de casino interrumpidas por el reinicio reembolsadas.`);
 
 // Evento cuando el bot está listo
-client.on("ready", async () => {
+// "clientReady" (antes "ready", que discord.js 14 marca como obsoleto y quita en la 15).
+client.once("clientReady", async () => {
     const guilds = [...client.guilds.cache.values()].map((g) => `${g.name} (${g.id})`).join(", ");
     log.info(`Conectado como ${client.user.tag} · ${client.guilds.cache.size} servidor(es): ${guilds}`);
     // Única línea de consola al arrancar; el detalle va a logs/app-log.txt.
@@ -188,10 +197,12 @@ client.on("ready", async () => {
             async () => {
                 const n = await xpSystem.backfillRoles(guild);
                 if (n > 0) log.info(`Backfill: ${n} roles de nivel asignados en ${guild.name}`);
+                // Después del backfill, que ya ha cargado los miembros del servidor: pedirlos otra vez
+                // a la vez hacía que Discord limitara la petición ("opcode 8 was rate limited").
+                await require("./systems/duende/perfiles").vincularPerfiles(guild);
             },
             { slowMs: 120_000 },
         );
-        runJob(`Vincular perfiles del Duende (${guild.name})`, () => require("./systems/duende/perfiles").vincularPerfiles(guild));
     }
     setInterval(
         () =>
@@ -259,7 +270,7 @@ client.on("interactionCreate", async (interaction) => {
         const acl = guildSettings.isCommandAllowed(interaction, commandName);
         if (acl.ok) return false;
         logger.info(`${what} denegado por ACL de /${commandName} · ${whoWhere(interaction)} · ${acl.message || ""}`);
-        await replySafe(interaction, { content: acl.message || "⛔ Acción no permitida aquí.", ephemeral: true });
+        await replySafe(interaction, { content: acl.message || "⛔ Acción no permitida aquí.", flags: MessageFlags.Ephemeral });
         return true;
     };
 
@@ -274,7 +285,7 @@ client.on("interactionCreate", async (interaction) => {
             compLog.info(`${what}${describeComponentInput(interaction)} · ${whoWhere(interaction)} · ${Date.now() - t0} ms`);
         } catch (e) {
             compLog.error(`${what} falló (${route.source}.${route.method}) · ${whoWhere(interaction)} · ${Date.now() - t0} ms`, e);
-            await replySafe(interaction, { content: "Hubo un error al procesar esta acción.", ephemeral: true });
+            await replySafe(interaction, { content: "Hubo un error al procesar esta acción.", flags: MessageFlags.Ephemeral });
         }
         return;
     }
@@ -305,7 +316,7 @@ client.on("interactionCreate", async (interaction) => {
         }
     } catch (e) {
         cmdLog.error(`${commandText} falló · ${whoWhere(interaction)} · ${Date.now() - t0} ms`, e);
-        await replySafe(interaction, { content: "Hubo un error al ejecutar el comando.", ephemeral: true });
+        await replySafe(interaction, { content: "Hubo un error al ejecutar el comando.", flags: MessageFlags.Ephemeral });
     }
 });
 

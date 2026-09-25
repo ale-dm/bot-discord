@@ -1,4 +1,12 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType } = require("discord.js");
+const {
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelSelectMenuBuilder,
+    ChannelType,
+    MessageFlags,
+} = require("discord.js");
 const seerrClient = require("../services/seerrClient");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
@@ -50,7 +58,7 @@ async function handleSeerrButton(interaction) {
     }
 
     if (id === "paneladmin_seerr_test") {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const result = await seerrClient.testConnection(guildId);
         if (result.ok) {
             await interaction.editReply(`✅ Conexión con Seerr correcta (v${result.version}).`);
@@ -81,7 +89,7 @@ async function handleSeerrButton(interaction) {
         await interaction.reply({
             content: "¿En qué canal se puede pedir/buscar contenido? (en cuanto añadas el primero, el resto de canales dejan de poder)",
             components: [row],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -98,7 +106,10 @@ async function handleSeerrButton(interaction) {
     if (id === "paneladmin_seerr_channel_clear") {
         seerrClient.clearAllowedChannels(guildId);
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "seerr.channels.clear" });
-        await interaction.reply({ content: "✅ Sin restricción: se puede pedir/buscar en Seerr en cualquier canal.", ephemeral: true });
+        await interaction.reply({
+            content: "✅ Sin restricción: se puede pedir/buscar en Seerr en cualquier canal.",
+            flags: MessageFlags.Ephemeral,
+        });
         return true;
     }
 
@@ -116,7 +127,7 @@ async function handleSeerrChannelSelect(interaction) {
             action: "seerr.channels.add",
             details: { channelId },
         });
-        await interaction.reply({ content: `✅ Seerr permitido en <#${channelId}>.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Seerr permitido en <#${channelId}>.`, flags: MessageFlags.Ephemeral });
         return true;
     }
     return false;
@@ -126,7 +137,7 @@ async function handleSeerrModal(interaction) {
     if (interaction.customId === "paneladmin_seerr_channel_remove_modal") {
         const channelId = interaction.fields.getTextInputValue("channel_id").trim();
         if (!/^\d{17,19}$/.test(channelId)) {
-            await interaction.reply({ content: "ID de canal inválido.", ephemeral: true });
+            await interaction.reply({ content: "ID de canal inválido.", flags: MessageFlags.Ephemeral });
             return true;
         }
         seerrClient.removeAllowedChannel(interaction.guildId, channelId);
@@ -136,7 +147,7 @@ async function handleSeerrModal(interaction) {
             action: "seerr.channels.remove",
             details: { channelId },
         });
-        await interaction.reply({ content: "✅ Canal quitado de la lista de Seerr.", ephemeral: true });
+        await interaction.reply({ content: "✅ Canal quitado de la lista de Seerr.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -144,7 +155,7 @@ async function handleSeerrModal(interaction) {
         const raw = interaction.fields.getTextInputValue("limit").trim();
         const num = Number(raw);
         if (!Number.isFinite(num) || num < 0) {
-            await interaction.reply({ content: "Número inválido.", ephemeral: true });
+            await interaction.reply({ content: "Número inválido.", flags: MessageFlags.Ephemeral });
             return true;
         }
         guildSettings.setSetting(interaction.guildId, "seerr.daily_request_limit", num);
@@ -154,7 +165,7 @@ async function handleSeerrModal(interaction) {
             action: "seerr.limit.set",
             details: { limit: num },
         });
-        await interaction.reply({ content: `✅ Límite diario de peticiones IA: ${num || "sin límite"}.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Límite diario de peticiones IA: ${num || "sin límite"}.`, flags: MessageFlags.Ephemeral });
         return true;
     }
 

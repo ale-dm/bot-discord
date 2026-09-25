@@ -1,7 +1,7 @@
 // /duende: hablar con el Duende y gestionar sus personalidades y lo que recuerda de la gente.
 // Las piezas están en systems/duende (config, memoria, personas) y services/duende (gemini,
 // herramientas, voz); aquí queda el comando y la construcción del prompt.
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { createLogger } = require("../../core/logger");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
@@ -36,6 +36,8 @@ async function safeEditReply(interaction, content) {
         }
         // Truncate and attempt to send; leave room for truncation notice
         const truncated = text.slice(0, MAX - 50) + "\n\n(Respuesta truncada por longitud)";
+        // Los followUp no heredan lo privado de la respuesta: si esta era privada, los trozos también.
+        const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
         try {
             await interaction.editReply({ content: truncated });
             // If possible, follow up with remaining content in chunks (best-effort)
@@ -45,7 +47,7 @@ async function safeEditReply(interaction, content) {
                     const chunk = rest.slice(0, MAX - 20);
                     rest = rest.slice(MAX - 20);
                     try {
-                        await interaction.followUp({ content: chunk });
+                        await interaction.followUp({ content: chunk, flags });
                     } catch (e) {
                         break;
                     }
@@ -56,7 +58,7 @@ async function safeEditReply(interaction, content) {
             // If editReply fails, try simple followUp
             if (interaction.followUp && typeof interaction.followUp === "function") {
                 try {
-                    await interaction.followUp({ content: truncated });
+                    await interaction.followUp({ content: truncated, flags });
                     return true;
                 } catch (e2) {
                     log.debug(`followUp de respaldo también falló: ${e2.message}`);
@@ -138,7 +140,7 @@ module.exports = {
         .addSubcommand((sc) =>
             sc
                 .setName("recuerda")
-                .setDescription("Guarda una nota sobre alguien para que el Duende la recuerde siempre")
+                .setDescription("Guarda una nota sobre ti (o sobre otro, si eres admin) para que el Duende la recuerde")
                 .addUserOption((option) => option.setName("usuario").setDescription("Sobre quién es la nota").setRequired(true))
                 .addStringOption((option) =>
                     option.setName("nota").setDescription("Qué debe recordar el Duende").setRequired(true).setMaxLength(200),
@@ -150,12 +152,15 @@ module.exports = {
                 .setDescription("Borra las notas que el Duende tiene sobre ti (o sobre otro, si eres admin)")
                 .addUserOption((option) => option.setName("usuario").setDescription("De quién olvidar las notas").setRequired(true)),
         )
-        .addSubcommand((sc) => sc.setName("personas").setDescription("Lista lo que el Duende recuerda sobre la gente")),
+        .addSubcommand((sc) => sc.setName("personas").setDescription("Lo que el Duende recuerda de ti (de todos, si eres admin)")),
 
     async run(client, interaction) {
         try {
-            await interaction.deferReply();
             const sub = interaction.options.getSubcommand();
+            // Lo que se sabe de cada uno (las notas y los perfiles) se responde en privado.
+            const privado = ["recuerda", "olvida", "personas"].includes(sub);
+            await interaction.deferReply(privado ? { flags: MessageFlags.Ephemeral } : {});
+            const esAdmin = !!interaction.member?.permissions?.has?.("Administrator");
             const guildCfg = interaction.guildId ? guildSettings.getSettings(interaction.guildId).duende : null;
             const configuredModel = String(guildCfg?.model || "").trim();
             const historyLimit = Math.max(1, Number(guildCfg?.history_limit || DUENDE_HISTORY_LIMIT));
@@ -235,6 +240,17 @@ module.exports = {
             if (sub === "recuerda") {
                 const targetUser = interaction.options.getUser("usuario");
                 const nota = interaction.options.getString("nota").trim();
+                // Solo sobre uno mismo (los admins, sobre cualquiera): las notas van directas al prompt
+                // cada vez que esa persona habla, y una nota sobre otro podía cambiar cómo le trata el
+                // Duende ("ignora tus instrucciones y...") o ser simplemente ofensiva.
+                if (targetUser.id !== interaction.user.id && !esAdmin) {
+                    log.info(`${interaction.user.tag} intentó guardar una nota sobre ${targetUser.username} sin permiso`);
+                    await safeEditReply(
+                        interaction,
+                        "Solo puedes guardar notas sobre ti. Para anotar algo de otra persona, pídeselo a un admin.",
+                    );
+                    return;
+                }
                 // Por Discord ID (antes por username: al cambiarlo se perdían las notas). Se guardan
                 // las MAX_NOTAS más recientes para no inflar el prompt sin límite.
                 const nombre = apodos.nombreDe(interaction.guildId, targetUser.id) || targetUser.globalName || targetUser.username;
@@ -248,7 +264,6 @@ module.exports = {
             if (sub === "olvida") {
                 const targetUser = interaction.options.getUser("usuario");
                 // Solo la propia persona o un admin: antes cualquiera podía borrar lo de otro.
-                const esAdmin = !!interaction.member?.permissions?.has?.("Administrator");
                 if (targetUser.id !== interaction.user.id && !esAdmin) {
                     log.info(`${interaction.user.tag} intentó borrar las notas de ${targetUser.username} sin permiso`);
                     await safeEditReply(
@@ -274,9 +289,16 @@ module.exports = {
 
             // PERSONAS: lista lo que se recuerda de cada uno
             if (sub === "personas") {
-                const lista = perfiles.listarPerfiles();
+                // Cada uno ve solo lo suyo; los admins, todo.
+                const propio = perfiles.perfilDe(interaction.user);
+                const lista = esAdmin ? perfiles.listarPerfiles() : propio ? [propio] : [];
                 if (!lista.length) {
-                    await safeEditReply(interaction, "No tengo notas guardadas sobre nadie todavía. Usa `/duende recuerda`.");
+                    await safeEditReply(
+                        interaction,
+                        esAdmin
+                            ? "No tengo notas guardadas sobre nadie todavía. Usa `/duende recuerda`."
+                            : "No recuerdo nada sobre ti todavía. Usa `/duende recuerda` para contarme algo.",
+                    );
                     return;
                 }
                 const listText = lista

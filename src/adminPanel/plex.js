@@ -6,6 +6,7 @@ const {
     UserSelectMenuBuilder,
     ChannelSelectMenuBuilder,
     ChannelType,
+    MessageFlags,
 } = require("discord.js");
 const plexLinks = require("../systems/plexLinks");
 const tautulliClient = require("../services/tautulliClient");
@@ -83,7 +84,7 @@ async function handlePlexButton(interaction) {
                 .setMinValues(1)
                 .setMaxValues(1),
         );
-        await interaction.reply({ content: "¿A quién quieres vincular con Plex?", components: [row], ephemeral: true });
+        await interaction.reply({ content: "¿A quién quieres vincular con Plex?", components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -95,12 +96,12 @@ async function handlePlexButton(interaction) {
                 .setMinValues(1)
                 .setMaxValues(1),
         );
-        await interaction.reply({ content: "¿A quién quieres desvincular de Plex?", components: [row], ephemeral: true });
+        await interaction.reply({ content: "¿A quién quieres desvincular de Plex?", components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
 
     if (id === "paneladmin_plex_test") {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const result = await tautulliClient.testConnection(guildId);
         if (result.ok) {
             await interaction.editReply(`✅ Conexión con Tautulli correcta. ${result.userCount} usuarios visibles.`);
@@ -119,14 +120,18 @@ async function handlePlexButton(interaction) {
                 .setMaxValues(1)
                 .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
         );
-        await interaction.reply({ content: "¿En qué canal se anuncian las novedades de Plex?", components: [row], ephemeral: true });
+        await interaction.reply({
+            content: "¿En qué canal se anuncian las novedades de Plex?",
+            components: [row],
+            flags: MessageFlags.Ephemeral,
+        });
         return true;
     }
 
     if (id === "paneladmin_plex_novedades_clear") {
         guildSettings.setSetting(guildId, "plex.novedades_channel_id", "");
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "plex.novedades.clear" });
-        await interaction.reply({ content: "✅ Novedades automáticas desactivadas.", ephemeral: true });
+        await interaction.reply({ content: "✅ Novedades automáticas desactivadas.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -142,7 +147,7 @@ async function handlePlexButton(interaction) {
         await interaction.reply({
             content: "¿En qué canal se puede preguntar por Plex? (en cuanto añadas el primero, el resto de canales dejan de poder)",
             components: [row],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -159,7 +164,10 @@ async function handlePlexButton(interaction) {
     if (id === "paneladmin_plex_channel_clear") {
         tautulliClient.clearAllowedChannels(guildId);
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "plex.channels.clear" });
-        await interaction.reply({ content: "✅ Sin restricción: se puede preguntar por Plex en cualquier canal.", ephemeral: true });
+        await interaction.reply({
+            content: "✅ Sin restricción: se puede preguntar por Plex en cualquier canal.",
+            flags: MessageFlags.Ephemeral,
+        });
         return true;
     }
 
@@ -176,7 +184,7 @@ async function handlePlexChannelSelect(interaction) {
             action: "plex.novedades.set",
             details: { channelId },
         });
-        await interaction.reply({ content: `✅ Canal de novedades: <#${channelId}>`, ephemeral: true });
+        await interaction.reply({ content: `✅ Canal de novedades: <#${channelId}>`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -190,7 +198,7 @@ async function handlePlexChannelSelect(interaction) {
             action: "plex.channels.add",
             details: { channelId },
         });
-        await interaction.reply({ content: `✅ Plex permitido en <#${channelId}>.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Plex permitido en <#${channelId}>.`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -217,7 +225,7 @@ async function handlePlexUserSelect(interaction) {
             action: "plex.unlink",
             details: { discordUserId },
         });
-        await interaction.reply({ content: `✅ <@${discordUserId}> desvinculado de Plex.`, ephemeral: true });
+        await interaction.reply({ content: `✅ <@${discordUserId}> desvinculado de Plex.`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -228,7 +236,7 @@ async function handlePlexModal(interaction) {
     if (interaction.customId === "paneladmin_plex_channel_remove_modal") {
         const channelId = interaction.fields.getTextInputValue("channel_id").trim();
         if (!/^\d{17,19}$/.test(channelId)) {
-            await interaction.reply({ content: "ID de canal inválido.", ephemeral: true });
+            await interaction.reply({ content: "ID de canal inválido.", flags: MessageFlags.Ephemeral });
             return true;
         }
         tautulliClient.removeAllowedChannel(interaction.guildId, channelId);
@@ -238,7 +246,7 @@ async function handlePlexModal(interaction) {
             action: "plex.channels.remove",
             details: { channelId },
         });
-        await interaction.reply({ content: "✅ Canal quitado de la lista de Plex.", ephemeral: true });
+        await interaction.reply({ content: "✅ Canal quitado de la lista de Plex.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -253,7 +261,7 @@ async function handlePlexModal(interaction) {
         users = await tautulliClient.getUsers(guildId);
     } catch (e) {
         log.warn(`Vincular Plex: no se pudo consultar Tautulli para buscar "${query}":`, e.message);
-        await interaction.reply({ content: `❌ No se pudo consultar Tautulli: ${e.message}`, ephemeral: true });
+        await interaction.reply({ content: `❌ No se pudo consultar Tautulli: ${e.message}`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -261,7 +269,7 @@ async function handlePlexModal(interaction) {
     if (!match) {
         await interaction.reply({
             content: `❌ No encuentro a "${query}" en Tautulli. Usa el nombre exacto de usuario de Plex.`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -273,7 +281,7 @@ async function handlePlexModal(interaction) {
         action: "plex.link",
         details: { discordUserId, tautulliUserId: match.user_id, plexUsername: match.username },
     });
-    await interaction.reply({ content: `✅ <@${discordUserId}> vinculado a **${match.username}**.`, ephemeral: true });
+    await interaction.reply({ content: `✅ <@${discordUserId}> vinculado a **${match.username}**.`, flags: MessageFlags.Ephemeral });
     return true;
 }
 

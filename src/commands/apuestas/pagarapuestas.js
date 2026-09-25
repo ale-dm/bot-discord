@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
@@ -74,6 +74,11 @@ function caducarSinResultado(limite, resumen) {
     logInfo(
         `[PAGARAPUESTAS] Caducados ${partidos.length} partidos y ${quinielas.length} quinielas sin resultado (empezaron hace más de ${DIAS_RESULTADOS} días); ${resumen.reembolsos} apuestas reembolsadas`,
     );
+}
+
+/** Aciertos necesarios para cobrar una quiniela: la mitad de los partidos, redondeando hacia arriba. */
+function minimoAciertosQuiniela(numPartidos) {
+    return Math.ceil(numPartidos / 2);
 }
 
 let liquidacionEnCurso = false;
@@ -248,24 +253,37 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 return { ...ap, aciertos };
             });
 
+            // Para cobrar hay que acertar al menos la mitad de los partidos (5 de 10). Si nadie llega,
+            // se devuelve lo apostado: antes el 90 % se repartía entre los que más acertaran aunque
+            // fallaran todo, y un jugador solo recuperaba el 90 % sin acertar nada.
+            const minimo = minimoAciertosQuiniela(partidosQ.length);
             const maxAciertos = apuestasConAciertos.length ? Math.max(...apuestasConAciertos.map((a) => a.aciertos)) : 0;
-            const ganadoras = apuestasConAciertos.filter((a) => a.aciertos === maxAciertos);
+            const hayGanadores = maxAciertos >= minimo;
+            const ganadoras = hayGanadores ? apuestasConAciertos.filter((a) => a.aciertos === maxAciertos) : [];
             const bote = apuestasConAciertos.reduce((acc, a) => acc + a.cantidad, 0);
             const fondoPremios = Math.floor(bote * 0.9);
             const premioUnitario = ganadoras.length > 0 ? Math.floor(fondoPremios / ganadoras.length) : 0;
 
             db.transaction(() => {
                 for (const a of apuestasConAciertos) {
-                    const premio = a.aciertos === maxAciertos ? premioUnitario : 0;
+                    // Sin ganadores, "premio" es lo que se le devuelve (como en las caducadas).
+                    const premio = hayGanadores ? (a.aciertos === maxAciertos ? premioUnitario : 0) : a.cantidad;
                     if (premio > 0) {
+                        const descripcion = hayGanadores
+                            ? `Quiniela ganada: ${q.jornada}`
+                            : `Reembolso: quiniela ${q.jornada}, nadie llegó a ${minimo} aciertos`;
                         db.prepare(`UPDATE banco SET saldo = saldo + ? WHERE userId = ?`).run(premio, a.user_id);
                         db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
                             a.user_id,
                             new Date().toISOString(),
-                            `Quiniela ganada: ${q.jornada}`,
+                            descripcion,
                             premio,
                         );
-                        resumen.pagos.push({ userId: a.user_id, premio, descripcion: `Quiniela ${q.jornada}` });
+                        resumen.pagos.push(
+                            hayGanadores
+                                ? { userId: a.user_id, premio, descripcion: `Quiniela ${q.jornada}` }
+                                : { userId: a.user_id, premio, descripcion, reembolso: true },
+                        );
                     }
                     db.prepare(
                         `
@@ -273,14 +291,19 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                         SET pagado = 1, aciertos = ?, premio = ?
                         WHERE id = ?
                     `,
-                    ).run(a.aciertos, premio, a.id);
+                    ).run(a.aciertos, hayGanadores ? premio : 0, a.id);
                 }
                 db.prepare(`UPDATE quinielas SET estado = 'cerrada', cerrada_en = ? WHERE id = ?`).run(new Date().toISOString(), q.id);
             })();
 
+            if (!hayGanadores) resumen.reembolsos += apuestasConAciertos.length;
             resumen.quinielasCerradas++;
             resumen.premiosQuiniela += premioUnitario * ganadoras.length;
-            logInfo(`[PAGARAPUESTAS] Quiniela cerrada ${q.id}: ${ganadoras.length} ganadores, premio unitario ${premioUnitario}`);
+            logInfo(
+                hayGanadores
+                    ? `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: ${ganadoras.length} ganadores con ${maxAciertos} aciertos, premio unitario ${premioUnitario}`
+                    : `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: nadie llegó a ${minimo} aciertos (máx. ${maxAciertos}), ${apuestasConAciertos.length} apuestas reembolsadas`,
+            );
         }
 
         (resumen.total || resumen.quinielasCerradas || resumen.caducados ? logInfo : logDebug)(
@@ -299,7 +322,7 @@ async function avisarGanadores(client, pagos) {
             const user = await client.users.fetch(p.userId);
             await user.send(
                 p.reembolso
-                    ? `↩️ Te he devuelto **${p.premio.toLocaleString("es")}** monedas: ${p.descripcion.replace(/^Reembolso: /, "")} (no hay forma de saber el resultado).`
+                    ? `↩️ Te he devuelto **${p.premio.toLocaleString("es")}** monedas: ${p.descripcion.replace(/^Reembolso: /, "")}.`
                     : `🏆 ¡Has ganado **${p.premio.toLocaleString("es")}** monedas con tu apuesta (${p.descripcion})!`,
             );
         } catch (e) {
@@ -316,14 +339,18 @@ module.exports = {
 
     liquidarApuestas,
     avisarGanadores,
+    minimoAciertosQuiniela,
     AUTO_MIN_HORAS_DESDE_INICIO,
 
     async run(client, interaction) {
         if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({ content: "⛔ Solo administradores pueden forzar el pago de apuestas.", ephemeral: true });
+            await interaction.reply({
+                content: "⛔ Solo administradores pueden forzar el pago de apuestas.",
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
-        await interaction.reply({ content: "⏳ Procesando apuestas deportivas...", ephemeral: true });
+        await interaction.reply({ content: "⏳ Procesando apuestas deportivas...", flags: MessageFlags.Ephemeral });
         logInfo(`[PAGARAPUESTAS] Iniciado por ${interaction.user.username} (${interaction.user.id})`);
 
         let resumen;

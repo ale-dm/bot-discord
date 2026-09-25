@@ -9,6 +9,7 @@ const {
     ButtonStyle,
     UserSelectMenuBuilder,
     StringSelectMenuBuilder,
+    MessageFlags,
 } = require("discord.js");
 const perfiles = require("../systems/duende/perfiles");
 const { buildPersonProfileText } = require("../systems/duende/personas");
@@ -185,7 +186,7 @@ async function handlePerfilesButton(interaction) {
         return true;
     }
     if (id === `${P}elegir`) {
-        await interaction.reply({ ...buildSelector(), ephemeral: true });
+        await interaction.reply({ ...buildSelector(), flags: MessageFlags.Ephemeral });
         return true;
     }
     if (id === `${P}elegir_otro`) {
@@ -277,7 +278,7 @@ async function handlePerfilesModal(interaction) {
         notas,
     });
     if (!r.ok) {
-        await interaction.reply({ content: `❌ ${r.error} No se ha guardado nada.`, ephemeral: true });
+        await interaction.reply({ content: `❌ ${r.error} No se ha guardado nada.`, flags: MessageFlags.Ephemeral });
         return true;
     }
     const despues = perfiles.perfilPorId(m[1]);
@@ -307,7 +308,7 @@ async function handlePerfilesModal(interaction) {
 
     const ficha = buildFicha(despues, interaction.guildId, avisos.join(" "));
     if (interaction.isFromMessage()) await interaction.update(ficha);
-    else await interaction.reply({ ...ficha, ephemeral: true });
+    else await interaction.reply({ ...ficha, flags: MessageFlags.Ephemeral });
     return true;
 }
 

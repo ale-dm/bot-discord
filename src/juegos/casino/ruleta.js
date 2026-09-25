@@ -1,4 +1,4 @@
-﻿const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { EmbedBuilder, MessageFlags } = require("discord.js");
 const {
     registrarUsuario,
     descontarApuesta,
@@ -8,6 +8,7 @@ const {
     applyRtp,
 } = require("../../systems/casinoTransactions");
 const { createLogger } = require("../../core/logger");
+const casino = require("../../paneles/casino");
 
 const log = createLogger("Ruleta");
 
@@ -116,7 +117,7 @@ async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
     // 1. Descontar apuesta — comprometida antes de animar
     const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
     if (!descuento.exito) {
-        await interaction.reply({ content: `❌ ${descuento.mensaje}`, ephemeral: true });
+        await interaction.reply({ content: `❌ ${descuento.mensaje}`, flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -220,45 +221,15 @@ async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
     }
 }
 
+// La fila común de final de partida; Repetir lleva también el tipo de apuesta.
 function buildRow(apuesta, tipo, valor) {
-    return new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`ruleta_rept_${apuesta}_${tipo}_${valor}`)
-            .setLabel(`🔄 Repetir (${apuesta.toLocaleString("es")} 🪙)`)
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("casino_ruleta").setLabel("🎡 Nueva apuesta").setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId("casino_home").setLabel("◀ Casino").setStyle(ButtonStyle.Secondary),
-    );
+    return casino.filaFinJuego("ruleta", apuesta, { repetir: `casino_play_ruleta_${apuesta}_${tipo}_${valor}` });
 }
 
 // ─── MÓDULO ───────────────────────────────────────────────────────────────────
 
 module.exports = {
-    componentHandlers: [{ types: ["button"], prefixes: ["ruleta_"], method: "handleButton", acl: "perfil" }],
-    data: new SlashCommandBuilder()
-        .setName("ruleta")
-        .setDescription("🎡 Ruleta europea — apuesta a número, color, par/impar, mitad o docena")
-        .addIntegerOption((opt) => opt.setName("apuesta").setDescription("Monedas a apostar").setRequired(true).setMinValue(10))
-        .addStringOption((opt) =>
-            opt
-                .setName("tipo")
-                .setDescription("Tipo de apuesta")
-                .setRequired(false)
-                .addChoices(
-                    { name: "🔴 Rojo (×2)", value: "color:rojo" },
-                    { name: "⚫ Negro (×2)", value: "color:negro" },
-                    { name: "Par (×2)", value: "paridad:par" },
-                    { name: "Impar (×2)", value: "paridad:impar" },
-                    { name: "Bajo 1-18 (×2)", value: "mitad:bajo" },
-                    { name: "Alto 19-36 (×2)", value: "mitad:alto" },
-                    { name: "1ª docena 1-12 (×3)", value: "docena:1" },
-                    { name: "2ª docena 13-24 (×3)", value: "docena:2" },
-                    { name: "3ª docena 25-36 (×3)", value: "docena:3" },
-                ),
-        )
-        .addIntegerOption((opt) =>
-            opt.setName("numero").setDescription("Apostar a número exacto 0-36 (×36)").setRequired(false).setMinValue(0).setMaxValue(36),
-        ),
+    componentHandlers: [{ types: ["button"], prefixes: ["ruleta_"], method: "handleButton", acl: "juegos" }],
 
     async run(client, interaction) {
         const userId = interaction.user.id;
@@ -275,23 +246,29 @@ module.exports = {
         } else if (tipoStr) {
             [tipo, valor] = tipoStr.split(":");
         } else {
-            await interaction.reply({ content: "❌ Elige un **tipo** de apuesta o especifica un **número**.", ephemeral: true });
+            await interaction.reply({
+                content: "❌ Elige un **tipo** de apuesta o especifica un **número**.",
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
 
         const saldo = obtenerSaldo(userId);
         if (saldo < apuesta) {
-            await interaction.reply({ content: `❌ Saldo insuficiente. Tienes **${saldo.toLocaleString("es")}** 🪙.`, ephemeral: true });
+            await interaction.reply({
+                content: `❌ Saldo insuficiente. Tienes **${saldo.toLocaleString("es")}** 🪙.`,
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
 
-        // Adaptador: slash command usa deferReply, animarYGirar espera deferUpdate
-        await interaction.deferReply();
+        // Adaptador: animarYGirar está hecho para botones (deferUpdate + editReply). Desde el comando,
+        // "diferir" es deferReply, y el aviso de cobro fallido (antes de diferir) es una respuesta normal.
         const wrapped = {
             ...interaction,
-            deferUpdate: async () => {}, // ya diferido arriba
+            deferUpdate: async () => interaction.deferReply(),
             update: async (p) => interaction.editReply(p),
-            reply: async (p) => interaction.editReply(p),
+            reply: async (p) => interaction.reply(p),
             editReply: async (p) => interaction.editReply(p),
         };
         await animarYGirar(wrapped, userId, apuesta, tipo, valor);
@@ -304,7 +281,7 @@ module.exports = {
         // Owner check — solo quien originó el mensaje puede usar los botones
         const ownerId = interaction.message.interaction?.user?.id || interaction.message.interactionMetadata?.user?.id;
         if (ownerId && ownerId !== userId) {
-            await interaction.reply({ content: "⛔ Solo quien usó el comando puede interactuar.", ephemeral: true });
+            await interaction.reply({ content: "⛔ Solo quien usó el comando puede interactuar.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -321,7 +298,7 @@ module.exports = {
             if (saldo < apuesta) {
                 await interaction.reply({
                     content: `❌ No tienes **${apuesta.toLocaleString("es")}** 🪙 para repetir. Tienes **${saldo.toLocaleString("es")}**.`,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }

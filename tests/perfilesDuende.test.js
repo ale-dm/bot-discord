@@ -48,13 +48,14 @@ test("un perfil importado por username se vincula al Discord ID y sobrevive al c
     expect(perfiles.perfilDe({ id: "222", username: "raul_02" })).toBeNull();
 });
 
-test("vincularPerfiles busca a los miembros del servidor por username", async () => {
+test("vincularPerfiles busca a los miembros del servidor (en caché) por username", async () => {
     db.prepare("INSERT INTO duende_perfiles (username, nombre) VALUES ('ana_99', 'Ana'), ('nadie', 'Nadie')").run();
     const miembros = new Map([["333", { id: "333", user: { id: "333", username: "Ana_99" } }]]);
     miembros.find = (fn) => [...miembros.values()].find(fn);
-    const guild = { name: "test", members: { fetch: async () => miembros, cache: miembros } };
+    const guild = { name: "test", members: { fetch: jest.fn(), cache: miembros } };
 
     expect(await perfiles.vincularPerfiles(guild)).toBe(1);
+    expect(guild.members.fetch).not.toHaveBeenCalled();
     expect(perfiles.perfilPorDiscordId("333")).toMatchObject({ name: "Ana" });
 });
 

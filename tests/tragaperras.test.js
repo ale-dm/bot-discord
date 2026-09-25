@@ -1,4 +1,4 @@
-const tragaperras = require("../src/commands/casino/tragaperras");
+const tragaperras = require("../src/juegos/casino/tragaperras");
 
 describe("tragaperras calcularGanancia", () => {
     const { calcularGanancia } = tragaperras.__test;

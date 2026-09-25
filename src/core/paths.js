@@ -15,4 +15,6 @@ module.exports = {
     MODELS_DIR: path.join(ROOT, "models"),
     // Un fichero .js por slash command, agrupados en subcarpetas por tema.
     COMMANDS_DIR: path.join(ROOT, "src", "commands"),
+    // Juegos y apuestas: no son comandos (se entra por /juegos), pero sus botones se registran igual.
+    JUEGOS_DIR: path.join(ROOT, "src", "juegos"),
 };

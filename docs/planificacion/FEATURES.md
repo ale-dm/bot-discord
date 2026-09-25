@@ -70,6 +70,7 @@ Lo que más aporta con menos trabajo:
 | F-EC-03 | **Clasificación semanal con premios** | S | Cada lunes, premio automático al más rico, al más activo y al mejor apostador (con F-AP-03). |
 | F-EC-04 | **Duelos de casino entre jugadores** | M | Dados, piedra-papel-tijera o blackjack 1v1, con el dinero retenido (el sistema de partidas en curso ya lo permite). |
 | F-EC-05 | **Pase de batalla** | L | Diseñado en [diseno/pase-de-batalla-s1.md](diseno/pase-de-batalla-s1.md). |
+| F-EC-06 | **Impuestos, robos y dinero negro** | M | Sobre el efectivo y el banco del [plan de paneles](diseno/reorganizacion-paneles.md#4-plan-de-ejecución) (parte 5): el banco es seguro y el efectivo se puede perder. Robar efectivo a otro, impuestos sobre ingresos o saldo, dinero negro que no se puede ingresar sin "blanquearlo". Por diseñar. |
 
 ## Comunidad
 

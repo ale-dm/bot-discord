@@ -42,12 +42,16 @@ el-duende/
 │   ├── commands/           Un fichero por slash command, agrupados por tema
 │   │   ├── duende/           /duende /ia /imagen /bola8 /javier
 │   │   ├── voz/              /tts /escuchar
-│   │   ├── casino/           /blackjack /tragaperras /ruleta /adivinar /ppt
-│   │   ├── apuestas/         /apuestas /quiniela /misapuestas /pagarapuestas
+│   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
+│   │   ├── apuestas/         /pagarapuestas
 │   │   ├── economia/         /banco /tienda /objeto /inventario /usar /cripto /ttcl-diagnostico
 │   │   ├── progresion/       /nivel /logros /perfil
 │   │   ├── admin/            /paneladmin /panel /diagnostico
 │   │   └── general/          /ayuda /ping
+│   ├── juegos/             Juegos del casino y apuestas: no son comandos (se entra por /juegos), pero
+│   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
+│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas)
+│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /juegos, /tienda y /cripto
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, Plex, Seerr, apodos y
 │   │                         perfiles del Duende, auditoría)
 │   ├── systems/            Lógica del bot que usan varios comandos
@@ -78,7 +82,9 @@ el-duende/
 - **Un comando nuevo** = un fichero en `src/commands/<tema>/` que exporte `data` (SlashCommandBuilder)
   y `run(client, interaction)`. Se carga y registra solo; no hay que tocar `index.js`.
 - **Botones, menús y formularios**: el propio comando declara `componentHandlers` con los prefijos de
-  `customId` que atiende (ver `src/core/componentRouter.js`).
+  `customId` que atiende (ver `src/core/componentRouter.js`). Los módulos de `src/juegos/` también, aunque
+  no sean comandos.
+- **Construir mensajes** (embeds, filas de botones) va a `src/paneles/`; los comandos solo reparten.
 - **Lógica compartida** entre comandos va a `src/systems/`; **llamadas a APIs externas** a `src/services/`.
   Las dependencias van `commands` → `systems`/`services`, nunca al revés.
 - **Rutas**: siempre desde `src/core/paths.js`, nunca relativas al fichero o al directorio actual.

@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
 const { simpleModal } = require("./common");
@@ -356,7 +356,7 @@ async function handleSettingsModal(interaction) {
             "duende.history_limit": interaction.fields.getTextInputValue("history").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.duende.update" });
-        await interaction.reply({ content: "✅ Configuración de Duende actualizada.", ephemeral: true });
+        await interaction.reply({ content: "✅ Configuración de Duende actualizada.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -369,7 +369,7 @@ async function handleSettingsModal(interaction) {
             action: "settings.duende.channel",
             details: { channelId: channelId || null },
         });
-        await interaction.reply({ content: "✅ Canal permitido de Duende actualizado.", ephemeral: true });
+        await interaction.reply({ content: "✅ Canal permitido de Duende actualizado.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -381,7 +381,7 @@ async function handleSettingsModal(interaction) {
             "cripto.fee_sell_pct": interaction.fields.getTextInputValue("feeSell").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.cripto.market" });
-        await interaction.reply({ content: "✅ Configuración de mercado cripto actualizada.", ephemeral: true });
+        await interaction.reply({ content: "✅ Configuración de mercado cripto actualizada.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -394,7 +394,7 @@ async function handleSettingsModal(interaction) {
             "cripto.max_sell": interaction.fields.getTextInputValue("maxSell").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.cripto.limits" });
-        await interaction.reply({ content: "✅ Límites de compra/venta cripto actualizados.", ephemeral: true });
+        await interaction.reply({ content: "✅ Límites de compra/venta cripto actualizados.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -406,7 +406,7 @@ async function handleSettingsModal(interaction) {
             "casino.daily_limit": interaction.fields.getTextInputValue("daily").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.limits" });
-        await interaction.reply({ content: "✅ Límites de casino actualizados.", ephemeral: true });
+        await interaction.reply({ content: "✅ Límites de casino actualizados.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -418,7 +418,7 @@ async function handleSettingsModal(interaction) {
             "casino.rtp_adivinar": interaction.fields.getTextInputValue("adivinar").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.rtp" });
-        await interaction.reply({ content: "✅ RTP de casino actualizado.", ephemeral: true });
+        await interaction.reply({ content: "✅ RTP de casino actualizado.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -430,7 +430,7 @@ async function handleSettingsModal(interaction) {
             "tienda.notif_channel_id": interaction.fields.getTextInputValue("channel").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.tienda.update" });
-        await interaction.reply({ content: "✅ Configuración de tienda actualizada.", ephemeral: true });
+        await interaction.reply({ content: "✅ Configuración de tienda actualizada.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -441,7 +441,7 @@ async function handleSettingsModal(interaction) {
         const rolesRaw = interaction.fields.getTextInputValue("roles").trim();
 
         if (!command) {
-            await interaction.reply({ content: "❌ Debes indicar un comando.", ephemeral: true });
+            await interaction.reply({ content: "❌ Debes indicar un comando.", flags: MessageFlags.Ephemeral });
             return true;
         }
 
@@ -452,7 +452,7 @@ async function handleSettingsModal(interaction) {
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.acl.update", details: { command } });
 
-        await interaction.reply({ content: `✅ ACL actualizada para /${command}.`, ephemeral: true });
+        await interaction.reply({ content: `✅ ACL actualizada para /${command}.`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -464,7 +464,7 @@ async function handleSettingsModal(interaction) {
             "logros.disabled_categories": interaction.fields.getTextInputValue("disabled").trim().toLowerCase(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.logros.update" });
-        await interaction.reply({ content: "✅ Configuración de logros actualizada.", ephemeral: true });
+        await interaction.reply({ content: "✅ Configuración de logros actualizada.", flags: MessageFlags.Ephemeral });
         return true;
     }
 

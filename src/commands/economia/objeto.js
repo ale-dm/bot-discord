@@ -1,4 +1,12 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    PermissionFlagsBits,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    MessageFlags,
+} = require("discord.js");
 const db = require("../../core/db");
 const adminAudit = require("../../systems/adminAudit");
 const { createLogger } = require("../../core/logger");
@@ -90,7 +98,7 @@ module.exports = {
     async run(client, interaction) {
         try {
             if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-                await interaction.reply({ content: "Solo administradores pueden usar este comando.", ephemeral: true });
+                await interaction.reply({ content: "Solo administradores pueden usar este comando.", flags: MessageFlags.Ephemeral });
                 return;
             }
             const sub = interaction.options.getSubcommand();
@@ -108,7 +116,7 @@ module.exports = {
                 const efecto = interaction.options.getString("efecto")?.trim() || null;
                 const errorEfecto = validarEfecto(efecto);
                 if (errorEfecto) {
-                    await interaction.reply({ content: `❌ ${errorEfecto}`, ephemeral: true });
+                    await interaction.reply({ content: `❌ ${errorEfecto}`, flags: MessageFlags.Ephemeral });
                     return;
                 }
 
@@ -122,7 +130,7 @@ module.exports = {
                     details: { nombre, tipo, unico: !!unico, categoria, rareza, rolId, efecto },
                 });
 
-                await interaction.reply({ content: `✅ Objeto **${nombre}** creado.`, ephemeral: true });
+                await interaction.reply({ content: `✅ Objeto **${nombre}** creado.`, flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -135,7 +143,7 @@ module.exports = {
                 if (enInventario) {
                     await interaction.reply({
                         content: "❌ No puedes eliminar este objeto porque está en el inventario de algún usuario.",
-                        ephemeral: true,
+                        flags: MessageFlags.Ephemeral,
                     });
                     return;
                 }
@@ -143,13 +151,16 @@ module.exports = {
                 // Verifica si el objeto está en la tienda
                 const enTienda = db.prepare("SELECT 1 FROM tienda WHERE objetoId = ? LIMIT 1").get(id);
                 if (enTienda) {
-                    await interaction.reply({ content: "❌ No puedes eliminar este objeto porque está en la tienda.", ephemeral: true });
+                    await interaction.reply({
+                        content: "❌ No puedes eliminar este objeto porque está en la tienda.",
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
 
                 const obj = db.prepare("SELECT nombre FROM objeto WHERE id = ?").get(id);
                 if (!obj) {
-                    await interaction.reply({ content: "No existe un objeto con ese ID.", ephemeral: true });
+                    await interaction.reply({ content: "No existe un objeto con ese ID.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 db.prepare("DELETE FROM objeto WHERE id = ?").run(id);
@@ -159,7 +170,7 @@ module.exports = {
                     action: "objeto.delete",
                     details: { id, nombre: obj.nombre },
                 });
-                await interaction.reply({ content: `🗑️ Objeto **${obj.nombre}** eliminado.`, ephemeral: true });
+                await interaction.reply({ content: `🗑️ Objeto **${obj.nombre}** eliminado.`, flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -168,7 +179,7 @@ module.exports = {
                 const id = interaction.options.getInteger("id");
                 const obj = db.prepare("SELECT * FROM objeto WHERE id = ?").get(id);
                 if (!obj) {
-                    await interaction.reply({ content: "No existe un objeto con ese ID.", ephemeral: true });
+                    await interaction.reply({ content: "No existe un objeto con ese ID.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 const nombre = interaction.options.getString("nombre") || obj.nombre;
@@ -182,7 +193,7 @@ module.exports = {
                 const efecto = interaction.options.getString("efecto")?.trim() || obj.efecto;
                 const errorEfecto = validarEfecto(efecto);
                 if (errorEfecto) {
-                    await interaction.reply({ content: `❌ ${errorEfecto}`, ephemeral: true });
+                    await interaction.reply({ content: `❌ ${errorEfecto}`, flags: MessageFlags.Ephemeral });
                     return;
                 }
                 db.prepare(
@@ -206,7 +217,7 @@ module.exports = {
                     details: { id, nombre, tipo, categoria, rareza, rolId, efecto },
                 });
 
-                await interaction.reply({ content: `✏️ Objeto #${id} actualizado.`, ephemeral: true });
+                await interaction.reply({ content: `✏️ Objeto #${id} actualizado.`, flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -261,13 +272,13 @@ module.exports = {
                         .setDisabled(totalPaginas <= 1),
                 );
 
-                await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+                await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
                 return;
             }
         } catch (err) {
             log.error("Error ejecutando /objeto:", err);
             try {
-                await interaction.reply({ content: "❌ Error ejecutando el comando.", ephemeral: true });
+                await interaction.reply({ content: "❌ Error ejecutando el comando.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -281,7 +292,11 @@ module.exports = {
 
             const objetos = db.prepare("SELECT * FROM objeto ORDER BY id ASC").all();
             if (!objetos.length) {
-                await interaction.update({ content: "No hay objetos en el catálogo.", embeds: [], components: [], ephemeral: true });
+                await interaction.update({
+                    content: "No hay objetos en el catálogo.",
+                    embeds: [],
+                    components: [],
+                });
                 return;
             }
 
@@ -335,7 +350,11 @@ module.exports = {
         } catch (err) {
             log.error("Error en la paginación de /objeto:", err);
             try {
-                await interaction.update({ content: "❌ Error en la paginación.", embeds: [], components: [], ephemeral: true });
+                await interaction.update({
+                    content: "❌ Error en la paginación.",
+                    embeds: [],
+                    components: [],
+                });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }

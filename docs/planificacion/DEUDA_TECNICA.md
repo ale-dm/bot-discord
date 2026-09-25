@@ -12,67 +12,19 @@ complica el mantenimiento) · 🟢 baja (limpieza). **Esfuerzo:** S (una tarde) 
 
 | ID | Qué | Área | Prioridad | Esfuerzo |
 |---|---|---|---|---|
-| [DT-01](#dt-01-las-copias-de-seguridad-están-en-el-mismo-disco) | Las copias de seguridad están en el mismo disco | Datos | 🔴 | S |
-| [DT-03](#dt-03-el-límite-diario-del-duende-es-global-y-en-memoria) | El límite diario del Duende es global y en memoria | Duende | 🟠 | S |
-| [DT-07](#dt-07-ficheros-demasiado-grandes) | Ficheros demasiado grandes (quedan 6) | Arquitectura | 🟠 | M |
-| [DT-12](#dt-12-ephemeral-true-está-obsoleto) | `ephemeral: true` está obsoleto en discord.js | Dependencias | 🟢 | S |
-| [DT-08](#dt-08-vulnerabilidades-en-dependencias) | Vulnerabilidades en dependencias (solo `tar`, sin arreglo) | Dependencias | 🟢 | — |
+| [DT-13](#dt-13-restos-sin-uso-de-versiones-anteriores) | Restos sin uso de versiones anteriores | Limpieza | 🟢 | S |
 
 Además: [decisiones tomadas](#decisiones-tomadas) que no son deuda pero conviene recordar.
 
 ---
 
-## DT-01 Las copias de seguridad están en el mismo disco
+## DT-13 Restos sin uso de versiones anteriores
 
-**Qué pasa.** El backup diario (`src/systems/backups.js`) se guarda en `data/backups/`, en el mismo disco
-que la BD.
-**Por qué importa.** Protege de una corrupción o de un borrado por error, pero no de que falle el disco.
-**Propuesta.** Copiar `/compose/duende-bot/data/backups/` a otro disco o NAS con una tarea del propio OMV
-(rsync programado), o subir la copia del día a Drive/S3 desde el bot.
+**Qué pasa.**
+- `/panel` repite las estadísticas de `/paneladmin`.
 
-## DT-03 El límite diario del Duende es global y en memoria
-
-**Qué pasa.** `DUENDE_DAILY_LIMIT` (50 respuestas/día) es un único contador en memoria
-(`src/commands/duende/duende.js`), y el día cambia a medianoche **UTC** (el contenedor no tiene zona
-horaria), es decir, a las 01:00/02:00 en Madrid.
-**Por qué importa.** Una sola persona puede agotarlo para todo el servidor, y se reinicia cada vez que se
-reinicia el bot.
-**Propuesta.** Usar `guildSettings.checkAndConsumeLimit` (tabla `action_limits`) con un cupo por usuario y
-otro global, configurables en el panel, con el día en hora de Madrid.
-
-## DT-07 Ficheros demasiado grandes
-
-**Hecho.** `duende.js`, `cripto.js`, `blackjack.js` y `tienda.js` ya tienen su lógica fuera del comando
-(`src/systems/duende/`, `src/systems/cripto/`, `src/systems/blackjack.js`, `src/systems/tienda.js`), y
-`apuestas.js` ha perdido la quiniela duplicada que nadie usaba (677 → 426 líneas).
-
-**Qué queda.** `adminPanel/levels.js` (810 líneas), `blackjack.js` (796: el juego en sí, con cada acción
-—pedir, plantarse, doblar, separar— mezclada con los mensajes), `xpSystem.js` (753), `tienda.js` (731:
-los paneles de admin de la tienda), `cripto.js` (714: solo paneles) y `perfil.js` (642).
-**Por qué importa.** Mezclan lógica y construcción de mensajes de Discord, lo que dificulta probarlos.
-**Propuesta.** Por orden de utilidad:
-1. `blackjack.js`: pasar el estado de la partida y cada acción a `systems/blackjack.js` (funciones puras
-   que reciben el estado y devuelven el nuevo), con tests de split y doblar. Es donde más dinero se mueve.
-2. `adminPanel/levels.js`: partir por pantalla (configuración, recompensas, títulos, canales ignorados).
-3. `xpSystem.js`: separar XP por mensaje/voz, rachas y roles de nivel.
-
-## DT-12 `ephemeral: true` está obsoleto
-
-**Qué pasa.** discord.js 14 avisa de que `ephemeral: true` en las respuestas está obsoleto y hay que usar
-`flags: MessageFlags.Ephemeral`. Se usa en unos 300 sitios.
-**Por qué importa.** Hoy solo es un aviso, pero en discord.js 15 dejará de funcionar y los mensajes
-privados pasarían a ser públicos.
-**Propuesta.** Sustitución mecánica en todo `src/` (y en los tests que lo comprueban) antes de actualizar a
-discord.js 15.
-
-## DT-08 Vulnerabilidades en dependencias
-
-**Hecho.** `npm audit fix` (sin cambios incompatibles): de 22 avisos (16 altos, 1 crítico) a 5.
-**Qué queda.** Los 5 son del mismo paquete, `tar`, que llega por `@discordjs/opus` →
-`@discordjs/node-pre-gyp` y **solo se usa al instalar** (para descomprimir el binario de opus), no con el
-bot en marcha. No hay versión corregida.
-**Propuesta.** Nada por ahora. Revisar con `npm audit` al actualizar dependencias; si molesta, se puede
-cambiar `@discordjs/opus` por `opusscript` (JavaScript puro, más lento) y desaparece.
+**Propuesta.** Quitarlo en la parte del [plan](diseno/reorganizacion-paneles.md#4-plan-de-ejecución) que toque:
+la 8. (Los prefijos antiguos de la quiniela ya se quitaron en la parte 1.) (`banco.enMano` no es un resto: pasa a ser el efectivo, decisión D4.)
 
 ---
 
@@ -83,3 +35,5 @@ cambiar `@discordjs/opus` por `opusscript` (JavaScript puro, más lento) y desap
   económicos.
 - **Resultados de fútbol y configuración de servidores de prueba** (antes DT-10 y DT-11): descartados de
   esta lista; se gestionan a mano.
+- **Copias de seguridad en el mismo disco y límite diario del Duende global y en memoria** (antes DT-01 y
+  DT-03): descartados el 2026-09-25, no hacen falta.

@@ -2,6 +2,140 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-25 (reorganización de paneles, parte 4: /juegos)
+
+Cuarta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+- **Comando nuevo `/juegos [seccion]`**, con cuatro pestañas en la última fila de todas sus pantallas:
+  🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats (la actual, resaltada).
+  - **Casino**: el panel que había en `/perfil`, más PPT.
+  - **Apuestas**: los partidos, con botones para cambiar de competición y 🧾 Quiniela.
+  - **Mis jugadas**: ⏳ En juego y 📋 Resueltas.
+  - **Stats**: casino, apuestas a partidos y quinielas juntos, con el beneficio total.
+- **Se borran 8 comandos**: `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `/ppt`, `/apuestas`,
+  `/quiniela` y `/misapuestas`. Todo lo que hacían se hace desde `/juegos`. Su código pasa de `src/commands/` a
+  `src/juegos/` (con `git mv`): ya no registran comando, pero sus botones se siguen atendiendo (`index.js` los
+  registra aparte), así que los mensajes antiguos siguen funcionando.
+- **`/perfil` → 🎰 Casino** abre la pestaña Casino de `/juegos` en el mismo mensaje. El reparto de los botones
+  del casino pasa de `/perfil` a `/juegos`.
+- **Permisos (ACL):** los botones del casino y las apuestas se rigen por las reglas de `juegos` (antes, los del
+  casino por las de `perfil`).
+- `/ayuda`, FUNCIONALIDADES y el README hablan de `/juegos`; en el README, las carpetas `src/juegos/` y
+  `src/paneles/`.
+- Tests: 155.
+
+## 2026-09-25 (reorganización de paneles, parte 3: Mis jugadas)
+
+Tercera parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+- **Mis jugadas** (`/misapuestas`): partidos y quinielas juntos, en tres vistas: ⏳ En juego, 📋 Resueltas y
+  📈 Stats. En juego enseña también tus pronósticos de cada quiniela abierta con los aciertos que llevas, y tus
+  últimas partidas del casino. La lógica está en `systems/apuestas/misJugadas.js` y los mensajes en
+  `paneles/misJugadas.js`.
+- **Todo enlazado:** Mis jugadas lleva a ⚽ Apostar a partidos, 🧾 Quiniela y 🎰 Casino. `/apuestas` tiene
+  📋 Mis jugadas (se abre en el mismo mensaje) y 🧾 Quiniela, y `/quiniela` tiene ⚽ Partidos. Después de
+  apostar a un partido o a la quiniela salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela.
+- **Las estadísticas incluyen las quinielas.** Una quiniela devuelta (nadie llegó al mínimo o caducó) cuenta
+  como recuperada, no como perdida.
+
+### Errores corregidos
+- **E-08 · La quiniela no dejaba ver tus pronósticos ni tus aciertos.** `/quiniela`, si ya has apostado,
+  enseña tu combinación con ✅/❌ en cada partido jugado y los aciertos que llevas. También está en Mis jugadas,
+  junto con las quinielas cerradas y su premio.
+- **E-13 · `/misapuestas` abría un mensaje nuevo en cada botón.** Ahora los botones editan el mensaje, y Stats
+  tiene su fila de botones para volver.
+- Tests: 149.
+
+## 2026-09-25 (reorganización de paneles, parte 2: juegos)
+
+Segunda parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+- **Todas las partidas acaban igual:** 🔄 Repetir (misma apuesta) · 🎲 Otra apuesta · 📊 Stats de ese juego ·
+  ◀ Casino, con `paneles/casino.filaFinJuego`. Antes blackjack, adivinar y ppt acababan sin botones, y la
+  ruleta y la tragaperras tenían cada una los suyos.
+- **Todos empiezan en el selector de importes del casino.** `/blackjack` y `/adivinar` sin apuesta abren el
+  selector, y `/tragaperras` sin apuesta también (con el jackpot actual; antes tenía su propio menú).
+- **`/adivinar` deja de ser siempre 500**: se elige el importe y empieza directamente, sin la pantalla de
+  "Apostar 500 / Cancelar".
+- **Piedra, papel o tijera en el panel de casino**: importe y después jugada, con botones.
+- **Stats por juego**: el botón 📊 abre las stats del casino filtradas por ese juego. La tragaperras ya no
+  tiene las suyas aparte.
+- **Si no se puede cobrar la apuesta** (saldo, límite diario, espera), el aviso sale aparte, solo para ti, y
+  el panel se queda como estaba. Antes, en la tragaperras y la ruleta, el aviso sustituía a la partida y te
+  quedabas sin botones.
+
+### Errores corregidos
+- **Adivinar: perder en las rondas 1 a 3 se guardaba como un empate.** La partida quedaba con resultado 0 en
+  el casino y 0 en el historial, así que las estadísticas, el ganado/perdido del perfil y el ranking del
+  casino no veían esas derrotas. Ahora se registran con lo apostado, como en la ronda 4.
+- Tests: 145.
+
+## 2026-09-25 (reorganización de paneles, parte 1: arreglos rápidos)
+
+Primera parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+### Errores corregidos
+- **E-05 · "Ganado/perdido en casino" contaba todo el historial.** En `/nivel` → 💰 Economía se sumaban depósitos,
+  transferencias, compras, cripto... como si fueran casino. Ahora sale de las partidas del casino.
+- **E-12 · La economía del perfil solo valoraba TTCL.** Ahora BTC, ETH, etc. también tienen valor y entran en el
+  total. La cuenta está en `mercado.valorarCartera`, la misma que usa `/cripto` → Cartera.
+- **E-07 · `/logros reclamar id` pedía un ID que no se veía.** `/logros ver` trae un menú 🎁 con los logros
+  pendientes (con lo que da cada uno) para reclamarlos de uno en uno, y `/logros reclamar` abre ese menú sin
+  pedir nada.
+- **E-09 · Las estadísticas de `/misapuestas` daban por perdidas las pendientes.** Ahora lo apostado y el
+  beneficio solo cuentan las apuestas resueltas, y lo que está pendiente sale aparte ("en juego").
+- **E-10 · Carácter roto** en el título de las estadísticas de `/misapuestas`.
+- **E-06 descartado:** los logros secretos se pueden ver (decisión D3 del plan).
+
+### Deuda técnica
+- **DT-13 (en parte):** la quiniela ya no atiende los prefijos antiguos `apuestas_quiniela_` y
+  `apuestas_modal_quiniela_`, que no generaba ningún botón.
+- Tests: 137.
+
+## 2026-09-25 (errores E-01 a E-04 y toda la deuda técnica)
+
+### Errores corregidos (antes en ERRORES.md)
+- **E-01 · La quiniela pagaba aunque no se acertara nada.** Ahora hay que acertar al menos la mitad de los
+  partidos (5 de 10) para cobrar; el 90 % del bote se sigue repartiendo entre quienes más acierten. Si nadie
+  llega, se devuelve lo apostado a todos (con DM de reembolso). El mínimo se enseña en `/quiniela` y `/ayuda`.
+- **E-02 · `/duende recuerda` dejaba escribir en el perfil de otro.** Ahora cada uno solo puede anotar sobre
+  sí mismo; los admins, sobre cualquiera (como ya pasaba con `/duende olvida`).
+- **E-03 · `/duende personas` enseñaba a todo el canal lo que se sabe de cada uno.** Ahora la respuesta es
+  privada y cada uno ve solo lo suyo; los admins ven a todos. `recuerda` y `olvida` también responden en privado.
+- **E-04 · El historial antiguo no tenía lo apostado en fútbol.** Migración 009: añade al historial, en
+  negativo, las apuestas a partidos y de quiniela anteriores al 2026-09-24 que no estaban apuntadas (las de
+  partidos con la fecha de inicio del partido, porque no se guardaba la de la apuesta). No duplica las que ya
+  estaban. Así el "ganado/perdido" de `/nivel` cuadra.
+- **Blackjack: doblar y pasarse ganaba si el crupier también se pasaba.** Ahora pasarse pierde siempre.
+
+### Deuda técnica
+- **DT-12 · `ephemeral: true` → `flags: MessageFlags.Ephemeral`** en los 305 sitios de `src/`. En `update()`
+  se ha quitado en vez de cambiarlo: ahí nunca hizo nada (lo privado no cambia al editar), y los flags sí se
+  envían a Discord al editar.
+- **DT-07 · Ficheros grandes:** `blackjack.js` (814 → ~500; reglas de cada jugada en `systems/blackjack.js`),
+  `adminPanel/levels.js` (817 → 29; una pantalla por fichero en `adminPanel/niveles/`), `xpSystem.js` (753 → 44;
+  partido en `systems/xp/`), `tienda.js` (757 → 349; datos y compra en `systems/tienda.js`), `cripto.js`
+  (714 → 128) y `perfil.js` (646 → ~250). Los mensajes de los tres últimos van a la carpeta nueva
+  `src/paneles/` (`tienda.js`, `cripto/`, `casino.js`): en `src/commands` cada fichero se carga como un comando.
+  `inventario.js` usa los colores y emojis de la tienda en vez de tener su propia copia.
+- **DT-08 · Vulnerabilidades:** `@discordjs/opus` (nativo, traía `tar` vulnerable al instalar) cambiado por
+  `opusscript` (JavaScript puro, lo usa `prism-media` igual). `npm audit`: 0 vulnerabilidades. La imagen de
+  Docker ya no compila opus.
+- **DT-01 y DT-03**, descartadas (no hacen falta).
+- **Mensajes privados al jugar desde el panel de casino de `/perfil` y en `/ruleta`:** esos adaptadores
+  convierten la respuesta del juego en una edición del mensaje, y tras DT-12 le pasaban los flags de privado
+  (que al editar sí llegan a Discord). Ahora se quitan al editar.
+- Tests: 132 (blackjack y su comando, paneles de niveles, casino y cripto, tienda, quiniela, permisos del
+  Duende, migración 009).
+
+### Avisos al arrancar
+- **"opcode 8 was rate limited" al arrancar**: el backfill de roles y la vinculación de perfiles del
+  Duende pedían a la vez la lista de miembros de cada servidor. Ahora `vincularPerfiles` se ejecuta
+  justo después del backfill y usa los miembros que este ya ha cargado en caché.
+- Evento `ready` → `clientReady` (discord.js 14 avisaba de que está obsoleto y se quita en la 15).
+  Mínimo de discord.js subido a `^14.22.0`, la primera que lo tiene.
+- La vinculación de perfiles ya no escribe en el log de los servidores donde no ha vinculado a nadie.
+
 ## 2026-09-24 (subido a GitHub)
 
 - Todo el trabajo subido a `github.com/ale-dm/bot-discord` (rama `main`), que pasa a ser **privado**

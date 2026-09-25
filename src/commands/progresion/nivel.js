@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const xp = require("../../systems/xpSystem");
 const achievements = require("../../systems/achievementsSystem");
 const casino = require("../../systems/casinoTransactions");
@@ -139,44 +139,30 @@ function buildAchievementsEmbed(guild, userId, member) {
     return embed;
 }
 
-function buildEconomyEmbed(guild, userId, member) {
+// Ganado y perdido en el casino, de la tabla `casino` (resultado neto de cada partida). Antes salía de
+// todo el historial, así que contaba depósitos, transferencias, compras, cripto... como casino.
+function resumenCasino(userId) {
+    return db
+        .prepare(
+            `SELECT COALESCE(SUM(CASE WHEN resultado > 0 THEN resultado ELSE 0 END), 0) AS ganado,
+                    COALESCE(SUM(CASE WHEN resultado < 0 THEN -resultado ELSE 0 END), 0) AS perdido
+             FROM casino WHERE userId = ?`,
+        )
+        .get(userId);
+}
+
+async function buildEconomyEmbed(guild, userId, member) {
     const saldo = casino.obtenerSaldo(userId);
-    const ttclPrecio = cripto.getTtclPrecio(guild.id);
     const username = member?.user?.username || `<@${userId}>`;
     const avatarUrl = member?.user?.displayAvatarURL({ size: 128, extension: "png" }) || null;
+    const { ganado, perdido } = resumenCasino(userId);
 
-    // Cartera de cripto
-    let carteras = [];
-    let histRow = null;
+    // Todas las criptos valoradas (antes solo TTCL: el resto salía sin valor y fuera del total).
+    let cartera = { lineas: [], total: 0 };
     try {
-        carteras = db.prepare("SELECT cripto, cantidad FROM cripto_carteras WHERE userId = ? AND cantidad > 0").all(userId);
+        cartera = await cripto.valorarCartera(userId, guild.id);
     } catch (e) {
-        log.warn(`No se pudo leer la cartera cripto de ${userId}: ${e.message}`);
-    }
-    try {
-        histRow = db
-            .prepare(
-                "SELECT SUM(CASE WHEN cantidad > 0 THEN cantidad ELSE 0 END) AS ganado, SUM(CASE WHEN cantidad < 0 THEN ABS(cantidad) ELSE 0 END) AS perdido FROM historial WHERE userId = ?",
-            )
-            .get(userId);
-    } catch (e) {
-        log.warn(`No se pudo leer el historial económico de ${userId}: ${e.message}`);
-    }
-    const ganado = Number(histRow?.ganado || 0);
-    const perdido = Number(histRow?.perdido || 0);
-
-    const holdingLines = [];
-    let totalCriptoCoins = 0;
-    for (const row of carteras) {
-        if (row.cripto === "TTCL") {
-            const val = row.cantidad * ttclPrecio;
-            totalCriptoCoins += val;
-            holdingLines.push(
-                `💎 **${Number(row.cantidad).toFixed(4)} TTCL** ≈ ${Math.floor(val).toLocaleString()} coins (@ ${ttclPrecio.toFixed(2)})`,
-            );
-        } else {
-            holdingLines.push(`📈 **${Number(row.cantidad).toFixed(6)} ${row.cripto}**`);
-        }
+        log.warn(`No se pudo valorar la cartera cripto de ${userId}: ${e.message}`);
     }
 
     const embed = new EmbedBuilder()
@@ -190,9 +176,13 @@ function buildEconomyEmbed(guild, userId, member) {
         .setColor(0x2ecc71)
         .setTimestamp();
 
-    if (holdingLines.length) {
-        const total = totalCriptoCoins > 0 ? `\nTotal TTCL ≈ **${Math.floor(totalCriptoCoins).toLocaleString()}** coins` : "";
-        embed.addFields({ name: "💹 Cartera cripto", value: holdingLines.join("\n") + total, inline: false });
+    if (cartera.lineas.length) {
+        const lineas = cartera.lineas.map(
+            (l) =>
+                `${l.info?.emoji || "💰"} **${cripto.formatCryptoAmt(l.cantidad)} ${l.cripto}** ≈ ${Math.floor(l.valor).toLocaleString()} coins`,
+        );
+        const total = `\nTotal ≈ **${Math.floor(cartera.total).toLocaleString()}** coins`;
+        embed.addFields({ name: "💹 Cartera cripto", value: lineas.join("\n") + total, inline: false });
     }
 
     if (avatarUrl) embed.setThumbnail(avatarUrl);
@@ -256,7 +246,7 @@ module.exports = {
         const ownerId = interaction.user.id;
 
         if (!guild) {
-            await interaction.reply({ content: "Este comando solo funciona en servidores.", ephemeral: true });
+            await interaction.reply({ content: "Este comando solo funciona en servidores.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -273,7 +263,7 @@ module.exports = {
         const guild = interaction.guild;
         const userId = interaction.user.id;
         if (!guild) {
-            await interaction.reply({ content: "Solo disponible en servidores.", ephemeral: true });
+            await interaction.reply({ content: "Solo disponible en servidores.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -281,7 +271,7 @@ module.exports = {
         // nivel_top_prev_/next_ tienen un segmento extra antes del ownerId
         const ownerId = id.startsWith("nivel_top_prev_") || id.startsWith("nivel_top_next_") ? idParts[3] : idParts[2];
         if (ownerId && ownerId !== userId) {
-            await interaction.reply({ content: "⛔ Solo quien abrió el panel puede usar estos botones.", ephemeral: true });
+            await interaction.reply({ content: "⛔ Solo quien abrió el panel puede usar estos botones.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -309,7 +299,7 @@ module.exports = {
         if (id.startsWith("nivel_eco_")) {
             const targetId = id.split("_")[3] || userId;
             const member = guild.members.cache.get(targetId) || (await guild.members.fetch(targetId).catch(() => null));
-            const embed = buildEconomyEmbed(guild, targetId, member);
+            const embed = await buildEconomyEmbed(guild, targetId, member);
             await interaction.update({ embeds: [embed], components: [navRow(ownerId, targetId, 0)] });
             return;
         }

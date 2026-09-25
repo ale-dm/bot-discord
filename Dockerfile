@@ -3,7 +3,8 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 # Dependencias del sistema:
-# - build tools para módulos nativos: better-sqlite3, @discordjs/opus y canvas (cairo/pango/jpeg/gif/rsvg)
+# - build tools para módulos nativos: better-sqlite3 y canvas (cairo/pango/jpeg/gif/rsvg). Opus va con
+#   opusscript (JavaScript puro), sin compilar nada.
 # - python3-venv + ffmpeg para el servidor Vosk (STT); ffmpeg convierte el audio a WAV mono 16 kHz
 # - tini como PID 1 para reenviar señales (parada ordenada) al bot y a Vosk
 # - curl/unzip para descargar el modelo de Vosk

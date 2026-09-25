@@ -1,42 +1,11 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
 const usar = require("./usar.js");
 
 const OBJETOS_POR_PAGINA = 5;
 
-// Función para color según rareza
-function colorPorRareza(rareza) {
-    switch ((rareza || "").toLowerCase()) {
-        case "legendario":
-            return 0xf1c40f;
-        case "épico":
-            return 0x9b59b6;
-        case "raro":
-            return 0x3498db;
-        case "común":
-            return 0x95a5a6;
-        default:
-            return 0x2980b9;
-    }
-}
-
-// Función para emoji según tipo
-function emojiPorTipo(tipo) {
-    switch ((tipo || "").toLowerCase()) {
-        case "rol":
-            return "🎭";
-        case "consumible":
-            return "🎟️";
-        case "arma":
-            return "⚔️";
-        case "armadura":
-            return "🛡️";
-        case "moneda":
-            return "🪙";
-        default:
-            return "📦";
-    }
-}
+// Mismos colores y emojis que la tienda.
+const { colorPorRareza, emojiPorTipo } = require("../../paneles/tienda");
 
 module.exports = {
     componentHandlers: [{ types: ["button"], prefixes: ["inv_"], method: "handleButton" }],
@@ -82,7 +51,7 @@ module.exports = {
         const objetos = db.prepare(query).all(...params);
 
         if (!objetos.length) {
-            await interaction.reply({ content: "No tienes objetos en tu inventario con esos filtros.", ephemeral: true });
+            await interaction.reply({ content: "No tienes objetos en tu inventario con esos filtros.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -145,7 +114,7 @@ module.exports = {
 
         rows.push(paginacionRow);
 
-        await interaction.reply({ embeds: [embed], components: rows, ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: rows, flags: MessageFlags.Ephemeral });
     },
 
     // Handler para los botones de paginación y usar
@@ -180,7 +149,7 @@ module.exports = {
             // Busca el primer inventarioId disponible para ese itemId
             const inv = db.prepare("SELECT id FROM inventario WHERE userId = ? AND itemId = ? ORDER BY id ASC LIMIT 1").get(userId, itemId);
             if (!inv) {
-                await interaction.reply({ content: "❌ No se encontró el objeto en tu inventario.", ephemeral: true });
+                await interaction.reply({ content: "❌ No se encontró el objeto en tu inventario.", flags: MessageFlags.Ephemeral });
                 return;
             }
             // Crea un interaction "falso" con options.getInteger para usar.js
@@ -251,6 +220,6 @@ module.exports = {
 
         rows.push(paginacionRow);
 
-        await interaction.update({ embeds: [embed], components: rows, ephemeral: true });
+        await interaction.update({ embeds: [embed], components: rows });
     },
 };

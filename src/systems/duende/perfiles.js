@@ -242,19 +242,14 @@ function borrarPerfil(discordId) {
 
 /**
  * Vincula a su Discord ID los perfiles que solo tienen username, buscándolos entre los miembros
- * del servidor (hace falta el intent GuildMembers, que el bot ya usa). Se llama al arrancar.
+ * del servidor que ya estén en caché. Se llama al arrancar, justo después del backfill de roles, que
+ * es quien los carga (pedirlos aquí otra vez hacía que Discord limitara la petición).
  * @returns {number} perfiles vinculados
  */
 async function vincularPerfiles(guild) {
     const pendientes = db.prepare("SELECT * FROM duende_perfiles WHERE discord_id IS NULL AND username IS NOT NULL").all();
     if (!pendientes.length || !guild) return 0;
-    let miembros;
-    try {
-        miembros = await guild.members.fetch();
-    } catch (e) {
-        log.warn(`No se pudieron cargar los miembros de ${guild.name} para vincular perfiles: ${e.message}`);
-        miembros = guild.members.cache;
-    }
+    const miembros = guild.members.cache;
     let n = 0;
     for (const fila of pendientes) {
         const m = miembros.find((x) => x.user.username.toLowerCase() === fila.username.toLowerCase());
@@ -263,7 +258,8 @@ async function vincularPerfiles(guild) {
         n++;
     }
     const sinVincular = pendientes.length - n;
-    if (n || sinVincular) {
+    // El bot está en varios servidores: solo se informa donde se ha vinculado a alguien.
+    if (n) {
         log.info(
             `Perfiles del Duende: ${n} vinculados a su Discord ID en ${guild.name}` +
                 (sinVincular ? ` · ${sinVincular} sin encontrar (se vincularán cuando esa persona hable)` : ""),

@@ -1,4 +1,12 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require("discord.js");
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    PermissionFlagsBits,
+    MessageFlags,
+} = require("discord.js");
 
 // Guía del bot dentro de Discord. El contenido sigue a docs/FUNCIONALIDADES.md: si se
 // añade o cambia un comando, actualizar las dos cosas.
@@ -10,7 +18,7 @@ const SECCIONES = {
         texto: [
             '**Hablar con el Duende**: escribe "duende" o menciónale y responde siempre. A veces se mete solo en la conversación, ve las imágenes que mandas y puede responder por voz si estás en un canal de voz.',
             'Puede mirar datos reales: tu nivel, saldo, logros, precio de TTCL y, en los canales permitidos, Plex y Seerr ("¿qué ha visto Raúl esta semana?", "pídeme Dune").',
-            "`/duende recuerda usuario nota` · `/duende olvida usuario` · `/duende personas` — lo que el Duende sabe de cada uno.",
+            "`/duende recuerda usuario nota` · `/duende olvida usuario` · `/duende personas` — lo que el Duende sabe de ti (en privado; los admins, de cualquiera).",
             "`/duende talk texto` · `/duende list` — hablarle por comando / ver personalidades.",
             "`/ia prompt [agente] [generar_imagen]` — asistentes especializados (técnico, creativo, profesor, coach…).",
             "`/imagen descripcion [imagen1..5] [estilo]` — genera o edita imágenes.",
@@ -34,7 +42,7 @@ const SECCIONES = {
             "Ganas XP escribiendo (una vez cada 15 s) y en voz (5 XP/min, sin mute y con alguien más en el canal). Al subir de nivel desbloqueas rangos y roles.",
             "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
             "`/nivel [usuario]` — nivel, progreso, rango y racha.",
-            "`/logros ver` · `/logros reclamar id` · `/logros reclamar_todo` · `/logros top` — 36 logros con recompensa en monedas.",
+            "`/logros ver` · `/logros reclamar` · `/logros reclamar_todo` · `/logros top` — 36 logros con recompensa en monedas; desde `/logros ver` se reclaman con un menú.",
             "`/perfil [usuario]` — todo junto: nivel, racha, saldo, logros, casino y rankings.",
         ],
     },
@@ -54,11 +62,9 @@ const SECCIONES = {
         emoji: "🎰",
         titulo: "Casino",
         texto: [
-            "`/blackjack apuesta` — pedir, plantarse, doblar y separar. Victoria ×2, blackjack ×2,5.",
-            "`/tragaperras [apuesta]` — jackpot progresivo con tres 7️⃣.",
-            "`/ruleta apuesta [tipo] [numero]` — color, par/impar, mitades ×2 · docenas ×3 · número ×36.",
-            "`/adivinar` — 4 rondas de cartas con 500 monedas, hasta ×20. Puedes retirarte desde la ronda 3.",
-            "`/ppt jugada cantidad` — piedra, papel o tijera contra el Duende (×2).",
+            "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats.",
+            "**Juegos**: blackjack (×2, blackjack ×2,5), tragaperras con jackpot, ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
+            "Eliges juego e importe con botones; al acabar: 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.",
             "Una partida sin tocar 15 min se da por perdida; si el bot se reinicia a mitad, se te devuelve lo apostado.",
         ],
     },
@@ -67,10 +73,9 @@ const SECCIONES = {
         emoji: "⚽",
         titulo: "Apuestas deportivas",
         texto: [
-            "Partidos reales de LaLiga, Premier y Champions con cuotas reales.",
-            "`/apuestas [deporte]` — elige partido y resultado (1/X/2).",
-            "`/quiniela [deporte]` — pronósticos de la jornada; el 90 % del bote se reparte entre quien más acierte.",
-            "`/misapuestas [tipo]` — activas, historial o estadísticas.",
+            "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas.",
+            "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
+            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego, con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto.",
             "Se pagan solas cada hora cuando acaban los partidos, y te aviso por DM si ganas.",
         ],
     },
@@ -154,7 +159,11 @@ module.exports = {
     data: new SlashCommandBuilder().setName("ayuda").setDescription("Guía de todo lo que puede hacer el bot"),
 
     async run(client, interaction) {
-        await interaction.reply({ embeds: [embedInicio(interaction)], components: botones(interaction, null), ephemeral: true });
+        await interaction.reply({
+            embeds: [embedInicio(interaction)],
+            components: botones(interaction, null),
+            flags: MessageFlags.Ephemeral,
+        });
     },
 
     async handleButton(client, interaction) {

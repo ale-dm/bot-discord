@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const { logInfo, logError, logDebug } = require("../../core/logger");
 const db = require("../../core/db");
 
@@ -71,7 +71,7 @@ module.exports = {
                     const wait = Math.ceil((cooldowns[userId] - Date.now()) / 1000);
                     return await interaction.reply({
                         content: `Debes esperar ${wait} segundos antes de volver a usar este comando.`,
-                        ephemeral: true,
+                        flags: MessageFlags.Ephemeral,
                     });
                 }
                 cooldowns[userId] = Date.now() + COOLDOWN_SECONDS * 1000;
@@ -90,7 +90,7 @@ module.exports = {
                     )
                     .setColor(0xffd700)
                     .setTimestamp();
-                await interaction.reply({ embeds: [embed], ephemeral: true });
+                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 logDebug(`[Banco] ${interaction.user.tag} consultó su saldo: Banco ${saldo}, Mano ${enMano}`);
                 return;
             }
@@ -99,15 +99,21 @@ module.exports = {
                 const cantidad = interaction.options.getInteger("cantidad");
                 const row = db.prepare("SELECT enMano FROM banco WHERE userId = ?").get(userId);
                 if (!Number.isInteger(cantidad) || cantidad <= 0) {
-                    await interaction.reply({ content: "La cantidad debe ser un número entero mayor que cero.", ephemeral: true });
+                    await interaction.reply({
+                        content: "La cantidad debe ser un número entero mayor que cero.",
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
                 if (cantidad > LIMITE_MAX) {
-                    await interaction.reply({ content: `No puedes depositar más de ${LIMITE_MAX} monedas a la vez.`, ephemeral: true });
+                    await interaction.reply({
+                        content: `No puedes depositar más de ${LIMITE_MAX} monedas a la vez.`,
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
                 if (!row || row.enMano < cantidad) {
-                    await interaction.reply({ content: "No tienes suficiente dinero en mano.", ephemeral: true });
+                    await interaction.reply({ content: "No tienes suficiente dinero en mano.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 db.prepare("UPDATE banco SET enMano = enMano - ?, saldo = saldo + ? WHERE userId = ?").run(cantidad, cantidad, userId);
@@ -115,7 +121,7 @@ module.exports = {
                 const nuevo = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
                 await interaction.reply({
                     content: `Has depositado **${cantidad} monedas**. Banco: **${nuevo.saldo}** | En mano: **${nuevo.enMano}**`,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 logInfo(`[Banco] ${interaction.user.tag} depositó ${cantidad} monedas (Banco: ${nuevo.saldo}, Mano: ${nuevo.enMano})`);
                 return;
@@ -125,15 +131,21 @@ module.exports = {
                 const cantidad = interaction.options.getInteger("cantidad");
                 const row = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
                 if (!Number.isInteger(cantidad) || cantidad <= 0) {
-                    await interaction.reply({ content: "La cantidad debe ser un número entero mayor que cero.", ephemeral: true });
+                    await interaction.reply({
+                        content: "La cantidad debe ser un número entero mayor que cero.",
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
                 if (cantidad > LIMITE_MAX) {
-                    await interaction.reply({ content: `No puedes retirar más de ${LIMITE_MAX} monedas a la vez.`, ephemeral: true });
+                    await interaction.reply({
+                        content: `No puedes retirar más de ${LIMITE_MAX} monedas a la vez.`,
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
                 if (!row || row.saldo < cantidad) {
-                    await interaction.reply({ content: "No tienes suficiente saldo en el banco.", ephemeral: true });
+                    await interaction.reply({ content: "No tienes suficiente saldo en el banco.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 db.prepare("UPDATE banco SET saldo = saldo - ?, enMano = enMano + ? WHERE userId = ?").run(cantidad, cantidad, userId);
@@ -141,7 +153,7 @@ module.exports = {
                 const nuevo = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
                 await interaction.reply({
                     content: `Has retirado **${cantidad} monedas**. Banco: **${nuevo.saldo}** | En mano: **${nuevo.enMano}**`,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 logInfo(`[Banco] ${interaction.user.tag} retiró ${cantidad} monedas (Banco: ${nuevo.saldo}, Mano: ${nuevo.enMano})`);
                 return;
@@ -152,24 +164,30 @@ module.exports = {
                 const usuarioDestino = interaction.options.getUser("usuario");
 
                 if (!Number.isInteger(cantidad) || cantidad <= 0) {
-                    await interaction.reply({ content: "La cantidad debe ser un número entero mayor que cero.", ephemeral: true });
+                    await interaction.reply({
+                        content: "La cantidad debe ser un número entero mayor que cero.",
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
                 if (cantidad > LIMITE_MAX) {
-                    await interaction.reply({ content: `No puedes transferir más de ${LIMITE_MAX} monedas a la vez.`, ephemeral: true });
+                    await interaction.reply({
+                        content: `No puedes transferir más de ${LIMITE_MAX} monedas a la vez.`,
+                        flags: MessageFlags.Ephemeral,
+                    });
                     return;
                 }
                 if (usuarioDestino.id === userId) {
-                    await interaction.reply({ content: "No puedes transferirte monedas a ti mismo.", ephemeral: true });
+                    await interaction.reply({ content: "No puedes transferirte monedas a ti mismo.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 if (usuarioDestino.bot) {
-                    await interaction.reply({ content: "No puedes transferir monedas a un bot.", ephemeral: true });
+                    await interaction.reply({ content: "No puedes transferir monedas a un bot.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 const row = db.prepare("SELECT enMano FROM banco WHERE userId = ?").get(userId);
                 if (!row || row.enMano < cantidad) {
-                    await interaction.reply({ content: "No tienes suficiente dinero en mano.", ephemeral: true });
+                    await interaction.reply({ content: "No tienes suficiente dinero en mano.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 // Todo o nada: antes eran escrituras sueltas y un fallo a mitad podía quitar el dinero
@@ -184,7 +202,7 @@ module.exports = {
                 const nuevo = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
                 await interaction.reply({
                     content: `Has transferido **${cantidad} monedas** a ${usuarioDestino.username}. Banco: **${nuevo.saldo}** | En mano: **${nuevo.enMano}**`,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 logInfo(
                     `[Banco] ${interaction.user.tag} transfirió ${cantidad} monedas a ${usuarioDestino.tag} (Banco: ${nuevo.saldo}, Mano: ${nuevo.enMano})`,
@@ -201,7 +219,7 @@ module.exports = {
                     .setDescription(lines || "No hay datos aún.")
                     .setColor(0xffd700)
                     .setTimestamp();
-                await interaction.reply({ embeds: [embed], ephemeral: false });
+                await interaction.reply({ embeds: [embed] });
                 logDebug(`[Banco] Ranking consultado.`);
                 return;
             }
@@ -211,7 +229,7 @@ module.exports = {
                     .prepare("SELECT fecha, descripcion, cantidad FROM historial WHERE userId = ? ORDER BY fecha DESC LIMIT 10")
                     .all(userId);
                 if (historial.length === 0) {
-                    await interaction.reply({ content: "No tienes movimientos en tu historial.", ephemeral: true });
+                    await interaction.reply({ content: "No tienes movimientos en tu historial.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 const lines = historial
@@ -225,7 +243,7 @@ module.exports = {
                     .setDescription(lines)
                     .setColor(0xffd700)
                     .setTimestamp();
-                await interaction.reply({ embeds: [embed], ephemeral: true });
+                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 logDebug(`[Banco] ${interaction.user.tag} consultó su historial.`);
                 return;
             }
@@ -233,14 +251,14 @@ module.exports = {
             if (sub === "historialglobal") {
                 // Solo admins pueden usarlo
                 if (!interaction.member.permissions.has("Administrator")) {
-                    await interaction.reply({ content: "No tienes permisos para ver el historial global.", ephemeral: true });
+                    await interaction.reply({ content: "No tienes permisos para ver el historial global.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 const historial = db
                     .prepare("SELECT userId, fecha, descripcion, cantidad FROM historial ORDER BY fecha DESC LIMIT 20")
                     .all();
                 if (historial.length === 0) {
-                    await interaction.reply({ content: "No hay movimientos en el historial global.", ephemeral: true });
+                    await interaction.reply({ content: "No hay movimientos en el historial global.", flags: MessageFlags.Ephemeral });
                     return;
                 }
                 const lines = historial
@@ -254,14 +272,14 @@ module.exports = {
                     .setDescription(lines)
                     .setColor(0xff5555)
                     .setTimestamp();
-                await interaction.reply({ embeds: [embed], ephemeral: true });
+                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 logInfo(`[Banco] ${interaction.user.tag} consultó el historial global.`);
                 return;
             }
         } catch (err) {
             logError("[Banco] Error general:", err);
             try {
-                await interaction.reply({ content: "Hubo un error al gestionar tu banco.", ephemeral: true });
+                await interaction.reply({ content: "Hubo un error al gestionar tu banco.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 logDebug(`[Banco] No se pudo avisar del error: ${e.message}`);
             }

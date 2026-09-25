@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder, MessageFlags } = require("discord.js");
 const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
 const { simpleModal } = require("./common");
@@ -14,7 +14,7 @@ async function handleBankButton(interaction) {
                 .setMinValues(1)
                 .setMaxValues(1),
         );
-        await interaction.reply({ content: "Selecciona el usuario a modificar:", components: [row], ephemeral: true });
+        await interaction.reply({ content: "Selecciona el usuario a modificar:", components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -26,7 +26,7 @@ async function handleBankButton(interaction) {
                 .setMinValues(1)
                 .setMaxValues(1),
         );
-        await interaction.reply({ content: "Selecciona el usuario a resetear:", components: [row], ephemeral: true });
+        await interaction.reply({ content: "Selecciona el usuario a resetear:", components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -38,7 +38,11 @@ async function handleBankButton(interaction) {
                 .setMinValues(1)
                 .setMaxValues(1),
         );
-        await interaction.reply({ content: "Selecciona el usuario cuyo historial quieres borrar:", components: [row], ephemeral: true });
+        await interaction.reply({
+            content: "Selecciona el usuario cuyo historial quieres borrar:",
+            components: [row],
+            flags: MessageFlags.Ephemeral,
+        });
         return true;
     }
 
@@ -93,7 +97,8 @@ async function handleBankButton(interaction) {
             );
         const components = btns.length ? [new ActionRowBuilder().addComponents(...btns)] : [];
 
-        if (id === "paneladmin_bank_historialglobal") await interaction.reply({ embeds: [embed], components, ephemeral: true });
+        if (id === "paneladmin_bank_historialglobal")
+            await interaction.reply({ embeds: [embed], components, flags: MessageFlags.Ephemeral });
         else await interaction.update({ embeds: [embed], components });
         return true;
     }
@@ -157,7 +162,7 @@ async function handleBankModal(interaction) {
         const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
         const tipo = interaction.fields.getTextInputValue("tipo");
         if (!["banco", "enMano"].includes(tipo)) {
-            await interaction.reply({ content: "Tipo inválido. Usa banco o enMano.", ephemeral: true });
+            await interaction.reply({ content: "Tipo inválido. Usa banco o enMano.", flags: MessageFlags.Ephemeral });
             return true;
         }
         db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(userId);
@@ -175,7 +180,7 @@ async function handleBankModal(interaction) {
             action: "bank.balance.modify",
             details: { userId, tipo, cantidad },
         });
-        await interaction.reply({ content: `✅ Saldo actualizado para <@${userId}>.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Saldo actualizado para <@${userId}>.`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -190,7 +195,7 @@ async function handleBankModal(interaction) {
                 ) || null;
 
         if (!member) {
-            await interaction.reply({ content: "Usuario no encontrado.", ephemeral: true });
+            await interaction.reply({ content: "Usuario no encontrado.", flags: MessageFlags.Ephemeral });
             return true;
         }
 
@@ -206,7 +211,7 @@ async function handleBankModal(interaction) {
 
         await interaction.reply({
             embeds: [new EmbedBuilder().setTitle(`🔎 ${member.user.tag}`).setDescription(desc).setColor(0x2980b9)],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }
@@ -232,7 +237,7 @@ async function handleBankUserSelect(interaction) {
             new ButtonBuilder().setCustomId(`paneladmin_bank_confirm_reset_${userId}`).setLabel("✅ Sí").setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId("paneladmin_cancel").setLabel("❌ Cancelar").setStyle(ButtonStyle.Secondary),
         );
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -246,7 +251,7 @@ async function handleBankUserSelect(interaction) {
             new ButtonBuilder().setCustomId(`paneladmin_bank_confirm_borrar_${userId}`).setLabel("✅ Sí").setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId("paneladmin_cancel").setLabel("❌ Cancelar").setStyle(ButtonStyle.Secondary),
         );
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
 

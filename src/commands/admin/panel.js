@@ -1,4 +1,11 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    PermissionFlagsBits,
+    ActionRowBuilder,
+    StringSelectMenuBuilder,
+    MessageFlags,
+} = require("discord.js");
 const db = require("../../core/db");
 
 module.exports = {
@@ -10,7 +17,7 @@ module.exports = {
 
     async run(client, interaction) {
         if (!interaction.member.permissions.has("Administrator")) {
-            await interaction.reply({ content: "No tienes permisos para usar el panel.", ephemeral: true });
+            await interaction.reply({ content: "No tienes permisos para usar el panel.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -205,8 +212,8 @@ async function mostrarPanel(interaction, categoria, isUpdate = false) {
     const row = new ActionRowBuilder().addComponents(select);
 
     if (isUpdate) {
-        await interaction.update({ embeds: [embed], components: [row], ephemeral: true });
+        await interaction.update({ embeds: [embed], components: [row] });
     } else {
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
     }
 }

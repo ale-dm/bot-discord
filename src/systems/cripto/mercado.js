@@ -160,6 +160,23 @@ function cryptoInfoBySymbol(sym) {
     return ALL_CRYPTOS.find((c) => c.simbolo === sym) || null;
 }
 
+/**
+ * Valor en monedas de la cartera de alguien: TTCL con su precio del servidor y el resto con el de
+ * CoinGecko (cacheado 1 min). Si CoinGecko no responde, esas criptos valen 0.
+ * @returns {Promise<{ lineas: {cripto, cantidad, info, precio, valor}[], total: number }>}
+ */
+async function valorarCartera(userId, guildId = null) {
+    const cartera = getUserCarteras(userId);
+    const prices = cartera.some((r) => r.cripto !== "TTCL") ? await fetchGeckoPrices() : {};
+    const ttclP = getTtclPrecio(guildId);
+    const lineas = cartera.map((row) => {
+        const info = cryptoInfoBySymbol(row.cripto);
+        const precio = row.cripto === "TTCL" ? ttclP : (prices[info?.id]?.eur || 0) * COINS_PER_EUR;
+        return { cripto: row.cripto, cantidad: row.cantidad, info, precio, valor: row.cantidad * precio };
+    });
+    return { lineas, total: lineas.reduce((acc, l) => acc + l.valor, 0) };
+}
+
 // ─── LÓGICA DE TRANSACCIONES ──────────────────────────────────────────────────
 
 async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
@@ -343,6 +360,7 @@ module.exports = {
     getUserSaldo,
     getUserCarteras,
     cryptoInfoBySymbol,
+    valorarCartera,
     ejecutarCompra,
     ejecutarVenta,
 };

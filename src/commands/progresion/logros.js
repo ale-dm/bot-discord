@@ -1,4 +1,12 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    StringSelectMenuBuilder,
+    MessageFlags,
+} = require("discord.js");
 const achievements = require("../../systems/achievementsSystem");
 
 function progressBar(progress, target) {
@@ -58,21 +66,39 @@ function buildLogrosPayload(guildId, userId, page = 0, includeHidden = false) {
             .setStyle(ButtonStyle.Secondary),
     );
 
-    return { embeds: [embed], components: [row], meta: { page: safePage, includeHidden } };
+    const components = [row];
+    const menu = menuReclamar(guildId, userId);
+    if (menu) components.push(menu);
+    return { embeds: [embed], components, meta: { page: safePage, includeHidden } };
+}
+
+// Menú con los logros completados sin reclamar (antes había que escribir su ID en `/logros reclamar id`,
+// pero el ID no se enseña en ninguna parte). Discord admite 25 opciones: el resto, con "Reclamar todo".
+function menuReclamar(guildId, userId) {
+    const pendientes = achievements.listUserAchievements(guildId, userId, { includeHidden: true }).filter((a) => a.claimable);
+    if (!pendientes.length) return null;
+    return new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId("logros_reclamar")
+            .setPlaceholder(`🎁 Reclamar un logro (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})`)
+            .addOptions(
+                pendientes.slice(0, 25).map((a) => ({
+                    label: a.name.slice(0, 100),
+                    description: `+${achievements.rewardCoinsFor(a, guildId).toLocaleString("es")} 🪙`,
+                    value: a.id,
+                    emoji: a.emoji || undefined,
+                })),
+            ),
+    );
 }
 
 module.exports = {
-    componentHandlers: [{ types: ["button"], prefixes: ["logros_"], method: "handleButton" }],
+    componentHandlers: [{ types: ["button", "stringSelect"], prefixes: ["logros_"], method: "handleButton" }],
     data: new SlashCommandBuilder()
         .setName("logros")
         .setDescription("Ver y reclamar logros")
         .addSubcommand((sub) => sub.setName("ver").setDescription("Ver tus logros"))
-        .addSubcommand((sub) =>
-            sub
-                .setName("reclamar")
-                .setDescription("Reclamar recompensa de un logro")
-                .addStringOption((o) => o.setName("id").setDescription("ID del logro").setRequired(true)),
-        )
+        .addSubcommand((sub) => sub.setName("reclamar").setDescription("Elegir qué logro reclamar"))
         .addSubcommand((sub) => sub.setName("reclamar_todo").setDescription("Reclamar todas las recompensas pendientes"))
         .addSubcommand((sub) => sub.setName("top").setDescription("Ranking de logros completados")),
 
@@ -83,31 +109,30 @@ module.exports = {
 
         if (sub === "ver") {
             const payload = buildLogrosPayload(guildId, userId, 0, false);
-            await interaction.reply({ embeds: payload.embeds, components: payload.components, ephemeral: true });
+            await interaction.reply({ embeds: payload.embeds, components: payload.components, flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (sub === "reclamar") {
-            const id = interaction.options.getString("id").trim();
-            const result = achievements.claimAchievement(guildId, userId, id);
-            if (!result.ok) {
-                await interaction.reply({ content: `❌ ${result.msg}`, ephemeral: true });
+            const menu = menuReclamar(guildId, userId);
+            if (!menu) {
+                await interaction.reply({ content: "No tienes logros pendientes de reclamar.", flags: MessageFlags.Ephemeral });
                 return;
             }
-            await interaction.reply({
-                content: `✅ Reclamaste **${result.achievement.name}** y ganaste **${result.reward} 🪙**.`,
-                ephemeral: true,
-            });
+            await interaction.reply({ content: "¿Qué logro quieres reclamar?", components: [menu], flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (sub === "reclamar_todo") {
             const result = achievements.claimAll(guildId, userId);
             if (!result.ok) {
-                await interaction.reply({ content: `❌ ${result.msg}`, ephemeral: true });
+                await interaction.reply({ content: `❌ ${result.msg}`, flags: MessageFlags.Ephemeral });
                 return;
             }
-            await interaction.reply({ content: `✅ Reclamaste **${result.count}** logros por **${result.reward} 🪙**.`, ephemeral: true });
+            await interaction.reply({
+                content: `✅ Reclamaste **${result.count}** logros por **${result.reward} 🪙**.`,
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
 
@@ -117,14 +142,14 @@ module.exports = {
                 ? top.map((u, i) => `${i + 1}. <@${u.userId}> — **${u.completed}** completados (${u.claimed} reclamados)`).join("\n")
                 : "Sin datos todavía.";
             const embed = new EmbedBuilder().setTitle("🏆 Top Logros").setDescription(lines).setColor(0xf39c12).setTimestamp();
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
     },
 
     async handleButton(client, interaction) {
         const ownerId = interaction.message.interaction?.user?.id || interaction.message.interactionMetadata?.user?.id;
         if (ownerId && ownerId !== interaction.user.id) {
-            await interaction.reply({ content: "⛔ Solo quien abrió el panel puede usar estos botones.", ephemeral: true });
+            await interaction.reply({ content: "⛔ Solo quien abrió el panel puede usar estos botones.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -147,6 +172,21 @@ module.exports = {
             const page = parseInt(id.replace("logros_page_", ""), 10);
             const payload = buildLogrosPayload(guildId, userId, Number.isFinite(page) ? page : 0, includeHidden);
             await interaction.update({ embeds: payload.embeds, components: payload.components });
+            return;
+        }
+
+        if (id === "logros_reclamar") {
+            const claim = achievements.claimAchievement(guildId, userId, interaction.values[0]);
+            const msg = claim.ok ? `✅ Reclamaste **${claim.achievement.name}** y ganaste **${claim.reward} 🪙**.` : `❌ ${claim.msg}`;
+            // Desde el panel de /logros ver se refresca el panel; desde /logros reclamar, solo el menú.
+            const enPanel = interaction.message.embeds?.length > 0;
+            if (enPanel) {
+                const payload = buildLogrosPayload(guildId, userId, 0, includeHidden);
+                await interaction.update({ content: msg, embeds: payload.embeds, components: payload.components });
+            } else {
+                const menu = menuReclamar(guildId, userId);
+                await interaction.update({ content: msg, components: menu ? [menu] : [] });
+            }
             return;
         }
 

@@ -1,7 +1,7 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const db = require("../../core/db");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { registrarUsuario, descontarApuesta, procesarGanancia, procesarPerdida, applyRtp } = require("../../systems/casinoTransactions");
 const activeGames = require("../../systems/activeGames");
+const casino = require("../../paneles/casino");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Adivinar");
@@ -53,117 +53,84 @@ function limpiarAbandonadas() {
 }
 
 module.exports = {
-    componentHandlers: [{ types: ["button"], prefixes: ["adivinar_"], method: "handleButton" }],
-    data: new SlashCommandBuilder().setName("adivinar").setDescription("Juega al minijuego 'Adivinar la carta' (Ride the Bus)"),
+    componentHandlers: [{ types: ["button"], prefixes: ["adivinar_"], method: "handleButton", acl: "juegos" }],
 
+    // Con apuesta empieza directamente; sin ella, el selector de importes del casino. (Antes era siempre
+    // 500, con una pantalla de "Apostar 500 / Cancelar".)
     async run(client, interaction) {
-        const apuesta = 500;
-
-        // Embed de bienvenida y confirmación de apuesta
-        const embed = new EmbedBuilder()
-            .setTitle("🃏 Adivinar la carta")
-            .setDescription(
-                "¡Bienvenido al minijuego **Adivinar la carta**!\n\n" +
-                    "Tendrás que superar 4 rondas adivinando características de cartas de una baraja mezclada. " +
-                    "Si fallas, pierdes la apuesta. Si aciertas todas, ¡multiplicas tu dinero!\n\n" +
-                    `💰 **Apuesta:** \`${apuesta}\` monedas\n\n` +
-                    "¿Quieres jugar?",
-            )
-            .setColor(0x2ecc40)
-            .setThumbnail("https://cdn-icons-png.flaticon.com/512/616/616492.png");
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("adivinar_confirmar_apuesta").setLabel("Apostar 500").setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId("adivinar_cancelar").setLabel("Cancelar").setStyle(ButtonStyle.Secondary),
-        );
-
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-    },
-
-    async handleButton(client, interaction) {
-        const apuesta = 500;
         const userId = interaction.user.id;
-
-        // Confirmar apuesta
-        if (interaction.customId === "adivinar_confirmar_apuesta") {
-            const previa = partidas.get(userId);
-            if (previa) {
-                if (!activeGames.estaAbandonada(previa.ultimaAccion)) {
-                    await interaction.update({
-                        content: "🃏 Ya tienes una partida de Adivinar en curso. Termínala antes de empezar otra.",
-                        embeds: [],
-                        components: [],
-                    });
-                    return;
-                }
-                abandonarPartida(userId, previa);
-            }
-
-            // Registrar usuario automáticamente
-            registrarUsuario(userId, interaction.user.username, interaction.user.tag);
-
-            // Validar y descontar apuesta de forma segura
-            const resultado = descontarApuesta(userId, apuesta, interaction.guildId);
-            if (!resultado.exito) {
-                await interaction.update({
-                    content: resultado.mensaje,
-                    embeds: [],
-                    components: [],
-                    ephemeral: true,
-                });
-                return;
-            }
-
-            const baraja = crearBaraja();
-            const carta1 = baraja.pop();
-
-            partidas.set(userId, {
-                ronda: 1,
-                apuesta,
-                acumulado: apuesta,
-                baraja,
-                cartas: [carta1],
-                guildId: interaction.guildId,
-                ultimaAccion: Date.now(),
-            });
-            activeGames.registrar(userId, "adivinar", interaction.guildId, apuesta);
-
-            // Ronda 1: Color
-            const embed = new EmbedBuilder()
-                .setTitle("🃏 Adivinar la carta — Ronda 1/4: Color")
-                .setDescription(
-                    `💰 **Apuesta:** \`${apuesta}\` monedas\n\n` +
-                        "¿De qué color será la carta?\n\n" +
-                        "🔴 **Rojo** (♥♦)\n⚫ **Negro** (♠♣)",
-                )
-                .setColor(0x2ecc40)
-                .setThumbnail("https://cdn-icons-png.flaticon.com/512/616/616492.png")
-                .setFooter({ text: "Elige un color para continuar" });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId("adivinar_color_rojo").setLabel("🔴 Rojo").setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId("adivinar_color_negro").setLabel("⚫ Negro").setStyle(ButtonStyle.Primary),
-            );
-
-            await interaction.update({ embeds: [embed], components: [row], ephemeral: false });
+        const apuesta = interaction.options.getInteger("apuesta");
+        if (!apuesta) {
+            await interaction.reply({ ...casino.buildPickApuesta(userId, "adivinar"), flags: MessageFlags.Ephemeral });
             return;
         }
 
-        // Cancelar
-        if (interaction.customId === "adivinar_cancelar") {
-            await interaction.update({
-                content: "Has cancelado la partida.",
-                embeds: [],
-                components: [],
-                ephemeral: true,
-            });
+        const previa = partidas.get(userId);
+        if (previa) {
+            if (!activeGames.estaAbandonada(previa.ultimaAccion)) {
+                await interaction.reply({
+                    content: "🃏 Ya tienes una partida de Adivinar en curso. Termínala antes de empezar otra.",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            abandonarPartida(userId, previa);
+        }
+
+        registrarUsuario(userId, interaction.user.username, interaction.user.tag);
+        const resultado = descontarApuesta(userId, apuesta, interaction.guildId);
+        if (!resultado.exito) {
+            await interaction.reply({ content: resultado.mensaje, flags: MessageFlags.Ephemeral });
+            return;
+        }
+
+        const baraja = crearBaraja();
+        const carta1 = baraja.pop();
+        partidas.set(userId, {
+            ronda: 1,
+            apuesta,
+            acumulado: apuesta,
+            baraja,
+            cartas: [carta1],
+            guildId: interaction.guildId,
+            ultimaAccion: Date.now(),
+        });
+        activeGames.registrar(userId, "adivinar", interaction.guildId, apuesta);
+
+        const embed = new EmbedBuilder()
+            .setTitle("🃏 Adivinar la carta — Ronda 1/4: Color")
+            .setDescription(
+                `💰 **Apuesta:** \`${apuesta}\` monedas\n\n` +
+                    "Supera 4 rondas adivinando cartas: si fallas pierdes la apuesta; desde la ronda 3 puedes retirarte con lo ganado, y si aciertas las 4 ganas ×20.\n\n" +
+                    "¿De qué color será la carta?\n\n" +
+                    "🔴 **Rojo** (♥♦)\n⚫ **Negro** (♠♣)",
+            )
+            .setColor(0x2ecc40)
+            .setThumbnail("https://cdn-icons-png.flaticon.com/512/616/616492.png")
+            .setFooter({ text: "Elige un color para continuar" });
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("adivinar_color_rojo").setLabel("🔴 Rojo").setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId("adivinar_color_negro").setLabel("⚫ Negro").setStyle(ButtonStyle.Primary),
+        );
+        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+    },
+
+    async handleButton(client, interaction) {
+        const userId = interaction.user.id;
+
+        // Botones de la pantalla antigua de confirmar (mensajes de antes del cambio).
+        if (interaction.customId === "adivinar_confirmar_apuesta" || interaction.customId === "adivinar_cancelar") {
+            await interaction.update({ ...casino.buildPickApuesta(userId, "adivinar"), content: "" });
             return;
         }
 
         // El resto del juego sigue igual que antes...
         const partida = partidas.get(userId);
         if (!partida) {
-            await interaction.reply({ content: "No tienes una partida activa. Usa /adivinar para empezar.", ephemeral: true });
+            await interaction.reply({
+                content: "No tienes una partida activa. Empieza una desde el casino.",
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
         partida.ultimaAccion = Date.now();
@@ -199,49 +166,22 @@ module.exports = {
 
                 await interaction.update({ embeds: [embed], components: [row] });
             } else {
-                // Registrar derrota en historial y casino
-                const userId = interaction.user.id;
-                const nombre = interaction.user.username;
-                const tag = interaction.user.tag;
-                db.prepare(
-                    `
-                    INSERT OR IGNORE INTO usuarios (id, nombre, tag, fechaRegistro)
-                    VALUES (?, ?, ?, ?)
-                `,
-                ).run(userId, nombre, tag, new Date().toISOString());
-
-                db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                    userId,
-                    new Date().toISOString(),
-                    `Adivinar: perdió en ronda 1 (-${partida.apuesta} monedas)`,
-                    0, // Ya se descontó la apuesta al entrar
-                );
-
-                db.prepare(
-                    `
-                    INSERT INTO casino (userId, juego, fecha, apuesta, resultado, detalle)
-                    VALUES (?, 'adivinar', ?, ?, ?, ?)
-                `,
-                ).run(
-                    userId,
-                    new Date().toISOString(),
-                    partida.apuesta,
-                    0,
-                    JSON.stringify({
-                        cartas: partida.cartas,
-                        ronda: 1,
-                        fallo: true,
-                    }),
-                );
-
-                terminarPartida(interaction.user.id);
+                // Antes se apuntaba con resultado 0 (como un empate) y 0 en el historial: las
+                // estadísticas y rankings del casino no veían estas derrotas.
+                procesarPerdida(userId, "adivinar", partida.apuesta, "Adivinar: perdió en la ronda 1", {
+                    guildId: partida.guildId,
+                    cartas: partida.cartas,
+                    ronda: 1,
+                    fallo: true,
+                });
+                terminarPartida(userId);
                 const embed = new EmbedBuilder()
                     .setTitle("❌ Fin del juego")
                     .setDescription(`🃏 **Carta final:** ${carta.valor}${carta.palo}\n\n` + "😢 **¡Incorrecto! Pierdes tu apuesta.")
                     .setColor(0xe74c3c)
                     .setThumbnail("https://cdn-icons-png.flaticon.com/512/1828/1828843.png")
-                    .setFooter({ text: "Inténtalo de nuevo con /adivinar" });
-                await interaction.update({ embeds: [embed], components: [] });
+                    .setFooter({ text: "Adivinar la carta" });
+                await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
             }
             return;
         }
@@ -284,49 +224,22 @@ module.exports = {
 
                 await interaction.update({ embeds: [embed], components: [row] });
             } else {
-                // Registrar derrota en historial y casino
-                const userId = interaction.user.id;
-                const nombre = interaction.user.username;
-                const tag = interaction.user.tag;
-                db.prepare(
-                    `
-                    INSERT OR IGNORE INTO usuarios (id, nombre, tag, fechaRegistro)
-                    VALUES (?, ?, ?, ?)
-                `,
-                ).run(userId, nombre, tag, new Date().toISOString());
-
-                db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                    userId,
-                    new Date().toISOString(),
-                    `Adivinar: perdió en ronda 2 (sin ganancia)`,
-                    0,
-                );
-
-                db.prepare(
-                    `
-                    INSERT INTO casino (userId, juego, fecha, apuesta, resultado, detalle)
-                    VALUES (?, 'adivinar', ?, ?, ?, ?)
-                `,
-                ).run(
-                    userId,
-                    new Date().toISOString(),
-                    partida.apuesta,
-                    0,
-                    JSON.stringify({
-                        cartas: partida.cartas,
-                        ronda: 2,
-                        fallo: true,
-                    }),
-                );
-
-                terminarPartida(interaction.user.id);
+                // Antes se apuntaba con resultado 0 (como un empate) y 0 en el historial: las
+                // estadísticas y rankings del casino no veían estas derrotas.
+                procesarPerdida(userId, "adivinar", partida.apuesta, "Adivinar: perdió en la ronda 2", {
+                    guildId: partida.guildId,
+                    cartas: partida.cartas,
+                    ronda: 2,
+                    fallo: true,
+                });
+                terminarPartida(userId);
                 const embed = new EmbedBuilder()
                     .setTitle("❌ Fin del juego")
                     .setDescription(`🃏 **Carta final:** ${carta2.valor}${carta2.palo}\n\n` + "😢 **¡Incorrecto! Pierdes tu apuesta.")
                     .setColor(0xe74c3c)
                     .setThumbnail("https://cdn-icons-png.flaticon.com/512/1828/1828843.png")
-                    .setFooter({ text: "Inténtalo de nuevo con /adivinar" });
-                await interaction.update({ embeds: [embed], components: [] });
+                    .setFooter({ text: "Adivinar la carta" });
+                await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
             }
             return;
         }
@@ -381,49 +294,22 @@ module.exports = {
 
                 await interaction.update({ embeds: [embed], components: [row] });
             } else {
-                // Registrar derrota en historial y casino
-                const userId = interaction.user.id;
-                const nombre = interaction.user.username;
-                const tag = interaction.user.tag;
-                db.prepare(
-                    `
-                    INSERT OR IGNORE INTO usuarios (id, nombre, tag, fechaRegistro)
-                    VALUES (?, ?, ?, ?)
-                `,
-                ).run(userId, nombre, tag, new Date().toISOString());
-
-                db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                    userId,
-                    new Date().toISOString(),
-                    `Adivinar: perdió en ronda 3 (sin ganancia)`,
-                    0,
-                );
-
-                db.prepare(
-                    `
-                    INSERT INTO casino (userId, juego, fecha, apuesta, resultado, detalle)
-                    VALUES (?, 'adivinar', ?, ?, ?, ?)
-                `,
-                ).run(
-                    userId,
-                    new Date().toISOString(),
-                    partida.apuesta,
-                    0,
-                    JSON.stringify({
-                        cartas: partida.cartas,
-                        ronda: 3,
-                        fallo: true,
-                    }),
-                );
-
-                terminarPartida(interaction.user.id);
+                // Antes se apuntaba con resultado 0 (como un empate) y 0 en el historial: las
+                // estadísticas y rankings del casino no veían estas derrotas.
+                procesarPerdida(userId, "adivinar", partida.apuesta, "Adivinar: perdió en la ronda 3", {
+                    guildId: partida.guildId,
+                    cartas: partida.cartas,
+                    ronda: 3,
+                    fallo: true,
+                });
+                terminarPartida(userId);
                 const embed = new EmbedBuilder()
                     .setTitle("❌ Fin del juego")
                     .setDescription(`🃏 **Carta final:** ${carta3.valor}${carta3.palo}\n\n` + "😢 **¡Incorrecto! Pierdes tu apuesta.")
                     .setColor(0xe74c3c)
                     .setThumbnail("https://cdn-icons-png.flaticon.com/512/1828/1828843.png")
-                    .setFooter({ text: "Inténtalo de nuevo con /adivinar" });
-                await interaction.update({ embeds: [embed], components: [] });
+                    .setFooter({ text: "Adivinar la carta" });
+                await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
             }
             return;
         }
@@ -453,7 +339,7 @@ module.exports = {
                     .setDescription(resultadoTexto)
                     .setColor(0x2ecc40)
                     .setThumbnail("https://cdn-icons-png.flaticon.com/512/616/616496.png")
-                    .setFooter({ text: "¡Juega de nuevo con /adivinar!" });
+                    .setFooter({ text: "Adivinar la carta" });
             } else {
                 ganancia = 0; // Ya se descontó la apuesta al entrar
                 resultadoTexto = `🃏 **Carta final:** ${carta4.valor}${carta4.palo}\n\n😢 **¡Incorrecto! Pierdes tu apuesta.**`;
@@ -462,7 +348,7 @@ module.exports = {
                     .setDescription(resultadoTexto)
                     .setColor(0xe74c3c)
                     .setThumbnail("https://cdn-icons-png.flaticon.com/512/1828/1828843.png")
-                    .setFooter({ text: "Inténtalo de nuevo con /adivinar" });
+                    .setFooter({ text: "Adivinar la carta" });
             }
 
             // --- PROCESAMIENTO DE RESULTADO ---
@@ -503,7 +389,7 @@ module.exports = {
             }
 
             terminarPartida(interaction.user.id);
-            await interaction.update({ embeds: [embed], components: [] });
+            await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
             return;
         }
     },
@@ -524,7 +410,7 @@ function getValorNumerico(valor) {
 // Handler para retirarse en cualquier ronda (solo permitido a partir de ronda 3)
 async function handleRetiro(interaction, partida, ronda) {
     if (ronda < 3) {
-        await interaction.reply({ content: "Solo puedes retirarse a partir de la ronda 3.", ephemeral: true });
+        await interaction.reply({ content: "Solo puedes retirarse a partir de la ronda 3.", flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -565,7 +451,7 @@ async function handleRetiro(interaction, partida, ronda) {
     }
 
     if (!exito) {
-        await interaction.reply({ content: "❌ Error procesando el retiro. Contacta un administrador.", ephemeral: true });
+        await interaction.reply({ content: "❌ Error procesando el retiro. Contacta un administrador.", flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -573,13 +459,9 @@ async function handleRetiro(interaction, partida, ronda) {
 
     const embed = new EmbedBuilder()
         .setTitle("🟢 Te has retirado")
-        .setDescription(
-            `Has decidido retirarte tras la ronda ${ronda - 1}.\n\n` +
-                `💰 **Ganancia:** \`${ganancia}\` monedas\n\n` +
-                `¡Puedes volver a jugar con /adivinar!`,
-        )
+        .setDescription(`Has decidido retirarte tras la ronda ${ronda - 1}.\n\n` + `💰 **Ganancia:** \`${ganancia}\` monedas`)
         .setColor(0x27ae60)
         .setThumbnail("https://cdn-icons-png.flaticon.com/512/616/616492.png");
 
-    await interaction.update({ embeds: [embed], components: [] });
+    await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
 }

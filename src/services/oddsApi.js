@@ -1,5 +1,5 @@
 // Cliente de The Odds API (https://the-odds-api.com): competiciones, cuotas y resultados.
-// Lo usan /apuestas, /quiniela y la liquidación (/pagarapuestas y el cron de index.js).
+// Lo usan las apuestas y la quiniela de /juegos y la liquidación (/pagarapuestas y el cron de index.js).
 //
 // Coste en el plan gratuito (500 créditos al mes): cuotas = 1 crédito por competición
 // (1 mercado × 1 región), resultados con daysFrom = 2 créditos.
@@ -20,7 +20,7 @@ const DEPORTES = {
 const DIAS_RESULTADOS = 3;
 
 // Las cuotas apenas cambian en media hora: se reutiliza la última respuesta de cada
-// competición durante ODDS_CACHE_MINUTES (antes se pedían en cada /apuestas y cada página).
+// competición durante ODDS_CACHE_MINUTES (antes se pedían en cada consulta de partidos y cada página).
 const ODDS_CACHE_MS = Number(process.env.ODDS_CACHE_MINUTES || 30) * 60 * 1000;
 const cacheCuotas = new Map(); // deporte -> { data, ts }
 

@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, MessageFlags } = require("discord.js");
 const { registrarUsuario, descontarApuesta, procesarGanancia, procesarPerdida, obtenerSaldo } = require("../../systems/casinoTransactions");
+const casino = require("../../paneles/casino");
 
 const OPCIONES = {
     piedra: { emoji: "🪨", gana_a: "tijera" },
@@ -19,22 +20,6 @@ function frase(tipo) {
 }
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName("ppt")
-        .setDescription("Piedra, papel o tijera contra El Duende, apostando monedas")
-        .addStringOption((option) =>
-            option
-                .setName("jugada")
-                .setDescription("Tu jugada")
-                .setRequired(true)
-                .addChoices(
-                    { name: "🪨 Piedra", value: "piedra" },
-                    { name: "📄 Papel", value: "papel" },
-                    { name: "✂️ Tijera", value: "tijera" },
-                ),
-        )
-        .addIntegerOption((option) => option.setName("cantidad").setDescription("Monedas a apostar").setRequired(true).setMinValue(1)),
-
     async run(client, interaction) {
         const userId = interaction.user.id;
         const jugadaUsuario = interaction.options.getString("jugada");
@@ -44,7 +29,7 @@ module.exports = {
 
         const resultadoApuesta = descontarApuesta(userId, cantidad, interaction.guildId);
         if (!resultadoApuesta.exito) {
-            await interaction.reply({ content: resultadoApuesta.mensaje, ephemeral: true });
+            await interaction.reply({ content: resultadoApuesta.mensaje, flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -82,7 +67,10 @@ module.exports = {
         }
 
         if (!exito) {
-            await interaction.reply({ content: "❌ Hubo un error procesando la partida. Contacta a un administrador.", ephemeral: true });
+            await interaction.reply({
+                content: "❌ Hubo un error procesando la partida. Contacta a un administrador.",
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
 
@@ -104,8 +92,9 @@ module.exports = {
                           : `💰 Perdiste **${cantidad}** monedas.`) +
                     `\n💳 Saldo actual: **${saldoActual}** monedas`,
             )
-            .setFooter({ text: "El Duende Casino • /ppt" });
+            .setFooter({ text: "El Duende Casino • Piedra, papel o tijera" });
 
-        await interaction.reply({ embeds: [embed] });
+        // Repetir vuelve a pedir la jugada con el mismo importe.
+        await interaction.reply({ embeds: [embed], components: [casino.filaFinJuego("ppt", cantidad)] });
     },
 };

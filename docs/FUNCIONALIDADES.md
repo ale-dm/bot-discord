@@ -104,9 +104,9 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | `set personality*` | Fija la personalidad del canal actual | 🔒 |
 | `add id* title* systeminstructions*` | Crea o edita una personalidad | 🔒 |
 | `remove id*` | Borra una personalidad | 🔒 |
-| `recuerda usuario* nota*` | Guarda una nota sobre alguien (máx. 15 notas por persona, 200 caracteres cada una) | Todos |
+| `recuerda usuario* nota*` | Guarda una nota sobre alguien (máx. 15 notas por persona, 200 caracteres cada una). Respuesta privada | Sobre uno mismo; un admin, sobre cualquiera |
 | `olvida usuario*` | Borra las notas guardadas con `recuerda` (no el perfil base escrito a mano) | La propia persona, o un admin para cualquiera |
-| `personas` | Lista lo que recuerda de cada persona | Todos |
+| `personas` | Lo que recuerda de ti; a un admin, de todos. Respuesta privada | Todos |
 
 ---
 
@@ -203,7 +203,7 @@ Las recompensas se multiplican por `logros.reward_multiplier` y se pueden desact
 | Comando | Qué hace |
 |---|---|
 | `/logros ver` | Tus logros y progreso |
-| `/logros reclamar id*` | Cobra la recompensa de un logro completado |
+| `/logros reclamar` | Menú con los logros completados sin reclamar, para cobrar uno (también en `/logros ver`) |
 | `/logros reclamar_todo` | Cobra todas las pendientes |
 | `/logros top` | Ranking de logros completados |
 
@@ -266,6 +266,11 @@ cupo diario de compras.
 
 ## 8. Casino
 
+Todo lo que es apostar monedas (casino, apuestas deportivas y quiniela) está en **`/juegos [seccion]`**, en
+cuatro pestañas que salen siempre en la última fila: **🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats**.
+Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `/ppt`, `/apuestas`,
+`/quiniela` y `/misapuestas`, que ya no existen. El botón 🎰 Casino de `/perfil` abre la pestaña Casino.
+
 ### Reglas comunes
 
 - Se juega con el saldo del **banco**. Apuesta mínima 10 y máxima 100.000 (configurable).
@@ -276,33 +281,44 @@ cupo diario de compras.
 - **Partidas a medias**: no puedes tener dos partidas del mismo juego a la vez. Una partida sin tocar
   15 minutos se da por perdida. Si el bot se reinicia a mitad de partida, **se devuelve lo apostado**.
 - Todo queda registrado en el historial y cuenta para los logros de casino.
+- **Cómo se juega**: en 🎰 Casino eliges juego y después importe (50 · 100 · 500 · 1.000 · 5.000; los que no te
+  alcanzan salen desactivados). Todas las partidas acaban con la misma fila: 🔄 Repetir (misma apuesta; en
+  ppt vuelve a pedir la jugada) · 🎲 Otra apuesta · 📊 Stats de ese juego · ◀ Casino. Si no se puede cobrar la
+  apuesta (saldo, límite diario, espera), el aviso sale aparte y el panel sigue ahí.
+- La pantalla de Casino tiene también 🏆 Ranking, 📜 Historial (últimas 15 partidas) y 📊 Mis stats del casino.
+- Los botones de un panel solo los puede usar quien lo abrió. Las reglas de canales y roles (ACL) se ponen
+  sobre `juegos`.
 
 ### Juegos
 
-| Comando | Juego | Pagos |
+| Juego | Cómo es | Pagos |
 |---|---|---|
-| `/blackjack apuesta*` | Blackjack contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
-| `/tragaperras [apuesta]` | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). Sin apuesta muestra el menú. Apuesta 50–5.000. Botones de repetir tirada. | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
-| `/ruleta apuesta* [tipo] [numero]` | Ruleta europea (0–36). También accesible desde el perfil → Casino. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · Número exacto ×36 |
-| `/adivinar` | "Ride the bus": 4 rondas con una apuesta fija de 500 — color, mayor/menor, dentro/fuera, palo. Te puedes retirar desde la ronda 3. | Acumulado ×2 → ×3 → ×4 → **×20** si aciertas las 4 |
-| `/ppt jugada* cantidad*` | Piedra, papel o tijera contra el Duende | Victoria ×2 · Empate: recuperas la apuesta |
+| 🃏 Blackjack | Contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
+| 🎰 Tragaperras | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
+| 🎡 Ruleta | Ruleta europea (0–36): primero el tipo de apuesta (color, par/impar, mitad, docena o número exacto, con un formulario) y después el importe. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · Número exacto ×36 |
+| 🔮 Adivinar | "Ride the bus": 4 rondas — color, mayor/menor, dentro/fuera, palo. Te puedes retirar desde la ronda 3. | Acumulado ×2 → ×3 → ×4 → **×20** si aciertas las 4 |
+| ✂️ Piedra, papel o tijera | Contra el Duende: importe y después jugada. | Victoria ×2 · Empate: recuperas la apuesta |
 
 ---
 
 ## 9. Apuestas deportivas y quinielas
 
-Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y Champions League.
+Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y Champions League. Todo está en
+`/juegos`:
 
-| Comando | Qué hace |
+| Pestaña | Qué hace |
 |---|---|
-| `/apuestas [deporte]` | Próximos partidos con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. |
-| `/misapuestas [tipo]` | Tus apuestas: activas, historial (ganada con su premio, perdida o reembolsada) o estadísticas. También desde el botón "Ver mis apuestas" de `/apuestas` |
-| `/quiniela [deporte]` | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). |
-| `/pagarapuestas` | 🔒 Fuerza la liquidación ahora (normalmente no hace falta) |
+| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre LaLiga, Premier y Champions) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
+| 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
+| 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. |
+| 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
+
+`/pagarapuestas` 🔒 fuerza la liquidación ahora (normalmente no hace falta).
 
 **Liquidación** ⏱️ cada hora (minuto 15): cierra los partidos terminados (empezados hace más de 2 h),
 paga las apuestas ganadoras (apuesta × cuota) y liquida las quinielas completas: el 90 % del bote se reparte
-entre quienes más aciertos tengan. Los resultados de la quiniela se guardan partido a partido según se conocen.
+entre quienes más aciertos tengan, siempre que lleguen a la mitad de los partidos (5 de 10); si nadie llega,
+se devuelve lo apostado. Los resultados de la quiniela se guardan partido a partido según se conocen.
 Los ganadores reciben un DM.
 
 La API solo da resultados de los **últimos 3 días**: un partido (o una quiniela con partidos) que empezó hace
@@ -508,11 +524,8 @@ crearles cuenta, historial, inventario o partidas.
 
 | Comando | Sección |
 |---|---|
-| `/adivinar` | [Casino](#8-casino) |
-| `/apuestas` | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/banco` | [Economía](#7-economía-banco-tienda-e-inventario) |
-| `/blackjack` | [Casino](#8-casino) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/diagnostico` 🔒 | [Administración](#12-administración) |
@@ -520,10 +533,10 @@ crearles cuenta, historial, inventario o partidas.
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/ia` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) |
 | `/inventario` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/logros` | [Logros](#5-logros) |
-| `/misapuestas` | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
 | `/nivel` | [Niveles](#4-niveles-y-xp) |
 | `/objeto` 🔒 | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/pagarapuestas` 🔒 | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
@@ -531,11 +544,7 @@ crearles cuenta, historial, inventario o partidas.
 | `/paneladmin` 🔒 | [Administración](#12-administración) |
 | `/perfil` | [Perfil](#6-perfil) |
 | `/ping` | [Utilidades](#14-utilidades-y-comandos-varios) |
-| `/ppt` | [Casino](#8-casino) |
-| `/quiniela` | [Apuestas](#9-apuestas-deportivas-y-quinielas) |
-| `/ruleta` | [Casino](#8-casino) |
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
-| `/tragaperras` | [Casino](#8-casino) |
 | `/ttcl-diagnostico` | [Cripto](#10-criptomonedas) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/usar` | [Economía](#7-economía-banco-tienda-e-inventario) |

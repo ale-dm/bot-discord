@@ -640,6 +640,7 @@ module.exports = {
     getSummary,
     applyEvent,
     claimAchievement,
+    rewardCoinsFor,
     claimAll,
     getTopUsers,
 };

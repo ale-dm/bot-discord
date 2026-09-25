@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
 const cripto = require("../../systems/cripto/mercado");
 const { createLogger } = require("../../core/logger");
@@ -12,7 +12,7 @@ module.exports = {
         // Antes: has("ADMINISTRATOR") (nombre de discord.js 13), que en la 14 lanza RangeError y el
         // comando fallaba siempre, también para los admins.
         if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({ content: "❌ Solo administradores.", ephemeral: true });
+            await interaction.reply({ content: "❌ Solo administradores.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -60,10 +60,10 @@ module.exports = {
                 .setFooter({ text: "Ticker automático ejecutándose" })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         } catch (e) {
             log.error("Error en /ttcl-diagnostico:", e);
-            await interaction.reply({ content: `❌ Error: ${e.message}`, ephemeral: true });
+            await interaction.reply({ content: `❌ Error: ${e.message}`, flags: MessageFlags.Ephemeral });
         }
     },
 };

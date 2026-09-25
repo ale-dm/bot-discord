@@ -3,7 +3,7 @@ const { createLogger } = require("../../core/logger");
 
 const sttCmdLog = createLogger("STT");
 // Comando de prueba para activar STT en un canal de voz
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { listenAndTranscribe } = require("../../services/stt");
 const duende = require("../duende/duende");
 
@@ -60,7 +60,7 @@ module.exports = {
         const member = interaction.member;
         const voiceChannel = member.voice && member.voice.channel;
         if (!voiceChannel) {
-            await interaction.reply({ content: "¡Debes estar en un canal de voz!", ephemeral: true });
+            await interaction.reply({ content: "¡Debes estar en un canal de voz!", flags: MessageFlags.Ephemeral });
             return;
         }
         const selectedUser = interaction.options.getUser("usuario");
@@ -75,14 +75,14 @@ module.exports = {
         if (!targetMember || !targetMember.voice || targetMember.voice.channelId !== voiceChannel.id) {
             await interaction.reply({
                 content: "Ese usuario debe estar en tu mismo canal de voz para poder escucharlo.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         await interaction.reply({
             content: `Escuchando a **${targetUser.username}** en su próxima intervención de voz...`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         sttCmdLog.info(`Escuchando a ${targetUser.tag} en ${voiceChannel.name} (pedido por ${interaction.user.tag})`);
         startListeningLoop(client, interaction.guild.id, voiceChannel.id, targetUser.id, interaction.channel, true);

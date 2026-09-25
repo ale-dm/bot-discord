@@ -120,3 +120,39 @@ describe("tablas antiguas (migración 007)", () => {
         db.close();
     });
 });
+
+describe("apuestas antiguas en el historial (migración 009)", () => {
+    test("añade lo apostado que falta, sin duplicar lo que ya estaba apuntado", () => {
+        const db = new Database(":memory:");
+        runMigrations(db);
+        db.prepare("DELETE FROM schema_migrations WHERE version = 9").run();
+        const hist = db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)");
+        db.prepare(
+            "INSERT INTO apuestas_partidos (match_id, home_team, away_team, start_time) VALUES ('m1', 'Betis', 'Sevilla', '2026-09-01T18:00:00.000Z')",
+        ).run();
+        const apuesta = db.prepare(
+            "INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota) VALUES (?, 'm1', 'home', ?, 2)",
+        );
+        apuesta.run("antiguo", 100); // sin apunte
+        apuesta.run("antiguo", 100); // sin apunte (dos apuestas iguales)
+        apuesta.run("nuevo", 50);
+        hist.run("nuevo", "2026-09-01T10:00:00.000Z", "Apuesta: Betis vs Sevilla", -50); // ya apuntada
+        const q = db.prepare("INSERT INTO quinielas (deporte, jornada, creada_en) VALUES ('laliga', 'J1', 'x')").run().lastInsertRowid;
+        const quiniela = db.prepare(
+            "INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en) VALUES (?, ?, '1X2', ?, ?)",
+        );
+        quiniela.run(q, "antiguo", 30, "2026-08-01T10:00:00.000Z");
+        quiniela.run(q, "nuevo", 30, "2026-09-20T10:00:00.000Z");
+        hist.run("nuevo", "2026-09-20T10:00:00.004Z", "Quiniela: apuesta", -30);
+
+        runMigrations(db);
+        const filas = db.prepare("SELECT userId, fecha, descripcion, cantidad FROM historial ORDER BY userId, descripcion, fecha").all();
+        expect(filas).toEqual([
+            { userId: "antiguo", fecha: "2026-09-01T18:00:00.000Z", descripcion: "Apuesta: Betis vs Sevilla", cantidad: -100 },
+            { userId: "antiguo", fecha: "2026-09-01T18:00:00.000Z", descripcion: "Apuesta: Betis vs Sevilla", cantidad: -100 },
+            { userId: "antiguo", fecha: "2026-08-01T10:00:00.000Z", descripcion: "Quiniela: apuesta", cantidad: -30 },
+            { userId: "nuevo", fecha: "2026-09-01T10:00:00.000Z", descripcion: "Apuesta: Betis vs Sevilla", cantidad: -50 },
+            { userId: "nuevo", fecha: "2026-09-20T10:00:00.004Z", descripcion: "Quiniela: apuesta", cantidad: -30 },
+        ]);
+    });
+});

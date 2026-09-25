@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
 const { createLogger } = require("../../core/logger");
 
@@ -83,7 +83,7 @@ module.exports = {
         if (!obj) {
             const replyFn =
                 interaction.replied || interaction.deferred ? interaction.editReply.bind(interaction) : interaction.reply.bind(interaction);
-            await replyFn({ content: "❌ No tienes ese objeto en tu inventario.", ephemeral: true });
+            await replyFn({ content: "❌ No tienes ese objeto en tu inventario.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -123,6 +123,6 @@ module.exports = {
 
         const replyFn =
             interaction.replied || interaction.deferred ? interaction.editReply.bind(interaction) : interaction.reply.bind(interaction);
-        await replyFn({ embeds: [embed], ephemeral: true });
+        await replyFn({ embeds: [embed], flags: MessageFlags.Ephemeral });
     },
 };

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("PanelAdmin");
@@ -59,14 +59,14 @@ module.exports = {
     async run(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos para usar este comando.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos para usar este comando.", flags: MessageFlags.Ephemeral });
                 return;
             }
-            await interaction.reply({ embeds: [buildMainEmbed(client)], components: buildMainRows(), ephemeral: true });
+            await interaction.reply({ embeds: [buildMainEmbed(client)], components: buildMainRows(), flags: MessageFlags.Ephemeral });
         } catch (err) {
             log.error(`run falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al abrir panel admin.", ephemeral: true });
+                await interaction.reply({ content: "Error al abrir panel admin.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -76,7 +76,7 @@ module.exports = {
     async handleButton(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -96,7 +96,7 @@ module.exports = {
         } catch (err) {
             log.error(`handleButton falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al procesar botón.", ephemeral: true });
+                await interaction.reply({ content: "Error al procesar botón.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -106,7 +106,7 @@ module.exports = {
     async handleModal(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
             if (await handleLevelsModal(interaction)) return;
@@ -119,7 +119,7 @@ module.exports = {
         } catch (err) {
             log.error(`handleModal falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al procesar formulario.", ephemeral: true });
+                await interaction.reply({ content: "Error al procesar formulario.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -129,7 +129,7 @@ module.exports = {
     async handleUserSelect(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
             if (await handleBankUserSelect(interaction)) return;
@@ -139,7 +139,7 @@ module.exports = {
         } catch (err) {
             log.error(`handleUserSelect falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al procesar selector.", ephemeral: true });
+                await interaction.reply({ content: "Error al procesar selector.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -149,14 +149,14 @@ module.exports = {
     async handleRoleSelect(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
             await handleLevelsRoleSelect(interaction);
         } catch (err) {
             log.error(`handleRoleSelect falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al procesar roles.", ephemeral: true });
+                await interaction.reply({ content: "Error al procesar roles.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -166,7 +166,7 @@ module.exports = {
     async handleChannelSelect(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
             if (await handleLevelsChannelSelect(interaction)) return;
@@ -175,7 +175,7 @@ module.exports = {
         } catch (err) {
             log.error(`handleChannelSelect falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al procesar canales.", ephemeral: true });
+                await interaction.reply({ content: "Error al procesar canales.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }
@@ -185,7 +185,7 @@ module.exports = {
     async handleStringSelect(client, interaction) {
         try {
             if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", ephemeral: true });
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
             if (await handlePerfilesStringSelect(interaction)) return;
@@ -193,7 +193,7 @@ module.exports = {
         } catch (err) {
             log.error(`handleStringSelect falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
-                await interaction.reply({ content: "Error al procesar selector.", ephemeral: true });
+                await interaction.reply({ content: "Error al procesar selector.", flags: MessageFlags.Ephemeral });
             } catch (e) {
                 log.debug(`No se pudo avisar del error: ${e.message}`);
             }

@@ -1,6 +1,6 @@
 // Panel admin → Config Global → Duende → Apodos: cómo llama el Duende a cada uno y de qué otras formas se
 // refiere la gente a esa persona (ver systems/apodos.js).
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder, MessageFlags } = require("discord.js");
 const apodos = require("../systems/apodos");
 const adminAudit = require("../systems/adminAudit");
 const { simpleModal } = require("./common");
@@ -48,7 +48,7 @@ async function handleApodosButton(interaction) {
                 .setMinValues(1)
                 .setMaxValues(1),
         );
-        await interaction.reply({ content: "Elige a la persona:", components: [row], ephemeral: true });
+        await interaction.reply({ content: "Elige a la persona:", components: [row], flags: MessageFlags.Ephemeral });
         return true;
     }
     if (id === "paneladmin_apodos_remove") {
@@ -82,7 +82,7 @@ async function handleApodosModal(interaction) {
         const apodo = interaction.fields.getTextInputValue("apodo").trim();
         const dueno = apodos.quitar(guildId, apodo);
         if (!dueno) {
-            await interaction.reply({ content: `❌ No hay ningún apodo "${apodo}".`, ephemeral: true });
+            await interaction.reply({ content: `❌ No hay ningún apodo "${apodo}".`, flags: MessageFlags.Ephemeral });
             return true;
         }
         adminAudit.logAdminAction({
@@ -91,7 +91,7 @@ async function handleApodosModal(interaction) {
             action: "duende.apodo.remove",
             details: { apodo, discordId: dueno },
         });
-        await interaction.reply({ content: `✅ Quitado "${apodo}" de <@${dueno}>.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Quitado "${apodo}" de <@${dueno}>.`, flags: MessageFlags.Ephemeral });
         return true;
     }
 
@@ -101,7 +101,7 @@ async function handleApodosModal(interaction) {
         const principal = /^(s|si|sí|y|yes|1)$/i.test(interaction.fields.getTextInputValue("principal").trim());
         const r = apodos.anadir(guildId, discordId, apodo, principal);
         if (!r.ok) {
-            await interaction.reply({ content: "❌ Apodo vacío.", ephemeral: true });
+            await interaction.reply({ content: "❌ Apodo vacío.", flags: MessageFlags.Ephemeral });
             return true;
         }
         adminAudit.logAdminAction({
@@ -112,7 +112,7 @@ async function handleApodosModal(interaction) {
         });
         await interaction.reply({
             content: `✅ "${apodo}" → <@${discordId}>${principal ? " (su nombre)" : ""}.${r.anterior ? ` Antes era de <@${r.anterior}>.` : ""}`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }

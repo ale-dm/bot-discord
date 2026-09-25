@@ -66,7 +66,6 @@ test("todos los módulos reales declaran rutas válidas", () => {
     const fs = require("fs");
     const path = require("path");
     const r = createComponentRouter();
-    const dir = path.join(__dirname, "../src/commands");
     const files = [];
     const walk = (d) =>
         fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
@@ -74,11 +73,15 @@ test("todos los módulos reales declaran rutas válidas", () => {
             if (e.isDirectory()) walk(p);
             else if (e.name.endsWith(".js")) files.push(p);
         });
-    walk(dir);
+    // Como index.js: los comandos y los juegos (que no son comandos pero tienen botones).
+    walk(path.join(__dirname, "../src/commands"));
+    walk(path.join(__dirname, "../src/juegos"));
     for (const f of files) r.register(require(f), f);
     expect(r.size).toBeGreaterThan(20);
     expect(r.match(fake("button", "bj_hit")).source).toMatch(/blackjack/);
-    expect(r.match(fake("button", "apuestas_quiniela_1")).source).toMatch(/quiniela/);
+    expect(r.match(fake("button", "quiniela_refrescar_laliga")).source).toMatch(/quiniela/);
     expect(r.match(fake("channelSelect", "paneladmin_plex_channel_add_select")).method).toBe("handleChannelSelect");
-    expect(r.match(fake("modal", "casino_ruleta_numero_modal")).acl).toBe("perfil");
+    expect(r.match(fake("modal", "casino_ruleta_numero_modal")).acl).toBe("juegos");
+    expect(r.match(fake("button", "casino_play_blackjack_100")).source).toMatch(/juegos/);
+    expect(r.match(fake("button", "perfil_casino_1")).source).toMatch(/perfil/);
 });

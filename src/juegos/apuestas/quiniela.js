@@ -1,5 +1,4 @@
 const {
-    SlashCommandBuilder,
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
@@ -8,10 +7,15 @@ const {
     TextInputBuilder,
     TextInputStyle,
     PermissionsBitField,
+    MessageFlags,
 } = require("discord.js");
 const db = require("../../core/db");
 const { logInfo, logError } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
+const { minimoAciertosQuiniela } = require("../../commands/apuestas/pagarapuestas");
+const misJugadas = require("../../systems/apuestas/misJugadas");
+const { lineaQuiniela, filaTrasApostar } = require("../../paneles/misJugadas");
+const { filaPestanas } = require("../../paneles/pestanasJuegos");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
@@ -137,33 +141,21 @@ function renderQuinielaEditorRows(quinielaId, sesion, totalPartidos) {
 module.exports = {
     componentHandlers: [
         // Prefijos más largos que los de apuestas.js ("apuestas_", "apuestas_modal_"), así que ganan.
-        { types: ["button"], prefixes: ["quiniela_", "apuestas_quiniela_"], method: "handleButton" },
-        { types: ["modal"], prefixes: ["quiniela_modal_", "apuestas_modal_quiniela_"], method: "handleModal" },
+        { types: ["button"], prefixes: ["quiniela_"], method: "handleButton", acl: "juegos" },
+        { types: ["modal"], prefixes: ["quiniela_modal_"], method: "handleModal", acl: "juegos" },
     ],
-    data: new SlashCommandBuilder()
-        .setName("quiniela")
-        .setDescription("Gestiona y juega la quiniela de la jornada")
-        .addStringOption((option) =>
-            option
-                .setName("deporte")
-                .setDescription("Deporte para la quiniela")
-                .addChoices(
-                    { name: "⚽ LaLiga Española", value: "laliga" },
-                    { name: "⚽ Premier League", value: "premier" },
-                    { name: "🏆 Champions League", value: "champions" },
-                )
-                .setRequired(false),
-        ),
 
     // Desde el botón "Refrescar" se llama con el deporte y la respuesta sustituye al mensaje.
     async run(client, interaction, deporteForzado = null) {
         const deporteSeleccionado = deporteForzado || interaction.options?.getString?.("deporte") || "laliga";
         const responder = (payload) =>
-            deporteForzado && interaction.isButton?.() ? interaction.update(payload) : interaction.reply({ ...payload, ephemeral: true });
+            deporteForzado && interaction.isButton?.()
+                ? interaction.update(payload)
+                : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
         const deporte = DEPORTES[deporteSeleccionado];
 
         if (!deporte) {
-            await interaction.reply({ content: "❌ Deporte no válido.", ephemeral: true });
+            await interaction.reply({ content: "❌ Deporte no válido.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -203,6 +195,7 @@ module.exports = {
                 );
             }
 
+            components.push(filaPestanas(interaction.user.id, "apuestas"));
             await responder({ embeds: [embed], components });
             return;
         }
@@ -218,33 +211,50 @@ module.exports = {
                 )
                 .get(quiniela.id)?.total || 0;
 
+        // Si ya has apostado, tus pronósticos con ✅/❌ en los partidos jugados (antes solo se decía que ya
+        // habías apostado, y no había forma de volver a verlos).
+        const tuya = misJugadas.quinielaDe(interaction.user.id, quiniela.id);
         const embed = new EmbedBuilder()
             .setTitle(`🧾 ${quiniela.jornada} — ${deporte.name}`)
             .setDescription(
-                `Rellena la quiniela partido a partido con botones **1 / X / 2**.\n\n` +
-                    `💰 Bote actual: **${bote}** monedas\n\n` +
+                (tuya ? "" : `Rellena la quiniela partido a partido con botones **1 / X / 2**.\n\n`) +
+                    `💰 Bote actual: **${bote}** monedas\n` +
+                    `🏆 El 90 % se reparte entre quien más acierte, con **${minimoAciertosQuiniela(partidos.length)}** aciertos ` +
+                    `como mínimo (si nadie llega, se devuelve lo apostado).\n\n` +
                     `**Partidos:**\n${listado}`,
             )
             .setColor(0x2ecc71)
             .setFooter({ text: "1 = Local, X = Empate, 2 = Visitante" });
+        if (tuya) {
+            embed.addFields({ name: `🎟️ Tu quiniela (${tuya.cantidad} 🪙)`, value: lineaQuiniela(tuya.detalle) });
+        }
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`quiniela_apostar_${quiniela.id}`)
-                .setLabel("🎟️ Apostar quiniela")
-                .setStyle(ButtonStyle.Success),
+            tuya
+                ? new ButtonBuilder()
+                      .setCustomId(`misapuestas_activas_${interaction.user.id}`)
+                      .setLabel("📋 Mis jugadas")
+                      .setStyle(ButtonStyle.Primary)
+                : new ButtonBuilder()
+                      .setCustomId(`quiniela_apostar_${quiniela.id}`)
+                      .setLabel("🎟️ Apostar quiniela")
+                      .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId(`quiniela_refrescar_${deporteSeleccionado}`)
                 .setLabel("🔄 Refrescar")
                 .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId(`apuestas_pagina_${deporteSeleccionado}_1`)
+                .setLabel("⚽ Partidos")
+                .setStyle(ButtonStyle.Secondary),
         );
 
-        await responder({ embeds: [embed], components: [row] });
+        await responder({ embeds: [embed], components: [row, filaPestanas(interaction.user.id, "apuestas")] });
     },
 
     async handleButton(client, interaction) {
         const userId = interaction.user.id;
-        const customId = interaction.customId.replace("apuestas_quiniela_", "quiniela_");
+        const customId = interaction.customId;
 
         if (customId.startsWith("quiniela_refrescar_")) {
             const deporteSeleccionado = customId.replace("quiniela_refrescar_", "");
@@ -258,7 +268,7 @@ module.exports = {
             const deporteSeleccionado = customId.replace("quiniela_crear_", "");
             const isAdmin = interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator);
             if (!isAdmin) {
-                await interaction.reply({ content: "❌ Solo administradores pueden crear quinielas.", ephemeral: true });
+                await interaction.reply({ content: "❌ Solo administradores pueden crear quinielas.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -266,7 +276,7 @@ module.exports = {
                 .prepare(`SELECT id FROM quinielas WHERE estado = 'abierta' AND deporte = ? LIMIT 1`)
                 .get(deporteSeleccionado);
             if (abierta) {
-                await interaction.reply({ content: "⚠️ Ya existe una quiniela activa para este deporte.", ephemeral: true });
+                await interaction.reply({ content: "⚠️ Ya existe una quiniela activa para este deporte.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -274,7 +284,7 @@ module.exports = {
                 await sincronizarPartidos(deporteSeleccionado);
             } catch (e) {
                 logError(`[Quiniela] No se pudieron sincronizar partidos de ${deporteSeleccionado}:`, e);
-                await interaction.reply({ content: `❌ No se pudo actualizar partidos: ${e.message}`, ephemeral: true });
+                await interaction.reply({ content: `❌ No se pudo actualizar partidos: ${e.message}`, flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -293,7 +303,7 @@ module.exports = {
             if (partidos.length < 5) {
                 await interaction.reply({
                     content: "❌ No hay suficientes partidos próximos para crear quiniela (mínimo 5).",
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -311,7 +321,7 @@ module.exports = {
                 .get(deporteSeleccionado, jornada);
 
             if (mismaSemana) {
-                await interaction.reply({ content: `⚠️ Ya existe una quiniela para ${jornada}.`, ephemeral: true });
+                await interaction.reply({ content: `⚠️ Ya existe una quiniela para ${jornada}.`, flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -340,7 +350,10 @@ module.exports = {
 
             const quinielaId = tx();
             logInfo(`[QUINIELA] Creada quiniela ${quinielaId} por ${interaction.user.id}`);
-            await interaction.reply({ content: `✅ Quiniela creada (ID ${quinielaId}) con ${partidos.length} partidos.`, ephemeral: true });
+            await interaction.reply({
+                content: `✅ Quiniela creada (ID ${quinielaId}) con ${partidos.length} partidos.`,
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
 
@@ -348,13 +361,13 @@ module.exports = {
             const quinielaId = parseInt(customId.replace("quiniela_apostar_", ""), 10);
             const quiniela = db.prepare(`SELECT * FROM quinielas WHERE id = ? AND estado = 'abierta'`).get(quinielaId);
             if (!quiniela) {
-                await interaction.reply({ content: "❌ La quiniela ya no está disponible.", ephemeral: true });
+                await interaction.reply({ content: "❌ La quiniela ya no está disponible.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
             const yaAposto = db.prepare(`SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?`).get(quinielaId, userId);
             if (yaAposto) {
-                await interaction.reply({ content: "⚠️ Ya has enviado una apuesta para esta quiniela.", ephemeral: true });
+                await interaction.reply({ content: "⚠️ Ya has enviado una apuesta para esta quiniela.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -370,7 +383,7 @@ module.exports = {
             const deporte = DEPORTES[quiniela.deporte] || DEPORTES.laliga;
             const embed = renderQuinielaEditorEmbed(quiniela, deporte, partidos, sesion);
             const rows = renderQuinielaEditorRows(quinielaId, sesion, partidos.length);
-            await interaction.reply({ embeds: [embed], components: rows, ephemeral: true });
+            await interaction.reply({ embeds: [embed], components: rows, flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -384,7 +397,7 @@ module.exports = {
             if (!sesion || !quiniela) {
                 await interaction.reply({
                     content: "❌ Sesión no válida o expirada. Pulsa de nuevo en Apostar quiniela.",
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -392,14 +405,14 @@ module.exports = {
             const partidos = obtenerPartidosQuiniela(quinielaId);
             const actual = partidos[sesion.currentIndex];
             if (!actual) {
-                await interaction.reply({ content: "❌ Partido no válido en la quiniela.", ephemeral: true });
+                await interaction.reply({ content: "❌ Partido no válido en la quiniela.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
             if (estaBloqueadoPorTiempo(actual.start_time)) {
                 await interaction.reply({
                     content: `🔒 Ese partido está bloqueado porque faltan menos de ${QUINIELA_LOCK_MINUTES} minutos para empezar.`,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -423,7 +436,7 @@ module.exports = {
             if (!sesion || !quiniela) {
                 await interaction.reply({
                     content: "❌ Sesión no válida o expirada. Pulsa de nuevo en Apostar quiniela.",
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -460,7 +473,7 @@ module.exports = {
             const quinielaId = parseInt(customId.replace("quiniela_confirmar_", ""), 10);
             const sesion = sesionesQuiniela.get(getSesionKey(userId, quinielaId));
             if (!sesion || !sesion.pronosticos.every(Boolean)) {
-                await interaction.reply({ content: "❌ Completa todos los partidos antes de confirmar.", ephemeral: true });
+                await interaction.reply({ content: "❌ Completa todos los partidos antes de confirmar.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -482,15 +495,13 @@ module.exports = {
     },
 
     async handleModal(client, interaction) {
-        const customId = interaction.customId
-            .replace("apuestas_modal_quiniela_", "quiniela_modal_confirmar_")
-            .replace("quiniela_modal_apostar_", "quiniela_modal_confirmar_");
+        const customId = interaction.customId;
         if (!customId.startsWith("quiniela_modal_confirmar_")) return;
 
         const quinielaId = parseInt(customId.replace("quiniela_modal_confirmar_", ""), 10);
         const quiniela = db.prepare(`SELECT * FROM quinielas WHERE id = ? AND estado = 'abierta'`).get(quinielaId);
         if (!quiniela) {
-            await interaction.reply({ content: "❌ Quiniela no disponible.", ephemeral: true });
+            await interaction.reply({ content: "❌ Quiniela no disponible.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -504,7 +515,7 @@ module.exports = {
             );
             await interaction.reply({
                 content: `🔒 La quiniela se cerró ${QUINIELA_LOCK_MINUTES} minutos antes del primer partido; ya no se admiten apuestas.`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -519,7 +530,10 @@ module.exports = {
                 pronosticos = legacy.trim().toUpperCase().replace(/\s+/g, "");
             } catch (e) {
                 logInfo(`[Quiniela] Sesión de pronósticos expirada para ${interaction.user.id} (quiniela ${quinielaId})`);
-                await interaction.reply({ content: "❌ Sesión expirada. Vuelve a pulsar en Apostar quiniela.", ephemeral: true });
+                await interaction.reply({
+                    content: "❌ Sesión expirada. Vuelve a pulsar en Apostar quiniela.",
+                    flags: MessageFlags.Ephemeral,
+                });
                 return;
             }
         }
@@ -530,7 +544,7 @@ module.exports = {
         if (pronosticos.length !== partidos.length || /[^12X]/.test(pronosticos) || (sesion && !sesion.pronosticos.every(Boolean))) {
             await interaction.reply({
                 content: "❌ Pronósticos incompletos o inválidos. Completa todos los partidos antes de confirmar.",
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -538,7 +552,7 @@ module.exports = {
         if (isNaN(cantidad) || cantidad < MIN_BET_AMOUNT || cantidad > MAX_BET_AMOUNT) {
             await interaction.reply({
                 content: `❌ Cantidad inválida. Debe estar entre ${MIN_BET_AMOUNT} y ${MAX_BET_AMOUNT}.`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -549,13 +563,13 @@ module.exports = {
         db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(userId);
         const userBanco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
         if (!userBanco || userBanco.saldo < cantidad) {
-            await interaction.reply({ content: "❌ No tienes saldo suficiente.", ephemeral: true });
+            await interaction.reply({ content: "❌ No tienes saldo suficiente.", flags: MessageFlags.Ephemeral });
             return;
         }
 
         const yaApostado = db.prepare(`SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?`).get(quinielaId, userId);
         if (yaApostado) {
-            await interaction.reply({ content: "⚠️ Ya has apostado esta quiniela.", ephemeral: true });
+            await interaction.reply({ content: "⚠️ Ya has apostado esta quiniela.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -585,7 +599,8 @@ module.exports = {
                 `🎟️ Pronósticos: \`${pronosticos}\`\n` +
                 `💰 Apostado: \`${cantidad}\`\n` +
                 `💼 Saldo actual: \`${saldoActual}\``,
-            ephemeral: true,
+            components: [filaTrasApostar(userId, { deporte: quiniela.deporte, quiniela: true })],
+            flags: MessageFlags.Ephemeral,
         });
     },
 };

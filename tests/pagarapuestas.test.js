@@ -117,3 +117,52 @@ test("una quiniela se completa aunque sus partidos no estén todos a la vez en l
     expect(r.quinielasCerradas).toBe(1);
     expect(saldo("quinielista")).toBe(90); // único jugador: se lleva el 90 % del bote
 });
+
+function quinielaTerminada(jornada, resultados) {
+    const q = db
+        .prepare("INSERT INTO quinielas (deporte, jornada, creada_en) VALUES ('laliga', ?, ?)")
+        .run(jornada, hace(100)).lastInsertRowid;
+    resultados.forEach((r, i) =>
+        db
+            .prepare(
+                "INSERT INTO quiniela_partidos (quiniela_id, match_id, orden, home_team, away_team, start_time, resultado_final) VALUES (?, ?, ?, 'L', 'V', ?, ?)",
+            )
+            .run(q, `${jornada}-${i}`, i + 1, hace(30), r),
+    );
+    return q;
+}
+function jugarQuiniela(q, userId, predicciones, cantidad) {
+    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo) VALUES (?, 0)").run(userId);
+    db.prepare("INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en) VALUES (?, ?, ?, ?, ?)").run(
+        q,
+        userId,
+        predicciones,
+        cantidad,
+        hace(90),
+    );
+}
+
+test("en la quiniela solo cobra quien acierta al menos la mitad", async () => {
+    // Resultados: 1 1 1 1 → mínimo 2 aciertos.
+    const q = quinielaTerminada("J-min", ["home", "home", "home", "home"]);
+    jugarQuiniela(q, "q-bueno", "11XX", 100); // 2 aciertos
+    jugarQuiniela(q, "q-malo", "1XXX", 100); // 1 acierto
+
+    const r = await liquidarApuestas({ minHorasDesdeInicio: 2 });
+    expect(r.quinielasCerradas).toBe(1);
+    expect(saldo("q-bueno")).toBe(180);
+    expect(saldo("q-malo")).toBe(0);
+});
+
+test("si nadie llega al mínimo de aciertos, la quiniela devuelve lo apostado", async () => {
+    const q = quinielaTerminada("J-nadie", ["home", "home", "home", "home"]);
+    jugarQuiniela(q, "q-solo", "2222", 150); // 0 aciertos: antes recuperaba el 90 %
+    jugarQuiniela(q, "q-otro", "1XXX", 50); // 1 acierto: antes se llevaba todo el fondo
+
+    const r = await liquidarApuestas({ minHorasDesdeInicio: 2 });
+    expect(r.quinielasCerradas).toBe(1);
+    expect(saldo("q-solo")).toBe(150);
+    expect(saldo("q-otro")).toBe(50);
+    expect(r.pagos).toEqual(expect.arrayContaining([expect.objectContaining({ userId: "q-solo", premio: 150, reembolso: true })]));
+    expect(db.prepare("SELECT premio FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = 'q-solo'").get(q).premio).toBe(0);
+});

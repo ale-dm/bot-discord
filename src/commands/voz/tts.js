@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const {
     createAudioResource,
     createAudioPlayer,
@@ -91,13 +91,13 @@ module.exports = {
         const channel = member?.voice?.channel;
 
         if (!channel) {
-            await interaction.reply({ content: "❌ Debes estar en un canal de voz para usar TTS.", ephemeral: true });
+            await interaction.reply({ content: "❌ Debes estar en un canal de voz para usar TTS.", flags: MessageFlags.Ephemeral });
             return;
         }
 
         const permissions = channel.permissionsFor(interaction.guild.members.me);
         if (!permissions.has("Connect") || !permissions.has("Speak")) {
-            await interaction.reply({ content: "❌ No tengo permisos para entrar o hablar en ese canal.", ephemeral: true });
+            await interaction.reply({ content: "❌ No tengo permisos para entrar o hablar en ese canal.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -114,14 +114,14 @@ module.exports = {
         if (players.has(guildId)) {
             await interaction.reply({
                 content: `🔁 Añadido a la cola (posición ${position}) — voz: **${voiceLabel}**`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         await interaction.reply({
             content: `🔊 Reproduciendo con voz **${voiceLabel}**...`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
 
         // Conectar o reutilizar conexión

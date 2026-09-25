@@ -1,5 +1,4 @@
 const {
-    SlashCommandBuilder,
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
@@ -8,10 +7,13 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
+    MessageFlags,
 } = require("discord.js");
 const db = require("../../core/db");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
+const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas");
+const { filaPestanas } = require("../../paneles/pestanasJuegos");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
@@ -35,38 +37,25 @@ async function getTeamBadge(teamName) {
 
 module.exports = {
     componentHandlers: [
-        { types: ["stringSelect"], ids: ["apuestas_select_partido"], method: "handleSelectMenu" },
+        { types: ["stringSelect"], ids: ["apuestas_select_partido"], method: "handleSelectMenu", acl: "juegos" },
         {
             types: ["button"],
             ids: ["ver_mis_apuestas"],
             prefixes: ["apuestas_", "apuesta_home_", "apuesta_draw_", "apuesta_away_"],
             method: "handleButton",
+            acl: "juegos",
         },
-        { types: ["modal"], prefixes: ["apuestas_modal_"], method: "handleModal" },
+        { types: ["modal"], prefixes: ["apuestas_modal_"], method: "handleModal", acl: "juegos" },
     ],
-    data: new SlashCommandBuilder()
-        .setName("apuestas")
-        .setDescription("Consulta partidos y apuesta tus monedas virtuales")
-        .addStringOption((option) =>
-            option
-                .setName("deporte")
-                .setDescription("Elige el deporte para apostar")
-                .addChoices(
-                    { name: "⚽ LaLiga Española", value: "laliga" },
-                    { name: "⚽ Premier League", value: "premier" },
-                    { name: "🏆 Champions League", value: "champions" },
-                )
-                .setRequired(false),
-        ),
 
-    // --- Comando principal con paginación ---
-    // Desde los botones de página se llama con page y deporte; la respuesta sustituye al mensaje.
+    // Pestaña ⚽ Apuestas de /juegos (antes el comando /apuestas). Desde un botón (página, competición,
+    // pestaña) la respuesta sustituye al mensaje; desde /juegos seccion:apuestas es una respuesta nueva.
     async run(client, interaction, page = 1, deporteForzado = null) {
         const deporteSeleccionado = deporteForzado || interaction.options?.getString?.("deporte") || "laliga";
         const deporte = DEPORTES[deporteSeleccionado];
 
         if (!deporte) {
-            await interaction.reply({ content: "❌ Deporte no válido.", ephemeral: true });
+            await interaction.reply({ content: "❌ Deporte no válido.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -77,12 +66,15 @@ module.exports = {
             const data = await sincronizarPartidos(deporteSeleccionado);
             logInfo(`[APUESTAS] API devolvió ${data.length || 0} partidos para ${deporte.name}`);
             if (!Array.isArray(data) || data.length === 0) {
-                await interaction.reply({ content: `❌ No hay partidos disponibles para ${deporte.name} ahora mismo.`, ephemeral: true });
+                await interaction.reply({
+                    content: `❌ No hay partidos disponibles para ${deporte.name} ahora mismo.`,
+                    flags: MessageFlags.Ephemeral,
+                });
                 return;
             }
         } catch (e) {
             logError(`[APUESTAS] Error consultando la Odds API para ${deporte.name}:`, e);
-            await interaction.reply({ content: "❌ No se pudo obtener la información de la API.", ephemeral: true });
+            await interaction.reply({ content: "❌ No se pudo obtener la información de la API.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -109,7 +101,7 @@ module.exports = {
         logInfo(`[APUESTAS] Consultando partidos desde ${ahora}, encontrados: ${partidos.length}`);
 
         if (partidos.length === 0) {
-            await interaction.reply({ content: "No hay partidos disponibles para apostar ahora mismo.", ephemeral: true });
+            await interaction.reply({ content: "No hay partidos disponibles para apostar ahora mismo.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -158,12 +150,26 @@ module.exports = {
                     .setStyle(ButtonStyle.Secondary),
             );
 
-        // Botón para ver apuestas activas
-        const rowMisApuestas = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("ver_mis_apuestas").setLabel("📋 Ver mis apuestas").setStyle(ButtonStyle.Primary),
+        // Competición (la actual resaltada) y la quiniela de esa competición.
+        const rowCompeticiones = new ActionRowBuilder().addComponents(
+            ...Object.entries(DEPORTES).map(([key, d]) =>
+                new ButtonBuilder()
+                    .setCustomId(`apuestas_pagina_${key}_1`)
+                    .setLabel(`${d.emoji} ${d.name}`.slice(0, 80))
+                    .setStyle(key === deporteSeleccionado ? ButtonStyle.Primary : ButtonStyle.Secondary),
+            ),
+            new ButtonBuilder()
+                .setCustomId(`quiniela_refrescar_${deporteSeleccionado}`)
+                .setLabel("🧾 Quiniela")
+                .setStyle(ButtonStyle.Success),
         );
 
-        const components = rowBtns.components.length > 0 ? [row, rowBtns, rowMisApuestas] : [row, rowMisApuestas];
+        const components = [
+            row,
+            ...(rowBtns.components.length > 0 ? [rowBtns] : []),
+            rowCompeticiones,
+            filaPestanas(interaction.user.id, "apuestas"),
+        ];
 
         const embed = new EmbedBuilder()
             .setTitle(`${deporte.emoji} Apuestas deportivas — ${deporte.name}`)
@@ -175,7 +181,7 @@ module.exports = {
             .setColor(0x3498db);
 
         if (deporteForzado && interaction.isButton?.()) await interaction.update({ embeds: [embed], components });
-        else await interaction.reply({ embeds: [embed], components, ephemeral: true });
+        else await interaction.reply({ embeds: [embed], components, flags: MessageFlags.Ephemeral });
     },
 
     // Handler para el select menu
@@ -185,7 +191,7 @@ module.exports = {
         const match_id = interaction.values[0];
         const partido = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
         if (!partido) {
-            await interaction.reply({ content: "No se encontró el partido seleccionado.", ephemeral: true });
+            await interaction.reply({ content: "No se encontró el partido seleccionado.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -217,20 +223,15 @@ module.exports = {
             new ButtonBuilder().setCustomId(`apuesta_away_${match_id}`).setLabel(`🚩 ${partido.away_team}`).setStyle(ButtonStyle.Danger),
         );
 
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
     },
 
     // Handler para los botones de apuesta y paginación
     async handleButton(client, interaction) {
         // --- Botón para ver apuestas activas ---
         if (interaction.customId === "ver_mis_apuestas") {
-            // Antes buscaba en client.commands, que no existe: el botón fallaba siempre.
-            const misApuestasCmd = client.slashCommands.get("misapuestas");
-            if (misApuestasCmd) {
-                await misApuestasCmd.run(client, interaction);
-            } else {
-                await interaction.reply({ content: "Comando no disponible.", ephemeral: true });
-            }
+            // En el mismo mensaje (antes abría uno nuevo): desde Mis jugadas se vuelve con "⚽ Apostar a partidos".
+            await interaction.update(buildMisJugadas(interaction.user.id, "activas"));
             return;
         }
 
@@ -271,7 +272,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Error")
                 .setDescription("No se pudo encontrar el partido o la cuota.");
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -308,7 +309,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Error")
                 .setDescription(`La cantidad debe estar entre ${MIN_BET_AMOUNT} y ${MAX_BET_AMOUNT} monedas.`);
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -323,7 +324,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Saldo insuficiente")
                 .setDescription("No tienes saldo suficiente para realizar esta apuesta.");
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -333,7 +334,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Error")
                 .setDescription("No se encontró el partido seleccionado.");
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -347,7 +348,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("⏱️ Apuestas cerradas")
                 .setDescription(`**${match.home_team}** vs **${match.away_team}** ya ha empezado: no se admiten más apuestas.`);
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -361,7 +362,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Error")
                 .setDescription("La cuota para este resultado no es válida.");
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -379,7 +380,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Ya has apostado")
                 .setDescription("Ya tienes una apuesta activa para este partido y resultado.");
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -409,7 +410,7 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Saldo insuficiente")
                 .setDescription("No tienes saldo suficiente para realizar esta apuesta.");
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
         logInfo(
@@ -426,11 +427,14 @@ module.exports = {
                     `**Cantidad:** \`${cantidad}\` monedas\n` +
                     `**Cuota:** \`${cuota}\`\n\n` +
                     `💰 **Tu saldo actual:** \`${saldoActual}\` monedas\n\n` +
-                    "¡Suerte! Podrás ver el estado en `/misapuestas`.",
+                    "¡Suerte!",
             )
-            .setColor(0x27ae60)
-            .setFooter({ text: "Puedes consultar tus apuestas con /misapuestas" });
+            .setColor(0x27ae60);
 
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply({
+            embeds: [embed],
+            components: [filaTrasApostar(userId, { deporte: match.deporte || "laliga" })],
+            flags: MessageFlags.Ephemeral,
+        });
     },
 };

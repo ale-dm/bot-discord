@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { EmbedBuilder, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
 const {
     registrarUsuario,
@@ -8,7 +8,8 @@ const {
     obtenerSaldo,
     applyRtp,
 } = require("../../systems/casinoTransactions");
-const { logInfo, logError, logWarn } = require("../../core/logger");
+const { logInfo, logWarn } = require("../../core/logger");
+const casino = require("../../paneles/casino");
 
 // Símbolos y sus valores
 const SIMBOLOS = {
@@ -48,59 +49,9 @@ function girarCarretes() {
     return [obtenerSimboloAleatorio(), obtenerSimboloAleatorio(), obtenerSimboloAleatorio()];
 }
 
-function crearBotonesMenu(disabled = false) {
-    return new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId("tragaperras_jugar_50")
-            .setLabel("50 monedas")
-            .setEmoji("💵")
-            .setStyle(ButtonStyle.Success)
-            .setDisabled(disabled),
-        new ButtonBuilder()
-            .setCustomId("tragaperras_jugar_100")
-            .setLabel("100 monedas")
-            .setEmoji("💰")
-            .setStyle(ButtonStyle.Success)
-            .setDisabled(disabled),
-        new ButtonBuilder()
-            .setCustomId("tragaperras_jugar_500")
-            .setLabel("500 monedas")
-            .setEmoji("💎")
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(disabled),
-        new ButtonBuilder()
-            .setCustomId("tragaperras_ayuda")
-            .setLabel("Ayuda")
-            .setEmoji("❓")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(disabled),
-        new ButtonBuilder()
-            .setCustomId("tragaperras_stats")
-            .setLabel("Stats")
-            .setEmoji("📊")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(disabled),
-    );
-}
-
+// Al acabar (y, desactivada, mientras gira): 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.
 function crearBotonesResultado(apuesta, disabled = false) {
-    return new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`tragaperras_repetir_${apuesta}`)
-            .setLabel(`Jugar (${apuesta})`)
-            .setEmoji("🔄")
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(disabled),
-        new ButtonBuilder().setCustomId("tragaperras_jugar_50").setLabel("50").setStyle(ButtonStyle.Success).setDisabled(disabled),
-        new ButtonBuilder().setCustomId("tragaperras_jugar_100").setLabel("100").setStyle(ButtonStyle.Success).setDisabled(disabled),
-        new ButtonBuilder().setCustomId("tragaperras_jugar_500").setLabel("500").setStyle(ButtonStyle.Success).setDisabled(disabled),
-        new ButtonBuilder()
-            .setCustomId("tragaperras_stats")
-            .setLabel("Stats")
-            .setEmoji("📊")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(disabled),
-    );
+    return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled });
 }
 
 /**
@@ -308,106 +259,21 @@ function crearEmbedAyuda() {
         .setFooter({ text: "¡Buena suerte y juega responsablemente! 🍀" });
 }
 
-/**
- * Crear embed de estadísticas
- */
-function crearEmbedEstadisticas(userId, username) {
-    try {
-        const stats = db
-            .prepare(
-                `
-            SELECT 
-                COUNT(*) as partidas,
-                SUM(apuesta) as totalApostado,
-                SUM(resultado) as gananciaTotal,
-                MAX(resultado) as mejorGanancia,
-                COUNT(CASE WHEN resultado > 0 THEN 1 END) as victorias,
-                COUNT(CASE WHEN resultado < 0 THEN 1 END) as derrotas
-            FROM casino 
-            WHERE userId = ? AND juego = 'tragaperras'
-        `,
-            )
-            .get(userId);
-
-        if (!stats || stats.partidas === 0) {
-            return new EmbedBuilder()
-                .setTitle("📊 ESTADÍSTICAS")
-                .setDescription(`**${username}** aún no ha jugado.\n\n` + `¡Empieza ahora y haz historia! 🎰`)
-                .setColor(0x95a5a6)
-                .setThumbnail("https://em-content.zobj.net/thumbs/160/google/350/slot-machine_1f3b0.png");
-        }
-
-        const winRate = ((stats.victorias / stats.partidas) * 100).toFixed(1);
-        const roi = stats.totalApostado > 0 ? ((stats.gananciaTotal / stats.totalApostado) * 100).toFixed(1) : "0.0";
-
-        const roiIcon = parseFloat(roi) > 0 ? "📈" : "📉";
-
-        return new EmbedBuilder()
-            .setTitle("📊 ESTADÍSTICAS DE TRAGAPERRAS")
-            .setDescription(
-                `**Jugador:** ${username}\n\n` +
-                    `**RESUMEN:**\n` +
-                    `🎰 Partidas: **${stats.partidas}**\n` +
-                    `💰 Total apostado: **${stats.totalApostado?.toLocaleString() || 0}**\n` +
-                    `💸 Ganancia neta: **${stats.gananciaTotal >= 0 ? "+" : ""}${stats.gananciaTotal?.toLocaleString() || 0}**\n` +
-                    `${roiIcon} ROI: **${roi}%**\n\n` +
-                    `**RENDIMIENTO:**\n` +
-                    `✅ Victorias: **${stats.victorias || 0}**\n` +
-                    `❌ Derrotas: **${stats.derrotas || 0}**\n` +
-                    `📊 Ratio: **${winRate}%**\n\n` +
-                    `🏆 Mejor ganancia: **${stats.mejorGanancia?.toLocaleString() || 0}** monedas`,
-            )
-            .setColor(0x3498db)
-            .setThumbnail("https://em-content.zobj.net/thumbs/160/google/350/slot-machine_1f3b0.png")
-            .setFooter({ text: "¡Sigue jugando para mejorar!" })
-            .setTimestamp();
-    } catch (error) {
-        logError("[TRAGAPERRAS] Error obteniendo estadísticas:", error);
-        return new EmbedBuilder().setTitle("📊 ESTADÍSTICAS").setDescription("❌ Error al cargar estadísticas").setColor(0xe74c3c);
-    }
-}
-
 module.exports = {
-    componentHandlers: [{ types: ["button"], prefixes: ["tragaperras_"], method: "handleButton" }],
-    data: new SlashCommandBuilder()
-        .setName("tragaperras")
-        .setDescription("🎰 Juega a la tragaperras con jackpot progresivo")
-        .addIntegerOption((option) =>
-            option
-                .setName("apuesta")
-                .setDescription("Cantidad a apostar (min: 50, max: 5000)")
-                .setRequired(false)
-                .setMinValue(50)
-                .setMaxValue(5000),
-        ),
+    componentHandlers: [{ types: ["button"], prefixes: ["tragaperras_"], method: "handleButton", acl: "juegos" }],
 
     async run(client, interaction) {
         const apuesta = interaction.options.getInteger("apuesta");
         const userId = interaction.user.id;
         const username = interaction.user.username;
 
-        // Si no hay apuesta, mostrar menú principal
+        // Sin apuesta, el selector de importes del casino (como desde el panel), con el jackpot.
         if (!apuesta) {
-            const jackpot = obtenerJackpot();
-            const saldo = obtenerSaldo(userId);
-
-            const embed = new EmbedBuilder()
-                .setTitle("🎰 TRAGAPERRAS 🎰")
-                .setDescription(
-                    `**¡Bienvenido ${username}!**\n\n` +
-                        `💰 **Tu saldo:** ${saldo.toLocaleString()} monedas\n` +
-                        `🏆 **Jackpot actual:** ${jackpot.toLocaleString()} monedas\n\n` +
-                        `Gira los carretes y gana grandes premios.\n` +
-                        `¡Tres 7️⃣ ganan el JACKPOT completo!\n\n` +
-                        `💡 _El 10% de cada apuesta aumenta el jackpot_`,
-                )
-                .setColor(0xf1c40f)
-                .setThumbnail("https://em-content.zobj.net/thumbs/160/google/350/slot-machine_1f3b0.png")
-                .setFooter({ text: "¡Buena suerte! 🍀" });
-
-            const row = crearBotonesMenu(false);
-
-            await interaction.reply({ embeds: [embed], components: [row] });
+            const panel = casino.buildPickApuesta(userId, "tragaperras");
+            panel.embeds[0].setDescription(
+                `${panel.embeds[0].data.description}\n\n🏆 Jackpot actual: **${obtenerJackpot().toLocaleString("es")}** monedas (tres 7️⃣)`,
+            );
+            await interaction.reply(panel);
             return;
         }
 
@@ -418,29 +284,28 @@ module.exports = {
     async jugar(interaction, apuesta, userId, username, yaDiferido = false) {
         if (partidasActivas.has(userId)) {
             if (!yaDiferido) {
-                await interaction.reply({ content: "⏳ Ya tienes una tragaperras en curso. Espera a que termine.", ephemeral: true });
+                await interaction.reply({
+                    content: "⏳ Ya tienes una tragaperras en curso. Espera a que termine.",
+                    flags: MessageFlags.Ephemeral,
+                });
             }
             return;
         }
         partidasActivas.set(userId, Date.now());
 
         try {
-            if (!yaDiferido) {
-                await interaction.deferReply();
-            }
-
-            // Registrar usuario
             registrarUsuario(userId, username, interaction.user.tag);
 
-            // Validar y descontar apuesta
+            // Se cobra antes de tocar el mensaje: si no se puede (saldo, límite, espera), el aviso sale aparte
+            // y el panel sigue ahí para cambiar la apuesta. Antes lo sustituía un texto sin botones.
             const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
             if (!descuento.exito) {
-                await interaction.editReply({
-                    content: descuento.mensaje,
-                    embeds: [],
-                    components: [],
-                });
+                const aviso = { content: descuento.mensaje, flags: MessageFlags.Ephemeral };
+                await (yaDiferido ? interaction.followUp(aviso) : interaction.reply(aviso));
                 return;
+            }
+            if (!yaDiferido) {
+                await interaction.deferReply();
             }
 
             const jackpot = obtenerJackpot();
@@ -556,7 +421,10 @@ module.exports = {
         if (interaction.customId.startsWith("tragaperras_repetir_")) {
             const apuesta = parseInt(interaction.customId.replace("tragaperras_repetir_", ""));
             if (partidasActivas.has(userId)) {
-                await interaction.reply({ content: "⏳ Ya estás girando una tragaperras. Espera un momento.", ephemeral: true });
+                await interaction.reply({
+                    content: "⏳ Ya estás girando una tragaperras. Espera un momento.",
+                    flags: MessageFlags.Ephemeral,
+                });
                 return;
             }
             await interaction.deferUpdate();
@@ -568,7 +436,10 @@ module.exports = {
         if (interaction.customId.startsWith("tragaperras_jugar_")) {
             const apuesta = parseInt(interaction.customId.replace("tragaperras_jugar_", ""));
             if (partidasActivas.has(userId)) {
-                await interaction.reply({ content: "⏳ Ya estás girando una tragaperras. Espera un momento.", ephemeral: true });
+                await interaction.reply({
+                    content: "⏳ Ya estás girando una tragaperras. Espera un momento.",
+                    flags: MessageFlags.Ephemeral,
+                });
                 return;
             }
             await interaction.deferUpdate();
@@ -579,14 +450,13 @@ module.exports = {
         // Botón de ayuda
         if (interaction.customId === "tragaperras_ayuda") {
             const embedAyuda = crearEmbedAyuda();
-            await interaction.reply({ embeds: [embedAyuda], ephemeral: true });
+            await interaction.reply({ embeds: [embedAyuda], flags: MessageFlags.Ephemeral });
             return;
         }
 
-        // Botón de estadísticas
+        // Botón de estadísticas de mensajes antiguos: las del casino, solo de la tragaperras.
         if (interaction.customId === "tragaperras_stats") {
-            const embedStats = crearEmbedEstadisticas(userId, username);
-            await interaction.reply({ embeds: [embedStats], ephemeral: true });
+            await interaction.reply({ ...casino.buildStats(userId, username, "tragaperras"), flags: MessageFlags.Ephemeral });
             return;
         }
     },
