@@ -56,8 +56,8 @@ module.exports = {
         }
 
         // Obtener saldo de monedas
-        const banco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-        const saldo = banco ? banco.saldo : 0;
+        // El 💵 efectivo (systems/dinero).
+        const saldo = require("../../systems/dinero").efectivo(userId);
 
         const pagina = 1;
         const totalPaginas = Math.ceil(objetos.length / OBJETOS_POR_PAGINA);
@@ -73,7 +73,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setTitle("🎒 Tu inventario")
-            .setDescription(`💰 Monedas: **${saldo}**`)
+            .setDescription(`💵 Efectivo: **${saldo}**`)
             .setColor(colorPorRareza(objetos[0]?.rareza))
             .setFooter({ text: `Página ${pagina} de ${totalPaginas} | Total objetos: ${totalObjetos}` });
 
@@ -137,8 +137,8 @@ module.exports = {
             )
             .all(userId);
 
-        const banco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-        const saldo = banco ? banco.saldo : 0;
+        // El 💵 efectivo (systems/dinero).
+        const saldo = require("../../systems/dinero").efectivo(userId);
 
         const parts = interaction.customId.split("_");
         const accion = parts[1];
@@ -181,7 +181,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setTitle("🎒 Tu inventario")
-            .setDescription(`💰 Monedas: **${saldo}**`)
+            .setDescription(`💵 Efectivo: **${saldo}**`)
             .setColor(colorPorRareza(objetos[0]?.rareza))
             .setFooter({ text: `Página ${pagina} de ${totalPaginas} | Total objetos: ${totalObjetos}` });
 

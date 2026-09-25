@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const xp = require("../../systems/xpSystem");
 const achievements = require("../../systems/achievementsSystem");
-const casino = require("../../systems/casinoTransactions");
 const cripto = require("../../systems/cripto/mercado");
 const { createLogger } = require("../../core/logger");
 
@@ -152,7 +151,7 @@ function resumenCasino(userId) {
 }
 
 async function buildEconomyEmbed(guild, userId, member) {
-    const saldo = casino.obtenerSaldo(userId);
+    const c = require("../../systems/dinero").cuenta(userId);
     const username = member?.user?.username || `<@${userId}>`;
     const avatarUrl = member?.user?.displayAvatarURL({ size: 128, extension: "png" }) || null;
     const { ganado, perdido } = resumenCasino(userId);
@@ -169,7 +168,8 @@ async function buildEconomyEmbed(guild, userId, member) {
         .setAuthor({ name: username, iconURL: avatarUrl || undefined })
         .setTitle("💰 Economía")
         .addFields(
-            { name: "🏦 Saldo en banco", value: `🪙 **${saldo.toLocaleString()}** coins`, inline: true },
+            { name: "💵 Efectivo", value: `🪙 **${c.efectivo.toLocaleString()}** coins`, inline: true },
+            { name: "🏦 Banco", value: `🪙 **${c.banco.toLocaleString()}** coins`, inline: true },
             { name: "📈 Ganado en casino", value: `+${ganado.toLocaleString()}`, inline: true },
             { name: "📉 Perdido en casino", value: `-${perdido.toLocaleString()}`, inline: true },
         )

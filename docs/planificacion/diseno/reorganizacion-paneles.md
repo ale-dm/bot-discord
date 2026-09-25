@@ -284,7 +284,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 - Tests de reparto de botones como `panelCasino.test.js`.
 - En Discord: navegar por todas las pestañas y jugar desde ellas.
 
-### Parte 5 · Dinero: efectivo y banco (M)
+### Parte 5 · Dinero: efectivo y banco (M) — ✅ hecha el 2026-09-25
 
 - **Efectivo (hoy `enMano`) es el dinero que se gasta (D4).** Casino, apuestas, quiniela, tienda, cripto y
   transferencias cobran del efectivo. Los premios, reembolsos, ventas de cripto y recompensas de logros van al
@@ -372,7 +372,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 | 2 ✅ | Inicio y final de los juegos | Juegos sin salida, `/ppt` fuera del panel, stats repetidas | S | — |
 | 3 ✅ | Mis jugadas y quiniela visible | E-08, E-13 | M | — |
 | 4 ✅ | `/juegos` | Casino y apuestas separados; borra 8 comandos | M | 2 y 3 |
-| 5 | Dinero: efectivo y banco | "En mano" sin uso, tres historiales | M | — |
+| 5 ✅ | Dinero: efectivo y banco | "En mano" sin uso, tres historiales | M | — |
 | 6 | Perfil único | Dos perfiles, logros en tres sitios, cinco rankings, E-11; borra 3 comandos | M | 4 y 5 |
 | 7 | Tienda + inventario | Tienda, inventario y usar sueltos | S | 5 (historial) |
 | 8 | Admin | Dos paneles y comandos sueltos, E-14, E-15, DT-13 (`/panel`) | M | — |

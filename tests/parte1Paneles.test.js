@@ -12,7 +12,7 @@ const campo = (embed, nombre) => embed.data.fields.find((f) => f.name.includes(n
 
 describe("economía del perfil", () => {
     beforeAll(() => {
-        db.prepare("INSERT INTO banco (userId, saldo) VALUES ('eco', 5000)").run();
+        db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES ('eco', 0, 5000)").run();
         const hist = db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES ('eco', ?, ?, ?)");
         hist.run("2026-09-01", "Depósito", 3000); // no es casino
         hist.run("2026-09-02", "Compra en tienda: Espada", -700); // tampoco
@@ -47,7 +47,7 @@ describe("reclamar logros con un menú (E-07)", () => {
         );
         completar.run(G, primero.id);
         completar.run(G, segundo.id);
-        db.prepare("INSERT INTO banco (userId, saldo) VALUES ('logrero', 0)").run();
+        db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES ('logrero', 0, 0)").run();
     });
     const interaccion = (extra) => ({
         guildId: G,
@@ -68,7 +68,9 @@ describe("reclamar logros con un menú (E-07)", () => {
         const elegir = interaccion({ customId: "logros_reclamar", values: [primero.id] });
         await logros.handleButton(null, elegir);
         expect(elegir.update.mock.calls[0][0].content).toMatch(/Reclamaste/);
-        expect(db.prepare("SELECT saldo FROM banco WHERE userId = 'logrero'").get().saldo).toBe(achievements.rewardCoinsFor(primero, G));
+        expect(db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = 'logrero'").get().saldo).toBe(
+            achievements.rewardCoinsFor(primero, G),
+        );
         // Ya solo queda el segundo en el menú.
         const quedan = elegir.update.mock.calls[0][0].components[1].components[0].options.map((o) => o.data.value);
         expect(quedan).toEqual([segundo.id]);

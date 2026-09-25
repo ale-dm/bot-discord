@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
+const dinero = require("../../systems/dinero");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Objetos");
@@ -31,14 +32,9 @@ async function aplicarEfecto(obj, userId, member, guild) {
     if (tipo === "consumible") {
         if (efecto.startsWith("monedas:")) {
             const cantidad = parseInt(efecto.split(":")[1]) || 0;
-            // Sin cuenta, antes se creaba solo con esas monedas (sin el saldo inicial de todos).
-            db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(userId);
-            db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, userId);
-            db.prepare(
-                `
-                INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)
-            `,
-            ).run(userId, new Date().toISOString(), `Efecto consumible: ${obj.nombre}`, cantidad);
+            // Al 💵 efectivo (systems/dinero; crea la cuenta si no la tenía).
+            dinero.pagar(userId, cantidad);
+            dinero.apuntar(userId, "objeto", `Efecto consumible: ${obj.nombre}`, cantidad);
             return { ok: true, mensaje: `🪙 ¡Has recibido **${cantidad} monedas**!` };
         }
         if (efecto.startsWith("mensaje:")) {

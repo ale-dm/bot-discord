@@ -20,8 +20,12 @@ function perfilNavRow(ownerId, targetId) {
 
 async function buildProfileHome(guild, ownerId, targetId) {
     const embed = await nivel.buildProfileEmbed(guild, targetId);
-    const saldo = casino.getSaldo(targetId);
-    embed.addFields({ name: "💰 Saldo", value: `${saldo.toLocaleString("es")} monedas`, inline: true });
+    const c = require("../../systems/dinero").cuenta(targetId);
+    embed.addFields({
+        name: "💰 Dinero",
+        value: `💵 ${c.efectivo.toLocaleString("es")} · 🏦 ${c.banco.toLocaleString("es")}`,
+        inline: true,
+    });
     return { embeds: [embed], components: [perfilNavRow(ownerId, targetId)] };
 }
 

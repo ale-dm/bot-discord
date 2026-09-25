@@ -1,5 +1,7 @@
-// Utilidades para transacciones seguras del casino
+// Utilidades para transacciones seguras del casino. Se juega con el 💵 efectivo (systems/dinero): la
+// columna `enMano` de la tabla banco. Antes se jugaba con el saldo del banco.
 const db = require("../core/db");
+const dinero = require("./dinero");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Casino");
@@ -16,14 +18,9 @@ const userGuildContext = new Map();
 function transaccionSegura(userId, operacion) {
     // Si la operación lanza, db.transaction hace rollback; el error se registra una sola vez, abajo.
     const transaction = db.transaction(() => {
-        // Verificar que el usuario existe en banco
-        let userBanco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-        if (!userBanco) {
-            // Crear usuario si no existe
-            db.prepare("INSERT INTO banco (userId, saldo) VALUES (?, 1000)").run(userId);
-            userBanco = { saldo: 1000 };
-            log.info(`Usuario ${userId} creado con saldo inicial 1000`);
-        }
+        // `saldo` es el efectivo (con lo que se juega); si no tenía cuenta, se le crea.
+        dinero.asegurarCuenta(userId);
+        const userBanco = db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(userId);
 
         // Ejecutar la operación
         return operacion(userBanco);
@@ -91,12 +88,7 @@ function insertarCasino(userId, juego, apuesta, resultado, detalleObj) {
  */
 function insertarHistorial(userId, descripcion, cantidad) {
     try {
-        db.prepare(
-            `
-            INSERT INTO historial (userId, fecha, descripcion, cantidad) 
-            VALUES (?, ?, ?, ?)
-        `,
-        ).run(userId, new Date().toISOString(), descripcion, cantidad);
+        dinero.apuntar(userId, "casino", descripcion, cantidad);
     } catch (error) {
         log.error(`Error insertando en historial:`, error);
         // No lanzar error aquí ya que el historial es secundario
@@ -127,7 +119,7 @@ function validarApuesta(cantidad, saldoDisponible, guildId = null) {
     }
 
     if (cantidad > saldoDisponible) {
-        return { valida: false, mensaje: "❌ No tienes suficiente saldo para esa apuesta." };
+        return { valida: false, mensaje: "❌ No te llega el efectivo para esa apuesta. Saca dinero del banco (💵 Sacar)." };
     }
 
     return { valida: true, mensaje: "" };
@@ -187,7 +179,7 @@ function procesarGanancia(userId, juego, apuesta, gananciaTotal, descripcion, de
     const ok = transaccionSegura(userId, (userBanco) => {
         // Actualizar saldo con la ganancia total
         const nuevoSaldo = userBanco.saldo + gananciaTotal;
-        db.prepare("UPDATE banco SET saldo = ? WHERE userId = ?").run(nuevoSaldo, userId);
+        db.prepare("UPDATE banco SET enMano = ? WHERE userId = ?").run(nuevoSaldo, userId);
 
         // Registrar en casino (resultado neto = ganancia total - apuesta)
         const resultadoNeto = gananciaTotal - apuesta;
@@ -281,7 +273,7 @@ function descontarApuesta(userId, cantidad, guildId = null) {
         }
 
         const nuevoSaldo = userBanco.saldo - cantidad;
-        db.prepare("UPDATE banco SET saldo = ? WHERE userId = ?").run(nuevoSaldo, userId);
+        db.prepare("UPDATE banco SET enMano = ? WHERE userId = ?").run(nuevoSaldo, userId);
 
         resultado.saldoRestante = nuevoSaldo;
         resultado.exito = true;
@@ -314,11 +306,11 @@ function descontarExtra(userId, cantidad, guildId = null) {
     }
     transaccionSegura(userId, (userBanco) => {
         if (userBanco.saldo < cantidad) {
-            resultado.mensaje = "❌ No tienes suficiente saldo para eso.";
+            resultado.mensaje = "❌ No te llega el efectivo para eso. Saca dinero del banco (💵 Sacar).";
             return false;
         }
         const nuevoSaldo = userBanco.saldo - cantidad;
-        db.prepare("UPDATE banco SET saldo = ? WHERE userId = ?").run(nuevoSaldo, userId);
+        db.prepare("UPDATE banco SET enMano = ? WHERE userId = ?").run(nuevoSaldo, userId);
         resultado.saldoRestante = nuevoSaldo;
         resultado.exito = true;
         log.info(`Apuesta extra descontada: ${userId} - Cantidad: ${cantidad} - Saldo restante: ${nuevoSaldo}`);
@@ -332,19 +324,13 @@ function descontarExtra(userId, cantidad, guildId = null) {
 }
 
 /**
- * Obtener saldo de usuario de forma segura
+ * El 💵 efectivo de alguien (con lo que se juega). Si no tenía cuenta, se le crea.
  * @param {string} userId - ID del usuario
- * @returns {number} - Saldo del usuario
+ * @returns {number}
  */
 function obtenerSaldo(userId) {
     try {
-        const userBanco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-        if (!userBanco) {
-            // Crear usuario con saldo inicial
-            db.prepare("INSERT INTO banco (userId, saldo) VALUES (?, 1000)").run(userId);
-            return 1000;
-        }
-        return userBanco.saldo;
+        return dinero.efectivo(userId);
     } catch (error) {
         log.error(`Error obteniendo saldo para ${userId}:`, error);
         return 0;

@@ -6,7 +6,7 @@ const juegos = require("../src/commands/juegos/juegos");
 
 const G = "guild-casino-panel";
 guildSettings.setSetting(G, "casino.global_cooldown_sec", 0);
-db.prepare("INSERT INTO banco (userId, saldo) VALUES ('jugador', 600)").run();
+db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES ('jugador', 0, 600)").run();
 
 function boton(customId) {
     return {

@@ -10,6 +10,7 @@ const {
     MessageFlags,
 } = require("discord.js");
 const db = require("../../core/db");
+const dinero = require("../../systems/dinero");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas");
@@ -316,14 +317,12 @@ module.exports = {
         const userId = interaction.user.id;
         // Quien aún no tiene cuenta empieza con el saldo inicial (como en el casino); antes le salía
         // "saldo insuficiente" hasta que usara otro comando que le creara la cuenta.
-        db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(userId);
-        const userBanco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-
-        if (!userBanco || userBanco.saldo < cantidad) {
+        // Se apuesta con el 💵 efectivo (systems/dinero).
+        if (dinero.efectivo(userId) < cantidad) {
             const errorEmbed = new EmbedBuilder()
                 .setColor(0xe74c3c)
-                .setTitle("❌ Saldo insuficiente")
-                .setDescription("No tienes saldo suficiente para realizar esta apuesta.");
+                .setTitle("❌ No te llega el efectivo")
+                .setDescription("Saca dinero del banco (💵 Sacar) para hacer esta apuesta.");
             await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
@@ -387,8 +386,7 @@ module.exports = {
         // Descontar saldo y registrar la apuesta, todo o nada (antes eran dos escrituras sueltas:
         // si fallaba la segunda, se cobraba una apuesta que no existía).
         const cobrada = db.transaction(() => {
-            const r = db.prepare("UPDATE banco SET saldo = saldo - ? WHERE userId = ? AND saldo >= ?").run(cantidad, userId, cantidad);
-            if (r.changes === 0) return false;
+            if (!dinero.cobrar(userId, cantidad)) return false;
             db.prepare(
                 `
                 INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota)
@@ -397,19 +395,14 @@ module.exports = {
             ).run(userId, match_id, eleccion, cantidad, cuota);
             // Antes solo se apuntaba el premio al ganar: en /banco historial no aparecía lo apostado
             // y el "ganado/perdido" de /nivel contaba el premio entero como ganancia.
-            db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                userId,
-                new Date().toISOString(),
-                `Apuesta: ${match.home_team} vs ${match.away_team}`,
-                -cantidad,
-            );
+            dinero.apuntar(userId, "apuestas", `Apuesta: ${match.home_team} vs ${match.away_team}`, -cantidad);
             return true;
         })();
         if (!cobrada) {
             const errorEmbed = new EmbedBuilder()
                 .setColor(0xe74c3c)
-                .setTitle("❌ Saldo insuficiente")
-                .setDescription("No tienes saldo suficiente para realizar esta apuesta.");
+                .setTitle("❌ No te llega el efectivo")
+                .setDescription("Saca dinero del banco (💵 Sacar) para hacer esta apuesta.");
             await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
@@ -417,7 +410,7 @@ module.exports = {
             `[Apuestas] ${interaction.user.tag} (${userId}) apostó ${cantidad} a "${eleccion}" en ${match.home_team} vs ${match.away_team} (cuota ${cuota})`,
         );
 
-        const saldoActual = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId)?.saldo ?? 0;
+        const saldoActual = dinero.efectivo(userId);
         const resultadoTxt = eleccion === "home" ? match.home_team : eleccion === "draw" ? "Empate" : match.away_team;
         const embed = new EmbedBuilder()
             .setTitle("✅ ¡Apuesta registrada!")
@@ -426,7 +419,7 @@ module.exports = {
                     `**Opción:** ${resultadoTxt}\n` +
                     `**Cantidad:** \`${cantidad}\` monedas\n` +
                     `**Cuota:** \`${cuota}\`\n\n` +
-                    `💰 **Tu saldo actual:** \`${saldoActual}\` monedas\n\n` +
+                    `💵 **Tu efectivo:** \`${saldoActual}\` monedas\n\n` +
                     "¡Suerte!",
             )
             .setColor(0x27ae60);

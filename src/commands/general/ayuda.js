@@ -51,9 +51,9 @@ const SECCIONES = {
         emoji: "💰",
         titulo: "Economía",
         texto: [
-            "Empiezas con **1.000 monedas**. Se juega y se compra con el saldo del banco.",
-            "`/banco saldo | depositar | retirar | transferir | top | historial`",
-            "`/tienda ver [busqueda] [categoria] [rareza]` — compra con los botones. `/tienda historial` — tus compras.",
+            "Empiezas con **1.000 monedas** en 💵 efectivo. Se juega y se compra con el **efectivo**; el 🏦 **banco** es el sitio seguro (hay que sacar el dinero para gastarlo).",
+            "`/banco` — panel de Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro) · 🏆 Más ricos. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
+            "`/tienda ver [busqueda] [categoria] [rareza]` — compra con los botones. `/tienda historial` — tus compras (Movimientos filtrados por tienda).",
             "`/inventario [categoria] [rareza]` · `/usar id` — tus objetos; los de rol te dan un rol, los consumibles un efecto.",
         ],
     },

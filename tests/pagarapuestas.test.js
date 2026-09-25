@@ -5,7 +5,7 @@ const db = require("../src/core/db");
 const { liquidarApuestas } = require("../src/commands/apuestas/pagarapuestas");
 
 const hace = (horas) => new Date(Date.now() - horas * 3600 * 1000).toISOString();
-const saldo = (id) => db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(id)?.saldo;
+const saldo = (id) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(id)?.saldo;
 
 // Resultados que "devuelve" la API, por deporte.
 let resultadosApi = {};
@@ -35,7 +35,7 @@ function partido(match_id, horasDesdeInicio, deporte = "laliga") {
     ).run(match_id, hace(horasDesdeInicio), deporte);
 }
 function apuesta(userId, match_id, eleccion, cantidad, cuota = 2) {
-    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo) VALUES (?, 0)").run(userId);
+    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo, enMano) VALUES (?, 0, 0)").run(userId);
     db.prepare("INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota) VALUES (?, ?, ?, ?, ?)").run(
         userId,
         match_id,
@@ -102,7 +102,7 @@ test("una quiniela se completa aunque sus partidos no estén todos a la vez en l
             .run(q, id, orden, "L", "V", hace(horas));
     p("q1", 1, 60); // viernes
     p("q2", 2, 30); // domingo
-    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo) VALUES (?, 0)").run("quinielista");
+    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo, enMano) VALUES (?, 0, 0)").run("quinielista");
     db.prepare(
         "INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en) VALUES (?, 'quinielista', '12', 100, ?)",
     ).run(q, hace(90));
@@ -132,7 +132,7 @@ function quinielaTerminada(jornada, resultados) {
     return q;
 }
 function jugarQuiniela(q, userId, predicciones, cantidad) {
-    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo) VALUES (?, 0)").run(userId);
+    db.prepare("INSERT OR IGNORE INTO banco (userId, saldo, enMano) VALUES (?, 0, 0)").run(userId);
     db.prepare("INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en) VALUES (?, ?, ?, ?, ?)").run(
         q,
         userId,

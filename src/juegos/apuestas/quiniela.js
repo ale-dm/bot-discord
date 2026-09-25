@@ -10,6 +10,7 @@ const {
     MessageFlags,
 } = require("discord.js");
 const db = require("../../core/db");
+const dinero = require("../../systems/dinero");
 const { logInfo, logError } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { minimoAciertosQuiniela } = require("../../commands/apuestas/pagarapuestas");
@@ -560,10 +561,12 @@ module.exports = {
         const userId = interaction.user.id;
         // Quien aún no tiene cuenta empieza con el saldo inicial (como en el casino); antes le salía
         // "saldo insuficiente" hasta que usara otro comando que le creara la cuenta.
-        db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(userId);
-        const userBanco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-        if (!userBanco || userBanco.saldo < cantidad) {
-            await interaction.reply({ content: "❌ No tienes saldo suficiente.", flags: MessageFlags.Ephemeral });
+        // Se apuesta con el 💵 efectivo (systems/dinero).
+        if (dinero.efectivo(userId) < cantidad) {
+            await interaction.reply({
+                content: "❌ No te llega el efectivo. Saca dinero del banco (💵 Sacar).",
+                flags: MessageFlags.Ephemeral,
+            });
             return;
         }
 
@@ -574,31 +577,34 @@ module.exports = {
         }
 
         const tx = db.transaction(() => {
-            db.prepare("UPDATE banco SET saldo = saldo - ? WHERE userId = ?").run(cantidad, userId);
+            if (!dinero.cobrar(userId, cantidad)) throw new Error("Sin efectivo");
             db.prepare(
                 `
                 INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en)
                 VALUES (?, ?, ?, ?, ?)
             `,
             ).run(quinielaId, userId, pronosticos, cantidad, new Date().toISOString());
-            db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                userId,
-                new Date().toISOString(),
-                "Quiniela: apuesta",
-                -cantidad,
-            );
+            dinero.apuntar(userId, "apuestas", "Quiniela: apuesta", -cantidad);
         });
-        tx();
+        try {
+            tx();
+        } catch {
+            await interaction.reply({
+                content: "❌ No te llega el efectivo. Saca dinero del banco (💵 Sacar).",
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
         logInfo(`[Quiniela] ${interaction.user.tag} (${userId}) apostó ${cantidad} a la quiniela ${quinielaId}: ${pronosticos}`);
         sesionesQuiniela.delete(getSesionKey(userId, quinielaId));
 
-        const saldoActual = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId)?.saldo ?? 0;
+        const saldoActual = dinero.efectivo(userId);
         await interaction.reply({
             content:
                 `✅ Quiniela registrada.\n` +
                 `🎟️ Pronósticos: \`${pronosticos}\`\n` +
                 `💰 Apostado: \`${cantidad}\`\n` +
-                `💼 Saldo actual: \`${saldoActual}\``,
+                `💵 Efectivo: \`${saldoActual}\``,
             components: [filaTrasApostar(userId, { deporte: quiniela.deporte, quiniela: true })],
             flags: MessageFlags.Ephemeral,
         });

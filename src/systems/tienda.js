@@ -1,6 +1,7 @@
 // Datos y compras de /tienda, separados del comando para poder probarlos sin Discord.
 const db = require("../core/db");
 const guildSettings = require("./guildSettings");
+const dinero = require("./dinero");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Tienda");
@@ -42,8 +43,9 @@ function historialCompras(userId) {
         .all(userId);
 }
 
+// El 💵 efectivo, con lo que se compra (systems/dinero).
 function saldoDe(userId) {
-    return db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId)?.saldo ?? null;
+    return dinero.efectivo(userId);
 }
 
 /**
@@ -56,9 +58,8 @@ function comprobarCompra(guildId, userId, item, tiendaCfg) {
         return { ok: false, mensaje: "❌ Solo puedes comprar este objeto una vez." };
     }
     if (item.stock !== null && item.stock <= 0) return { ok: false, mensaje: "❌ Este objeto está agotado." };
-    const saldo = saldoDe(userId);
-    if (saldo === null || saldo < item.precio) {
-        return { ok: false, mensaje: "❌ No tienes suficiente saldo en el banco para comprar este objeto." };
+    if (saldoDe(userId) < item.precio) {
+        return { ok: false, mensaje: "❌ No te llega el efectivo para comprar este objeto. Saca dinero del banco (💵 Sacar)." };
     }
     const limiter = guildSettings.checkAndConsumeLimit(guildId, "tienda_buy", userId, {
         cooldownSec: Number(tiendaCfg.buy_cooldown_sec || 0),
@@ -85,21 +86,13 @@ function comprobarCompra(guildId, userId, item, tiendaCfg) {
 function cobrarCompra(userId, item, etiqueta = userId) {
     try {
         return db.transaction(() => {
-            const cobro = db
-                .prepare("UPDATE banco SET saldo = saldo - ? WHERE userId = ? AND saldo >= ?")
-                .run(item.precio, userId, item.precio);
-            if (cobro.changes !== 1) return false;
+            if (!dinero.cobrar(userId, item.precio)) return false;
             if (item.stock !== null) {
                 const st = db.prepare("UPDATE tienda SET stock = stock - 1 WHERE id = ? AND stock > 0").run(item.tiendaId);
                 if (st.changes !== 1) throw new Error("Sin stock");
             }
             db.prepare("INSERT INTO inventario (userId, itemId, fecha) VALUES (?, ?, ?)").run(userId, item.id, new Date().toISOString());
-            db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                userId,
-                new Date().toISOString(),
-                `Compra en tienda: ${item.nombre}`,
-                -item.precio,
-            );
+            dinero.apuntar(userId, "tienda", `Compra en tienda: ${item.nombre}`, -item.precio);
             return true;
         })();
     } catch (e) {

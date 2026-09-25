@@ -14,16 +14,16 @@ db.prepare("INSERT INTO tienda (id, objetoId, precio, stock) VALUES (11, 51, 100
 let n = 0;
 function cliente(saldo) {
     const id = `cliente-${++n}`;
-    db.prepare("INSERT INTO banco (userId, saldo) VALUES (?, ?)").run(id, saldo);
+    db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES (?, 0, ?)").run(id, saldo);
     return id;
 }
-const saldo = (id) => db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(id).saldo;
+const saldo = (id) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(id).saldo;
 
 describe("comprobarCompra", () => {
     test("sin saldo no se puede", () => {
         expect(tienda.comprobarCompra(G, cliente(50), tienda.itemTienda(10), CFG)).toEqual({
             ok: false,
-            mensaje: expect.stringMatching(/suficiente saldo/),
+            mensaje: expect.stringMatching(/No te llega el efectivo/),
         });
     });
 

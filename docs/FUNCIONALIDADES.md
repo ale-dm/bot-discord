@@ -221,21 +221,33 @@ Las recompensas se multiplican por `logros.reward_multiplier` y se pueden desact
 
 ## 7. Economía: banco, tienda e inventario
 
-### Banco
+### Dinero: efectivo y banco
 
-- Todo el mundo empieza con **1.000 monedas** en el banco (se crea la cuenta al usarla por primera vez).
-- Hay dos saldos: **banco** (con el que se juega y se compra) y **en mano**.
-- El banco es único para todo el bot (no es por servidor).
+Cada uno tiene el dinero en dos sitios:
 
-| Comando | Qué hace |
+- **💵 Efectivo**: lo que se gasta. Casino, apuestas, quiniela, tienda, cripto y transferencias cobran de
+  aquí, y los premios, reembolsos, ventas de cripto, recompensas de logros y objetos de monedas llegan aquí.
+- **🏦 Banco**: el sitio seguro. Ahí no se gasta: hay que sacarlo antes. (Pensado para lo que vendrá:
+  impuestos, robos y dinero negro, ver F-EC-06.)
+
+Todo el mundo empieza con **1.000 monedas en efectivo** (la cuenta se crea al usarla por primera vez). El dinero
+es único para todo el bot (no es por servidor).
+
+**`/banco`** abre el panel 💰 Economía: efectivo, banco y total, con los botones
+
+| Botón | Qué hace |
 |---|---|
-| `/banco saldo` | Tu saldo en banco y en mano |
-| `/banco depositar cantidad*` | Pasa dinero de la mano al banco (máx. 1.000.000 por operación) |
-| `/banco retirar cantidad*` | Pasa dinero del banco a la mano (máx. 1.000.000) |
-| `/banco transferir usuario* cantidad*` | Envía dinero en mano a otra persona (máx. 1.000.000) |
-| `/banco top` | Ranking de los más ricos |
-| `/banco historial` | Tus movimientos |
-| `/banco historialglobal` | 🔒 Movimientos de todo el mundo |
+| 🏦 Ingresar | Pasa efectivo al banco (formulario con la cantidad; máx. 1.000.000 por operación) |
+| 💵 Sacar | Pasa dinero del banco al efectivo |
+| 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
+| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, objetos, admin |
+| 🏆 Más ricos | Top 10 por efectivo + banco |
+
+Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
+y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
+pintar con el efectivo nuevo, sin tener que ir a `/banco`.
+
+El historial global de movimientos está en `/paneladmin` → Banco.
 
 ### Objetos, tienda e inventario
 
@@ -273,7 +285,7 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 
 ### Reglas comunes
 
-- Se juega con el saldo del **banco**. Apuesta mínima 10 y máxima 100.000 (configurable).
+- Se juega con el **💵 efectivo** (ver [Dinero](#7-economía-banco-tienda-e-inventario)). Apuesta mínima 10 y máxima 100.000 (configurable).
 - Opcionalmente: cooldown entre jugadas y cupo diario de jugadas. Una apuesta rechazada (sin saldo, fuera
   de límites) no gasta cupo.
 - **RTP** configurable por juego (blackjack, tragaperras, ruleta, adivinar): escala solo el premio neto,

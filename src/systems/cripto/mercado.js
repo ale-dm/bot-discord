@@ -5,6 +5,7 @@ const db = require("../../core/db");
 const { logError, logInfo, logWarn } = require("../../core/logger");
 const guildSettings = require("../guildSettings");
 const achievements = require("../achievementsSystem");
+const dinero = require("../dinero");
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 
@@ -139,17 +140,9 @@ function formatCryptoAmt(n) {
     return n.toFixed(4);
 }
 
+// El 💵 efectivo: con lo que se compra cripto y adonde van las ventas (systems/dinero).
 function getUserSaldo(userId) {
-    let row = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-    if (!row) {
-        try {
-            db.prepare("INSERT OR IGNORE INTO banco (userId, saldo) VALUES (?, 1000)").run(userId);
-        } catch (e) {
-            logWarn(`[Cripto] No se pudo crear la cuenta de banco de ${userId}: ${e.message}`);
-        }
-        row = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-    }
-    return row?.saldo ?? 1000;
+    return dinero.efectivo(userId);
 }
 
 function getUserCarteras(userId) {
@@ -208,13 +201,13 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
     const fee = Math.floor((monedasInvertidas * feeBuyPct) / 100);
     const costeTotal = monedasInvertidas + fee;
     const saldo = getUserSaldo(userId);
-    if (saldo < costeTotal) return { ok: false, msg: `Saldo insuficiente. Necesitas ${costeTotal.toLocaleString("es")} 🪙.` };
+    if (saldo < costeTotal)
+        return { ok: false, msg: `No te llega el efectivo: necesitas ${costeTotal.toLocaleString("es")} 🪙. Saca dinero del banco.` };
 
     const cryptoAmt = monedasInvertidas / priceCoins;
     try {
         const comprada = db.transaction(() => {
-            const r = db.prepare("UPDATE banco SET saldo = saldo - ? WHERE userId = ? AND saldo >= ?").run(costeTotal, userId, costeTotal);
-            if (r.changes === 0) return false;
+            if (!dinero.cobrar(userId, costeTotal)) return false;
             db.prepare(
                 `
                 INSERT INTO cripto_carteras (userId, cripto, cantidad)
@@ -229,19 +222,15 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
                 db.prepare("INSERT INTO cripto_ttcl_precios (precio, timestamp) VALUES (?, ?)").run(newP, Date.now());
             }
 
-            db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                userId,
-                new Date().toISOString(),
-                `Compra ${formatCryptoAmt(cryptoAmt)} ${sym}${fee > 0 ? ` (fee ${fee})` : ""}`,
-                -costeTotal,
-            );
+            dinero.apuntar(userId, "cripto", `Compra ${formatCryptoAmt(cryptoAmt)} ${sym}${fee > 0 ? ` (fee ${fee})` : ""}`, -costeTotal);
 
             db.prepare(
                 "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp) VALUES (?,?,?,?,?,?,?)",
             ).run(userId, "compra", sym, cryptoAmt, priceCoins, costeTotal, Date.now());
             return true;
         })();
-        if (!comprada) return { ok: false, msg: `Saldo insuficiente. Necesitas ${costeTotal.toLocaleString("es")} 🪙.` };
+        if (!comprada)
+            return { ok: false, msg: `No te llega el efectivo: necesitas ${costeTotal.toLocaleString("es")} 🪙. Saca dinero del banco.` };
         void achievements.applyEvent(guildId, userId, "cripto_buy_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_buy_volume", monedasInvertidas);
@@ -305,7 +294,7 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
                 )
                 .run(cantAVender, userId, sym, cantAVender);
             if (r.changes === 0) return false;
-            db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(monedasRecibidas, userId);
+            dinero.pagar(userId, monedasRecibidas);
 
             if (sym === "TTCL") {
                 db.prepare("UPDATE cripto_ttcl SET circulacion = MAX(0, circulacion - ?) WHERE id = 1").run(cantAVender);
@@ -313,9 +302,9 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
                 db.prepare("INSERT INTO cripto_ttcl_precios (precio, timestamp) VALUES (?, ?)").run(newP, Date.now());
             }
 
-            db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
+            dinero.apuntar(
                 userId,
-                new Date().toISOString(),
+                "cripto",
                 `Venta ${formatCryptoAmt(cantAVender)} ${sym}${fee > 0 ? ` (fee ${fee})` : ""}`,
                 monedasRecibidas,
             );

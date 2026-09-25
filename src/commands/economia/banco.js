@@ -1,288 +1,121 @@
-const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
-const { logInfo, logError, logDebug } = require("../../core/logger");
-const db = require("../../core/db");
+// /banco: el panel 💰 Economía (efectivo y banco, ingresar, sacar, transferir, movimientos y más ricos).
+// Sustituye a los subcomandos saldo/depositar/retirar/transferir/top/historial: todo se hace con botones.
+// Atiende también "💵 Sacar del banco" desde el casino, la tienda y la cripto (dinero_sacar_{volver}): después
+// de sacar, la pantalla de la que venías se vuelve a pintar con el efectivo nuevo.
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const dinero = require("../../systems/dinero");
+const economia = require("../../paneles/economia");
+const { createLogger } = require("../../core/logger");
 
-const COOLDOWN_SECONDS = 10;
-const LIMITE_MAX = 1_000_000;
-const cooldowns = {};
+const log = createLogger("Banco");
 
-// Añade una entrada al historial del usuario. Antes borraba todo menos los 10 últimos
-// movimientos de esa persona, pero el historial es de toda la economía (casino, cripto,
-// apuestas, tienda): cada depósito borraba datos de los que salen el ganado/perdido de /nivel
-// y el historial de compras de la tienda. /banco historial ya muestra solo los 10 últimos.
-function addHistorial(userId, descripcion, cantidad) {
-    db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-        userId,
-        new Date().toISOString(),
-        descripcion,
-        cantidad,
-    );
+// Pantallas a las que se vuelve después de "💵 Sacar del banco" (el customId del botón que las pinta).
+async function repintar(volver, interaction) {
+    const userId = interaction.user.id;
+    if (volver.startsWith("casino_pick_ruleta_")) {
+        const [tipo, valor] = volver.replace("casino_pick_ruleta_", "").split("_");
+        return require("../../paneles/casino").buildPickMontoRuleta(userId, tipo, valor);
+    }
+    if (volver.startsWith("casino_pick_"))
+        return require("../../paneles/casino").buildPickApuesta(userId, volver.replace("casino_pick_", ""));
+    if (volver.startsWith("tienda_confirmar_")) {
+        const tienda = require("../../systems/tienda");
+        const item = tienda.itemTienda(parseInt(volver.replace("tienda_confirmar_", ""), 10));
+        const cfg = require("../../systems/guildSettings").getSettings(interaction.guildId).tienda;
+        if (item) return require("../../paneles/tienda").buildConfirmacion(item, tienda.saldoDe(userId), cfg, userId);
+    }
+    if (volver.startsWith("cripto_cant_")) {
+        return require("../../paneles/cripto").buildComprarCantidad(userId, volver.replace("cripto_cant_", ""), interaction.guildId);
+    }
+    return economia.buildEconomia(userId, interaction.user.username);
 }
 
 module.exports = {
+    componentHandlers: [
+        { types: ["button"], prefixes: ["dinero_"], method: "handleButton", acl: "banco" },
+        { types: ["stringSelect", "userSelect"], ids: ["dinero_filtro", "dinero_transferir_a"], method: "handleSelect", acl: "banco" },
+        { types: ["modal"], prefixes: ["dinero_modal_"], method: "handleModal", acl: "banco" },
+    ],
     data: new SlashCommandBuilder()
         .setName("banco")
-        .setDescription("Gestiona tu banco virtual.")
-        .addSubcommand((sub) => sub.setName("saldo").setDescription("Consulta tu saldo actual."))
-        .addSubcommand((sub) =>
-            sub
-                .setName("depositar")
-                .setDescription("Deposita monedas en tu cuenta bancaria desde tu dinero en mano.")
-                .addIntegerOption((opt) => opt.setName("cantidad").setDescription("Cantidad a depositar").setRequired(true)),
-        )
-        .addSubcommand((sub) =>
-            sub
-                .setName("retirar")
-                .setDescription("Retira monedas de tu cuenta bancaria a tu dinero en mano.")
-                .addIntegerOption((opt) => opt.setName("cantidad").setDescription("Cantidad a retirar").setRequired(true)),
-        )
-        .addSubcommand((sub) =>
-            sub
-                .setName("transferir")
-                .setDescription("Transfiere monedas a otro usuario desde tu dinero en mano.")
-                .addUserOption((opt) => opt.setName("usuario").setDescription("Usuario destinatario").setRequired(true))
-                .addIntegerOption((opt) => opt.setName("cantidad").setDescription("Cantidad a transferir").setRequired(true)),
-        )
-        .addSubcommand((sub) => sub.setName("top").setDescription("Muestra el ranking de los más ricos (en banco)."))
-        .addSubcommand((sub) => sub.setName("historial").setDescription("Muestra tu historial de movimientos."))
-        .addSubcommand((sub) =>
-            sub.setName("historialglobal").setDescription("Muestra el historial de movimientos de todos los usuarios (solo admins)."),
-        ),
+        .setDescription("Tu dinero: efectivo y banco, ingresar, sacar, transferir y movimientos"),
 
     async run(client, interaction) {
-        try {
-            const userId = interaction.user.id;
-            const nombre = interaction.user.username;
-            const tag = interaction.user.tag;
-            db.prepare(
-                `
-                INSERT OR IGNORE INTO usuarios (id, nombre, tag, fechaRegistro)
-                VALUES (?, ?, ?, ?)
-            `,
-            ).run(userId, nombre, tag, new Date().toISOString());
-            db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(userId);
+        require("../../systems/casinoTransactions").registrarUsuario(interaction.user.id, interaction.user.username, interaction.user.tag);
+        await interaction.reply(economia.buildEconomia(interaction.user.id, interaction.user.username));
+    },
 
-            const sub = interaction.options.getSubcommand();
+    async handleButton(client, interaction) {
+        // Solo quien abrió el panel (el casino, la tienda o la cripto de otro tampoco).
+        const ownerId = interaction.message?.interaction?.user?.id || interaction.message?.interactionMetadata?.user?.id;
+        if (ownerId && ownerId !== interaction.user.id) {
+            await interaction.reply({ content: "⛔ Solo quien abrió el panel puede usar estos botones.", flags: MessageFlags.Ephemeral });
+            return;
+        }
+        const id = interaction.customId;
+        const userId = interaction.user.id;
+        const c = dinero.cuenta(userId);
 
-            // Cooldown solo para depositar, retirar y transferir
-            if (["depositar", "retirar", "transferir"].includes(sub)) {
-                if (!cooldowns[userId]) cooldowns[userId] = 0;
-                if (Date.now() < cooldowns[userId]) {
-                    const wait = Math.ceil((cooldowns[userId] - Date.now()) / 1000);
-                    return await interaction.reply({
-                        content: `Debes esperar ${wait} segundos antes de volver a usar este comando.`,
-                        flags: MessageFlags.Ephemeral,
-                    });
-                }
-                cooldowns[userId] = Date.now() + COOLDOWN_SECONDS * 1000;
-            }
+        if (id === "dinero_panel") return interaction.update(economia.buildEconomia(userId, interaction.user.username));
+        if (id === "dinero_ricos") return interaction.update(economia.buildRicos());
+        if (id === "dinero_transferir") return interaction.update(economia.buildElegirDestinatario());
+        if (id === "dinero_ingresar")
+            return interaction.showModal(economia.modalCantidad("dinero_modal_ingresar", "🏦 Ingresar en el banco", c.efectivo));
+        // dinero_sacar (desde Economía) o dinero_sacar_{volver} (desde otra pantalla).
+        if (id === "dinero_sacar" || id.startsWith("dinero_sacar_")) {
+            const volver = id.replace(/^dinero_sacar_?/, "");
+            return interaction.showModal(
+                economia.modalCantidad(`dinero_modal_sacar${volver ? `_${volver}` : ""}`, "💵 Sacar del banco", c.banco),
+            );
+        }
+        // dinero_mov_{tipo}_{pagina}
+        if (id.startsWith("dinero_mov_")) {
+            const [tipo, pagina] = id.replace("dinero_mov_", "").split("_");
+            return interaction.update(economia.buildMovimientos(userId, tipo, Math.max(0, parseInt(pagina, 10) || 0)));
+        }
+    },
 
-            if (sub === "saldo") {
-                const row = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
-                const saldo = row ? row.saldo : 1000;
-                const enMano = row ? row.enMano : 0;
-                const embed = new EmbedBuilder()
-                    .setTitle("🏦 Banco Virtual")
-                    .setDescription(`Hola, ${interaction.user.username}.`)
-                    .addFields(
-                        { name: "💰 En banco", value: `**${saldo} monedas**`, inline: true },
-                        { name: "🪙 En mano", value: `**${enMano} monedas**`, inline: true },
-                    )
-                    .setColor(0xffd700)
-                    .setTimestamp();
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                logDebug(`[Banco] ${interaction.user.tag} consultó su saldo: Banco ${saldo}, Mano ${enMano}`);
-                return;
-            }
+    async handleSelect(client, interaction) {
+        const userId = interaction.user.id;
+        if (interaction.customId === "dinero_filtro") {
+            return interaction.update(economia.buildMovimientos(userId, interaction.values[0], 0));
+        }
+        if (interaction.customId === "dinero_transferir_a") {
+            const destino = interaction.users?.first?.() || { id: interaction.values[0] };
+            if (destino.bot) return interaction.reply({ content: "❌ No se puede transferir a un bot.", flags: MessageFlags.Ephemeral });
+            if (destino.id === userId)
+                return interaction.reply({ content: "❌ No puedes transferirte a ti mismo.", flags: MessageFlags.Ephemeral });
+            return interaction.showModal(
+                economia.modalCantidad(`dinero_modal_transferir_${destino.id}`, "💸 Transferir efectivo", dinero.efectivo(userId)),
+            );
+        }
+    },
 
-            if (sub === "depositar") {
-                const cantidad = interaction.options.getInteger("cantidad");
-                const row = db.prepare("SELECT enMano FROM banco WHERE userId = ?").get(userId);
-                if (!Number.isInteger(cantidad) || cantidad <= 0) {
-                    await interaction.reply({
-                        content: "La cantidad debe ser un número entero mayor que cero.",
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                if (cantidad > LIMITE_MAX) {
-                    await interaction.reply({
-                        content: `No puedes depositar más de ${LIMITE_MAX} monedas a la vez.`,
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                if (!row || row.enMano < cantidad) {
-                    await interaction.reply({ content: "No tienes suficiente dinero en mano.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                db.prepare("UPDATE banco SET enMano = enMano - ?, saldo = saldo + ? WHERE userId = ?").run(cantidad, cantidad, userId);
-                addHistorial(userId, `Depósito`, cantidad);
-                const nuevo = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
-                await interaction.reply({
-                    content: `Has depositado **${cantidad} monedas**. Banco: **${nuevo.saldo}** | En mano: **${nuevo.enMano}**`,
-                    flags: MessageFlags.Ephemeral,
-                });
-                logInfo(`[Banco] ${interaction.user.tag} depositó ${cantidad} monedas (Banco: ${nuevo.saldo}, Mano: ${nuevo.enMano})`);
-                return;
-            }
+    async handleModal(client, interaction) {
+        const userId = interaction.user.id;
+        const id = interaction.customId;
+        const cantidad = Number(String(interaction.fields.getTextInputValue("cantidad")).replace(/[.\s]/g, ""));
+        let r;
+        let volver = null;
+        if (id === "dinero_modal_ingresar") r = dinero.ingresar(userId, cantidad);
+        else if (id.startsWith("dinero_modal_sacar")) {
+            r = dinero.sacar(userId, cantidad);
+            volver = id.replace(/^dinero_modal_sacar_?/, "") || null;
+        } else if (id.startsWith("dinero_modal_transferir_")) {
+            const destinoId = id.replace("dinero_modal_transferir_", "");
+            const destino = await interaction.client.users.fetch(destinoId).catch(() => null);
+            r = dinero.transferir(userId, destinoId, cantidad, { de: interaction.user.username, a: destino?.username || destinoId });
+        } else return;
 
-            if (sub === "retirar") {
-                const cantidad = interaction.options.getInteger("cantidad");
-                const row = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-                if (!Number.isInteger(cantidad) || cantidad <= 0) {
-                    await interaction.reply({
-                        content: "La cantidad debe ser un número entero mayor que cero.",
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                if (cantidad > LIMITE_MAX) {
-                    await interaction.reply({
-                        content: `No puedes retirar más de ${LIMITE_MAX} monedas a la vez.`,
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                if (!row || row.saldo < cantidad) {
-                    await interaction.reply({ content: "No tienes suficiente saldo en el banco.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                db.prepare("UPDATE banco SET saldo = saldo - ?, enMano = enMano + ? WHERE userId = ?").run(cantidad, cantidad, userId);
-                addHistorial(userId, `Retirada`, -cantidad);
-                const nuevo = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
-                await interaction.reply({
-                    content: `Has retirado **${cantidad} monedas**. Banco: **${nuevo.saldo}** | En mano: **${nuevo.enMano}**`,
-                    flags: MessageFlags.Ephemeral,
-                });
-                logInfo(`[Banco] ${interaction.user.tag} retiró ${cantidad} monedas (Banco: ${nuevo.saldo}, Mano: ${nuevo.enMano})`);
-                return;
-            }
-
-            if (sub === "transferir") {
-                const cantidad = interaction.options.getInteger("cantidad");
-                const usuarioDestino = interaction.options.getUser("usuario");
-
-                if (!Number.isInteger(cantidad) || cantidad <= 0) {
-                    await interaction.reply({
-                        content: "La cantidad debe ser un número entero mayor que cero.",
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                if (cantidad > LIMITE_MAX) {
-                    await interaction.reply({
-                        content: `No puedes transferir más de ${LIMITE_MAX} monedas a la vez.`,
-                        flags: MessageFlags.Ephemeral,
-                    });
-                    return;
-                }
-                if (usuarioDestino.id === userId) {
-                    await interaction.reply({ content: "No puedes transferirte monedas a ti mismo.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                if (usuarioDestino.bot) {
-                    await interaction.reply({ content: "No puedes transferir monedas a un bot.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                const row = db.prepare("SELECT enMano FROM banco WHERE userId = ?").get(userId);
-                if (!row || row.enMano < cantidad) {
-                    await interaction.reply({ content: "No tienes suficiente dinero en mano.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                // Todo o nada: antes eran escrituras sueltas y un fallo a mitad podía quitar el dinero
-                // a uno sin dárselo al otro.
-                db.transaction(() => {
-                    db.prepare("INSERT OR IGNORE INTO banco (userId) VALUES (?)").run(usuarioDestino.id);
-                    db.prepare("UPDATE banco SET enMano = enMano - ? WHERE userId = ?").run(cantidad, userId);
-                    db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, usuarioDestino.id);
-                    addHistorial(userId, `Transferencia a ${usuarioDestino.username}`, -cantidad);
-                    addHistorial(usuarioDestino.id, `Transferencia recibida de ${interaction.user.username}`, cantidad);
-                })();
-                const nuevo = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(userId);
-                await interaction.reply({
-                    content: `Has transferido **${cantidad} monedas** a ${usuarioDestino.username}. Banco: **${nuevo.saldo}** | En mano: **${nuevo.enMano}**`,
-                    flags: MessageFlags.Ephemeral,
-                });
-                logInfo(
-                    `[Banco] ${interaction.user.tag} transfirió ${cantidad} monedas a ${usuarioDestino.tag} (Banco: ${nuevo.saldo}, Mano: ${nuevo.enMano})`,
-                );
-                return;
-            }
-
-            if (sub === "top") {
-                // Top 5 usuarios con más saldo en banco
-                const top = db.prepare("SELECT userId, saldo FROM banco ORDER BY saldo DESC LIMIT 5").all();
-                const lines = top.map((row, i) => `**${i + 1}.** <@${row.userId}> — ${row.saldo} monedas`).join("\n");
-                const embed = new EmbedBuilder()
-                    .setTitle("🏆 Ranking de los más ricos (en banco)")
-                    .setDescription(lines || "No hay datos aún.")
-                    .setColor(0xffd700)
-                    .setTimestamp();
-                await interaction.reply({ embeds: [embed] });
-                logDebug(`[Banco] Ranking consultado.`);
-                return;
-            }
-
-            if (sub === "historial") {
-                const historial = db
-                    .prepare("SELECT fecha, descripcion, cantidad FROM historial WHERE userId = ? ORDER BY fecha DESC LIMIT 10")
-                    .all(userId);
-                if (historial.length === 0) {
-                    await interaction.reply({ content: "No tienes movimientos en tu historial.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                const lines = historial
-                    .map(
-                        (h) =>
-                            `• [${new Date(h.fecha).toLocaleString("es-ES")}] ${h.descripcion}: **${h.cantidad > 0 ? "+" : ""}${h.cantidad} monedas**`,
-                    )
-                    .join("\n");
-                const embed = new EmbedBuilder()
-                    .setTitle("📜 Historial de movimientos")
-                    .setDescription(lines)
-                    .setColor(0xffd700)
-                    .setTimestamp();
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                logDebug(`[Banco] ${interaction.user.tag} consultó su historial.`);
-                return;
-            }
-
-            if (sub === "historialglobal") {
-                // Solo admins pueden usarlo
-                if (!interaction.member.permissions.has("Administrator")) {
-                    await interaction.reply({ content: "No tienes permisos para ver el historial global.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                const historial = db
-                    .prepare("SELECT userId, fecha, descripcion, cantidad FROM historial ORDER BY fecha DESC LIMIT 20")
-                    .all();
-                if (historial.length === 0) {
-                    await interaction.reply({ content: "No hay movimientos en el historial global.", flags: MessageFlags.Ephemeral });
-                    return;
-                }
-                const lines = historial
-                    .map(
-                        (h) =>
-                            `• [${new Date(h.fecha).toLocaleString("es-ES")}] <@${h.userId}> — ${h.descripcion}: **${h.cantidad > 0 ? "+" : ""}${h.cantidad} monedas**`,
-                    )
-                    .join("\n");
-                const embed = new EmbedBuilder()
-                    .setTitle("📜 Historial global de movimientos")
-                    .setDescription(lines)
-                    .setColor(0xff5555)
-                    .setTimestamp();
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-                logInfo(`[Banco] ${interaction.user.tag} consultó el historial global.`);
-                return;
-            }
-        } catch (err) {
-            logError("[Banco] Error general:", err);
-            try {
-                await interaction.reply({ content: "Hubo un error al gestionar tu banco.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                logDebug(`[Banco] No se pudo avisar del error: ${e.message}`);
-            }
+        if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
+        log.info(`${interaction.user.tag}: ${r.mensaje.replace(/\*/g, "")}`);
+        // Se repinta la pantalla de la que venía el formulario: Economía, o la del casino/tienda/cripto.
+        const payload = volver ? await repintar(volver, interaction) : economia.buildEconomia(userId, interaction.user.username, r.mensaje);
+        if (interaction.isFromMessage?.()) {
+            await interaction.update(payload);
+            if (volver) await interaction.followUp({ content: r.mensaje, flags: MessageFlags.Ephemeral });
+        } else {
+            await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
         }
     },
 };

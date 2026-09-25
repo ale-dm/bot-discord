@@ -38,7 +38,7 @@ function buildMainEmbed(client) {
         .addFields(
             { name: "👥 Usuarios banco", value: fmt(totalUsuarios), inline: true },
             { name: "🏦 Total banco", value: `${fmt(totalBanco)} monedas`, inline: true },
-            { name: "🪙 Total en mano", value: `${fmt(totalEnMano)} monedas`, inline: true },
+            { name: "💵 Total en efectivo", value: `${fmt(totalEnMano)} monedas`, inline: true },
             { name: "📜 Movimientos", value: fmt(movimientos), inline: true },
         )
         .setColor(0x3498db)

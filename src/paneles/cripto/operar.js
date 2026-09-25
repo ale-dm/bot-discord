@@ -13,6 +13,8 @@ const {
     cryptoInfoBySymbol,
 } = require("../../systems/cripto/mercado");
 const { backButton } = require("./comun");
+const { botonSacar } = require("../economia");
+const dinero = require("../../systems/dinero");
 
 // ─── COMPRAR ──────────────────────────────────────────────────────────────────
 
@@ -74,11 +76,11 @@ async function buildComprarCantidad(userId, sym, guildId = null) {
             embeds: [
                 new EmbedBuilder()
                     .setDescription(
-                        `❌ Saldo insuficiente. Tienes **${saldo} 🪙** pero el mínimo de inversión es ${minBuy.toLocaleString("es")} 🪙.`,
+                        `❌ No te llega el efectivo. Tienes **${saldo} 🪙** y el mínimo de inversión es ${minBuy.toLocaleString("es")} 🪙.`,
                     )
                     .setColor(0xe74c3c),
             ],
-            components: [new ActionRowBuilder().addComponents(backButton("cripto_comprar", "◀ Volver"))],
+            components: [filaVolverCompra(userId, sym)],
         };
     }
 
@@ -86,7 +88,7 @@ async function buildComprarCantidad(userId, sym, guildId = null) {
         .setTitle(`🛒 Comprar ${ci?.emoji || "💰"} ${sym}`)
         .setDescription(
             `**Precio actual:** ${formatCoins(priceCoins)} 🪙 / unidad\n` +
-                `**Tu saldo:** ${saldo.toLocaleString("es")} 🪙\n\n` +
+                `**Tu efectivo:** ${saldo.toLocaleString("es")} 🪙\n\n` +
                 `**Política:** min ${minBuy.toLocaleString("es")} · max ${maxBuy.toLocaleString("es")} · cooldown ${Number(cfg.cooldown_buy_sec || 0)}s · fee ${Number(cfg.fee_buy_pct || 0)}%\n\n` +
                 `¿Cuántas monedas quieres invertir?`,
         )
@@ -105,8 +107,15 @@ async function buildComprarCantidad(userId, sym, guildId = null) {
 
     return {
         embeds: [embed],
-        components: [amtRow, new ActionRowBuilder().addComponents(backButton("cripto_comprar", "◀ Volver"))],
+        components: [amtRow, filaVolverCompra(userId, sym)],
     };
+}
+
+// ◀ Volver y, si hay algo en el banco, 💵 Sacar del banco (vuelve a esta pantalla).
+function filaVolverCompra(userId, sym) {
+    const fila = new ActionRowBuilder().addComponents(backButton("cripto_comprar", "◀ Volver"));
+    if (dinero.banco(userId) > 0) fila.addComponents(botonSacar(`cripto_cant_${sym}`));
+    return fila;
 }
 
 // ─── VENDER ───────────────────────────────────────────────────────────────────

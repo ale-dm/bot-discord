@@ -2,6 +2,33 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-25 (reorganización de paneles, parte 5: efectivo y banco)
+
+Quinta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución), según
+la decisión D4: el banco es el sitio seguro y se gasta el efectivo.
+
+- **💵 Efectivo** (la columna `enMano`, antes "en mano") es el dinero que se gasta: casino, apuestas, quiniela,
+  tienda, cripto y transferencias cobran de ahí, y los premios, reembolsos, ventas de cripto, recompensas de
+  logros y objetos de monedas llegan ahí. **🏦 Banco** (`saldo`) solo guarda: se ingresa y se saca.
+- **`systems/dinero.js`**: todo el dinero pasa por aquí (cuenta, cobrar, pagar, ingresar, sacar, transferir,
+  movimientos, más ricos). Antes había unos 20 sitios con su propio `UPDATE banco SET saldo`.
+- **Cuentas nuevas**: 1.000 monedas en efectivo y el banco vacío (antes 1.000 en el banco).
+- **Sin migración del dinero**: cada uno conserva lo que tenía donde lo tenía (casi todo en el banco), así que
+  para jugar o comprar hay que sacarlo primero.
+- **`/banco` es un panel** (💰 Economía) en vez de subcomandos: efectivo, banco y total, 🏦 Ingresar, 💵 Sacar,
+  💸 Transferir (selector de persona y formulario), 📜 Movimientos y 🏆 Más ricos. Se quitan los subcomandos
+  saldo, depositar, retirar, transferir, top, historial e historialglobal (este último ya estaba en
+  `/paneladmin` → Banco). La espera de 10 s entre operaciones desaparece: todo es atómico.
+- **💵 Sacar del banco** en los selectores de importes del casino, la confirmación de la tienda y la compra de
+  cripto: después de sacar, la pantalla se repinta con el efectivo nuevo.
+- **Movimientos con tipo**: el historial guarda el tipo de cada movimiento (migración 010, que clasifica los que
+  ya había por su descripción) y se filtra por él. `/tienda historial` abre los Movimientos filtrados por
+  tienda.
+- El perfil, la economía de `/nivel`, el inventario, la herramienta de saldo del Duende y `/paneladmin` → Banco
+  enseñan efectivo y banco. En el panel de admin, "modificar saldo" acepta `efectivo` o `banco`, y "resetear"
+  deja la cuenta como nueva (1.000 en efectivo).
+- Tests: 168.
+
 ## 2026-09-25 (reorganización de paneles, parte 4: /juegos)
 
 Cuarta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).

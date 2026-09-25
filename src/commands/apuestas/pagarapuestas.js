@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
+const dinero = require("../../systems/dinero");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -21,13 +22,8 @@ if (!process.env.ODDS_API_KEY) {
 function caducarSinResultado(limite, resumen) {
     const ahoraIso = new Date().toISOString();
     const reembolsar = (userId, cantidad, descripcion) => {
-        db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, userId);
-        db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-            userId,
-            ahoraIso,
-            descripcion,
-            cantidad,
-        );
+        dinero.pagar(userId, cantidad);
+        dinero.apuntar(userId, "apuestas", descripcion, cantidad);
         resumen.reembolsos++;
         resumen.pagos.push({ userId, premio: cantidad, descripcion, reembolso: true });
         logInfo(`[PAGARAPUESTAS] Reembolsadas ${cantidad} monedas a ${userId}: ${descripcion}`);
@@ -162,13 +158,8 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 resumen.total++;
                 if (ap.eleccion === resultado) {
                     const premio = Math.round(ap.cantidad * ap.cuota);
-                    db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(premio, ap.user_id);
-                    db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                        ap.user_id,
-                        new Date().toISOString(),
-                        `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`,
-                        premio,
-                    );
+                    dinero.pagar(ap.user_id, premio);
+                    dinero.apuntar(ap.user_id, "apuestas", `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`, premio);
                     resumen.pagadas++;
                     resumen.pagos.push({ userId: ap.user_id, premio, descripcion: `${partido.home_team} vs ${partido.away_team}` });
                     logInfo(
@@ -272,13 +263,8 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                         const descripcion = hayGanadores
                             ? `Quiniela ganada: ${q.jornada}`
                             : `Reembolso: quiniela ${q.jornada}, nadie llegó a ${minimo} aciertos`;
-                        db.prepare(`UPDATE banco SET saldo = saldo + ? WHERE userId = ?`).run(premio, a.user_id);
-                        db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                            a.user_id,
-                            new Date().toISOString(),
-                            descripcion,
-                            premio,
-                        );
+                        dinero.pagar(a.user_id, premio);
+                        dinero.apuntar(a.user_id, "apuestas", descripcion, premio);
                         resumen.pagos.push(
                             hayGanadores
                                 ? { userId: a.user_id, premio, descripcion: `Quiniela ${q.jornada}` }

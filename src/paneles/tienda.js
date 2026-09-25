@@ -1,6 +1,8 @@
 // Mensajes de /tienda: páginas del catálogo, confirmación y resultado de una compra, e historial de
 // compras. Solo construyen embeds y botones; los datos y el cobro están en systems/tienda.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { botonSacar } = require("./economia");
+const dinero = require("../systems/dinero");
 
 const ITEMS_POR_PAGINA = 4; // máximo 4 items/página: 4 botones comprar + 1 fila paginación = 5 rows
 const HISTORIAL_POR_PAGINA = 5;
@@ -48,7 +50,7 @@ function buildTiendaPage(items, pagina, isAdmin) {
 
     const embed = new EmbedBuilder()
         .setTitle("🛒 Tienda del Servidor")
-        .setDescription("Compra objetos con tus monedas del banco. Pulsa un botón para comprar.")
+        .setDescription("Compra objetos con tu 💵 efectivo. Pulsa un botón para comprar.")
         .setColor(colorPorRareza(pageItems[0]?.rareza))
         .setFooter({ text: `Página ${pagina} de ${totalPaginas} — ${items.length} objetos en total` });
 
@@ -95,14 +97,14 @@ function buildTiendaPage(items, pagina, isAdmin) {
     return { embeds: [embed], components: [compraRow, navRow] };
 }
 
-function buildConfirmacion(item, saldo, tiendaCfg) {
+function buildConfirmacion(item, saldo, tiendaCfg, userId = null) {
     const embed = new EmbedBuilder()
         .setTitle("¿Confirmar compra?")
         .setDescription(
             `**${item.nombre}**\n${item.descripcion}\n\n` +
                 `💰 Precio: **${item.precio} monedas**\n` +
                 `${item.stock !== null ? `Stock disponible: ${item.stock}\n` : ""}` +
-                `Tu saldo: **${saldo} monedas**\n\n` +
+                `Tu efectivo: **${saldo} monedas**${saldo < item.precio ? " (no te llega: saca del banco)" : ""}\n\n` +
                 `Política: cooldown **${Number(tiendaCfg.buy_cooldown_sec || 0)}s** · límite diario **${Number(tiendaCfg.daily_limit || 0) || "∞"}**`,
         )
         .setColor(0xf39c12);
@@ -112,6 +114,8 @@ function buildConfirmacion(item, saldo, tiendaCfg) {
         new ButtonBuilder().setCustomId(`tienda_comprar_${item.tiendaId}`).setLabel("✅ Confirmar compra").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("tienda_cancelar").setLabel("Cancelar").setStyle(ButtonStyle.Secondary),
     );
+    // Si no te llega el efectivo pero tienes en el banco, sacarlo sin salir de aquí.
+    if (saldo < item.precio && userId && dinero.banco(userId) > 0) row.addComponents(botonSacar(`tienda_confirmar_${item.tiendaId}`));
     return { embeds: [embed], components: [row] };
 }
 
@@ -119,7 +123,7 @@ function buildCompraRealizada(item, rolMsg, saldo) {
     const embed = new EmbedBuilder()
         .setTitle("✅ ¡Compra realizada!")
         .setDescription(
-            `Has comprado **${item.nombre}** por **${item.precio} monedas**.${rolMsg}\n\n💰 Saldo restante: **${saldo ?? 0} monedas**`,
+            `Has comprado **${item.nombre}** por **${item.precio} monedas**.${rolMsg}\n\n💵 Efectivo: **${saldo ?? 0} monedas**`,
         )
         .setColor(0x2ecc40);
     if (item.imagen) embed.setThumbnail(item.imagen);

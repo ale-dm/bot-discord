@@ -57,7 +57,7 @@ async function buildMainPanel(userId, guildId = null) {
 
     // Resumen financiero
     descParts.push(
-        `**💵 Saldo libre:** ${saldo.toLocaleString("es")} 🪙`,
+        `**💵 Efectivo:** ${saldo.toLocaleString("es")} 🪙`,
         `**📊 Valor en cripto:** ${formatCoins(totalCripto)} 🪙`,
         `**💎 Total combinado:** ${formatCoins(totalNeto)} 🪙`,
     );
@@ -144,7 +144,7 @@ async function buildCarteraPanel(userId, guildId = null) {
         .setTitle("💼 Mi Cartera")
         .setDescription(
             lines.length
-                ? `${lines.join("\n")}\n\n**Valor total en cripto:** ${formatCoins(totalValue)} 🪙\n**Saldo libre:** ${saldo.toLocaleString("es")} 🪙`
+                ? `${lines.join("\n")}\n\n**Valor total en cripto:** ${formatCoins(totalValue)} 🪙\n**💵 Efectivo:** ${saldo.toLocaleString("es")} 🪙`
                 : "No tienes ninguna criptomoneda todavía. ¡Empieza comprando con el botón 🛒!",
         )
         .setColor(0x8e44ad)

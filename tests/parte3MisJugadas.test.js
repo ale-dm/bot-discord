@@ -38,7 +38,7 @@ db.prepare(
     "INSERT INTO apuestas_partidos (match_id, home_team, away_team, start_time, estado, deporte, cuota_home, cuota_draw, cuota_away) VALUES ('m-p3', 'Celta', 'Alavés', ?, 'abierto', 'laliga', 2, 3, 4)",
 ).run(futuro(10));
 db.prepare("INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota) VALUES ('ana', 'm-p3', 'home', 80, 2)").run();
-db.prepare("INSERT INTO banco (userId, saldo) VALUES ('ana', 1000)").run();
+db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES ('ana', 0, 1000)").run();
 
 const interaccion = (extra = {}) => ({
     user: { id: "ana", tag: "ana" },

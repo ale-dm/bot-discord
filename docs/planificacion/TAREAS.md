@@ -51,12 +51,21 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
       Ranking, Historial y Mis stats del casino.
 - [ ] `/perfil` → 🎰 Casino abre la pestaña Casino y se puede jugar desde ahí.
 - [ ] ⚽ Apuestas: cambiar de competición y de página (la segunda vez sin gastar crédito, ver log); apostar a
-      un partido y pulsar 📋 Mis jugadas y ⚽ Más partidos; que la apuesta salga en `/banco historial`.
+      un partido y pulsar 📋 Mis jugadas y ⚽ Más partidos; que la apuesta salga en `/banco` → 📜 Movimientos (filtro Apuestas).
 - [ ] 🧾 Quiniela: 🔄 Refrescar; que salga el mínimo de aciertos para cobrar; después de apostar, tus
       pronósticos con ✅/❌ y el botón 📋 Mis jugadas.
 - [ ] 📋 Mis jugadas: ⏳ En juego y 📋 Resueltas (cambian en el mismo mensaje), y el botón 🧾 Quiniela.
 - [ ] 📊 Stats: casino, apuestas a partidos, quinielas y el total.
 - [ ] Que otra persona no pueda usar los botones de tu `/juegos`.
+
+**Dinero (parte 5 de paneles)**
+- [ ] Al arrancar, `[Migraciones] Aplicada 010_historial_tipo` con cuántos movimientos ha clasificado.
+- [ ] `/banco`: efectivo, banco y total; 🏦 Ingresar y 💵 Sacar; 💸 Transferir a alguien; 📜 Movimientos con el
+      filtro; 🏆 Más ricos.
+- [ ] Con todo el dinero en el banco, intentar jugar en el casino: los importes salen desactivados y está
+      💵 Sacar del banco; sacar y ver que la pantalla se actualiza. Lo mismo en la tienda y en la compra de cripto.
+- [ ] Ganar algo en el casino y comprobar que el premio llega al efectivo.
+- [ ] Avisar en el servidor: desde ahora se juega y se compra con el efectivo, y el banco es para guardar.
 
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %

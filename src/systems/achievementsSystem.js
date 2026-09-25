@@ -551,24 +551,10 @@ function claimAchievement(guildId, userId, achievementId) {
 
     const tx = db.transaction(() => {
         if (reward > 0) {
-            let userBanco = db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(userId);
-            if (!userBanco) {
-                try {
-                    db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES (?, ?, ?)").run(userId, 1000, 0);
-                    userBanco = { saldo: 1000 };
-                } catch {
-                    db.prepare("INSERT INTO banco (userId, saldo) VALUES (?, ?)").run(userId, 1000);
-                    userBanco = { saldo: 1000 };
-                }
-            }
-            db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(reward, userId);
+            // Al 💵 efectivo (systems/dinero); crea la cuenta si no la tenía.
+            require("./dinero").pagar(userId, reward);
             try {
-                db.prepare("INSERT INTO historial (userId, fecha, descripcion, cantidad) VALUES (?, ?, ?, ?)").run(
-                    userId,
-                    new Date().toISOString(),
-                    `Recompensa logro: ${ach.name}`,
-                    reward,
-                );
+                require("./dinero").apuntar(userId, "logro", `Recompensa logro: ${ach.name}`, reward);
             } catch (e) {
                 log.warn(`Recompensa de ${ach.id} pagada a ${userId} pero no se pudo apuntar en el historial:`, e.message);
             }

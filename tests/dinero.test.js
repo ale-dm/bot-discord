@@ -79,13 +79,13 @@ describe("XP", () => {
 
 describe("tienda: cobro de una compra", () => {
     const item = (over = {}) => ({ id: 1, tiendaId: 1, nombre: "Palote", precio: 300, stock: 1, ...over });
-    const saldo = (u) => db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(u).saldo;
+    const saldo = (u) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(u).saldo;
     const inventario = (u) => db.prepare("SELECT COUNT(*) c FROM inventario WHERE userId = ?").get(u).c;
 
     beforeAll(() => {
         db.prepare("INSERT INTO objeto (id, nombre, descripcion) VALUES (1, 'Palote', 'un palo')").run();
         db.prepare("INSERT INTO tienda (id, objetoId, precio, stock) VALUES (1, 1, 300, 1)").run();
-        db.prepare("INSERT INTO banco (userId, saldo) VALUES ('rico', 1000), ('pobre', 100), ('tarde', 1000)").run();
+        db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES ('rico', 0, 1000), ('pobre', 0, 100), ('tarde', 0, 1000)").run();
     });
 
     test("sin saldo no se cobra ni se entrega nada", () => {

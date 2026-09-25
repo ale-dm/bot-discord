@@ -156,3 +156,39 @@ describe("apuestas antiguas en el historial (migración 009)", () => {
         ]);
     });
 });
+
+describe("tipo de los movimientos (migración 010)", () => {
+    test("clasifica el historial que ya había por su descripción", () => {
+        const db = new Database(":memory:");
+        runMigrations(db);
+        db.prepare("DELETE FROM schema_migrations WHERE version = 10").run();
+        const hist = db.prepare(
+            "INSERT INTO historial (userId, fecha, descripcion, cantidad, tipo) VALUES ('u', '2026-09-01', ?, 0, NULL)",
+        );
+        const casos = {
+            "🎰 Pérdida en Tragaperras (-50)": "casino",
+            "Ruleta: apostó 10 a rojo": "casino",
+            "Reembolso: partida de blackjack interrumpida por reinicio": "casino",
+            "Apuesta: Betis vs Sevilla": "apuestas",
+            "Reembolso: Betis vs Sevilla sin resultado disponible": "apuestas",
+            "Quiniela: apuesta": "apuestas",
+            "Compra en tienda: Palote": "tienda",
+            "Compra 5.0000 TTCL": "cripto",
+            "Venta 1.0000 BTC": "cripto",
+            Depósito: "banco",
+            "Transferencia a ana": "transferencia",
+            "Recompensa logro: Hola": "logro",
+            "Modificación admin (banco)": "admin",
+            "Algo raro": "otro",
+        };
+        for (const d of Object.keys(casos)) hist.run(d);
+        runMigrations(db);
+        const tipos = Object.fromEntries(
+            db
+                .prepare("SELECT descripcion, tipo FROM historial")
+                .all()
+                .map((r) => [r.descripcion, r.tipo]),
+        );
+        expect(tipos).toEqual(casos);
+    });
+});

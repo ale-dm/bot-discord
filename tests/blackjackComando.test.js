@@ -19,10 +19,10 @@ function conBaraja(valores) {
 let n = 0;
 function jugador(saldo = 1000) {
     const id = `bj-${++n}`;
-    db.prepare("INSERT INTO banco (userId, saldo) VALUES (?, ?)").run(id, saldo);
+    db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES (?, 0, ?)").run(id, saldo);
     return id;
 }
-const saldo = (id) => db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(id).saldo;
+const saldo = (id) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(id).saldo;
 
 function interaccion(userId, extra = {}) {
     const i = {

@@ -3,7 +3,6 @@ const { Type: SchemaType } = require("@google/genai");
 const guildSettings = require("../../systems/guildSettings");
 const xpSystem = require("../../systems/xpSystem");
 const achievementsSystem = require("../../systems/achievementsSystem");
-const casinoTransactions = require("../../systems/casinoTransactions");
 const plexLinks = require("../../systems/plexLinks");
 const tautulliClient = require("../tautulliClient");
 const seerrClient = require("../seerrClient");
@@ -277,7 +276,8 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
     },
     {
         name: "consultar_saldo",
-        description: "Consulta el saldo en monedas del usuario que te está hablando ahora mismo.",
+        description:
+            "Consulta el dinero del usuario que te está hablando ahora mismo: efectivo (lo que gasta) y banco (lo que tiene guardado).",
         parameters: { type: SchemaType.OBJECT, properties: {} },
     },
     {
@@ -317,7 +317,8 @@ const DUENDE_TOOL_EXECUTORS = {
         };
     },
     consultar_saldo(args, ctx) {
-        return { saldo_monedas: casinoTransactions.obtenerSaldo(ctx.userId) };
+        const c = require("../../systems/dinero").cuenta(ctx.userId);
+        return { efectivo: c.efectivo, banco: c.banco, total: c.total };
     },
     precio_ttcl(args, ctx) {
         return { precio_ttcl_en_coins: getTtclPrecio(ctx.guildId) };

@@ -12,6 +12,8 @@ const {
 const db = require("../core/db");
 const casinoTx = require("../systems/casinoTransactions");
 const { filaPestanas } = require("./pestanasJuegos");
+const { botonSacar, lineaDinero } = require("./economia");
+const dinero = require("../systems/dinero");
 
 const EMOJI = {
     blackjack: "🃏",
@@ -73,8 +75,16 @@ function getLastGames(userId, n = 5) {
     return db.prepare("SELECT juego, resultado, apuesta FROM casino WHERE userId = ? ORDER BY fecha DESC LIMIT ?").all(userId, n);
 }
 
+// El 💵 efectivo, con lo que se juega.
 function getSaldo(userId) {
     return casinoTx.obtenerSaldo(userId);
+}
+
+// "💵 Sacar del banco" (vuelve a esta pantalla después) si hay algo en el banco.
+function filaSacar(userId, volver, ...otros) {
+    const fila = new ActionRowBuilder().addComponents(...otros);
+    if (dinero.banco(userId) > 0) fila.addComponents(botonSacar(volver));
+    return fila;
 }
 
 // ─── Botones comunes ─────────────────────────────────────────────────────────
@@ -109,7 +119,6 @@ function filaVolverRuleta(label) {
 // ─── Pantallas ───────────────────────────────────────────────────────────────
 function buildHome(userId) {
     const stats = getUserStats(userId);
-    const saldo = getSaldo(userId);
     const fav = getFavoriteGame(userId);
     const last = getLastGames(userId, 5);
 
@@ -119,7 +128,7 @@ function buildHome(userId) {
     const roiSign = parseFloat(roi) >= 0 ? "+" : "";
 
     const parts = [];
-    parts.push(`**💰 Saldo:** ${saldo.toLocaleString("es")} monedas`);
+    parts.push(lineaDinero(userId));
 
     if (stats.total > 0) {
         parts.push(
@@ -289,17 +298,16 @@ function buildPickApuesta(userId, juego) {
     const saldo = getSaldo(userId);
     const embed = new EmbedBuilder()
         .setTitle(`${emoji} ${NOMBRE[juego] || juego} — Elige tu apuesta`)
-        .setDescription(`💰 Tu saldo: **${saldo.toLocaleString("es")}** monedas\n\nPulsa la cantidad que quieres apostar:`)
+        .setDescription(`${lineaDinero(userId)}\n\nPulsa la cantidad que quieres apostar:`)
         .setColor(0xf39c12);
     return {
         embeds: [embed],
-        components: [filaMontos(saldo, (m) => `casino_play_${juego}_${m}`), new ActionRowBuilder().addComponents(backBtn())],
+        components: [filaMontos(saldo, (m) => `casino_play_${juego}_${m}`), filaSacar(userId, `casino_pick_${juego}`, backBtn())],
     };
 }
 
 /** Ruleta, paso 1: tipo de apuesta. */
 function buildPickRuleta(userId) {
-    const saldo = getSaldo(userId);
     const tipos = [
         { label: "🔴 Rojo (×2)", value: "color_rojo" },
         { label: "⚫ Negro (×2)", value: "color_negro" },
@@ -313,7 +321,7 @@ function buildPickRuleta(userId) {
     const mkBtn = (t) => new ButtonBuilder().setCustomId(`casino_pick_ruleta_${t.value}`).setLabel(t.label).setStyle(ButtonStyle.Secondary);
     const embed = new EmbedBuilder()
         .setTitle("🎡 Ruleta — Elige tipo de apuesta")
-        .setDescription(`💰 Tu saldo: **${saldo.toLocaleString("es")}** monedas\n\nSelecciona el tipo antes de elegir cantidad:`)
+        .setDescription(`${lineaDinero(userId)}\n\nSelecciona el tipo antes de elegir cantidad:`)
         .setColor(0xe74c3c);
     return {
         embeds: [embed],
@@ -327,7 +335,6 @@ function buildPickRuleta(userId) {
 
 /** Ruleta, paso 1b: qué docena. */
 function buildPickDocenas(userId) {
-    const saldo = getSaldo(userId);
     const docenas = [
         { label: "1ª Docena  1-12  (×3)", value: "docena_1" },
         { label: "2ª Docena 13-24 (×3)", value: "docena_2" },
@@ -338,10 +345,7 @@ function buildPickDocenas(userId) {
             new ButtonBuilder().setCustomId(`casino_pick_ruleta_${d.value}`).setLabel(d.label).setStyle(ButtonStyle.Secondary),
         ),
     );
-    const embed = new EmbedBuilder()
-        .setTitle("🎡 Ruleta — Docenas")
-        .setDescription(`💰 Tu saldo: **${saldo.toLocaleString("es")}** monedas`)
-        .setColor(0xe74c3c);
+    const embed = new EmbedBuilder().setTitle("🎡 Ruleta — Docenas").setDescription(lineaDinero(userId)).setColor(0xe74c3c);
     return { embeds: [embed], components: [docRow, filaVolverRuleta("◄ Tipos")] };
 }
 
@@ -368,14 +372,20 @@ function buildPickMontoRuleta(userId, tipo, valor) {
     const embed = new EmbedBuilder()
         .setTitle(numero ? "🎡 Ruleta — Número exacto" : "🎡 Ruleta — Elige tu apuesta")
         .setDescription(
-            numero
-                ? `Número: **${valor}** (×36)\n💰 Tu saldo: **${saldo.toLocaleString("es")}**`
-                : `Tipo: **${tipo} ${valor}**\n💰 Tu saldo: **${saldo.toLocaleString("es")}**`,
+            numero ? `Número: **${valor}** (×36)\n${lineaDinero(userId)}` : `Tipo: **${tipo} ${valor}**\n${lineaDinero(userId)}`,
         )
         .setColor(0xe74c3c);
     return {
         embeds: [embed],
-        components: [filaMontos(saldo, (m) => `casino_play_ruleta_${m}_${tipo}_${valor}`), filaVolverRuleta("◄ Cambiar tipo")],
+        components: [
+            filaMontos(saldo, (m) => `casino_play_ruleta_${m}_${tipo}_${valor}`),
+            filaSacar(
+                userId,
+                `casino_pick_ruleta_${tipo}_${valor}`,
+                new ButtonBuilder().setCustomId("casino_ruleta").setLabel("◄ Cambiar tipo").setStyle(ButtonStyle.Secondary),
+                backBtn(),
+            ),
+        ],
     };
 }
 
@@ -388,9 +398,7 @@ function buildPickJugadaPpt(userId, apuesta) {
     ];
     const embed = new EmbedBuilder()
         .setTitle("✂️ Piedra, papel o tijera")
-        .setDescription(
-            `Apuesta: **${apuesta.toLocaleString("es")}** 🪙\n💰 Tu saldo: **${getSaldo(userId).toLocaleString("es")}**\n\n¿Qué sacas?`,
-        )
+        .setDescription(`Apuesta: **${apuesta.toLocaleString("es")}** 🪙\n${lineaDinero(userId)}\n\n¿Qué sacas?`)
         .setColor(0xf39c12);
     return {
         embeds: [embed],

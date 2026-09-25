@@ -10,10 +10,10 @@ let n = 0;
 // Un usuario nuevo por test para que los saldos y los cupos no se pisen entre tests.
 function nuevoUsuario(saldo = 1000) {
     const id = `user-${++n}`;
-    db.prepare("INSERT INTO banco (userId, saldo) VALUES (?, ?)").run(id, saldo);
+    db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES (?, 0, ?)").run(id, saldo);
     return id;
 }
-const saldo = (id) => db.prepare("SELECT saldo FROM banco WHERE userId = ?").get(id).saldo;
+const saldo = (id) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(id).saldo;
 
 afterEach(() => {
     guildSettings.setSetting(GUILD, "casino.daily_limit", 0);

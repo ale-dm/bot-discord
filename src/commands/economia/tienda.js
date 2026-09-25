@@ -268,13 +268,9 @@ module.exports = {
             return;
         }
 
+        // Tus compras: los Movimientos de /banco filtrados por tienda (con el resto de filtros a mano).
         if (sub === "historial") {
-            const historial = tienda.historialCompras(interaction.user.id);
-            if (!historial.length) {
-                await interaction.reply(privado("No tienes compras registradas en la tienda."));
-                return;
-            }
-            await interaction.reply(privado(paneles.buildHistorialCompras(historial, 1)));
+            await interaction.reply(require("../../paneles/economia").buildMovimientos(interaction.user.id, "tienda", 0));
             return;
         }
 
@@ -306,7 +302,9 @@ module.exports = {
                     await interaction.update(sustituir("❌ Objeto no encontrado."));
                     return;
                 }
-                await interaction.update(paneles.buildConfirmacion(item, tienda.saldoDe(interaction.user.id) ?? 0, tiendaCfg));
+                await interaction.update(
+                    paneles.buildConfirmacion(item, tienda.saldoDe(interaction.user.id), tiendaCfg, interaction.user.id),
+                );
                 return;
             }
 
