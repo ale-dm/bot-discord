@@ -10,6 +10,23 @@ criptomonedas e integración con Plex/Seerr.
 - **Qué falta:** [tareas](docs/planificacion/TAREAS.md) · [errores conocidos](docs/planificacion/ERRORES.md) · [deuda técnica](docs/planificacion/DEUDA_TECNICA.md) · [ideas de features](docs/planificacion/FEATURES.md)
 - **Índice de toda la documentación:** [docs/README.md](docs/README.md)
 
+## Cómo se usa
+
+Casi todo está en **cinco paneles** con pestañas y botones, enlazados entre sí (14 comandos en total):
+
+| Panel | Qué hay |
+|---|---|
+| `/perfil [usuario] [seccion]` | 👤 Perfil (nivel, racha, recompensas) · 💰 Economía (efectivo y banco, ingresar, sacar, transferir, movimientos) · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. El de otra persona se ve entero; los botones de acción, solo en el tuyo |
+| `/juegos [seccion]` | 🎰 Casino (blackjack, tragaperras, ruleta, adivinar, PPT) · ⚽ Apuestas (partidos y quiniela) · 📋 Mis jugadas · 📊 Stats |
+| `/tienda ver \| inventario \| historial` | 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras |
+| `/cripto` | Precios, gráficos, compra y venta, cartera e historial (BTC, ETH… y $TTCL) |
+| `/paneladmin` 🔒 | Banco, niveles, configuración, apuestas, catálogo, sistema, Plex, Seerr y auditoría |
+
+`/ayuda` explica cada parte y tiene botones que abren estos paneles. El dinero está en **efectivo** (con lo que se
+juega y se compra) o en el **banco** (seguro; hay que sacarlo para gastarlo). De momento los paneles son públicos
+(solo quien los abre puede pulsarlos); los avisos de error, `/paneladmin` y lo que el Duende recuerda, en privado.
+Aparte: el Duende en el chat y por voz (`/duende`, `/ia`, `/imagen`, `/tts`, `/escuchar`) y `/bola8`, `/ping`, `/javier`.
+
 ## Puesta en marcha (desarrollo)
 
 ```bash
@@ -32,7 +49,7 @@ el-duende/
 ├── src/
 │   ├── index.js            Arranque: carga comandos, eventos de Discord y tareas programadas
 │   ├── core/               Infraestructura común (sin lógica del bot)
-│   │   ├── paths.js          Rutas del proyecto (data/, logs/, models/, commands/)
+│   │   ├── paths.js          Rutas del proyecto (data/, logs/, models/, commands/, juegos/, perfil/)
 │   │   ├── db.js             Conexión SQLite (data/banco.db)
 │   │   ├── logger.js         Logs con niveles, rotación y ocultación de secretos
 │   │   ├── componentRouter.js  Enruta botones/menús/formularios al módulo que los declara
@@ -57,8 +74,9 @@ el-duende/
 │   ├── systems/            Lógica del bot que usan varios comandos
 │   │                         XP, logros, apodos, ajustes por servidor, auditoría, transacciones del
 │   │                         casino, partidas en curso, vínculos de Plex, backups, reglas del blackjack,
-│   │                         cobro de la tienda; duende/ (memoria, perfiles, personas) y cripto/
-│   │                         (mercado y gráficos)
+│   │                         dinero (efectivo, banco y movimientos), tienda, objetos; xp/ (niveles,
+│   │                         rachas, roles), apuestas/ (liquidación y mis jugadas), duende/ (memoria,
+│   │                         perfiles, personas) y cripto/ (mercado y gráficos)
 │   └── services/           Clientes de servicios externos
 │                             Gemini, Gemini TTS, Tautulli, Seerr, Odds API, Giphy, transcripción de
 │                             voz (STT); duende/ (herramientas, llamada a Gemini, voz)
@@ -83,8 +101,12 @@ el-duende/
   y `run(client, interaction)`. Se carga y registra solo; no hay que tocar `index.js`.
 - **Botones, menús y formularios**: el propio comando declara `componentHandlers` con los prefijos de
   `customId` que atiende (ver `src/core/componentRouter.js`). Los módulos de `src/juegos/` también, aunque
-  no sean comandos.
+  no sean comandos. Un `customId` no puede repetirse en un mismo mensaje (Discord lo rechaza; hay un test que lo
+  vigila).
 - **Construir mensajes** (embeds, filas de botones) va a `src/paneles/`; los comandos solo reparten.
+- **Dinero**: todo movimiento de monedas pasa por `src/systems/dinero.js` (cobrar, pagar, ingresar, sacar,
+  transferir), que además lo apunta en el historial con su tipo. Solo `systems/casinoTransactions.js` (casino) y
+  `adminPanel/bank.js` (ajustes de admin) escriben en la tabla `banco` por su cuenta.
 - **Lógica compartida** entre comandos va a `src/systems/`; **llamadas a APIs externas** a `src/services/`.
   Las dependencias van `commands` → `systems`/`services`, nunca al revés.
 - **Rutas**: siempre desde `src/core/paths.js`, nunca relativas al fichero o al directorio actual.
