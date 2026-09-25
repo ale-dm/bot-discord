@@ -25,7 +25,7 @@ const interaccion = (extra = {}) => ({
     ...extra,
 });
 const pestanas = (payload) => payload.components.at(-1).components.map((b) => [b.data.custom_id, b.data.style]);
-const PESTANAS = ["casino_home", "juegos_apuestas_laliga", "misapuestas_activas_u4", "juegos_stats"];
+const PESTANAS = ["juegos_casino", "juegos_apuestas_laliga", "juegos_jugadas", "juegos_stats"];
 
 test.each([
     ["casino", "🎰 Casino — Tu resumen", 0],
@@ -76,4 +76,63 @@ test("los 8 comandos antiguos ya no se registran; /juegos sí", () => {
     for (const viejo of ["blackjack", "ruleta", "tragaperras", "adivinar", "ppt", "apuestas", "quiniela", "misapuestas"]) {
         expect(nombres).not.toContain(viejo);
     }
+});
+
+// Discord rechaza un mensaje con dos botones con el mismo customId (COMPONENT_CUSTOM_ID_DUPLICATED): pasó con
+// la pestaña 📋 Mis jugadas y el botón ⏳ En juego. Se revisan todas las pantallas de /juegos.
+describe("ningún panel de /juegos repite un customId", () => {
+    const casino = require("../src/paneles/casino");
+    const { buildMisJugadas } = require("../src/paneles/misJugadas");
+    const { buildStatsJuegos } = require("../src/paneles/juegos");
+    const quiniela = require("../src/juegos/apuestas/quiniela");
+    const idsDe = (payload) => payload.components.flatMap((r) => (r.toJSON ? r.toJSON() : r).components.map((c) => c.custom_id));
+    const sinRepetidos = (payload) => {
+        const ids = idsDe(payload);
+        expect(ids.filter((id, n) => ids.indexOf(id) !== n)).toEqual([]);
+    };
+
+    test("casino, selectores, final de partida, mis jugadas y stats", () => {
+        for (const payload of [
+            casino.buildHome("u4"),
+            casino.buildStats("u4", "u4"),
+            casino.buildStats("u4", "u4", "blackjack"),
+            casino.buildHistorial("u4"),
+            casino.buildRanking(),
+            casino.buildPickApuesta("u4", "blackjack"),
+            casino.buildPickRuleta("u4"),
+            casino.buildPickDocenas("u4"),
+            casino.buildPickMontoRuleta("u4", "color", "rojo"),
+            casino.buildPickJugadaPpt("u4", 100),
+            { components: [casino.filaFinJuego("ruleta", 100, { repetir: "casino_play_ruleta_100_color_rojo" })] },
+            buildMisJugadas("u4", "activas"),
+            buildMisJugadas("u4", "historial"),
+            buildStatsJuegos("u4", "u4"),
+        ]) {
+            sinRepetidos(payload);
+        }
+    });
+
+    test("apuestas y quiniela (con y sin apuesta hecha)", async () => {
+        const apuestasTab = interaccion({ customId: "juegos_apuestas_premier" });
+        await juegos.handleButton(null, apuestasTab);
+        sinRepetidos(apuestasTab.update.mock.calls[0][0]);
+
+        const q = db
+            .prepare("INSERT INTO quinielas (deporte, jornada, estado, creada_en) VALUES ('premier', 'J-dup', 'abierta', '2026-09-01')")
+            .run().lastInsertRowid;
+        db.prepare(
+            "INSERT INTO quiniela_partidos (quiniela_id, match_id, orden, home_team, away_team, start_time) VALUES (?, 'qd', 1, 'A', 'B', ?)",
+        ).run(q, futuro);
+        db.prepare(
+            "INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en) VALUES (?, 'u4', '1', 10, '2026-09-01')",
+        ).run(q);
+        for (const user of [
+            { id: "u4", username: "u4" },
+            { id: "sin-apuesta", username: "x" },
+        ]) {
+            const i = interaccion({ customId: "quiniela_refrescar_premier", user });
+            await quiniela.handleButton(null, i);
+            sinRepetidos(i.update.mock.calls[0][0]);
+        }
+    });
 });

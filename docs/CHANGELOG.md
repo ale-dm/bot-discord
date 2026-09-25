@@ -22,7 +22,11 @@ Cuarta parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.m
   casino por las de `perfil`).
 - `/ayuda`, FUNCIONALIDADES y el README hablan de `/juegos`; en el README, las carpetas `src/juegos/` y
   `src/paneles/`.
-- Tests: 155.
+- **Corregido tras desplegar:** la pestaña 📋 Mis jugadas fallaba siempre ("Component custom id cannot be
+  duplicated"): la pestaña y el botón ⏳ En juego tenían el mismo id. Ahora cada pestaña tiene el suyo
+  (`juegos_casino`, `juegos_apuestas_*`, `juegos_jugadas`, `juegos_stats`), y un test revisa que ninguna
+  pantalla de `/juegos` repita ids.
+- Tests: 157.
 
 ## 2026-09-25 (reorganización de paneles, parte 3: Mis jugadas)
 

@@ -67,7 +67,7 @@ test("/quiniela, si ya has apostado, enseña tus pronósticos y el botón de Mis
     expect(texto(payload)).toMatch(/1✅ 2❌ X⏳ 1⏳/);
     expect(ids(payload).slice(0, 3)).toEqual(["misapuestas_activas_ana", "quiniela_refrescar_laliga", "apuestas_pagina_laliga_1"]);
     // Y debajo, las pestañas de /juegos.
-    expect(ids(payload).slice(3)).toEqual(["casino_home", "juegos_apuestas_laliga", "misapuestas_activas_ana", "juegos_stats"]);
+    expect(ids(payload).slice(3)).toEqual(["juegos_casino", "juegos_apuestas_laliga", "juegos_jugadas", "juegos_stats"]);
 
     const otro = interaccion({ user: { id: "luis" } });
     await quiniela.run(null, otro);
@@ -87,7 +87,7 @@ test("Mis jugadas junta partidos y quinielas, y los botones editan el mensaje (E
     const payload = stats.update.mock.calls[0][0];
     // La quiniela devuelta cuenta como recuperada, no como perdida.
     expect(texto(payload)).toMatch(/\*\*50\*\* apostado en las cerradas → \*\*50\*\* cobrado o devuelto \(\+0\)/);
-    expect(ids(payload)).toContain("misapuestas_activas_ana"); // Stats ya tiene botones para volver
+    expect(ids(payload)).toContain("juegos_jugadas"); // Stats ya tiene botones para volver
 
     const intruso = interaccion({ customId: "misapuestas_stats_ana", user: { id: "luis" } });
     await misapuestas.handleButton(null, intruso);

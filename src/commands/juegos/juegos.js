@@ -53,6 +53,14 @@ module.exports = {
             return;
         }
         const id = interaction.customId;
+        if (id === "juegos_casino") {
+            await interaction.update(casino.buildHome(interaction.user.id));
+            return;
+        }
+        if (id === "juegos_jugadas") {
+            await interaction.update(buildMisJugadas(interaction.user.id, "activas"));
+            return;
+        }
         if (id === "juegos_stats") {
             await interaction.update(buildStatsJuegos(interaction.user.id, interaction.user.username));
             return;
