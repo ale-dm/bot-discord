@@ -1,5 +1,8 @@
 # Reorganización de comandos y paneles
 
+> **Histórico.** El plan está terminado (las 9 partes, el 2026-09-25). Cómo queda el bot está en
+> [FUNCIONALIDADES.md](../../FUNCIONALIDADES.md) y el detalle de cada parte en el [CHANGELOG](../../CHANGELOG.md).
+
 Análisis de cómo se llega hoy a cada cosa (comandos, subcomandos, paneles y botones) y propuesta para
 juntarlo: que desde cualquier panel se pueda llegar a todo lo relacionado sin volver a escribir comandos.
 Los fallos encontrados por el camino están en [ERRORES.md](../ERRORES.md) (E-05 y E-07 a E-15; E-06 se descartó con D3) y los restos sin uso en
@@ -357,7 +360,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 - Test de reparto del panel.
 - En Discord: cada sección nueva.
 
-### Parte 9 · `/ayuda` con botones y repaso final (S)
+### Parte 9 · `/ayuda` con botones y repaso final (S) — ✅ hecha el 2026-09-25
 
 - **`/ayuda`:** cada sección con un botón que abre su panel.
 - **Todo público (D5):** repaso de todos los paneles (hoy muchos son privados), dejando privados solo los avisos de
@@ -376,7 +379,7 @@ pasan su lógica a `systems/` o `paneles/` (la liquidación de apuestas y su cro
 | 6 ✅ | Perfil único | Dos perfiles, logros en tres sitios, cinco rankings, E-11; borra 3 comandos | M | 4 y 5 |
 | 7 ✅ | Tienda + inventario | Tienda, inventario y usar sueltos | S | 5 (historial) |
 | 8 ✅ | Admin | Dos paneles y comandos sueltos, E-14, E-15, DT-13 (`/panel`) | M | — |
-| 9 | Ayuda y repaso | Todo público | S | Todas |
+| 9 ✅ | Ayuda y repaso | Todo público | S | Todas |
 
 Es buena idea desplegar y probar en Discord cada dos o tres partes (por ejemplo, tras la 3, la 6 y la 9) para no
 acumular cambios sin probar. Antes de todo esto sigue pendiente el primer despliegue de

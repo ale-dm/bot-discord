@@ -1,7 +1,7 @@
 # El Duende — Qué hace el bot
 
 Documentación funcional de todo lo que hace El Duende: comandos, sistemas automáticos,
-configuración y datos. Refleja el código a fecha 2026-09-24.
+configuración y datos. Refleja el código a fecha 2026-09-25.
 
 > **Leyenda:** `*` = opción obligatoria · 🔒 = solo administradores · ⏱️ = tarea automática
 
@@ -38,6 +38,15 @@ El Duende es un bot de Discord para un grupo de amigos (un único servidor). Com
   (una propia, $TTCL, y reales con precio de CoinGecko).
 - **Integración con Plex** (vía Tautulli) y **Seerr** para consultar y pedir películas/series.
 - **Panel de administración** para configurarlo todo desde Discord.
+
+Casi todo se hace desde **cinco paneles** con pestañas y botones, enlazados entre sí: `/perfil` (perfil, economía,
+juegos, logros y rankings), `/juegos` (casino, apuestas, mis jugadas y stats), `/tienda` (catálogo, inventario y
+compras), `/cripto` y, para admins, `/paneladmin`. `/ayuda` explica cada parte y tiene botones para abrirlas.
+
+**Público o privado:** de momento los paneles y las partidas son **públicos** (los ve todo el canal), pero solo quien
+los abrió puede pulsar sus botones. Se quedan en privado los avisos de error, `/paneladmin`, lo que el Duende recuerda
+de la gente (`/duende recuerda | olvida | personas`), el editor de pronósticos de la quiniela (para que no se copien) y
+las pantallas de ayuda de cada juego.
 
 Idioma: todo en español. Zona horaria de referencia: Europe/Madrid (rachas, cron).
 
@@ -423,7 +432,7 @@ Duende siguen en `/duende set | add | remove`.
 
 | Comando | Qué hace |
 |---|---|
-| `/ayuda` | Guía de los comandos principales, con botones por sección |
+| `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
 

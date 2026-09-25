@@ -88,6 +88,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
       quitarlo y eliminarlo.
 - [ ] `/paneladmin` → 🩺 Sistema: diagnóstico, 💎 TTCL y cambiar el nivel de log.
 
+**Ayuda y público (parte 9 de paneles)**
+- [ ] `/ayuda` → cada sección: los botones verdes abren su panel en un mensaje nuevo, y sus botones funcionan.
+- [ ] Con `/juegos` limitado a un canal (ACL), el botón de la ayuda en otro canal avisa y no lo abre.
+- [ ] La tienda, los partidos y la quiniela salen públicos; el editor de pronósticos, privado.
+
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %
       con doble clic rápido: solo debe venderse una vez.

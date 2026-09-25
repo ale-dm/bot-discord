@@ -201,7 +201,7 @@ async function responderNatural(interaction, state, tipo) {
         await interaction.reply({ content: ERROR_RESULTADO, flags: MessageFlags.Ephemeral });
         return;
     }
-    await interaction.reply({ embeds: [embed], components: [filaFin(state)], flags: MessageFlags.Ephemeral });
+    await interaction.reply({ embeds: [embed], components: [filaFin(state)] });
     terminarPartida(userId);
 }
 
@@ -351,7 +351,7 @@ module.exports = {
         const apuesta = interaction.options.getInteger("apuesta");
         // Sin apuesta, el selector de importes del casino (como desde el panel).
         if (!apuesta) {
-            await interaction.reply({ ...casino.buildPickApuesta(userId, "blackjack"), flags: MessageFlags.Ephemeral });
+            await interaction.reply(casino.buildPickApuesta(userId, "blackjack"));
             return;
         }
 
@@ -386,7 +386,7 @@ module.exports = {
             await responderNatural(interaction, state, natural);
             return;
         }
-        await interaction.reply({ embeds: [embedJugando(state)], components: filasJuego(state), flags: MessageFlags.Ephemeral });
+        await interaction.reply({ embeds: [embedJugando(state)], components: filasJuego(state) });
     },
 
     // Handler para botones

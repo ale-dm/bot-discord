@@ -61,7 +61,7 @@ module.exports = {
         const userId = interaction.user.id;
         const apuesta = interaction.options.getInteger("apuesta");
         if (!apuesta) {
-            await interaction.reply({ ...casino.buildPickApuesta(userId, "adivinar"), flags: MessageFlags.Ephemeral });
+            await interaction.reply(casino.buildPickApuesta(userId, "adivinar"));
             return;
         }
 
@@ -112,7 +112,7 @@ module.exports = {
             new ButtonBuilder().setCustomId("adivinar_color_rojo").setLabel("🔴 Rojo").setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId("adivinar_color_negro").setLabel("⚫ Negro").setStyle(ButtonStyle.Primary),
         );
-        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+        await interaction.reply({ embeds: [embed], components: [row] });
     },
 
     async handleButton(client, interaction) {

@@ -152,7 +152,7 @@ module.exports = {
                     await interaction.reply(privado("🛒 No se encontraron objetos en la tienda con esos filtros."));
                     return;
                 }
-                await interaction.reply(privado(paneles.buildTiendaPage(items, 1, admin)));
+                await interaction.reply(paneles.buildTiendaPage(items, 1, admin));
             } catch (err) {
                 log.error("Error mostrando la tienda:", err);
                 await interaction.reply(privado("❌ Error al mostrar la tienda."));

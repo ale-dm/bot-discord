@@ -182,7 +182,7 @@ module.exports = {
             .setColor(0x3498db);
 
         if (deporteForzado && interaction.isButton?.()) await interaction.update({ embeds: [embed], components });
-        else await interaction.reply({ embeds: [embed], components, flags: MessageFlags.Ephemeral });
+        else await interaction.reply({ embeds: [embed], components });
     },
 
     // Handler para el select menu
@@ -224,7 +224,7 @@ module.exports = {
             new ButtonBuilder().setCustomId(`apuesta_away_${match_id}`).setLabel(`🚩 ${partido.away_team}`).setStyle(ButtonStyle.Danger),
         );
 
-        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+        await interaction.reply({ embeds: [embed], components: [row] });
     },
 
     // Handler para los botones de apuesta y paginación
@@ -427,7 +427,6 @@ module.exports = {
         await interaction.reply({
             embeds: [embed],
             components: [filaTrasApostar(userId, { deporte: match.deporte || "laliga" })],
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

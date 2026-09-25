@@ -198,9 +198,7 @@ module.exports = {
     async run(client, interaction, deporteForzado = null) {
         const deporteSeleccionado = deporteForzado || interaction.options?.getString?.("deporte") || "laliga";
         const responder = (payload) =>
-            deporteForzado && interaction.isButton?.()
-                ? interaction.update(payload)
-                : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+            deporteForzado && interaction.isButton?.() ? interaction.update(payload) : interaction.reply(payload);
         const deporte = DEPORTES[deporteSeleccionado];
 
         if (!deporte) {

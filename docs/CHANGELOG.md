@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-09-25 (reorganización de paneles, parte 9: ayuda y todo público)
+
+Última parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución), que queda
+como histórico.
+
+- **`/ayuda` abre los paneles**: cada sección tiene una fila de botones verdes (👤 Perfil, 🏅 Logros, 🏆 Rankings,
+  💰 Economía, 🛒 Tienda, 🎒 Inventario, 🎰 Casino, 📊 Stats, ⚽ Apuestas, 📋 Mis jugadas, 📊 Cripto y, a admins,
+  🛠️ Panel admin). Abren el comando como si se hubiera escrito, en un mensaje nuevo cuyo dueño es quien pulsa, y
+  respetan los permisos de cada comando (canales, roles, desactivado).
+- **Todo público (D5)**: `/ayuda`, `/tienda ver`, la lista y el detalle de partidos, la apuesta registrada, la
+  quiniela y el blackjack y el adivinar lanzados desde fuera del panel dejan de ser privados. Siguen privados los
+  avisos de error, `/paneladmin`, `/duende recuerda | olvida | personas`, el editor de pronósticos de la quiniela y
+  las pantallas de ayuda de cada juego.
+- FUNCIONALIDADES.md explica los cinco paneles y qué es público y qué privado.
+- Tests: 193.
+
 ## 2026-09-25 (reorganización de paneles, parte 8: administración en un panel)
 
 Octava parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución).

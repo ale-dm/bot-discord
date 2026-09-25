@@ -7,6 +7,8 @@ const {
     PermissionFlagsBits,
     MessageFlags,
 } = require("discord.js");
+const guildSettings = require("../../systems/guildSettings");
+const log = require("../../core/logger").createLogger("ayuda");
 
 // Guía del bot dentro de Discord. El contenido sigue a docs/FUNCIONALIDADES.md: si se
 // añade o cambia un comando, actualizar las dos cosas.
@@ -38,6 +40,11 @@ const SECCIONES = {
         boton: "Niveles",
         emoji: "📈",
         titulo: "Niveles, rachas y logros",
+        abrir: [
+            ["perfil", "perfil", "Perfil", "👤"],
+            ["perfil", "logros", "Logros", "🏅"],
+            ["perfil", "rankings", "Rankings", "🏆"],
+        ],
         texto: [
             "Ganas XP escribiendo (una vez cada 15 s) y en voz (5 XP/min, sin mute y con alguien más en el canal). Al subir de nivel desbloqueas rangos y roles.",
             "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
@@ -50,6 +57,11 @@ const SECCIONES = {
         boton: "Economía",
         emoji: "💰",
         titulo: "Economía",
+        abrir: [
+            ["perfil", "eco", "Economía", "💰"],
+            ["tienda", "ver", "Tienda", "🛒"],
+            ["tienda", "inventario", "Inventario", "🎒"],
+        ],
         texto: [
             "Empiezas con **1.000 monedas** en 💵 efectivo. Se juega y se compra con el **efectivo**; el 🏦 **banco** es el sitio seguro (hay que sacar el dinero para gastarlo).",
             "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
@@ -60,6 +72,10 @@ const SECCIONES = {
         boton: "Casino",
         emoji: "🎰",
         titulo: "Casino",
+        abrir: [
+            ["juegos", "casino", "Casino", "🎰"],
+            ["juegos", "stats", "Stats", "📊"],
+        ],
         texto: [
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats.",
             "**Juegos**: blackjack (×2, blackjack ×2,5), tragaperras con jackpot, ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
@@ -71,6 +87,10 @@ const SECCIONES = {
         boton: "Apuestas",
         emoji: "⚽",
         titulo: "Apuestas deportivas",
+        abrir: [
+            ["juegos", "apuestas", "Apuestas", "⚽"],
+            ["juegos", "jugadas", "Mis jugadas", "📋"],
+        ],
         texto: [
             "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas.",
             "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
@@ -82,6 +102,7 @@ const SECCIONES = {
         boton: "Cripto",
         emoji: "📊",
         titulo: "Cripto",
+        abrir: [["cripto", "", "Cripto", "📊"]],
         texto: [
             "`/cripto` — panel con precios, gráficos, compra, venta, cartera e historial.",
             "BTC, ETH, SOL, BNB, XRP y DOGE con su precio real (1 € = 1.000 monedas).",
@@ -93,6 +114,7 @@ const SECCIONES = {
         emoji: "🛠️",
         titulo: "Administración",
         soloAdmin: true,
+        abrir: [["paneladmin", "", "Panel admin", "🛠️"]],
         texto: [
             "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas), 🛒 Catálogo (objetos y lo que está a la venta), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
             "`/duende set | add | remove` — personalidades del Duende.",
@@ -126,14 +148,58 @@ function botones(interaction, activa) {
     ];
     const filas = [];
     for (let i = 0; i < todos.length; i += 5) filas.push(new ActionRowBuilder().addComponents(todos.slice(i, i + 5)));
+    // En una sección, una fila con sus paneles: cada botón abre el comando como si se hubiera escrito.
+    const abrir = activa && SECCIONES[activa].abrir;
+    if (abrir) {
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                abrir.map(([cmd, sec, texto, emoji]) =>
+                    new ButtonBuilder()
+                        .setCustomId(`ayuda_abrir_${cmd}_${sec}`)
+                        .setLabel(`Abrir ${texto}`)
+                        .setEmoji(emoji)
+                        .setStyle(ButtonStyle.Success),
+                ),
+            ),
+        );
+    }
     return filas;
+}
+
+// Abre el panel de /cmd [seccion] como respuesta nueva, con quien pulsa como dueño. La interacción del botón hace de
+// la del comando: se le cambian las opciones y deja de ser un botón (para que el comando responda y no edite la ayuda).
+async function abrirPanel(client, interaction, cmd, sec) {
+    const comando = client.slashCommands?.get(cmd);
+    if (!comando) {
+        await interaction.reply({ content: `No encuentro /${cmd}.`, flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const acl = guildSettings.isCommandAllowed(interaction, cmd);
+    if (!acl.ok) {
+        await interaction.reply({ content: acl.message || "⛔ Acción no permitida aquí.", flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const falsa = Object.create(interaction);
+    falsa.commandName = cmd;
+    falsa.isButton = () => false;
+    falsa.isChatInputCommand = () => true;
+    falsa.options = {
+        getString: (nombre) => (nombre === "seccion" && sec) || null,
+        getSubcommand: () => sec || null,
+        getUser: () => null,
+        getBoolean: () => null,
+        getInteger: () => null,
+        getNumber: () => null,
+    };
+    log.info(`Abre /${cmd}${sec ? ` ${sec}` : ""} desde la ayuda · ${interaction.user?.tag}`);
+    await comando.run(client, falsa);
 }
 
 function embedInicio(interaction) {
     return new EmbedBuilder()
         .setTitle("🤖 Guía de El Duende")
         .setDescription(
-            "Pulsa una sección para ver sus comandos.\n\n" +
+            "Pulsa una sección para ver sus comandos y abrir sus paneles.\n\n" +
                 seccionesVisibles(interaction)
                     .map(([, s]) => `${s.emoji} **${s.titulo}**`)
                     .join("\n") +
@@ -158,11 +224,19 @@ module.exports = {
         await interaction.reply({
             embeds: [embedInicio(interaction)],
             components: botones(interaction, null),
-            flags: MessageFlags.Ephemeral,
         });
     },
 
     async handleButton(client, interaction) {
+        if (interaction.customId.startsWith("ayuda_abrir_")) {
+            const [cmd, sec] = interaction.customId.slice("ayuda_abrir_".length).split("_");
+            const permitido = Object.values(SECCIONES).some(
+                (s) => (!s.soloAdmin || esAdmin(interaction)) && s.abrir?.some(([c, x]) => c === cmd && x === sec),
+            );
+            if (permitido) await abrirPanel(client, interaction, cmd, sec);
+            else await interaction.reply({ content: "Ese panel no está disponible.", flags: MessageFlags.Ephemeral });
+            return;
+        }
         const id = interaction.customId.replace("ayuda_", "");
         const s = SECCIONES[id];
         if (!s || (s.soloAdmin && !esAdmin(interaction))) {
