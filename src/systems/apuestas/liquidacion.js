@@ -1,5 +1,6 @@
 // Liquidación de apuestas a partidos y quinielas (cron de cada hora en index.js, y el botón 💸 Liquidar ahora del
-// panel de admin → ⚽ Apuestas; antes el comando /pagarapuestas).
+// panel de admin → ⚽ Apuestas; antes el comando /pagarapuestas). Después: DM a quien cobra y, si el servidor tiene
+// canal de resultados, un resumen público de lo cerrado.
 const { EmbedBuilder } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../dinero");
@@ -104,6 +105,9 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             caducados: 0,
             reembolsos: 0,
             pagos: [],
+            // Lo que se ha cerrado en esta pasada, para publicarlo en el canal de resultados (anunciarResultados).
+            partidos: [],
+            quinielas: [],
         };
         const ahora = Date.now();
         const corte = new Date(ahora - minHorasDesdeInicio * 3600 * 1000).toISOString();
@@ -156,12 +160,15 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             `,
                 )
                 .all(partido.match_id);
+            const cierre = { apostantes: apuestas.length, ganadores: [], repartido: 0 };
             for (const ap of apuestas) {
                 resumen.total++;
                 if (ap.eleccion === resultado) {
                     const premio = Math.round(ap.cantidad * ap.cuota);
                     dinero.pagar(ap.user_id, premio);
                     dinero.apuntar(ap.user_id, "apuestas", `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`, premio);
+                    cierre.ganadores.push(ap.user_id);
+                    cierre.repartido += premio;
                     resumen.pagadas++;
                     resumen.pagos.push({ userId: ap.user_id, premio, descripcion: `${partido.home_team} vs ${partido.away_team}` });
                     logInfo(
@@ -178,6 +185,7 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                     ap.id,
                 );
             }
+            return cierre;
         });
 
         for (const partido of partidos) {
@@ -191,7 +199,14 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 continue;
             }
             logInfo(`[PAGARAPUESTAS] ${partido.home_team} ${r.home.score}-${r.away.score} ${partido.away_team} -> ${r.resultado}`);
-            cerrarPartido(partido, r.resultado);
+            const cierre = cerrarPartido(partido, r.resultado);
+            resumen.partidos.push({
+                deporte: deporteKey,
+                home: partido.home_team,
+                away: partido.away_team,
+                marcador: `${r.home.score}-${r.away.score}`,
+                ...cierre,
+            });
             resumen.partidosProcesados[deporteKey] = (resumen.partidosProcesados[deporteKey] || 0) + 1;
         }
 
@@ -287,6 +302,16 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             if (!hayGanadores) resumen.reembolsos += apuestasConAciertos.length;
             resumen.quinielasCerradas++;
             resumen.premiosQuiniela += premioUnitario * ganadoras.length;
+            resumen.quinielas.push({
+                deporte: deporteKey,
+                jornada: q.jornada,
+                jugadores: apuestasConAciertos.length,
+                partidos: partidosQ.length,
+                minimo,
+                maxAciertos,
+                ganadores: ganadoras.map((a) => a.user_id),
+                premioUnitario,
+            });
             logInfo(
                 hayGanadores
                     ? `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: ${ganadoras.length} ganadores con ${maxAciertos} aciertos, premio unitario ${premioUnitario}`
@@ -319,6 +344,81 @@ async function avisarGanadores(client, pagos) {
     }
 }
 
+const fmt = (n) => Number(n || 0).toLocaleString("es");
+// Menciones sin repetir y sin avisar (el mensaje se manda con allowedMentions vacío): se ve quién, sin ping.
+const menciones = (ids, max = 10) => {
+    const unicos = [...new Set(ids)];
+    return (
+        unicos
+            .slice(0, max)
+            .map((id) => `<@${id}>`)
+            .join(", ") + (unicos.length > max ? ` y ${unicos.length - max} más` : "")
+    );
+};
+
+/** Embed con los partidos y quinielas cerrados en una liquidación, o null si no se cerró nada. */
+function resultadosEmbed(resumen) {
+    const lineas = [];
+    for (const p of resumen.partidos || []) {
+        const comp = DEPORTES[p.deporte]?.name || p.deporte;
+        const acertantes = new Set(p.ganadores).size;
+        const detalle = p.ganadores.length
+            ? `✅ ${acertantes} de ${p.apostantes} acertaron · **${fmt(p.repartido)}** 🪙 en premios · 🏆 ${menciones(p.ganadores)}`
+            : `❌ Nadie acertó (${p.apostantes} ${p.apostantes === 1 ? "apuesta" : "apuestas"})`;
+        lineas.push(`⚽ **${p.home} ${p.marcador} ${p.away}** · ${comp}\n${detalle}`);
+    }
+    for (const q of resumen.quinielas || []) {
+        const comp = DEPORTES[q.deporte]?.name || q.deporte;
+        const detalle = q.ganadores.length
+            ? `🏆 ${q.ganadores.length} ${q.ganadores.length === 1 ? "ganador" : "ganadores"} con ${q.maxAciertos}/${q.partidos} aciertos · **${fmt(q.premioUnitario)}** 🪙 cada uno · ${menciones(q.ganadores)}`
+            : `↩️ Nadie llegó a ${q.minimo} aciertos (máximo ${q.maxAciertos}): se devuelve lo apostado a ${q.jugadores} ${q.jugadores === 1 ? "jugador" : "jugadores"}`;
+        lineas.push(`🧾 **Quiniela ${q.jornada}** · ${comp}\n${detalle}`);
+    }
+    if (!lineas.length) return null;
+    let descripcion = "";
+    for (const l of lineas) {
+        if (descripcion.length + l.length + 2 > 4000) {
+            descripcion += "\n…";
+            break;
+        }
+        descripcion += (descripcion ? "\n\n" : "") + l;
+    }
+    return new EmbedBuilder()
+        .setTitle("📢 Resultados de las apuestas")
+        .setDescription(descripcion)
+        .setFooter({ text: "Tus jugadas, en /juegos → 📋 Mis jugadas" })
+        .setColor(0x27ae60)
+        .setTimestamp();
+}
+
+/**
+ * Publica los resultados de una liquidación en el canal de resultados de cada servidor que lo tenga configurado
+ * (/paneladmin → ⚽ Apuestas). Best-effort: un canal que no existe o sin permisos se registra y se sigue.
+ * @returns {Promise<number>} canales en los que se ha publicado
+ */
+async function anunciarResultados(client, resumen) {
+    const embed = resultadosEmbed(resumen);
+    if (!embed) return 0;
+    const guildSettings = require("../guildSettings");
+    let publicados = 0;
+    for (const guild of client.guilds.cache.values()) {
+        const canalId = guildSettings.getSettings(guild.id).apuestas.canal_resultados;
+        if (!canalId) continue;
+        try {
+            const canal = guild.channels.cache.get(canalId) || (await guild.channels.fetch(canalId).catch(() => null));
+            if (!canal?.isTextBased?.()) {
+                logWarn(`[PAGARAPUESTAS] El canal de resultados ${canalId} de ${guild.name} no existe o no es de texto`);
+                continue;
+            }
+            await canal.send({ embeds: [embed], allowedMentions: { parse: [] } });
+            publicados++;
+        } catch (e) {
+            logWarn(`[PAGARAPUESTAS] No se pudieron publicar los resultados en ${guild.name}: ${e.message}`);
+        }
+    }
+    return publicados;
+}
+
 /** Resumen de una liquidación para enseñarlo (panel de admin → ⚽ Apuestas → 💸 Liquidar ahora). */
 function resumenEmbed(resumen) {
     let descripcionDeportes = "";
@@ -347,4 +447,12 @@ function resumenEmbed(resumen) {
         .setTimestamp();
 }
 
-module.exports = { liquidarApuestas, avisarGanadores, minimoAciertosQuiniela, resumenEmbed, AUTO_MIN_HORAS_DESDE_INICIO };
+module.exports = {
+    liquidarApuestas,
+    avisarGanadores,
+    anunciarResultados,
+    resultadosEmbed,
+    minimoAciertosQuiniela,
+    resumenEmbed,
+    AUTO_MIN_HORAS_DESDE_INICIO,
+};

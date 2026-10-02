@@ -7,6 +7,10 @@ require("dotenv").config();
 const { createLogger, logErrorSync, flushLogs, registerSecret } = require("./core/logger");
 const { whoWhere, describeCommand, componentKind, describeComponentInput, runJob, cut } = require("./core/interactionLog");
 
+// Cada error registrado desde aquí puede acabar en una alerta por DM a los admins (se envían al conectar).
+const alertas = require("./systems/alertas");
+alertas.escucharErrores();
+
 const log = createLogger("Bot");
 const cmdLog = createLogger("Comando");
 const compLog = createLogger("Componente");
@@ -150,6 +154,7 @@ client.once("clientReady", async () => {
     // Única línea de consola al arrancar; el detalle va a logs/app-log.txt.
     const n = client.guilds.cache.size;
     console.log(`✓ Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
+    runJob("Alertas pendientes del arranque", () => alertas.iniciar(client));
     actualizarActividad();
     setInterval(actualizarActividad, 5400000);
     setInterval(() => runJob("XP de voz", () => xpSystem.voiceTick(client)), 60000);
@@ -157,9 +162,21 @@ client.once("clientReady", async () => {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
-    cron.schedule("*/30 * * * *", () => runJob("Novedades de Plex", () => tautulliClient.checkAllGuildsForNewContent(client)), {
-        noOverlap: true,
-    });
+    // Novedades de Plex y, después (para que el "Nuevo en Plex" salga antes), el aviso a quien lo pidió en Seerr.
+    cron.schedule(
+        "*/30 * * * *",
+        async () => {
+            await runJob("Novedades de Plex", () => tautulliClient.checkAllGuildsForNewContent(client));
+            await runJob("Avisos de pedidos de Seerr", () => require("./systems/pedidosSeerr").avisarDisponibles(client));
+        },
+        { noOverlap: true },
+    );
+    // Recordatorio por DM antes de los partidos a los que se ha apostado.
+    cron.schedule(
+        "*/5 * * * *",
+        () => runJob("Recordatorio de partidos", () => require("./systems/apuestas/recordatorios").enviarRecordatorios(client)),
+        { noOverlap: true },
+    );
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
         "15 * * * *",
@@ -171,7 +188,10 @@ client.once("clientReady", async () => {
                         minHorasDesdeInicio: pagarapuestas.AUTO_MIN_HORAS_DESDE_INICIO,
                         origen: "cron",
                     });
-                    if (resumen) await pagarapuestas.avisarGanadores(client, resumen.pagos);
+                    if (resumen) {
+                        await pagarapuestas.avisarGanadores(client, resumen.pagos);
+                        await pagarapuestas.anunciarResultados(client, resumen);
+                    }
                 },
                 { slowMs: 120_000 },
             ),
@@ -191,6 +211,25 @@ client.once("clientReady", async () => {
             }),
         5 * 60 * 1000,
     );
+    // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
+    // inventado en el chat (una llamada a Gemini por modelo distinto).
+    runJob("Comprobación del modelo de Gemini", async () => {
+        if (!process.env.GOOGLE_API_KEY) return;
+        const { comprobarModelo, modeloDe } = require("./services/duende/gemini");
+        for (const modelo of new Set([...client.guilds.cache.keys()].map(modeloDe))) {
+            const r = await comprobarModelo(modelo);
+            if (r.ok) {
+                log.info(`Modelo de Gemini ${modelo}: funciona y usa herramientas (${r.ms} ms)`);
+                continue;
+            }
+            log.warn(`Modelo de Gemini ${modelo}: ${r.motivo}`);
+            await alertas.alertar({
+                clave: `gemini-modelo:${modelo}`,
+                titulo: "🤖 El modelo de Gemini no funciona bien",
+                detalle: `${r.motivo}\n\nCámbialo en /paneladmin → ⚙️ Config Global → 🤖 Duende → ✏️ Editar IA.`,
+            });
+        }
+    });
     // Backfill roles para usuarios que subieron nivel antes de tener las recompensas configuradas
     for (const guild of client.guilds.cache.values()) {
         runJob(

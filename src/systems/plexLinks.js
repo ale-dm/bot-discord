@@ -17,6 +17,17 @@ function getLinkByDiscordId(guildId, discordUserId) {
     );
 }
 
+function getLinkByPlexUsername(guildId, plexUsername) {
+    if (!plexUsername) return null;
+    return (
+        db
+            .prepare(
+                `SELECT discordUserId, tautulliUserId, plexUsername FROM plex_links WHERE guildId = ? AND LOWER(plexUsername) = LOWER(?)`,
+            )
+            .get(guildId, plexUsername) || null
+    );
+}
+
 function setLink(guildId, discordUserId, tautulliUserId, plexUsername) {
     db.prepare(
         `
@@ -36,6 +47,7 @@ function removeLink(guildId, discordUserId) {
 module.exports = {
     getLinks,
     getLinkByDiscordId,
+    getLinkByPlexUsername,
     setLink,
     removeLink,
 };

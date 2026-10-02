@@ -1,15 +1,27 @@
 // Panel admin → ⚽ Apuestas: lo que hay en juego (partidos con apuestas pendientes y quinielas abiertas), 💸 Liquidar
-// ahora (antes /pagarapuestas; normalmente lo hace solo el cron de cada hora) y 🧾 Crear la quiniela de cada
-// competición (también está en la propia quiniela).
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+// ahora (antes /pagarapuestas; normalmente lo hace solo el cron de cada hora), 🧾 Crear la quiniela de cada
+// competición (también está en la propia quiniela), el canal donde se publican los resultados y el recordatorio
+// por DM antes de cada partido.
+const {
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelSelectMenuBuilder,
+    ChannelType,
+    MessageFlags,
+} = require("discord.js");
 const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
+const guildSettings = require("../systems/guildSettings");
 const { DEPORTES } = require("../services/oddsApi");
+const { simpleModal } = require("./common");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("PanelAdmin");
 
-function buildApuestasHome() {
+function buildApuestasHome(guildId) {
+    const cfg = guildSettings.getSettings(guildId).apuestas;
     const pendientes = db
         .prepare(
             `SELECT p.deporte, COUNT(DISTINCT p.match_id) AS partidos, COUNT(*) AS apuestas, COALESCE(SUM(a.cantidad), 0) AS importe
@@ -47,6 +59,12 @@ function buildApuestasHome() {
                         .join("\n") || "Ninguna.",
             },
             { name: "↩️ Caducados (7 días)", value: `${caducados} partidos sin resultado (reembolsados)` },
+            {
+                name: "📢 Avisos",
+                value:
+                    `Resultados: ${cfg.canal_resultados ? `se publican en <#${cfg.canal_resultados}>` : "no se publican (solo DM a quien cobra)"}\n` +
+                    `Recordatorio por DM: ${cfg.recordatorio ? `**${cfg.recordatorio_min} min** antes del partido` : "desactivado"}`,
+            },
         )
         .setColor(0x2ecc71)
         .setTimestamp();
@@ -63,13 +81,55 @@ function buildApuestasHome() {
                 .setStyle(ButtonStyle.Primary),
         ),
     );
-    return { content: "", embeds: [embed], components: [acciones, crear] };
+    const avisos = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_apu_canal").setLabel("📢 Canal de resultados").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_apu_canal_quitar")
+            .setLabel("🔕 No publicar")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(!cfg.canal_resultados),
+        new ButtonBuilder().setCustomId("paneladmin_apu_recordatorio").setLabel("⏰ Recordatorio").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: "", embeds: [embed], components: [acciones, crear, avisos] };
 }
 
 async function handleApuestasButton(interaction) {
     const id = interaction.customId;
     if (id === "paneladmin_apu_home") {
-        await interaction.update(buildApuestasHome());
+        await interaction.update(buildApuestasHome(interaction.guildId));
+        return true;
+    }
+    if (id === "paneladmin_apu_canal") {
+        await interaction.reply({
+            content: "¿En qué canal se publican los resultados de las apuestas y quinielas?",
+            components: [
+                new ActionRowBuilder().addComponents(
+                    new ChannelSelectMenuBuilder()
+                        .setCustomId("paneladmin_apu_canal_select")
+                        .setPlaceholder("Canal de resultados")
+                        .setMinValues(1)
+                        .setMaxValues(1)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+                ),
+            ],
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    if (id === "paneladmin_apu_canal_quitar") {
+        guildSettings.setSetting(interaction.guildId, "apuestas.canal_resultados", "");
+        adminAudit.logAdminAction({ guildId: interaction.guildId, actorId: interaction.user.id, action: "apuestas.canal.quitar" });
+        await interaction.update(buildApuestasHome(interaction.guildId));
+        return true;
+    }
+    if (id === "paneladmin_apu_recordatorio") {
+        const cfg = guildSettings.getSettings(interaction.guildId).apuestas;
+        await interaction.showModal(
+            simpleModal("paneladmin_apu_recordatorio_modal", "Recordatorio antes del partido", [
+                { id: "activo", label: "Activo (1/0)", value: cfg.recordatorio ? "1" : "0" },
+                { id: "minutos", label: "Minutos antes del partido (5-1440)", value: String(cfg.recordatorio_min) },
+            ]),
+        );
         return true;
     }
     if (id === "paneladmin_apu_liquidar") {
@@ -90,6 +150,7 @@ async function handleApuestasButton(interaction) {
             return true;
         }
         void liquidacion.avisarGanadores(interaction.client, resumen.pagos);
+        void liquidacion.anunciarResultados(interaction.client, resumen);
         await interaction.editReply({ embeds: [liquidacion.resumenEmbed(resumen)] });
         return true;
     }
@@ -110,4 +171,44 @@ async function handleApuestasButton(interaction) {
     return false;
 }
 
-module.exports = { buildApuestasHome, handleApuestasButton };
+async function handleApuestasChannelSelect(interaction) {
+    if (interaction.customId !== "paneladmin_apu_canal_select") return false;
+    const canalId = interaction.values[0];
+    guildSettings.setSetting(interaction.guildId, "apuestas.canal_resultados", canalId);
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "apuestas.canal",
+        details: { canalId },
+    });
+    await interaction.reply({
+        content: `✅ Los resultados de las apuestas se publicarán en <#${canalId}> después de cada liquidación.`,
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
+async function handleApuestasModal(interaction) {
+    if (interaction.customId !== "paneladmin_apu_recordatorio_modal") return false;
+    const activo = interaction.fields.getTextInputValue("activo").trim();
+    const minutos = Number(interaction.fields.getTextInputValue("minutos").trim());
+    if (!Number.isInteger(minutos) || minutos < 5 || minutos > 1440) {
+        await interaction.reply({
+            content: "❌ Los minutos tienen que ser un número entero entre 5 y 1440.",
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    guildSettings.setManySettings(interaction.guildId, { "apuestas.recordatorio": activo, "apuestas.recordatorio_min": minutos });
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "apuestas.recordatorio",
+        details: { activo, minutos },
+    });
+    if (interaction.isFromMessage?.()) await interaction.update(buildApuestasHome(interaction.guildId));
+    else await interaction.reply({ content: "✅ Recordatorio actualizado.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+module.exports = { buildApuestasHome, handleApuestasButton, handleApuestasChannelSelect, handleApuestasModal };

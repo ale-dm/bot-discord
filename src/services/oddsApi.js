@@ -27,6 +27,32 @@ const cacheCuotas = new Map(); // deporte -> { data, ts }
 // Se lee en cada llamada (no al cargar el módulo) para que los tests puedan fijarla.
 const getApiKey = () => process.env.ODDS_API_KEY || "";
 
+// Créditos que quedan este mes (los dice cada respuesta): se enseñan en /paneladmin → 🩺 Sistema y, por debajo de
+// CREDITOS_AVISO, se avisa a los admins (systems/alertas) una vez al día.
+const CREDITOS_AVISO = Number(process.env.ODDS_CREDITOS_AVISO || 50);
+let creditos = { restantes: null, at: null };
+
+function apuntarCreditos(restantes) {
+    const n = Number(restantes);
+    if (restantes === "?" || restantes === null || !Number.isFinite(n)) return;
+    creditos = { restantes: n, at: Date.now() };
+    if (n < CREDITOS_AVISO) {
+        require("../systems/alertas")
+            .alertar({
+                clave: "odds-creditos",
+                titulo: "⚽ Quedan pocos créditos de la Odds API",
+                detalle:
+                    `Quedan **${n}** créditos este mes (se avisa por debajo de ${CREDITOS_AVISO}). Sin créditos no se pueden ver ` +
+                    "partidos nuevos ni liquidar apuestas hasta que se renueve el plan.",
+                cooldownMs: 24 * 60 * 60 * 1000,
+            })
+            .catch((e) => log.warn(`No se pudo avisar de los créditos: ${e.message}`));
+    }
+}
+
+/** { restantes, at } de la última respuesta de la API desde el arranque (null si aún no se ha llamado). */
+const creditosRestantes = () => ({ ...creditos });
+
 function deporteValido(key) {
     return DEPORTES[key] ? key : "laliga";
 }
@@ -34,6 +60,7 @@ function deporteValido(key) {
 async function pedir(url, deporte) {
     const res = await fetch(url.replace("{KEY}", encodeURIComponent(getApiKey())), { signal: AbortSignal.timeout(15000) });
     const restantes = res.headers?.get?.("x-requests-remaining") ?? "?";
+    apuntarCreditos(restantes);
     if (!res.ok) {
         // El cuerpo trae el motivo (p. ej. {"error_code":"INVALID_SCORES_DAYS_FROM"}); sin él, un 422 o
         // un 401 no dicen nada. 401 = clave inválida; 429 = cuota mensual agotada.
@@ -139,5 +166,7 @@ module.exports = {
     obtenerResultados,
     resultadoDeScore,
     cuotasH2H,
+    creditosRestantes,
+    CREDITOS_AVISO,
     _limpiarCache: () => cacheCuotas.clear(),
 };

@@ -1,7 +1,7 @@
 # El Duende — Qué hace el bot
 
 Documentación funcional de todo lo que hace El Duende: comandos, sistemas automáticos,
-configuración y datos. Refleja el código a fecha 2026-09-25.
+configuración y datos. Refleja el código a fecha 2026-10-02.
 
 > **Leyenda:** `*` = opción obligatoria · 🔒 = solo administradores · ⏱️ = tarea automática
 
@@ -95,7 +95,7 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 
 | Grupo | Herramientas | Dónde |
 |---|---|---|
-| Básicas | Nivel, XP y racha · saldo · precio de TTCL · logros · tirar un dado | Siempre |
+| Básicas | Nivel, XP y racha · saldo · precio de TTCL · logros · tirar un dado · lo que hay en la tienda · tu inventario · tus apuestas en juego y tu balance · tus últimas partidas del casino · si puedes cobrar la recompensa diaria (solo la consulta) | Siempre |
 | Plex (Tautulli) | Qué ha visto alguien · qué se ve ahora · horas vistas · última conexión · novedades · comparar a dos personas · top del servidor · buscar en Plex · ranking de quién más ve · bibliotecas · día/hora de más actividad | Solo en canales permitidos para Plex |
 | Seerr | Buscar contenido · **pedir** película/serie (también "en nombre de" otra persona) · ver peticiones recientes | Solo en canales permitidos para Seerr |
 
@@ -252,7 +252,14 @@ es único para todo el bot (no es por servidor).
 | 🏦 Ingresar | Pasa efectivo al banco (formulario con la cantidad; máx. 1.000.000 por operación) |
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
-| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, objetos, admin |
+| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, objetos, admin |
+| 🎁 Diario | La recompensa diaria (ver abajo). Cuando ya la has cobrado sale desactivado como "🎁 Mañana" |
+
+**🎁 Recompensa diaria**: una vez al día (el día cambia a las 00:00, hora de Madrid, como las rachas), unas monedas
+al efectivo que crecen con tu **racha de XP** en el servidor: 100 + 20 por día de racha, hasta 500 (configurable en
+Panel admin → Config Global → 🎁 Diario, también se puede desactivar). El dinero es global, así que se cobra una vez
+al día aunque estés en varios servidores. Queda en Movimientos como 🎁 Diario. El Duende puede decirte si te toca
+cobrarla, pero no cobrarla por ti.
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
@@ -342,6 +349,15 @@ entre quienes más aciertos tengan, siempre que lleguen a la mitad de los partid
 se devuelve lo apostado. Los resultados de la quiniela se guardan partido a partido según se conocen.
 Los ganadores reciben un DM.
 
+**Resultados en el canal**: si un admin elige un canal en `/paneladmin` → ⚽ Apuestas → 📢 Canal de resultados,
+después de cada liquidación se publica ahí un resumen de lo cerrado: "⚽ **Elche 1-0 Oviedo** · 3 de 4 acertaron ·
+1.240 🪙 en premios · 🏆 quiénes", y en las quinielas cuántos ganadores, con cuántos aciertos y cuánto se lleva cada
+uno (o que se devuelve lo apostado). Los nombres salen como mención, pero sin avisar a nadie.
+
+**⏰ Recordatorio**: 30 minutos antes de un partido al que has apostado te llega un DM con el partido, a qué apostaste
+y cuánto ganarías (uno solo con todos tus partidos de esa media hora, y una sola vez por apuesta). Se activa o
+desactiva y se cambian los minutos en `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio.
+
 La API solo da resultados de los **últimos 3 días**: un partido (o una quiniela con partidos) que empezó hace
 más y sigue sin resultado se marca como caducado y **se devuelve lo apostado** (con aviso por DM).
 
@@ -379,6 +395,11 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 - El usuario de Seerr se identifica por el Discord ID de su perfil en Seerr o, si no, por su vínculo de Plex.
 - Límite diario de peticiones por persona (`seerr.daily_request_limit`, 5 por defecto).
 - Solo funciona en los canales permitidos, que se eligen en Panel admin → Seerr.
+- ⏱️ **"Ya está en Plex"**: cada 30 minutos (después de las novedades) se mira qué peticiones de Seerr han pasado a
+  estar disponibles y se avisa a quien la pidió, mencionándole en el canal de novedades de Plex ("🍿 @Raúl, lo que
+  pediste ya está en Plex: **Dune**"), o por DM si no hay canal de novedades. En una serie que llega por partes, se
+  avisa cuando hay los primeros episodios. Cada petición se avisa una vez; la primera comprobación solo fija la base
+  (no avisa de lo que ya estaba). Se activa o desactiva en Panel admin → Seerr.
 
 ---
 
@@ -391,14 +412,29 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | Sección | Qué se puede hacer |
 |---|---|
 | 🏦 Banco | Modificar saldo (efectivo o banco) · resetear usuario (como nuevo: 1.000 en efectivo) · borrar historial · historial global · buscar usuario |
-| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions |
+| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
-| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders |
+| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
-| ⚙️ Config Global | **🤖 Duende**: modelo, temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas |
+| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades |
-| 🍿 Seerr | Canales permitidos para pedir contenido |
+| 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |
+
+### 🔔 Alertas por DM
+
+El bot avisa por mensaje privado a los admins cuando pasa algo que hay que mirar:
+
+- **Un error nuevo** (lo que acaba en `logs/error-log.txt`). El mismo error, aunque cambien los números, como mucho
+  una vez cada 6 horas. Si falla la copia de seguridad, sale como "💾 La copia de seguridad ha fallado".
+- **Odds API con menos de 50 créditos** este mes (`ODDS_CREDITOS_AVISO`), una vez al día.
+- **Gemini sin cuota** (el Duende, `/ia` y `/imagen` fallan hasta que se renueve).
+- **El modelo de Gemini no funciona** al arrancar: no existe, o responde pero no usa las herramientas (con él, el
+  Duende se inventaría los datos).
+
+Como mucho 10 alertas a la hora. Las de antes de conectar a Discord (errores al arrancar) se mandan al conectar.
+En `/paneladmin` → 🩺 Sistema → 🔔 Alertas: activarlas o no, a quién (IDs de Discord; sin nadie puesto, al dueño del
+servidor), las últimas enviadas y 📨 Probar.
 
 ### Control de comandos (ACL)
 
@@ -415,12 +451,12 @@ Duende siguen en `/duende set | add | remove`.
 
 | Cuándo | Qué |
 |---|---|
-| Al arrancar | Registra los slash commands · crea índices de BD · **devuelve lo apostado en partidas interrumpidas** · asigna roles de nivel que falten |
+| Al arrancar | Registra los slash commands · crea índices de BD · **devuelve lo apostado en partidas interrumpidas** · asigna roles de nivel que falten · prueba el modelo de Gemini (alerta si no funciona) · manda las alertas del arranque |
 | Cada minuto | XP de voz |
-| Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) |
+| Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto |
 | Cada 10 minutos | Registra el precio de $TTCL |
-| Cada 30 minutos | Novedades de Plex |
-| Cada hora (min. 15) | Liquidación de apuestas deportivas y quinielas + DM a ganadores |
+| Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr |
+| Cada hora (min. 15) | Liquidación de apuestas deportivas y quinielas + DM a ganadores + resumen en el canal de resultados |
 | Cada hora | Limpia historiales de conversación del Duende sin actividad en 24 h |
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
@@ -496,6 +532,7 @@ Duende siguen en `/duende set | add | remove`.
 | `BACKUP_KEEP` / `BACKUP_DIR` | 7 / `data/backups/` | Copias diarias de la BD que se conservan y dónde |
 | `QUINIELA_LOCK_MINUTES` | 15 | Bloqueo de la quiniela antes del primer partido |
 | `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada petición gasta 1 crédito de 500 al mes) |
+| `ODDS_CREDITOS_AVISO` | 50 | Por debajo de estos créditos de la Odds API se avisa por DM a los admins |
 | `LOG_LEVEL` | info | Nivel mínimo en los ficheros: `debug`, `info`, `warn` o `error`. También se cambia en caliente en `/paneladmin` → 🩺 Sistema |
 | `LOG_CONSOLE_LEVEL` | warn | Nivel mínimo que sale por consola (`docker logs`); `off` para nada |
 | `LOG_MAX_BYTES` / `LOG_MAX_FILES` | 5 MB / 5 | Rotación de logs |

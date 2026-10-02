@@ -1,9 +1,11 @@
-// Generación de respuestas del Duende con Gemini, incluido el bucle de herramientas.
-const { FunctionCallingConfigMode } = require("@google/genai");
+// Generación de respuestas del Duende con Gemini, incluido el bucle de herramientas, y la comprobación de que el modelo
+// configurado existe y usa herramientas.
+const { FunctionCallingConfigMode, Type: SchemaType } = require("@google/genai");
 const { generateContentWithTimeout } = require("../geminiClient");
 const { createLogger } = require("../../core/logger");
 const tautulliClient = require("../tautulliClient");
 const seerrClient = require("../seerrClient");
+const guildSettings = require("../../systems/guildSettings");
 const { GEMINI_API_KEY, GEMINI_MODEL, GEMINI_TIMEOUT_MS, DUENDE_MAX_TOKENS } = require("../../systems/duende/config");
 const {
     DUENDE_CORE_TOOL_DECLARATIONS,
@@ -150,4 +152,82 @@ async function generarConGemini(parts, options = {}) {
     throw new Error("Gemini no devolvió respuesta tras usar herramientas");
 }
 
-module.exports = { generarConGemini, buildPromptFromParts, isGeminiProhibitedContentError };
+/** El modelo que usa el Duende en un servidor: el del panel (Config Global → Duende) o, si está vacío, GEMINI_MODEL. */
+function modeloDe(guildId) {
+    return (guildId && guildSettings.getSettings(guildId).duende.model) || GEMINI_MODEL;
+}
+
+const HERRAMIENTA_PRUEBA = {
+    name: "comprobar_conexion",
+    description: "Comprueba la conexión del bot. Llámala siempre que te lo pidan, con el número que te digan.",
+    parameters: {
+        type: SchemaType.OBJECT,
+        properties: { numero: { type: SchemaType.NUMBER, description: "El número que te han dicho" } },
+        required: ["numero"],
+    },
+};
+
+/**
+ * Prueba un modelo como lo usa el Duende (herramientas en modo automático): pasó que un modelo retirado daba 404 y que
+ * otro (flash-lite) no llamaba a las herramientas y el Duende se inventaba los datos.
+ * @returns {Promise<{ ok: boolean, modelo: string, existe: boolean, usaHerramientas: boolean, ms: number, motivo?: string }>}
+ */
+async function comprobarModelo(modelo = GEMINI_MODEL) {
+    const t0 = Date.now();
+    if (!GEMINI_API_KEY)
+        return { ok: false, modelo, existe: false, usaHerramientas: false, ms: 0, motivo: "Falta GOOGLE_API_KEY en .env." };
+    const numero = 1 + Math.floor(Math.random() * 999);
+    try {
+        const response = await generateContentWithTimeout(
+            {
+                model: modelo,
+                contents: [{ role: "user", parts: [{ text: `Prueba de conexión: llama a comprobar_conexion con el número ${numero}.` }] }],
+                config: { maxOutputTokens: 1024, temperature: 0, tools: [{ functionDeclarations: [HERRAMIENTA_PRUEBA] }] },
+            },
+            GEMINI_TIMEOUT_MS,
+            "Comprobación",
+        );
+        const ms = Date.now() - t0;
+        if (!response?.functionCalls?.some((fc) => fc.name === HERRAMIENTA_PRUEBA.name)) {
+            return {
+                ok: false,
+                modelo,
+                existe: true,
+                usaHerramientas: false,
+                ms,
+                motivo:
+                    `${modelo} responde, pero no ha usado la herramienta de prueba: con él, el Duende contestaría ` +
+                    "inventándose los datos en vez de consultar los reales.",
+            };
+        }
+        return { ok: true, modelo, existe: true, usaHerramientas: true, ms };
+    } catch (e) {
+        const mensaje = String(e?.message || "").split("\n")[0];
+        const noExiste = e?.status === 404 || /not found|no longer available|is not supported/i.test(mensaje);
+        return {
+            ok: false,
+            modelo,
+            existe: !noExiste,
+            usaHerramientas: false,
+            ms: Date.now() - t0,
+            motivo: noExiste
+                ? `El modelo ${modelo} no existe o ya no está disponible.`
+                : `Gemini respondió con un error: ${mensaje.slice(0, 300)}`,
+        };
+    }
+}
+
+/** Una línea con el resultado de comprobarModelo, para el panel. */
+function textoComprobacion(r) {
+    if (r.ok) return `✅ **${r.modelo}** funciona y usa las herramientas (${r.ms} ms).`;
+    return `${r.existe ? "⚠️" : "❌"} ${r.motivo}`;
+}
+
+module.exports = {
+    generarConGemini,
+    buildPromptFromParts,
+    isGeminiProhibitedContentError,
+    modeloDe,
+    comprobarModelo,
+    textoComprobacion,
+};

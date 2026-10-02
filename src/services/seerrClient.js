@@ -203,6 +203,22 @@ async function getMediaTitle(guildId, mediaType, tmdbId) {
     }
 }
 
+/**
+ * Peticiones sin título (una sola llamada, para el aviso de "ya está en Plex", que mira muchas cada 30 min):
+ * { id, mediaType, tmdbId, estadoCodigo, seerrUserId, plexUsername }.
+ */
+async function getRequestsRaw(guildId, { filter = "all", take = 100, sort = "modified" } = {}) {
+    const data = await call(guildId, "get", "/request", { params: { filter, take, sort } });
+    return (data?.results || []).map((r) => ({
+        id: r.id,
+        mediaType: r.type,
+        tmdbId: r.media?.tmdbId,
+        estadoCodigo: Number(r.media?.status) || 0,
+        seerrUserId: r.requestedBy?.id ?? null,
+        plexUsername: r.requestedBy?.plexUsername || null,
+    }));
+}
+
 async function getRequests(guildId, { filter = "all", take = 10, sort = "added" } = {}) {
     const data = await call(guildId, "get", "/request", { params: { filter, take, sort } });
     const results = data?.results || [];
@@ -228,6 +244,8 @@ module.exports = {
     getCachedSearchResult,
     createRequest,
     getRequests,
+    getRequestsRaw,
+    getMediaTitle,
     statusLabel,
     getAllowedChannels,
     addAllowedChannel,

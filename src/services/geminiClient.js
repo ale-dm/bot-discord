@@ -57,7 +57,17 @@ async function generateContentWithTimeout(params, timeoutMs, label = "Gemini") {
         }
         if (isQuotaError(err)) {
             usage.cuotaAgotada++;
-            log.warn(`${label}: ${params.model} sin cuota o con rate limit (${ms} ms): ${String(err.message).split("\n")[0]}`);
+            const motivo = String(err.message).split("\n")[0];
+            log.warn(`${label}: ${params.model} sin cuota o con rate limit (${ms} ms): ${motivo}`);
+            require("../systems/alertas")
+                .alertar({
+                    clave: "gemini-cuota",
+                    titulo: "🤖 Gemini sin cuota",
+                    detalle:
+                        `${label} con **${params.model}**: ${motivo.slice(0, 500)}\n\n` +
+                        "El Duende, /ia y /imagen fallan hasta que se renueve la cuota (o baja el uso).",
+                })
+                .catch((e) => log.warn(`No se pudo avisar de la cuota de Gemini: ${e.message}`));
         } else {
             log.warn(`${label}: ${params.model} falló en ${ms} ms (status ${err?.status ?? "?"}): ${String(err.message).split("\n")[0]}`);
         }

@@ -46,6 +46,19 @@ const DEFAULT_FLAT = {
     "seerr.url": "",
     "seerr.api_key": "",
     "seerr.daily_request_limit": 5,
+    "seerr.avisar_disponible": true,
+
+    "diario.enabled": true,
+    "diario.base": 100,
+    "diario.por_dia_racha": 20,
+    "diario.tope": 500,
+
+    "apuestas.canal_resultados": "",
+    "apuestas.recordatorio": true,
+    "apuestas.recordatorio_min": 30,
+
+    "alertas.enabled": true,
+    "alertas.admin_ids": "",
 };
 
 const KEY_TYPES = {
@@ -91,6 +104,19 @@ const KEY_TYPES = {
     "seerr.url": "string",
     "seerr.api_key": "string",
     "seerr.daily_request_limit": "number",
+    "seerr.avisar_disponible": "boolean",
+
+    "diario.enabled": "boolean",
+    "diario.base": "number",
+    "diario.por_dia_racha": "number",
+    "diario.tope": "number",
+
+    "apuestas.canal_resultados": "string",
+    "apuestas.recordatorio": "boolean",
+    "apuestas.recordatorio_min": "number",
+
+    "alertas.enabled": "boolean",
+    "alertas.admin_ids": "string",
 };
 
 function parseValue(key, value) {
@@ -158,6 +184,22 @@ function flattenToNested(flat) {
             url: flat["seerr.url"],
             api_key: flat["seerr.api_key"],
             daily_request_limit: flat["seerr.daily_request_limit"],
+            avisar_disponible: flat["seerr.avisar_disponible"],
+        },
+        diario: {
+            enabled: flat["diario.enabled"],
+            base: flat["diario.base"],
+            por_dia_racha: flat["diario.por_dia_racha"],
+            tope: flat["diario.tope"],
+        },
+        apuestas: {
+            canal_resultados: flat["apuestas.canal_resultados"],
+            recordatorio: flat["apuestas.recordatorio"],
+            recordatorio_min: flat["apuestas.recordatorio_min"],
+        },
+        alertas: {
+            enabled: flat["alertas.enabled"],
+            admin_ids: flat["alertas.admin_ids"],
         },
     };
 }

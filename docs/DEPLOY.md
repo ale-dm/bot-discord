@@ -70,6 +70,16 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   (`Perfiles del Duende: N vinculados`). Los que no se encuentren se vinculan cuando esa persona hable.
 - Para volver atrás: restaurar el backup de la BD y quitar el `.importado` a los dos JSON.
 
+### Recompensa diaria, avisos y alertas (migración 011, 2026-10-02)
+
+- **011** crea `recompensa_diaria` (🎁 Diario) y `seerr_avisos` (peticiones de Seerr ya avisadas), y añade
+  `recordado` a `apuestas_usuario`. No hay que copiar nada.
+- La primera comprobación de Seerr tras desplegar solo fija la base (`Avisos de pedidos: base fijada...`): lo
+  que ya estaba disponible no se avisa.
+- Las alertas por DM van, sin configurar nada, al **dueño del servidor**. Para cambiarlo: `/paneladmin` →
+  🩺 Sistema → 🔔 Alertas.
+- Al conectar, el bot prueba el modelo de Gemini (`Modelo de Gemini ...: funciona y usa herramientas`).
+
 Al arrancar, el contenedor registra los slash commands (los nuevos o eliminados aparecen solos),
 arranca el servidor de voz (Vosk) y después el bot. Si el bot se reinició con partidas de casino
 a medias, devuelve lo apostado.

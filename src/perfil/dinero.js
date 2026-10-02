@@ -52,6 +52,11 @@ module.exports = {
         const c = dinero.cuenta(userId);
 
         if (id === "dinero_panel") return interaction.update(await economiaPropia(interaction));
+        if (id === "dinero_diario") {
+            const r = require("../systems/diario").cobrar(interaction.guildId, userId);
+            if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
+            return interaction.update(await economiaPropia(interaction, r.mensaje));
+        }
         if (id === "dinero_transferir") return interaction.update(economia.buildElegirDestinatario(userId));
         if (id === "dinero_ingresar")
             return interaction.showModal(economia.modalCantidad("dinero_modal_ingresar", "🏦 Ingresar en el banco", c.efectivo));

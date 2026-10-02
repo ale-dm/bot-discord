@@ -112,4 +112,12 @@ async function runStreakWarningJob(client) {
     log.info(`Aviso de racha en peligro: ${enviados}/${rows.length} DMs enviados`);
 }
 
-module.exports = { updateStreak, streakBonusPct, getEffectiveStreak, sendDm, buildStreakContinuedEmbed, runStreakWarningJob };
+module.exports = {
+    madridDateStr,
+    updateStreak,
+    streakBonusPct,
+    getEffectiveStreak,
+    sendDm,
+    buildStreakContinuedEmbed,
+    runStreakWarningJob,
+};

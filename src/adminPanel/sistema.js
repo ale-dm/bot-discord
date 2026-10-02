@@ -1,11 +1,15 @@
-// Panel admin → 🩺 Sistema: el diagnóstico del bot (uptime, memoria, BD, logs, Gemini y ajustes), el de TTCL y el
-// nivel de log en caliente. Antes eran los comandos /diagnostico y /ttcl-diagnostico.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
+// Panel admin → 🩺 Sistema: el diagnóstico del bot (uptime, memoria, BD, logs, Gemini, Odds API y ajustes), el de
+// TTCL, el nivel de log en caliente, las 🔔 alertas por DM a los admins y 🤖 probar el modelo de Gemini. Antes eran
+// los comandos /diagnostico y /ttcl-diagnostico.
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require("discord.js");
 const db = require("../core/db");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
+const alertas = require("../systems/alertas");
 const { createLogger, getLogStats, setLogLevel } = require("../core/logger");
 const { getUsage: getGeminiUsage } = require("../services/geminiClient");
+const { creditosRestantes, CREDITOS_AVISO } = require("../services/oddsApi");
+const { simpleModal } = require("./common");
 
 const log = createLogger("Diagnóstico");
 
@@ -30,9 +34,17 @@ function filas(nivelActual) {
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("paneladmin_sis_home").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId("paneladmin_sis_ttcl").setLabel("💎 TTCL").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("paneladmin_sis_alertas").setLabel("🔔 Alertas").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("paneladmin_sis_gemini").setLabel("🤖 Probar Gemini").setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
         ),
     ];
+}
+
+function textoCreditos() {
+    const c = creditosRestantes();
+    if (c.restantes === null) return "sin consultar desde el arranque";
+    return `**${c.restantes}** créditos restantes este mes (<t:${Math.floor(c.at / 1000)}:R>)${c.restantes < CREDITOS_AVISO ? " ⚠️" : ""}`;
 }
 
 function buildDiagnostico(client, guildId, aviso = "") {
@@ -53,6 +65,7 @@ function buildDiagnostico(client, guildId, aviso = "") {
           )
         : "ninguno";
     const g = getGeminiUsage();
+    const adminsAlerta = guildSettings.parseCsvIds(cfg.alertas.admin_ids);
     const embed = new EmbedBuilder()
         .setTitle("🩺 Diagnóstico del bot")
         .setDescription(aviso || null)
@@ -72,6 +85,14 @@ function buildDiagnostico(client, guildId, aviso = "") {
             {
                 name: "Gemini (desde el arranque)",
                 value: `${g.llamadas} llamadas · ${g.errores} errores (${g.cuotaAgotada} por cuota) · tokens ${g.tokensEntrada.toLocaleString("es")} entrada / ${g.tokensSalida.toLocaleString("es")} salida`,
+                inline: false,
+            },
+            { name: "Odds API", value: textoCreditos(), inline: false },
+            {
+                name: "Alertas por DM",
+                value: cfg.alertas.enabled
+                    ? `activas · a ${adminsAlerta.length ? `${adminsAlerta.length} admins` : "el dueño del servidor"}`
+                    : "desactivadas",
                 inline: false,
             },
             {
@@ -129,6 +150,37 @@ function buildTtcl(guildId) {
     return { content: "", embeds: [embed], components: [fila] };
 }
 
+function buildAlertas(guild, aviso = "") {
+    const e = alertas.estado(guild?.id);
+    const quien = e.adminIds.length
+        ? e.adminIds.map((id) => `<@${id}>`).join(", ")
+        : `el dueño del servidor${guild?.ownerId ? ` (<@${guild.ownerId}>)` : ""}`;
+    const ultimas = e.historial.length
+        ? e.historial.map((h) => `<t:${Math.floor(h.at / 1000)}:R> ${h.titulo} → ${h.enviadas}/${h.destinatarios}`).join("\n")
+        : "Ninguna desde el arranque.";
+    const embed = new EmbedBuilder()
+        .setTitle("🔔 Alertas por DM")
+        .setDescription(
+            (aviso ? `${aviso}\n\n` : "") +
+                "Avisan por mensaje privado de: errores nuevos del bot (el mismo error, como mucho una vez cada 6 h), " +
+                `Odds API con menos de ${CREDITOS_AVISO} créditos, Gemini sin cuota, un modelo de Gemini que no funciona al ` +
+                `arrancar y copias de seguridad que fallan. Como mucho ${alertas.MAX_POR_HORA} a la hora.`,
+        )
+        .addFields(
+            { name: "Estado", value: e.activas ? "Activas" : "Desactivadas", inline: true },
+            { name: "A quién", value: quien.slice(0, 1024), inline: true },
+            { name: "Últimas enviadas", value: ultimas.slice(0, 1024), inline: false },
+        )
+        .setColor(e.activas ? 0x2ecc71 : 0x95a5a6)
+        .setTimestamp();
+    const fila = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_sis_alertas_editar").setLabel("✏️ Configurar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_sis_alertas_probar").setLabel("📨 Probar").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_sis_home").setLabel("◀ Sistema").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: "", embeds: [embed], components: [fila] };
+}
+
 async function handleSistemaButton(interaction) {
     const id = interaction.customId;
     if (id === "paneladmin_sis_home") {
@@ -139,7 +191,71 @@ async function handleSistemaButton(interaction) {
         await interaction.update(buildTtcl(interaction.guildId));
         return true;
     }
+    if (id === "paneladmin_sis_alertas") {
+        await interaction.update(buildAlertas(interaction.guild));
+        return true;
+    }
+    if (id === "paneladmin_sis_alertas_editar") {
+        const cfg = guildSettings.getSettings(interaction.guildId).alertas;
+        await interaction.showModal(
+            simpleModal("paneladmin_sis_alertas_modal", "Alertas por DM", [
+                { id: "activas", label: "Activas (1/0)", value: cfg.enabled ? "1" : "0" },
+                {
+                    id: "ids",
+                    label: "IDs de Discord, separados por comas",
+                    required: false,
+                    placeholder: "Vacío = el dueño del servidor",
+                    value: cfg.admin_ids || "",
+                },
+            ]),
+        );
+        return true;
+    }
+    if (id === "paneladmin_sis_alertas_probar") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const enviadas = await alertas.probar(interaction.user.username);
+        const total = alertas.destinatarios().length;
+        await interaction.editReply({
+            content: total
+                ? `📨 Alerta de prueba enviada a ${enviadas} de ${total}.${enviadas < total ? " Quien no la recibe tiene los DMs cerrados para el bot." : ""}`
+                : "❌ No hay a quién enviarla: las alertas están desactivadas.",
+        });
+        return true;
+    }
+    if (id === "paneladmin_sis_gemini") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const { comprobarModelo, modeloDe, textoComprobacion } = require("../services/duende/gemini");
+        const r = await comprobarModelo(modeloDe(interaction.guildId));
+        log.info(`Comprobación del modelo de Gemini por ${interaction.user.tag}: ${r.ok ? "ok" : r.motivo}`);
+        await interaction.editReply({ content: textoComprobacion(r) });
+        return true;
+    }
     return false;
+}
+
+async function handleSistemaModal(interaction) {
+    if (interaction.customId !== "paneladmin_sis_alertas_modal") return false;
+    const activas = interaction.fields.getTextInputValue("activas").trim();
+    const ids = guildSettings.parseCsvIds(interaction.fields.getTextInputValue("ids"));
+    const malos = ids.filter((id) => !/^\d{17,20}$/.test(id));
+    if (malos.length) {
+        await interaction.reply({
+            content: `❌ Esto no son IDs de Discord: ${malos.join(", ").slice(0, 200)}. (Clic derecho en la persona → Copiar ID de usuario.)`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    guildSettings.setManySettings(interaction.guildId, { "alertas.enabled": activas, "alertas.admin_ids": ids.join(",") });
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "alertas.config",
+        details: { activas, ids },
+    });
+    const payload = buildAlertas(interaction.guild, "✅ Alertas actualizadas.");
+    if (interaction.isFromMessage?.()) await interaction.update(payload);
+    else await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+    return true;
 }
 
 // Nivel de log en caliente (vuelve al de .env al reiniciar).
@@ -165,4 +281,4 @@ async function handleSistemaSelect(interaction) {
     return true;
 }
 
-module.exports = { buildDiagnostico, buildTtcl, handleSistemaButton, handleSistemaSelect };
+module.exports = { buildDiagnostico, buildTtcl, buildAlertas, handleSistemaButton, handleSistemaSelect, handleSistemaModal };

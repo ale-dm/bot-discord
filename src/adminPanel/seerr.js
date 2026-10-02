@@ -23,13 +23,18 @@ function buildSeerrHome(guildId) {
     const { url, dailyRequestLimit } = seerrClient.getConfig(guildId);
     const allowedChannels = seerrClient.getAllowedChannels(guildId);
     const canalesTexto = allowedChannels.length ? allowedChannels.map((c) => `<#${c.channelId}>`).join(", ") : "todos (sin restricción)";
+    const cfg = guildSettings.getSettings(guildId);
+    const avisos = cfg.seerr.avisar_disponible
+        ? `sí, ${cfg.plex.novedades_channel_id ? `mencionando a quien lo pidió en <#${cfg.plex.novedades_channel_id}>` : "por DM (no hay canal de novedades de Plex)"}`
+        : "no";
 
     const embed = new EmbedBuilder()
         .setTitle("🍿 Seerr (peticiones de contenido)")
         .setDescription(
             `Servidor Seerr: ${url || "no configurado"}\n` +
                 `Límite de peticiones por IA y por persona: ${dailyRequestLimit}/día\n` +
-                `Canales donde se puede pedir/buscar contenido: ${canalesTexto}\n\n` +
+                `Canales donde se puede pedir/buscar contenido: ${canalesTexto}\n` +
+                `Avisar cuando llega lo pedido ("ya está en Plex"): ${avisos}\n\n` +
                 `La atribución de quién pide qué se resuelve automáticamente: primero mirando el Discord ID que cada uno tenga guardado en su perfil de Seerr, y si no lo tiene, con el vínculo de Plex ya existente (🎬 Plex → Vincular).`,
         )
         .setColor(0x8e44ef)
@@ -38,6 +43,10 @@ function buildSeerrHome(guildId) {
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_seerr_test").setLabel("🔌 Test conexión").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_seerr_limit").setLabel("🔢 Límite diario").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_seerr_avisos")
+            .setLabel(cfg.seerr.avisar_disponible ? "🔕 No avisar al llegar" : "🔔 Avisar al llegar")
+            .setStyle(ButtonStyle.Secondary),
     );
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_seerr_channel_add").setLabel("📺 Permitir canal").setStyle(ButtonStyle.Secondary),
@@ -65,6 +74,14 @@ async function handleSeerrButton(interaction) {
         } else {
             await interaction.editReply(`❌ No se pudo conectar con Seerr: ${result.error}`);
         }
+        return true;
+    }
+
+    if (id === "paneladmin_seerr_avisos") {
+        const activo = !guildSettings.getSettings(guildId).seerr.avisar_disponible;
+        guildSettings.setSetting(guildId, "seerr.avisar_disponible", activo);
+        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "seerr.avisos", details: { activo } });
+        await interaction.update(buildSeerrHome(guildId));
         return true;
     }
 

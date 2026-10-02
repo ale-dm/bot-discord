@@ -171,6 +171,33 @@ function buildLine(level, scope, text) {
 // Contadores desde el arranque (los muestra /diagnostico).
 const stats = { warn: 0, error: 0, lastError: null, since: Date.now() };
 
+// Quien quiera enterarse de cada error (las alertas por DM al admin, systems/alertas). Un fallo en un oyente no
+// puede tumbar el log, y un error registrado mientras se avisa de otro no vuelve a avisar (sin bucles).
+const errorListeners = new Set();
+let avisandoError = false;
+
+/** Llama a `fn({ scope, message })` con cada error registrado. @returns {() => void} para quitarlo */
+function onError(fn) {
+    errorListeners.add(fn);
+    return () => errorListeners.delete(fn);
+}
+
+function avisarError(scope, message) {
+    if (avisandoError || !errorListeners.size) return;
+    avisandoError = true;
+    try {
+        for (const fn of errorListeners) {
+            try {
+                fn({ scope, message });
+            } catch (err) {
+                console.error("Error en un oyente de errores del log:", err);
+            }
+        }
+    } finally {
+        avisandoError = false;
+    }
+}
+
 // Consola "bonita" para desarrollo (LOG_PRETTY=1, lo activa scripts/dev.js): hora corta,
 // color por nivel y solo la primera línea (la traza completa queda en el fichero). Sin
 // LOG_PRETTY (Docker) la consola recibe la misma línea completa que los ficheros.
@@ -204,6 +231,7 @@ function emit(level, scope, args) {
     if (consoleLevel && LEVELS[level] >= LEVELS[consoleLevel]) {
         (level === "error" || level === "warn" ? process.stderr : process.stdout).write(consoleLine(level, scope, text));
     }
+    if (level === "error") avisarError(scope, stats.lastError.message);
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────
@@ -281,6 +309,7 @@ module.exports = {
     setLogLevel,
     getLogLevel,
     getLogStats,
+    onError,
     // Para tests
     __test: { format, redact, buildLine },
 };

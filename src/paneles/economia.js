@@ -1,6 +1,6 @@
 // Pestaña 💰 Economía de /perfil: 💵 efectivo (lo que gastas) y 🏦 banco (el sitio seguro), lo ganado y
-// perdido en el casino, la cartera cripto y los objetos; en tu perfil, con Ingresar, Sacar, Transferir y
-// Movimientos (historial con filtro por tipo). En el de otro se ve todo, pero sin acciones.
+// perdido en el casino, la cartera cripto y los objetos; en tu perfil, con Ingresar, Sacar, Transferir,
+// Movimientos (historial con filtro por tipo) y 🎁 Diario (systems/diario). En el de otro se ve todo, pero sin acciones.
 // También el botón "💵 Sacar del banco" que ponen el casino, la tienda y la cripto cuando no te llega el
 // efectivo. Los datos, en systems/dinero; los botones dinero_* los atiende src/perfil/dinero.
 const {
@@ -90,11 +90,29 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
         );
         embed.addFields({ name: "💹 Cartera cripto", value: `${lineas.join("\n")}\nTotal ≈ **${fmt(Math.floor(cartera.total))}** 🪙` });
     }
+    const diario = propio ? require("../systems/diario").estado(guildId, targetId) : null;
+    if (diario?.activo) {
+        embed.addFields({
+            name: "🎁 Recompensa diaria",
+            value: diario.disponible
+                ? `Disponible: **${fmt(diario.cantidad)}** 🪙${diario.racha ? ` (racha de ${diario.racha} días)` : ""}`
+                : `Cobrada hoy. Mañana: **${fmt(diario.cantidad)}** 🪙 si mantienes la racha.`,
+        });
+    }
 
     const movimientos = new ButtonBuilder()
         .setCustomId(`dinero_mov_todo_0_${targetId}`)
         .setLabel("📜 Movimientos")
         .setStyle(ButtonStyle.Secondary);
+    const botonDiario = diario?.activo
+        ? [
+              new ButtonBuilder()
+                  .setCustomId("dinero_diario")
+                  .setLabel(diario.disponible ? "🎁 Diario" : "🎁 Mañana")
+                  .setStyle(ButtonStyle.Success)
+                  .setDisabled(!diario.disponible),
+          ]
+        : [];
     const acciones = propio
         ? new ActionRowBuilder().addComponents(
               new ButtonBuilder()
@@ -113,6 +131,7 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
                   .setStyle(ButtonStyle.Secondary)
                   .setDisabled(c.efectivo <= 0),
               movimientos,
+              ...botonDiario,
           )
         : new ActionRowBuilder().addComponents(movimientos);
     return { content: "", embeds: [embed], components: [acciones, filaPestanasPerfil(viewerId, targetId, "eco")] };

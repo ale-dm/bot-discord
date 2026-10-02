@@ -93,6 +93,25 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Con `/juegos` limitado a un canal (ACL), el botón de la ayuda en otro canal avisa y no lo abre.
 - [ ] La tienda, los partidos y la quiniela salen públicos; el editor de pronósticos, privado.
 
+**Mejoras del 2026-10-02 (rama `feature/elduendejavier`)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 011_diario_avisos_recordatorios` y `Modelo de Gemini ...: funciona y usa
+      herramientas` (si no, te llega una alerta por DM).
+- [ ] `/perfil` → 💰 Economía: 🎁 Diario cobra, el panel dice cuánto y el botón pasa a "🎁 Mañana"; sale en
+      📜 Movimientos con el filtro 🎁 Diario. En el perfil de otro no hay botón. Con racha de varios días, da más.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎁 Diario: cambiar base/tope y ver que la Economía lo refleja.
+- [ ] `/paneladmin` → ⚽ Apuestas → 📢 Canal de resultados: elegir un canal, 💸 Liquidar ahora con algún partido
+      terminado y ver el resumen en el canal (con nombres, sin pings).
+- [ ] Apostar a un partido que empiece en menos de una hora: llega el DM ⏰ unos 30 min antes, una sola vez.
+- [ ] Seerr: pedir algo que no esté y, cuando llegue, ver "🍿 @tú, lo que pediste ya está en Plex" en el canal de
+      novedades. (Si Seerr ya avisa por su cuenta en Discord, decidir si se deja uno de los dos: 🍿 Seerr →
+      🔕 No avisar al llegar.)
+- [ ] `/paneladmin` → 🩺 Sistema: se ven los créditos de la Odds API; 🔔 Alertas → 📨 Probar te llega por DM;
+      poner los IDs de los admins que deben recibirlas; 🤖 Probar Gemini dice ✅.
+- [ ] Config Global → 🤖 Duende → ✏️ Editar IA con un modelo inventado: avisa de que no existe (y volver a dejarlo).
+- [ ] Preguntar al Duende "¿qué hay en la tienda?", "¿qué tengo en el inventario?", "¿cómo van mis apuestas?",
+      "¿cuánto llevo perdido en el casino?" y "¿puedo cobrar el diario?": que use las herramientas (en el log,
+      `Herramienta usada: consultar_...`).
+
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %
       con doble clic rápido: solo debe venderse una vez.

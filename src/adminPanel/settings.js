@@ -15,7 +15,7 @@ function buildConfigHome(guildId) {
     const acl = guildSettings.listCommandAcl(guildId);
     const embed = new EmbedBuilder()
         .setTitle("⚙️ Configuración Global")
-        .setDescription("Administra parámetros de Duende, Cripto, Casino, Tienda, Logros y acceso por comando.")
+        .setDescription("Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria y acceso por comando.")
         .addFields(
             {
                 name: "🤖 Duende IA",
@@ -47,6 +47,13 @@ function buildConfigHome(guildId) {
                 value: `Estado: **${cfg.logros.enabled ? "Activo" : "Off"}**\nMultiplicador: **x${cfg.logros.reward_multiplier}**`,
                 inline: true,
             },
+            {
+                name: "🎁 Diario",
+                value: cfg.diario.enabled
+                    ? `**${cfg.diario.base}** + **${cfg.diario.por_dia_racha}**/día de racha\nTope: **${cfg.diario.tope}**`
+                    : "Desactivado",
+                inline: true,
+            },
         )
         .setColor(0x1abc9c)
         .setTimestamp();
@@ -61,6 +68,7 @@ function buildConfigHome(guildId) {
 
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
     );
 
     return { embeds: [embed], components: [row1, row2, navRow()] };
@@ -204,6 +212,31 @@ function buildLogrosPanel(guildId) {
     return { embeds: [embed], components: [row, navRow()] };
 }
 
+function buildDiarioPanel(guildId) {
+    const d = guildSettings.getSettings(guildId).diario;
+    const { cantidadPara } = require("../systems/diario");
+    const ejemplos = [0, 5, 10, 20, 30].map((r) => `racha ${r}: **${cantidadPara(d, r)}**`).join(" · ");
+    const embed = new EmbedBuilder()
+        .setTitle("🎁 Recompensa diaria")
+        .setDescription(
+            "Una vez al día (hora de Madrid), en /perfil → 💰 Economía → 🎁 Diario. Va al efectivo y crece con la racha de XP: " +
+                "base + por día de racha, hasta el tope.\n\n" +
+                ejemplos,
+        )
+        .addFields(
+            { name: "Estado", value: d.enabled ? "Activa" : "Desactivada", inline: true },
+            { name: "Base", value: String(d.base), inline: true },
+            { name: "Por día de racha", value: String(d.por_dia_racha), inline: true },
+            { name: "Tope", value: String(d.tope), inline: true },
+        )
+        .setColor(0x2ecc71)
+        .setTimestamp();
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cfg_diario_edit").setLabel("✏️ Editar diario").setStyle(ButtonStyle.Primary),
+    );
+    return { embeds: [embed], components: [row, navRow()] };
+}
+
 async function handleSettingsButton(interaction) {
     const id = interaction.customId;
     const guildId = interaction.guildId;
@@ -235,6 +268,22 @@ async function handleSettingsButton(interaction) {
     }
     if (id === "paneladmin_cfg_logros") {
         await interaction.update(buildLogrosPanel(guildId));
+        return true;
+    }
+    if (id === "paneladmin_cfg_diario") {
+        await interaction.update(buildDiarioPanel(guildId));
+        return true;
+    }
+    if (id === "paneladmin_cfg_diario_edit") {
+        const d = guildSettings.getSettings(guildId).diario;
+        await interaction.showModal(
+            simpleModal("paneladmin_cfg_diario_modal", "Recompensa diaria", [
+                { id: "enabled", label: "Activa (1/0)", value: d.enabled ? "1" : "0" },
+                { id: "base", label: "Base (monedas con racha 0)", value: String(d.base) },
+                { id: "porDia", label: "Monedas por día de racha", value: String(d.por_dia_racha) },
+                { id: "tope", label: "Tope (máximo al día)", value: String(d.tope) },
+            ]),
+        );
         return true;
     }
 
@@ -350,13 +399,27 @@ async function handleSettingsModal(interaction) {
     const guildId = interaction.guildId;
 
     if (id === "paneladmin_cfg_duende_modal") {
+        const modeloAntes = guildSettings.getSettings(guildId).duende.model;
+        const modelo = interaction.fields.getTextInputValue("model").trim();
         guildSettings.setManySettings(guildId, {
-            "duende.model": interaction.fields.getTextInputValue("model").trim(),
+            "duende.model": modelo,
             "duende.temperature": interaction.fields.getTextInputValue("temperature").trim(),
             "duende.history_limit": interaction.fields.getTextInputValue("history").trim(),
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.duende.update" });
-        await interaction.reply({ content: "✅ Configuración de Duende actualizada.", flags: MessageFlags.Ephemeral });
+        if (modelo === modeloAntes) {
+            await interaction.reply({ content: "✅ Configuración de Duende actualizada.", flags: MessageFlags.Ephemeral });
+            return true;
+        }
+        // Modelo nuevo: se prueba ya, en vez de descubrir en el chat que no existe o que no usa las herramientas.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const { comprobarModelo, modeloDe, textoComprobacion } = require("../services/duende/gemini");
+        const r = await comprobarModelo(modeloDe(guildId));
+        await interaction.editReply({
+            content:
+                `✅ Configuración de Duende actualizada.\n${textoComprobacion(r)}` +
+                (r.ok ? "" : "\nVuelve a ✏️ Editar IA y pon otro modelo (o déjalo vacío para el de .env)."),
+        });
         return true;
     }
 
@@ -465,6 +528,27 @@ async function handleSettingsModal(interaction) {
         });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.logros.update" });
         await interaction.reply({ content: "✅ Configuración de logros actualizada.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+
+    if (id === "paneladmin_cfg_diario_modal") {
+        const numeros = { base: "diario.base", porDia: "diario.por_dia_racha", tope: "diario.tope" };
+        const valores = {};
+        for (const [campo, clave] of Object.entries(numeros)) {
+            const n = Number(interaction.fields.getTextInputValue(campo).trim());
+            if (!Number.isInteger(n) || n < 0 || n > 1_000_000) {
+                await interaction.reply({
+                    content: "❌ Base, monedas por día y tope tienen que ser números enteros entre 0 y 1.000.000.",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return true;
+            }
+            valores[clave] = n;
+        }
+        guildSettings.setManySettings(guildId, { "diario.enabled": interaction.fields.getTextInputValue("enabled").trim(), ...valores });
+        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.diario.update", details: valores });
+        if (interaction.isFromMessage?.()) await interaction.update(buildDiarioPanel(guildId));
+        else await interaction.reply({ content: "✅ Recompensa diaria actualizada.", flags: MessageFlags.Ephemeral });
         return true;
     }
 

@@ -13,9 +13,9 @@ const {
     handleChannelSelect: handleLevelsChannelSelect,
 } = require("../../adminPanel/levels");
 const { handleSettingsButton, handleSettingsModal } = require("../../adminPanel/settings");
-const { handleApuestasButton } = require("../../adminPanel/apuestas");
+const { handleApuestasButton, handleApuestasChannelSelect, handleApuestasModal } = require("../../adminPanel/apuestas");
 const { handleCatalogoButton, handleCatalogoModal } = require("../../adminPanel/catalogo");
-const { handleSistemaButton, handleSistemaSelect } = require("../../adminPanel/sistema");
+const { handleSistemaButton, handleSistemaSelect, handleSistemaModal } = require("../../adminPanel/sistema");
 const { handleAuditButton } = require("../../adminPanel/audit");
 const { handlePlexButton, handlePlexUserSelect, handlePlexModal, handlePlexChannelSelect } = require("../../adminPanel/plex");
 const { handleSeerrButton, handleSeerrChannelSelect, handleSeerrModal } = require("../../adminPanel/seerr");
@@ -50,6 +50,7 @@ module.exports = {
                 "paneladmin_plex_novedades_channel_select",
                 "paneladmin_plex_channel_add_select",
                 "paneladmin_seerr_channel_add_select",
+                "paneladmin_apu_canal_select",
             ],
             method: "handleChannelSelect",
         },
@@ -123,6 +124,8 @@ module.exports = {
             if (await handleApodosModal(interaction)) return;
             if (await handlePerfilesModal(interaction)) return;
             if (await handleCatalogoModal(interaction)) return;
+            if (await handleApuestasModal(interaction)) return;
+            if (await handleSistemaModal(interaction)) return;
         } catch (err) {
             log.error(`handleModal falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -179,6 +182,7 @@ module.exports = {
             if (await handleLevelsChannelSelect(interaction)) return;
             if (await handlePlexChannelSelect(interaction)) return;
             if (await handleSeerrChannelSelect(interaction)) return;
+            if (await handleApuestasChannelSelect(interaction)) return;
         } catch (err) {
             log.error(`handleChannelSelect falló (${interaction.customId || "/paneladmin"}):`, err);
             try {

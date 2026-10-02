@@ -16,7 +16,7 @@ Casi todo está en **cinco paneles** con pestañas y botones, enlazados entre s�
 
 | Panel | Qué hay |
 |---|---|
-| `/perfil [usuario] [seccion]` | 👤 Perfil (nivel, racha, recompensas) · 💰 Economía (efectivo y banco, ingresar, sacar, transferir, movimientos) · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. El de otra persona se ve entero; los botones de acción, solo en el tuyo |
+| `/perfil [usuario] [seccion]` | 👤 Perfil (nivel, racha, recompensas) · 💰 Economía (efectivo y banco, ingresar, sacar, transferir, movimientos, 🎁 recompensa diaria) · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. El de otra persona se ve entero; los botones de acción, solo en el tuyo |
 | `/juegos [seccion]` | 🎰 Casino (blackjack, tragaperras, ruleta, adivinar, PPT) · ⚽ Apuestas (partidos y quiniela) · 📋 Mis jugadas · 📊 Stats |
 | `/tienda ver \| inventario \| historial` | 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras |
 | `/cripto` | Precios, gráficos, compra y venta, cartera e historial (BTC, ETH… y $TTCL) |
@@ -74,9 +74,10 @@ el-duende/
 │   ├── systems/            Lógica del bot que usan varios comandos
 │   │                         XP, logros, apodos, ajustes por servidor, auditoría, transacciones del
 │   │                         casino, partidas en curso, vínculos de Plex, backups, reglas del blackjack,
-│   │                         dinero (efectivo, banco y movimientos), tienda, objetos; xp/ (niveles,
-│   │                         rachas, roles), apuestas/ (liquidación y mis jugadas), duende/ (memoria,
-│   │                         perfiles, personas) y cripto/ (mercado y gráficos)
+│   │                         dinero (efectivo, banco y movimientos), recompensa diaria, tienda, objetos,
+│   │                         alertas por DM a los admins, avisos de lo pedido en Seerr; xp/ (niveles,
+│   │                         rachas, roles), apuestas/ (liquidación, recordatorios y mis jugadas),
+│   │                         duende/ (memoria, perfiles, personas) y cripto/ (mercado y gráficos)
 │   └── services/           Clientes de servicios externos
 │                             Gemini, Gemini TTS, Tautulli, Seerr, Odds API, Giphy, transcripción de
 │                             voz (STT); duende/ (herramientas, llamada a Gemini, voz)

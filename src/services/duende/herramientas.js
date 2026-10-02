@@ -300,6 +300,44 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
             },
         },
     },
+    {
+        name: "consultar_tienda",
+        description: "Consulta qué objetos hay a la venta en la tienda del bot (/tienda): nombre, precio, stock, tipo y rareza.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                busqueda: { type: SchemaType.STRING, description: "Opcional: texto para filtrar por nombre o tipo" },
+            },
+        },
+    },
+    {
+        name: "consultar_inventario",
+        description: "Consulta los objetos que tiene en su inventario el usuario que te está hablando ahora mismo.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "consultar_mis_apuestas",
+        description:
+            "Consulta las apuestas de fútbol del usuario que te está hablando ahora mismo: las que tiene en juego (partido, a qué apostó, cuánto y cuánto ganaría), sus quinielas abiertas con los aciertos que lleva y su balance de apuestas.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+    {
+        name: "consultar_partidas_casino",
+        description:
+            "Consulta las últimas partidas de casino (blackjack, ruleta, tragaperras, adivinar, piedra-papel-tijera) del usuario que te está hablando ahora mismo y cuánto lleva ganado y perdido en el casino.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                cantidad: { type: SchemaType.NUMBER, description: "Cuántas partidas recientes traer (por defecto 5, máximo 15)" },
+            },
+        },
+    },
+    {
+        name: "consultar_recompensa_diaria",
+        description:
+            "Consulta si el usuario que te está hablando ahora mismo puede cobrar hoy la recompensa diaria (🎁 Diario, en /perfil → Economía) y cuánto le daría según su racha. Solo consulta: cobrarla la tiene que hacer él con el botón.",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
 ];
 
 const DUENDE_TOOL_EXECUTORS = {
@@ -331,6 +369,89 @@ const DUENDE_TOOL_EXECUTORS = {
     tirar_dado(args) {
         const caras = Math.max(2, Math.min(1000, Math.floor(Number(args?.caras) || 6)));
         return { caras, resultado: 1 + Math.floor(Math.random() * caras) };
+    },
+    consultar_tienda(args) {
+        const busqueda = String(args?.busqueda || "").trim() || undefined;
+        const items = require("../../systems/tienda").itemsTienda({ busqueda });
+        return {
+            a_la_venta: items.slice(0, 15).map((i) => ({
+                nombre: i.nombre,
+                precio: i.precio,
+                stock: i.stock === null ? "ilimitado" : i.stock,
+                tipo: i.tipo || null,
+                rareza: i.rareza || null,
+                solo_uno_por_persona: Boolean(i.unico),
+                descripcion: i.descripcion ? String(i.descripcion).slice(0, 150) : null,
+            })),
+            total: items.length,
+        };
+    },
+    consultar_inventario(args, ctx) {
+        const objetos = require("../../systems/objetos");
+        const items = objetos.inventarioDe(ctx.userId);
+        return {
+            objetos: items.slice(0, 20).map((o) => ({
+                nombre: o.nombre,
+                cantidad: o.cantidad,
+                tipo: o.tipo || null,
+                rareza: o.rareza || null,
+                se_puede_usar: objetos.esUsable(o),
+            })),
+            distintos: items.length,
+        };
+    },
+    consultar_mis_apuestas(args, ctx) {
+        const misJugadas = require("../../systems/apuestas/misJugadas");
+        const eleccion = (a) => (a.eleccion === "home" ? a.home_team : a.eleccion === "away" ? a.away_team : "empate");
+        const stats = misJugadas.estadisticas(ctx.userId);
+        return {
+            partidos_en_juego: misJugadas.partidosDe(ctx.userId, { pendientes: true, limite: 10 }).map((a) => ({
+                partido: `${a.home_team} vs ${a.away_team}`,
+                empieza: a.start_time,
+                apostado_a: eleccion(a),
+                cantidad: a.cantidad,
+                cuota: a.cuota,
+                ganaria: Math.round(a.cantidad * a.cuota),
+            })),
+            quinielas_abiertas: misJugadas.quinielasDe(ctx.userId, { abiertas: true, limite: 3 }).map((q) => ({
+                jornada: q.jornada,
+                apostado: q.cantidad,
+                aciertos_hasta_ahora: q.detalle.aciertos,
+                partidos_jugados: q.detalle.jugados,
+                partidos_total: q.detalle.total,
+            })),
+            balance_partidos: { apostado: stats.partidos.apostado, ganado: stats.partidos.ganado, en_juego: stats.partidos.enJuego },
+            balance_quinielas: { apostado: stats.quinielas.apostado, ganado: stats.quinielas.ganado, en_juego: stats.quinielas.enJuego },
+        };
+    },
+    consultar_partidas_casino(args, ctx) {
+        const cantidad = Math.max(1, Math.min(15, Math.floor(Number(args?.cantidad) || 5)));
+        const { ganado, perdido } = require("../../core/db")
+            .prepare(
+                `SELECT COALESCE(SUM(CASE WHEN resultado > 0 THEN resultado ELSE 0 END), 0) AS ganado,
+                        COALESCE(SUM(CASE WHEN resultado < 0 THEN -resultado ELSE 0 END), 0) AS perdido
+                 FROM casino WHERE userId = ?`,
+            )
+            .get(ctx.userId);
+        return {
+            ultimas_partidas: require("../../systems/apuestas/misJugadas")
+                .ultimasCasino(ctx.userId, cantidad)
+                .map((p) => ({ juego: p.juego, apostado: p.apuesta, resultado_neto: p.resultado })),
+            total_ganado: ganado,
+            total_perdido: perdido,
+        };
+    },
+    consultar_recompensa_diaria(args, ctx) {
+        const e = require("../../systems/diario").estado(ctx.guildId, ctx.userId);
+        if (!e.activo) return { activa: false };
+        return {
+            activa: true,
+            puede_cobrar_hoy: e.disponible,
+            cantidad: e.cantidad,
+            racha_dias: e.racha,
+            veces_cobrada: e.veces,
+            donde: "/perfil → 💰 Economía → 🎁 Diario",
+        };
     },
 
     async consultar_actividad_plex(args, ctx) {

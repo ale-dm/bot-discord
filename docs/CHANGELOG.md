@@ -2,6 +2,36 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (mejoras rápidas: diario, avisos, alertas y herramientas del Duende)
+
+Rama `feature/elduendejavier`. Las cinco ideas más rápidas de [FEATURES.md](planificacion/FEATURES.md) y dos de las
+ideas pendientes del final de este fichero. Migración **011** (tablas `recompensa_diaria` y `seerr_avisos`, columna
+`apuestas_usuario.recordado`).
+
+- **🎁 Recompensa diaria (F-EC-01)**: botón en `/perfil` → 💰 Economía. Una vez al día (hora de Madrid), al efectivo:
+  100 + 20 por día de racha de XP, hasta 500. Atómico (dos clics no cobran dos veces), tipo `diario` en Movimientos,
+  configurable en Config Global → 🎁 Diario (`systems/diario.js`). En vez de un comando `/diario`, un botón: sigue la
+  línea de pocos comandos y paneles.
+- **📢 Resultados en el canal (F-AP-06)**: la liquidación guarda qué pasó en cada partido y quiniela, y se publica un
+  resumen en el canal que se elija en `/paneladmin` → ⚽ Apuestas (menciones sin ping). También desde 💸 Liquidar ahora.
+- **⏰ Recordatorio antes del partido (F-AP-08)**: cron cada 5 min, DM a quien apostó en un partido que empieza en
+  los próximos 30 min (configurable), un mensaje por persona y una vez por apuesta (`systems/apuestas/recordatorios.js`).
+- **🍿 "Ya está en Plex" (F-PX-01)**: después de las novedades (cada 30 min) se miran las peticiones de Seerr que han
+  pasado a disponibles y se menciona a quien la pidió en el canal de novedades (o DM). La primera vez solo fija la
+  base. Interruptor en `/paneladmin` → 🍿 Seerr (`systems/pedidosSeerr.js`).
+- **🔔 Alertas por DM a los admins (F-AD-01)**: errores nuevos (gancho `onError` del logger; el mismo error como
+  mucho cada 6 h), Odds API con menos de 50 créditos, Gemini sin cuota, modelo de Gemini que no funciona y backups
+  fallidos. Máximo 10 a la hora; las del arranque se mandan al conectar. A quién: `/paneladmin` → 🩺 Sistema →
+  🔔 Alertas (por defecto, el dueño del servidor), con 📨 Probar (`systems/alertas.js`). 🩺 Sistema enseña también
+  los créditos que quedan de la Odds API.
+- **🤖 Comprobar el modelo de Gemini**: una llamada de prueba con una herramienta trivial dice si el modelo existe y
+  si usa herramientas. Al arrancar (alerta si falla), con el botón 🤖 Probar Gemini de 🩺 Sistema y al cambiar el
+  modelo en Config Global → 🤖 Duende.
+- **Herramientas nuevas del Duende** (solo lectura, siempre de quien habla): `consultar_tienda`,
+  `consultar_inventario`, `consultar_mis_apuestas`, `consultar_partidas_casino` y `consultar_recompensa_diaria`.
+- `/ayuda` → Economía menciona el 🎁 Diario.
+- Tests: 232 (diario, avisos de apuestas, pedidos de Seerr, alertas, modelo de Gemini y herramientas).
+
 ## 2026-09-25 (reorganización de paneles, parte 9: ayuda y todo público)
 
 Última parte del [plan de paneles](planificacion/diseno/reorganizacion-paneles.md#4-plan-de-ejecución), que queda
@@ -680,10 +710,10 @@ Reprobado tras el restart con los arreglos anteriores: misma frase ("pide alguna
 
 Ancladas en lo que se ha visto trabajando en todo esto — no es una lista genérica:
 
-- **Validar el modelo de Gemini al arrancar o al cambiarlo en el panel**: mandar una pregunta de prueba con una herramienta trivial y comprobar que la llama, para detectar un modelo que no soporta function calling (o que ya no existe) sin tener que descubrirlo por un mensaje con datos falsos en producción, como pasó hoy.
-- **Fallback automático de modelo**: si el modelo configurado devuelve 404/"no longer available", caer automáticamente a un modelo por defecto conocido-bueno en vez de que el comando falle sin más.
+- ~~**Validar el modelo de Gemini al arrancar o al cambiarlo en el panel**~~: hecho el 2026-10-02.
+- **Fallback automático de modelo**: pasado a [FEATURES.md](planificacion/FEATURES.md) como F-AD-03.
 - **Aviso en logs cuando se esperaba una herramienta y no se usó ninguna**: heurística simple (la pregunta menciona saldo/nivel/racha/precio pero no hay línea de "Herramienta usada") para detectar este tipo de fallo silencioso sin tener que mirar el log a mano. Ya existe una versión estrecha de esto para el caso de Seerr (detector de "ya lo he pedido" sin llamada real, ver más arriba) — generalizarlo a saldo/nivel/racha/precio sigue pendiente.
-- **Extender `/diagnostico`** con un chequeo de "¿el modelo de IA configurado soporta function calling?" — btón/subcomando que haga exactamente la prueba que hicimos hoy a mano.
-- **Más herramientas de solo lectura**: catálogo de la tienda, inventario del usuario, historial reciente de casino, estado de una apuesta deportiva.
+- ~~**Extender `/diagnostico`** con un chequeo de "¿el modelo soporta function calling?"~~: hecho el 2026-10-02 (🩺 Sistema → 🤖 Probar Gemini).
+- ~~**Más herramientas de solo lectura**~~: hecho el 2026-10-02 (tienda, inventario, apuestas, casino y diario).
 - **Herramientas de escritura, con guardarraíles fuertes** (ahora que las de lectura ya funcionan de verdad): por ejemplo reclamar un logro ya completado, siempre con confirmación explícita y límites — nunca dar/quitar monedas directamente desde una respuesta de la IA.
 - **Discovery de Seerr por colección/franquicia**: `buscar_contenido_seerr` solo busca por título — "pide toda la saga de Barbie/Star Wars/X" no se puede resolver bien porque no hay forma de listar "todo lo que hay de X" de una vez. TMDB tiene endpoints de colección/franquicia que se podrían envolver en una tool nueva (`buscar_coleccion_seerr` o similar) para cubrir este caso.
