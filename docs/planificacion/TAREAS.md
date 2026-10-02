@@ -140,6 +140,15 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Ver algo en Plex y, en la siguiente media hora, que se actualice el progreso (y que un logro nuevo sí se anuncie).
 - [ ] Mirar que las horas de alguien se parezcan a las de Tautulli (sus estadísticas de usuario, "All Time").
 
+**Voz del Duende (2026-10-02, después del arreglo de DAVE)**
+- [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
+- [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el
+      audio adjunto se oiga bien. Si sale ❌, pasarme el mensaje entero (dice qué le pasó a cada modelo).
+- [ ] `/tts hola` en un canal de voz: se oye.
+- [ ] `/escuchar`, decir algo y que el Duende conteste por voz (y, si no puede, por texto con "🗣️").
+- [ ] Con el nivel de log en `debug`, el paso a paso: `[TTS] Audio sintetizado con …` y `[Duende:Voz] Reproducción
+      iniciada`.
+
 **Arreglos tras desplegar (2026-10-02)**
 - [ ] Reconstruir la imagen (pasa a Node 22) y, en un canal de voz, `/tts hola`, `/escuchar` y que el Duende conteste
       por voz: ya no debe salir "Error al unirse al canal de voz: AbortError".

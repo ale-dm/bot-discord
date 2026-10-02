@@ -2,6 +2,41 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (la voz del Duende: revisión completa)
+
+Rama `feature/elduendejavier`. Tras el arreglo de DAVE el bot ya entra en el canal de voz, pero no decía nada:
+`Respuesta sin audio (fin=OTHER)` de Gemini TTS. Revisada toda la cadena (entrar al canal → TTS → reproducir; y en
+`/escuchar`: oír → Vosk → Duende → TTS).
+
+### Errores corregidos
+
+- **Gemini TTS sin audio**: el bot usaba `gemini-2.5-flash-preview-tts` por `generateContent`. Google está retirando los
+  modelos 2.5 (octubre de 2026), ya no lo lista entre los de TTS y responde HTTP 200 sin audio (`finishReason: OTHER`).
+  Ahora (`services/geminiTts.js`):
+  - Por defecto, **`gemini-3.8-flash-tts`** por la **Interactions API** (`POST /v1beta/interactions`), la que documenta
+    Google para TTS. El texto va tal cual: los modelos nuevos lo leen literalmente, y la instrucción que se mandaba antes
+    ("TTS. Lee en voz alta…") se habría oído. Devuelven WAV; si llega PCM crudo se envuelve con su frecuencia.
+  - Si un modelo responde sin audio se **reintenta** una vez; si sigue, o no existe (404), o da 429/5xx, se pasa al
+    siguiente (`gemini-3.8-flash-lite-tts`, y el 2.5 por `generateContent` como último recurso). El que funciona se
+    prueba primero la siguiente vez. Con la clave mala (401/403) se para enseguida. Como mucho 45 s en total.
+  - El de por defecto se prueba siempre, aunque en el `.env` siga puesto el 2.5.
+- **La voz leía las menciones**: al TTS le llegaba el texto con las menciones de Discord ya puestas (`<@370221…>`).
+  Ahora va el texto sin menciones y, además, se limpia (menciones → nombres, sin emojis del servidor, enlaces ni
+  formato) y se corta por una palabra entera (`textoParaVoz`).
+- **El Duende se quedaba mudo en `/escuchar` si fallaba la voz**: en la charla de voz no hay respuesta por texto, así
+  que si no puede hablar ahora la manda por texto al canal ("🗣️ …").
+- **`/tts` no avisaba** si no podía generar el audio (entraba al canal y no decía nada): ahora avisa en privado.
+
+### Para probar
+
+- **`/paneladmin` → 🩺 Sistema → 🔊 Probar voz**: genera una frase, dice con qué modelo y adjunta el audio para oírlo
+  en Discord; si falla, explica qué le pasó a cada modelo.
+- **`npm run voz:test`** (en local, con `GOOGLE_API_KEY` en `.env`): genera la frase, comprueba que @discordjs/voice la
+  convierte en paquetes Opus y, si Vosk está arrancado, que la entiende al transcribirla. Con `--duende` antes le
+  pregunta al Duende. Deja el audio en `logs/voz-test.wav`.
+- Tests: 287 (`tests/geminiTts.test.js`: modelos, reintentos, formatos, el botón y el paso por ffmpeg a Opus con un
+  WAV real; `tests/vozDuende.test.js`: respuesta por texto si la voz falla).
+
 ## 2026-10-02 (errores tras desplegar: botones repetidos y voz)
 
 Rama `feature/elduendejavier`, a partir de los logs de producción.

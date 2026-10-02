@@ -38,6 +38,9 @@ function filas(nivelActual) {
             new ButtonBuilder().setCustomId("paneladmin_sis_gemini").setLabel("🤖 Probar Gemini").setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
         ),
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("paneladmin_sis_voz").setLabel("🔊 Probar voz").setStyle(ButtonStyle.Secondary),
+        ),
     ];
 }
 
@@ -228,6 +231,26 @@ async function handleSistemaButton(interaction) {
         const r = await comprobarModelo(modeloDe(interaction.guildId));
         log.info(`Comprobación del modelo de Gemini por ${interaction.user.tag}: ${r.ok ? "ok" : r.motivo}`);
         await interaction.editReply({ content: textoComprobacion(r) });
+        return true;
+    }
+    // Genera una frase con Gemini TTS (los mismos modelos y respaldos que /tts y el Duende) y la adjunta para oírla aquí.
+    if (id === "paneladmin_sis_voz") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const tts = require("../services/geminiTts");
+        const t0 = Date.now();
+        const tardo = () => `${((Date.now() - t0) / 1000).toFixed(1)} s`;
+        try {
+            const wav = await tts.synthesizeSpeech("Hola, soy el Duende. Si me oyes, la voz funciona.");
+            const segundos = (wav.length - 44) / (wav.readUInt32LE(24) * 2);
+            log.info(`Prueba de voz por ${interaction.user.tag}: ok con ${tts.modeloActual()} (${tardo()})`);
+            await interaction.editReply({
+                content: `✅ Voz generada con **${tts.modeloActual()}** en ${tardo()} (${segundos.toFixed(1)} s de audio). Escúchala aquí; en un canal de voz, con \`/tts\`.`,
+                files: [{ attachment: wav, name: "prueba-voz.wav" }],
+            });
+        } catch (e) {
+            log.warn(`Prueba de voz por ${interaction.user.tag}: ${e.message}`);
+            await interaction.editReply({ content: `❌ No se pudo generar la voz (${tardo()}):\n${e.message.slice(0, 1800)}` });
+        }
         return true;
     }
     return false;

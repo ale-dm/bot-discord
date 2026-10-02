@@ -102,6 +102,12 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
 - Para comprobarlo: `/tts hola` en un canal de voz. Si sigue fallando, con el nivel de log en `debug` (🩺 Sistema) sale
   el paso a paso de la conexión (`[Duende:Voz]`).
 
+### Voz con Gemini 3.8 TTS (2026-10-02)
+
+- Si en las variables del stack está `GEMINI_TTS_MODEL=gemini-2.5-flash-preview-tts`, **quitarla** (o poner
+  `gemini-3.8-flash-tts`): ese modelo responde sin audio. Aunque se deje, el bot prueba también el nuevo.
+- Para comprobarlo sin entrar a un canal de voz: `/paneladmin` → 🩺 Sistema → 🔊 Probar voz (adjunta el audio).
+
 ### Anuncio de logros (migración 014, 2026-10-02)
 
 - **014** pone `874776941000020018` (el canal de las subidas de nivel) como canal de logros en el servidor que lo usa

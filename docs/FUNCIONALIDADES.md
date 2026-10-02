@@ -85,7 +85,9 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   formas de referirse a esa persona ("el perro", "coneyo"...), para entender de quién habláis.
 - A veces (8 %, `DUENDE_GIF_PROB`) acompaña la respuesta con un **GIF** de Giphy.
 - **Voz**: si quien le habla está en un canal de voz, a veces (10 %, `DUENDE_VOICE_REPLY_PROB`) entra y
-  dice la respuesta en voz alta (Gemini TTS). Se queda conectado 5 min por si sigue la charla.
+  dice la respuesta en voz alta (Gemini TTS). Se queda conectado 5 min por si sigue la charla. En voz dice los nombres
+  (no las menciones), sin enlaces, emojis del servidor ni formato, y como mucho 200 caracteres. En una charla de voz
+  (`/escuchar`), si no puede hablar (el TTS falla, no hay conexión...), contesta por texto en el canal ("🗣️ …").
 - Si Gemini bloquea la respuesta por contenido, reintenta con un tono neutro manteniendo las herramientas.
 
 ### Herramientas (datos reales)
@@ -457,7 +459,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | 🏦 Banco | Modificar saldo (efectivo o banco) · resetear usuario (como nuevo: 1.000 en efectivo) · borrar historial · historial global · buscar usuario |
 | ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
-| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) |
+| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
 | ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
@@ -551,7 +553,11 @@ Duende siguen en `/duende set | add | remove`.
 | `DUENDE_GIF_PROB` | 0.08 | Probabilidad de GIF |
 | `DUENDE_VOICE_REPLY_PROB` | 0.1 | Probabilidad de responder por voz |
 | `DUENDE_VOICE_IDLE_DISCONNECT_MS` | 300000 | Tiempo en voz tras la última respuesta |
-| `DUENDE_TTS_VOICE`, `GEMINI_TTS_MODEL`, `GEMINI_TTS_TIMEOUT_MS` | | Voz y modelo de TTS |
+| `DUENDE_TTS_VOICE` | `Puck` | Voz por defecto de `/tts` y del Duende |
+| `GEMINI_TTS_MODEL` | `gemini-3.8-flash-tts` | Modelo de TTS. Los 3.x van por la Interactions API; los 2.x, por `generateContent` |
+| `GEMINI_TTS_FALLBACK_MODELS` | `gemini-3.8-flash-lite-tts,gemini-2.5-flash-preview-tts` | Modelos que se prueban si el primero falla (siempre se prueba también el de por defecto) |
+| `GEMINI_TTS_STYLE` | (vacío) | Tono para los modelos 3.x ("natural, en español de España"...) |
+| `GEMINI_TTS_TIMEOUT_MS`, `GEMINI_TTS_TOTAL_TIMEOUT_MS` | `20000`, `45000` | Por petición, y en total con reintentos y respaldos |
 | `DUENDE_TEMPERATURE` | 0.7 | Creatividad (también en el panel) |
 | `DUENDE_PROMPT_MSG_MAX_CHARS` | 280 | Recorte de cada mensaje del historial |
 | `DUENDE_LOG_FULL_PROMPT` | 0 | `1` = guarda el prompt completo en el log |

@@ -25,6 +25,35 @@ async function getEdgeAudioStream(text, voice = DUENDE_TTS_VOICE) {
     return getGeminiTtsAudioStream(String(text || ""), { voice });
 }
 
+const MAX_CARACTERES_VOZ = 200;
+
+/**
+ * El texto de una respuesta tal como se dice en voz alta: las menciones (<@id>) pasan a ser el nombre de la persona, y
+ * se quitan emojis del servidor, enlaces y símbolos de formato (**, _, `...). Como mucho MAX_CARACTERES_VOZ, cortando
+ * por una palabra entera.
+ */
+function textoParaVoz(texto, guild = null) {
+    const nombre = (id) => {
+        const m = guild?.members?.cache?.get?.(id);
+        return m?.displayName || m?.user?.globalName || m?.user?.username || "";
+    };
+    let t = String(texto || "")
+        .replace(/<@!?(\d+)>/g, (_, id) => nombre(id))
+        .replace(/<a?:(\w+):\d+>/g, "")
+        .replace(/<[#@&]\d+>/g, "")
+        .replace(/<t:\d+(:\w)?>/g, "")
+        .replace(/https?:\/\/\S+/g, "")
+        .replace(/[*_`~>|#]+/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (t.length > MAX_CARACTERES_VOZ) {
+        const corte = t.slice(0, MAX_CARACTERES_VOZ);
+        const espacio = corte.lastIndexOf(" ");
+        t = (espacio > MAX_CARACTERES_VOZ / 2 ? corte.slice(0, espacio) : corte).replace(/[,;:\s]+$/, "");
+    }
+    return t;
+}
+
 async function tryVoiceReply(client, interaction, respuesta) {
     let connection = null;
     try {
@@ -73,10 +102,15 @@ async function tryVoiceReply(client, interaction, respuesta) {
             return false;
         }
 
-        // Generar TTS Microsoft (máx 200 caracteres)
+        // Generar el audio (Gemini TTS) con el texto limpio para leerlo en voz alta.
+        const textoHablado = textoParaVoz(respuesta, guild);
+        if (!textoHablado) {
+            log("Nada que decir en voz alta tras limpiar el texto.");
+            return false;
+        }
         let audioStream;
         try {
-            audioStream = await getEdgeAudioStream(respuesta.slice(0, 200), DUENDE_TTS_VOICE);
+            audioStream = await getEdgeAudioStream(textoHablado, DUENDE_TTS_VOICE);
             log("Audio TTS generado con voz:", DUENDE_TTS_VOICE);
         } catch (err) {
             voiceLog.warn("Error generando el audio TTS:", err);
@@ -195,4 +229,4 @@ async function tryVoiceReply(client, interaction, respuesta) {
     }
 }
 
-module.exports = { tryVoiceReply };
+module.exports = { tryVoiceReply, textoParaVoz };

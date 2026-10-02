@@ -16,6 +16,7 @@
     "db:check": "node scripts/db-check.js",
     "stt:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-local-stt.ps1 -NoStart",
     "stt:test": "node scripts/stt-test.js",
+    "voz:test": "node scripts/voz-test.js",
     "db:backup": "node scripts/db-backup.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

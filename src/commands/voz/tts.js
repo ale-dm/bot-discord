@@ -33,7 +33,7 @@ async function processQueue(guildId, connection) {
         return;
     }
 
-    const { text, voice, username } = queue.shift();
+    const { text, voice, username, avisar } = queue.shift();
     logInfo(`[TTS] Reproduciendo para ${username}: "${text.slice(0, 40)}..." con ${voice}`);
 
     const player = createAudioPlayer();
@@ -49,7 +49,9 @@ async function processQueue(guildId, connection) {
         resource.volume.setVolume(1.0);
         player.play(resource);
     } catch (err) {
-        logError("[TTS] Error generando audio Edge TTS:", err);
+        logError("[TTS] Error generando el audio:", err);
+        // Antes no se avisaba: el bot entraba al canal y no decía nada.
+        avisar?.("❌ No he podido generar el audio ahora mismo. Prueba otra vez en un rato.");
         processQueue(guildId, connection);
         return;
     }
@@ -105,7 +107,11 @@ module.exports = {
 
         // Añadir a la cola
         if (!queues.has(guildId)) queues.set(guildId, []);
-        queues.get(guildId).push({ text, voice, username: interaction.user.username });
+        const avisar = (content) =>
+            interaction
+                .followUp({ content, flags: MessageFlags.Ephemeral })
+                .catch((e) => logError("[TTS] No se pudo avisar del fallo:", e));
+        queues.get(guildId).push({ text, voice, username: interaction.user.username, avisar });
 
         const position = queues.get(guildId).length;
         const voiceLabel = voice;

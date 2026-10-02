@@ -542,6 +542,8 @@ module.exports = {
             }
 
             text = limitToSentences(text, 2);
+            // Para la voz, sin las menciones de Discord de debajo (si no, el TTS leería "<@370221…>").
+            const textoVoz = text;
             if (interaction.guild) {
                 text = mentionizeKnownNames(text, interaction.guild);
             }
@@ -619,7 +621,15 @@ module.exports = {
             }
 
             try {
-                void tryVoiceReply(client, interaction, text);
+                const hablado = tryVoiceReply(client, interaction, textoVoz);
+                // Conversación por voz (/escuchar): no hay respuesta por texto, así que si la voz falla (TTS sin audio, sin
+                // conexión al canal...) se manda por texto para que el Duende no se quede mudo.
+                if (interaction?.silentTextReply) {
+                    if (!(await hablado) && interaction.channel?.send) {
+                        log.warn("No se pudo responder por voz: la respuesta va por texto");
+                        await interaction.channel.send({ content: `🗣️ ${sendText}`, allowedMentions: { parse: ["users"] } });
+                    }
+                } else void hablado;
             } catch (voiceErr) {
                 log.error("Error lanzando respuesta por voz:", voiceErr);
             }
