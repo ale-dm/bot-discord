@@ -22,7 +22,8 @@ Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partid
 con el sistema de ⚔️ Retos, F-AP-01 (apuestas 1 contra 1), F-EC-04 (duelos de casino) y F-AP-11 (porras propias),
 y las tres fases de F-PX-02 (logros genéricos de Plex con la copia del historial de Tautulli; trofeos de cada serie,
 temporada y saga con nombre de Gemini, por género, director y década, de admin, separados en series y anime, con
-rareza y opción de ocultarlos).
+rareza y opción de ocultarlos). El 2026-10-03, además, logros de Plex por idioma (inglés, VOSE, castellano y las
+versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex).
 
 ---
 
@@ -58,7 +59,7 @@ rareza y opción de ocultarlos).
 | ID | Idea | Esfuerzo | Detalle |
 |---|---|---|---|
 | F-PX-02d | **Trofeos por país** | M | Lo único que quedó fuera de las fases 2 y 3: Tautulli no da el país de las películas. Habría que leerlo de Plex directamente (con un token de Plex) o de TMDB a partir del `guid`. |
-| F-PX-02e | **Filtro de categoría en 🏅 Logros** | S | Con los trofeos de Plex, quien ve mucho puede tener decenas de páginas: un menú para ver solo una categoría (o solo los trofeos). |
+| F-PX-02e | **Filtro de categoría en 🏅 Logros** | S | Hay 80 logros fijos de Plex (con los de idioma) que ve todo el mundo, también quien no tiene Plex vinculado, y además los trofeos de quien ve mucho: la pestaña pasa de 20 páginas. Un menú para ver solo una categoría, solo los trofeos o solo una dificultad, y quizá esconder los de Plex a quien no lo tiene vinculado. |
 | F-PX-02f | **El Duende conoce los trofeos** | S | Herramienta para "¿qué trofeos de Plex tiene X?" o "¿quién ha terminado Breaking Bad?" con las tablas `plex_trofeos` y `achievements_progress`. |
 | F-PX-03 | **Recomendaciones personales** | M | A partir de lo que cada uno ve en Tautulli, con botón "Pedir en Seerr". |
 | F-PX-04 | **Plex Wrapped mensual** | M | Imagen con horas vistas, top series y el más viciado (ya hay `canvas` para las gráficas de cripto). |

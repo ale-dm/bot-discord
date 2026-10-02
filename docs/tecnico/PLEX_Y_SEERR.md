@@ -68,8 +68,28 @@ por `cmd`):
 - `getLibraries()` → `cmd=get_libraries` — nº de items por librería
   (pelis, series, música...).
 
+Para los logros y trofeos (apartado 6):
+
+- `getHistoryPage({ start, length, after })` → `cmd=get_history` sin agrupar
+  (`grouping=0`), por páginas de 1.000, de la más reciente a la más antigua.
+- `getMetadata(ratingKey)` → `cmd=get_metadata` — la ficha (géneros,
+  directores, colecciones, biblioteca). `null` si Plex ya no lo tiene
+  (Tautulli responde `{}` o con un error).
+- `getChildrenMetadata(ratingKey, mediaType)` → `cmd=get_children_metadata`
+  — temporadas de una serie o episodios de una temporada (`media_index`).
+- `getLibraryMediaInfo(sectionId, { start, length })` →
+  `cmd=get_library_media_info` — lo que hay en una biblioteca (timeout de
+  60 s: la primera vez Tautulli lo calcula).
+- `getStreamData(rowId)` → `cmd=get_stream_data` — de una reproducción del
+  historial, el audio (`stream_audio_language_code`, `audio_language`...) y
+  los subtítulos (`subtitles`, `stream_subtitle_language`,
+  `subtitle_forced`). `null` si no hay datos (reproducciones de antes de
+  Tautulli).
+
 Todas devuelven JSON ya limpio (solo `data`), con manejo de error uniforme
-(timeout, `result !== "success"` → excepción controlada).
+(timeout, `result !== "success"` → excepción controlada). Las excepciones
+por un error de Tautulli (respondió, pero con `result: "error"`) llevan
+`respuestaDeTautulli: true`, para distinguirlas de un fallo de red.
 
 ### 2.2 Vinculación Discord ↔ Plex
 
@@ -312,3 +332,78 @@ en ningún caso, solo detrás de un comando/botón explícito de compra y uso.
   `solicitar_contenido_seerr` (crear una solicitud de verdad) — decisión
   deliberada de no disparar una descarga real ni notificar a otra persona
   sin avisar antes.
+
+## 6) Logros y trofeos de Plex (2026-10-02 / 2026-10-03)
+
+Qué se consigue y con qué recompensa está en
+[FUNCIONALIDADES.md](../FUNCIONALIDADES.md#5-logros); aquí, cómo funciona.
+
+### 6.1 Flujo (cada 30 min y botón 📼 Sincronizar)
+
+`index.js` (cron `*/30`, después de novedades y Seerr) →
+`plexHistorial.sincronizarTodos` → por cada servidor con Tautulli y
+vinculados, `sincronizarYCalcular(guild, { boton })`:
+
+1. **Historial** (`systems/plexHistorial.js`, tabla `plex_reproducciones`,
+   migración 013): copia lo nuevo de `get_history` (la primera vez, entero;
+   después, desde dos días antes de lo último copiado). De todos los
+   usuarios de Tautulli: si alguien se vincula después, ya está.
+2. **Fichas** (`systems/plexFichas.js`, tabla `plex_fichas`, migración 015):
+   cada 6 h la lista de películas de las bibliotecas de películas; las fichas
+   que faltan (primero series vistas, luego películas vistas, luego el
+   resto) y las viejas (series vistas en el último mes, cada 3 días;
+   películas, al mes; series no encontradas, a la semana). Presupuesto: 300
+   llamadas (1.200 con el botón), 4 en paralelo.
+3. **Idiomas** (`systems/plexIdiomas.js`, columnas `audio`, `subs` e
+   `idioma_revisado`, migración 016): `get_stream_data` de lo visto por los
+   vinculados que falte, lo más reciente primero. 1.500 por vez (5.000 con el
+   botón); solo lee la BD de Tautulli.
+4. **Logros** (`plexHistorial.actualizarLogros`): estadísticas de la fase 1,
+   y `plexTrofeos.eventosDe` (contadores de anime, series terminadas e
+   idiomas, trofeos automáticos y de admin). Se aplican con
+   `achievementsSystem.applyEvents` (una transacción por persona) y, después
+   de calcular a todos, se anuncia lo nuevo de cada uno en un mensaje (salvo
+   quien lo ha ocultado, `plex_preferencias`).
+
+Con la categoría `plex` o los logros desactivados no se piden fichas ni
+idiomas, ni se crean trofeos.
+
+### 6.2 Decisiones
+
+- **Qué es anime**: por biblioteca. `plex.bibliotecas_anime` (ids separados
+  por comas, desde el panel) o, si está vacío, las que tienen "anime" en el
+  nombre y lo que tenga el género Anime.
+- **La misma película** se reconoce por título y año (normalizados): así
+  cuenta una vez aunque esté en la biblioteca normal y en la 4K, o se haya
+  vuelto a añadir con otro `rating_key`. Una **serie vuelta a añadir**: si
+  la ficha de su clave ya no está, se usa la que tenga el mismo título.
+- **Temporadas**: de `get_children_metadata`, sin la 0 (especiales). Una
+  serie está terminada si están vistos (Tautulli la da por vista) todos los
+  episodios de todas sus temporadas.
+- **"Todas las de un director" y sagas** (colecciones de Plex) esperan a que
+  estén todas las fichas de películas; si no, faltarían películas.
+- **Plex caído con Tautulli en pie**: antes de pedir fichas se pide la de
+  una película que seguro que existe; si no la da, no se marca nada como
+  perdido. Una lista vacía de una biblioteca que tiene películas tampoco
+  las da por borradas.
+- **Idiomas**: audio del stream (o el original) y subtítulos mostrados; los
+  forzados no cuentan. Códigos (`spa`, `eng`, `jpn`, `es-419`...) o nombres
+  en español e inglés. El latino se distingue si la pista lo dice
+  ("Latino", "Latinoamérica"...) y no cuenta como castellano.
+- **Trofeos** (`plex_trofeos`, id `plext:<tipo>:…` en `achievements_progress`):
+  se crean la primera vez que alguien los consigue. Los de temporada, serie,
+  saga y director con nombre de Gemini (el modelo del Duende, lotes de 40,
+  como mucho 150 por sincronización; si falla, uno por defecto). Solo los
+  ve quien los tiene, salvo los de admin.
+- **Dificultad**: `facil`, `normal` o `gordo` (Gordo del Plex) en cada logro
+  fijo de Plex y en `plex_trofeos.dificultad`; los trofeos guardados sin
+  ella la toman de su tipo.
+- **Rareza**: % de los vinculados que lo tienen.
+
+### 6.3 Pruebas
+
+`tests/plexHistorial`, `plexFichas`, `plexIdiomas`, `plexTrofeos*` y
+`plexTautulliHttp` (el cliente real contra un Tautulli de mentira por HTTP,
+con las respuestas con la forma de Tautulli, y el flujo entero sin mocks).
+`plexTrofeosCarga`: 12 vinculados, 3.000 películas, 300 series y ~30.000
+reproducciones, ~1 s por sincronización.
