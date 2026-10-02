@@ -400,9 +400,20 @@ idiomas, ni se crean trofeos.
   ella la toman de su tipo.
 - **Rareza**: % de los vinculados que lo tienen.
 
-### 6.3 Pruebas
+### 6.3 Ranking semanal
 
-`tests/plexHistorial`, `plexFichas`, `plexIdiomas`, `plexTrofeos*` y
+`systems/plexRankingSemanal.js`: cron `0 * * * 1` (Madrid) y al arrancar →
+`enviarSiToca`. Solo los lunes desde las 10:00; por servidor con canal
+(`plex.ranking_canal`, migración 017) y vinculados, si la semana anterior no
+está apuntada en `plex.ranking_ultima_semana`: `plexHistorial.sincronizar`
+(lo último de Tautulli; si falla, se sigue con lo que hay), suma de
+`segundos` de `plex_reproducciones` con `inicio` de lunes a domingo en hora
+de Madrid, y el mensaje (mención y aviso solo al primero,
+`allowedMentions`). Una llamada en curso a la vez (cron y arranque).
+
+### 6.4 Pruebas
+
+`tests/plexHistorial`, `plexFichas`, `plexIdiomas`, `plexTrofeos*`, `plexRankingSemanal` y
 `plexTautulliHttp` (el cliente real contra un Tautulli de mentira por HTTP,
 con las respuestas con la forma de Tautulli, y el flujo entero sin mocks).
 `plexTrofeosCarga`: 12 vinculados, 3.000 películas, 300 series y ~30.000

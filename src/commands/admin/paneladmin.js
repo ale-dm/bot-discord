@@ -55,6 +55,7 @@ module.exports = {
                 "paneladmin_levels_ignored_add_select",
                 "paneladmin_plex_novedades_channel_select",
                 "paneladmin_plex_channel_add_select",
+                "paneladmin_plex_ranking_canal_select",
                 "paneladmin_seerr_channel_add_select",
                 "paneladmin_apu_canal_select",
             ],

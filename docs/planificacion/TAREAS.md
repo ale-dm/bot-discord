@@ -167,6 +167,14 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
       la dificultad al final de cada línea.
 - [ ] ➕ Crear trofeo con dificultad "gordo" y condición `idioma-episodios:vose 10`: sale con 🎰 en el panel.
 
+**📣 Ranking semanal de Plex (2026-10-03, rama `feature/elduendejavier`)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 017_ranking_semanal_plex` y `...: el ranking semanal de Plex se publica en
+      874776941000020018`.
+- [ ] Panel admin → Plex: la línea "📣 Ranking semanal: #canal (los lunes a las 10:00)". 📣 Ranking semanal: que la vista
+      previa tenga sentido (las horas de cada uno se parecen a las de Tautulli de esa semana).
+- [ ] El lunes a las 10:00: el mensaje en el canal, con el aviso solo al primero. (O antes, con 📣 Publicar ahora, sabiendo
+      que entonces el lunes no saldrá otro de esa semana).
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

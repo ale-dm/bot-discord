@@ -178,6 +178,14 @@ client.once("clientReady", async () => {
         },
         { noOverlap: true },
     );
+    // 🍿 Ranking semanal de Plex: los lunes desde las 10:00 (cada hora por si el bot estaba caído; solo una vez por
+    // semana), y al arrancar por si es lunes y no se ha publicado.
+    cron.schedule(
+        "0 * * * 1",
+        () => runJob("Ranking semanal de Plex", () => require("./systems/plexRankingSemanal").enviarSiToca(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
+    runJob("Ranking semanal de Plex (arranque)", () => require("./systems/plexRankingSemanal").enviarSiToca(client));
     // Recordatorio por DM antes de los partidos a los que se ha apostado.
     cron.schedule(
         "*/5 * * * *",

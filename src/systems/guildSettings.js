@@ -43,6 +43,8 @@ const DEFAULT_FLAT = {
     "plex.tautulli_api_key": "",
     "plex.novedades_channel_id": "",
     "plex.bibliotecas_anime": "",
+    "plex.ranking_canal": "",
+    "plex.ranking_ultima_semana": "",
 
     "seerr.url": "",
     "seerr.api_key": "",
@@ -102,6 +104,8 @@ const KEY_TYPES = {
     "plex.tautulli_api_key": "string",
     "plex.novedades_channel_id": "string",
     "plex.bibliotecas_anime": "string",
+    "plex.ranking_canal": "string",
+    "plex.ranking_ultima_semana": "string",
 
     "seerr.url": "string",
     "seerr.api_key": "string",
@@ -182,6 +186,8 @@ function flattenToNested(flat) {
             tautulli_api_key: flat["plex.tautulli_api_key"],
             novedades_channel_id: flat["plex.novedades_channel_id"],
             bibliotecas_anime: flat["plex.bibliotecas_anime"],
+            ranking_canal: flat["plex.ranking_canal"],
+            ranking_ultima_semana: flat["plex.ranking_ultima_semana"],
         },
         seerr: {
             url: flat["seerr.url"],

@@ -116,6 +116,14 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   `Idiomas de Plex de ...: N reproducciones revisadas, ... pendientes`. Las que vienen de antes de Tautulli no tienen
   idioma y no cuentan.
 
+### Ranking semanal de Plex (migración 017, 2026-10-03)
+
+- **017** pone `874776941000020018` como canal del ranking semanal en el servidor que lo usa para los niveles o los
+  logros (en el log: `...: el ranking semanal de Plex se publica en 874776941000020018`). Si no lo encuentra, avisa y se
+  elige en Panel admin → Plex → 📣 Ranking semanal.
+- El bot necesita permiso para escribir en ese canal. Se publica el lunes a las 10:00 (Madrid); para probarlo antes,
+  📣 Publicar ahora (cuenta como el de esa semana: el lunes ya no saldría otro).
+
 ### Voz con DAVE y Node 22 (2026-10-02)
 
 - Discord exige DAVE (cifrado de extremo a extremo) en los canales de voz desde marzo de 2026. El bot usa ahora

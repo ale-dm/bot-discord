@@ -14,6 +14,7 @@ const plexHistorial = require("../systems/plexHistorial");
 const plexFichas = require("../systems/plexFichas");
 const plexTrofeos = require("../systems/plexTrofeos");
 const plexIdiomas = require("../systems/plexIdiomas");
+const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const achievements = require("../systems/achievementsSystem");
 const tautulliClient = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
@@ -37,7 +38,7 @@ function buildPlexHome(guildId) {
         : "Nadie vinculado todavía.";
 
     const { url } = tautulliClient.getConfig(guildId);
-    const { novedades_channel_id } = guildSettings.getSettings(guildId).plex;
+    const { novedades_channel_id, ranking_canal } = guildSettings.getSettings(guildId).plex;
     const allowedChannels = tautulliClient.getAllowedChannels(guildId);
     const canalesTexto = allowedChannels.length ? allowedChannels.map((c) => `<#${c.channelId}>`).join(", ") : "todos (sin restricción)";
     const historial = plexHistorial.estado(guildId);
@@ -47,6 +48,7 @@ function buildPlexHome(guildId) {
         .setDescription(
             `Servidor Tautulli: ${url || "no configurado"}\n` +
                 `Canal de novedades: ${novedades_channel_id ? `<#${novedades_channel_id}>` : "desactivado"}\n` +
+                `📣 Ranking semanal: ${ranking_canal ? `<#${ranking_canal}> (los lunes a las ${plexRankingSemanal.HORA}:00)` : "sin canal"}\n` +
                 `Canales donde se puede preguntar por Plex: ${canalesTexto}\n` +
                 `📼 Historial para los logros: **${historial.reproducciones.toLocaleString("es")}** reproducciones · ` +
                 `${historial.ultimaSync ? `sincronizado <t:${Math.floor(historial.ultimaSync / 1000)}:R>` : "sin sincronizar todavía"} (cada 30 min)\n\n` +
@@ -68,6 +70,7 @@ function buildPlexHome(guildId) {
             .setLabel("🚫 Desactivar novedades")
             .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_plex_historial").setLabel("📼 Sincronizar historial").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_ranking").setLabel("📣 Ranking semanal").setStyle(ButtonStyle.Secondary),
     );
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_plex_channel_add").setLabel("📺 Permitir canal").setStyle(ButtonStyle.Secondary),
@@ -151,12 +154,67 @@ function buildPlexTrofeos(guildId) {
     return { embeds: [embed], components: [row, nav] };
 }
 
+/** 📣 Ranking semanal: el canal, cómo queda el de la semana pasada (sin avisar a nadie), cambiar el canal y publicarlo ya. */
+function buildRankingSemanal(guildId) {
+    const semana = plexRankingSemanal.semanaAnterior();
+    const { ranking_canal } = guildSettings.getSettings(guildId).plex;
+    const vista = plexRankingSemanal.mensaje(plexRankingSemanal.ranking(guildId, semana), semana).content;
+    return {
+        content:
+            `📣 El ranking de Plex se publica cada lunes a las ${plexRankingSemanal.HORA}:00 en ` +
+            `${ranking_canal ? `<#${ranking_canal}>` : "**ningún canal** (elige uno abajo)"}. Así queda el de la semana pasada:\n\n${vista}`,
+        components: [
+            new ActionRowBuilder().addComponents(
+                new ChannelSelectMenuBuilder()
+                    .setCustomId("paneladmin_plex_ranking_canal_select")
+                    .setPlaceholder("Canal del ranking semanal")
+                    .setMinValues(1)
+                    .setMaxValues(1)
+                    .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+            ),
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("paneladmin_plex_ranking_publicar")
+                    .setLabel("📣 Publicar ahora en el canal")
+                    .setStyle(ButtonStyle.Primary)
+                    .setDisabled(!ranking_canal),
+            ),
+        ],
+        allowedMentions: { parse: [] },
+        flags: MessageFlags.Ephemeral,
+    };
+}
+
 async function handlePlexButton(interaction) {
     const id = interaction.customId;
     const guildId = interaction.guildId;
 
     if (id === "paneladmin_plex_home") {
         await interaction.update(buildPlexHome(guildId));
+        return true;
+    }
+
+    if (id === "paneladmin_plex_ranking") {
+        await interaction.reply(buildRankingSemanal(guildId));
+        return true;
+    }
+
+    // Publica ya el de la semana pasada (y cuenta como el de esta semana: el lunes no se repite).
+    if (id === "paneladmin_plex_ranking_publicar") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        try {
+            const r = await plexRankingSemanal.publicar(interaction.guild);
+            adminAudit.logAdminAction({
+                guildId,
+                actorId: interaction.user.id,
+                action: "plex.ranking.publicar",
+                details: { semana: r.semana.lunes, ok: r.ok },
+            });
+            await interaction.editReply({ content: r.ok ? "✅ Ranking semanal publicado." : `❌ ${r.motivo}` });
+        } catch (e) {
+            log.warn(`No se pudo publicar el ranking semanal de Plex: ${e.message}`);
+            await interaction.editReply({ content: `❌ No se pudo publicar: ${e.message}` });
+        }
         return true;
     }
 
@@ -381,6 +439,22 @@ async function handlePlexButton(interaction) {
 }
 
 async function handlePlexChannelSelect(interaction) {
+    if (interaction.customId === "paneladmin_plex_ranking_canal_select") {
+        const channelId = interaction.values[0];
+        guildSettings.setSetting(interaction.guildId, "plex.ranking_canal", channelId);
+        adminAudit.logAdminAction({
+            guildId: interaction.guildId,
+            actorId: interaction.user.id,
+            action: "plex.ranking.canal",
+            details: { channelId },
+        });
+        // Al editar el mensaje (ya privado) no se vuelve a mandar la marca de privado.
+        // eslint-disable-next-line no-unused-vars
+        const { flags, ...vista } = buildRankingSemanal(interaction.guildId);
+        await interaction.update(vista);
+        return true;
+    }
+
     if (interaction.customId === "paneladmin_plex_novedades_channel_select") {
         const channelId = interaction.values[0];
         guildSettings.setSetting(interaction.guildId, "plex.novedades_channel_id", channelId);

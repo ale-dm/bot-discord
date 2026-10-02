@@ -2,6 +2,24 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-03 (📣 Ranking semanal de Plex)
+
+Rama `feature/elduendejavier`. Migración **017**.
+
+- **Cada lunes a las 10:00** (hora de Madrid) se publica en el canal del ranking quién vio más Plex la semana anterior
+  (de lunes a domingo, en hora de Madrid): "🦭 El mayor gordito come foquitos de la semana es @…" con sus horas, y los 5
+  primeros (🥇🥈🥉4️⃣5️⃣) con horas, episodios y películas (`systems/plexRankingSemanal.js`). Solo le llega el aviso al
+  primero.
+- Cuenta el tiempo visto sin pausas de quien tiene Plex vinculado. Antes de calcular se copia lo último del historial
+  (lo del domingo por la noche entra).
+- Cron cada hora de los lunes y al arrancar: si el bot estaba caído a las 10:00 sale en cuanto vuelve ese lunes, nunca
+  dos veces la misma semana (`plex.ranking_ultima_semana`) ni dos a la vez.
+- La migración 017 pone `874776941000020018` como canal del ranking (`plex.ranking_canal`) en el servidor que lo usa
+  para los niveles o los logros. Panel admin → Plex → 📣 Ranking semanal: cómo queda el de la semana pasada, cambiar el
+  canal y publicarlo ya.
+- Tests: 503 (`tests/plexRankingSemanal.test.js`: semanas en hora de Madrid con el cambio de hora y de año, el mensaje
+  exacto, una vez por semana, fallos de Tautulli y del canal, la migración y el panel).
+
 ## 2026-10-03 (🍿 Logros de Plex por idioma y por dificultad)
 
 Rama `feature/elduendejavier`. Migración **016** (columnas `audio`, `subs` e `idioma_revisado` en

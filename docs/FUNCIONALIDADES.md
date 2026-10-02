@@ -519,6 +519,14 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 - ⏱️ **Historial para los logros**: cada 30 minutos se copia a la BD lo nuevo del historial de Tautulli (la primera vez,
   entero). Panel admin → Plex enseña cuántas reproducciones hay guardadas y cuándo se sincronizó, y tiene el botón
   📼 Sincronizar historial para hacerlo en el momento (también pide más fichas de golpe).
+- ⏱️ **📣 Ranking semanal**: cada lunes a las 10:00 (hora de Madrid) se publica en el canal del ranking (por defecto
+  `874776941000020018`, el de los niveles) quién vio más Plex la semana anterior, de lunes a domingo: "🦭 El mayor
+  gordito come foquitos de la semana es @…" con sus horas, y la lista de los 5 primeros (🥇🥈🥉4️⃣5️⃣) con horas,
+  episodios y películas. Cuenta el tiempo visto sin pausas de quien tiene Plex vinculado; antes de calcular copia lo
+  último del historial. Solo le llega el aviso al primero (los demás salen con su nombre). Si el bot está caído a las
+  10:00, sale en cuanto vuelva ese lunes; nunca dos veces la misma semana. Si nadie vio nada: "Esta semana nadie ha
+  visto nada en Plex". Panel admin → Plex → 📣 Ranking semanal: cómo queda el de la semana pasada (en privado), cambiar
+  el canal y 📣 Publicar ahora (cuenta como el de esa semana).
 - ⏱️ **Fichas e idiomas para los trofeos**: después del historial, las fichas de películas y series que faltan y el
   idioma (audio y subtítulos) de lo visto. Panel admin → Plex → 🏆 Trofeos enseña cuántas hay y cuántas faltan, qué
   bibliotecas son anime, cuántos trofeos hay de cada tipo y dificultad, y los de admin (crear, borrar). Ver
@@ -553,7 +561,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
 | ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
-| 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, y crear y borrar trofeos de admin |
+| 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, y crear y borrar trofeos de admin |
 | 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |
 
 ### 🔔 Alertas por DM
@@ -596,6 +604,7 @@ Duende siguen en `/duende set | add | remove`.
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
 | 17:00 (Madrid) | Aviso de "racha en peligro" por DM |
+| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal (comprobado cada hora de los lunes y al arrancar; una vez por semana) |
 
 ---
 
