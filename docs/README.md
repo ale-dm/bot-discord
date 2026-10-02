@@ -2,6 +2,7 @@
 
 | Documento | Para qué |
 |---|---|
+| [SIGUIENTES_PASOS.md](SIGUIENTES_PASOS.md) | **Empezar aquí** si coges el proyecto: dónde está, qué hacer primero, qué comprobar con datos reales y por dónde seguir |
 | [FUNCIONALIDADES.md](FUNCIONALIDADES.md) | Qué hace el bot: todos los comandos, sistemas, tareas programadas y variables de configuración |
 | [DEPLOY.md](DEPLOY.md) | Desplegar y actualizar en el servidor (Docker / Portainer), logs y backups |
 | [CHANGELOG.md](CHANGELOG.md) | Historial de cambios |

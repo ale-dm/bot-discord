@@ -4,6 +4,8 @@ Bot de Discord para un grupo de amigos: un personaje con IA (Gemini) que partici
 habla por voz, XP y niveles, logros, economía con tienda, casino, apuestas de fútbol reales,
 criptomonedas e integración con Plex/Seerr.
 
+- **Si coges el proyecto ahora, empieza aquí:** [docs/SIGUIENTES_PASOS.md](docs/SIGUIENTES_PASOS.md) (dónde está, qué
+  hacer primero y por dónde seguir)
 - **Qué hace y todos sus comandos:** [docs/FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md)
 - **Despliegue (Docker / Portainer):** [docs/DEPLOY.md](docs/DEPLOY.md)
 - **Historial de cambios:** [docs/CHANGELOG.md](docs/CHANGELOG.md)
