@@ -8,6 +8,7 @@ const {
     MessageFlags,
 } = require("discord.js");
 const guildSettings = require("../../systems/guildSettings");
+const { CATALOG } = require("../../systems/achievementsSystem");
 const log = require("../../core/logger").createLogger("ayuda");
 
 // Guía del bot dentro de Discord. El contenido sigue a docs/FUNCIONALIDADES.md: si se
@@ -49,7 +50,7 @@ const SECCIONES = {
             "Ganas XP escribiendo (una vez cada 15 s) y en voz (5 XP/min, sin mute y con alguien más en el canal). Al subir de nivel desbloqueas rangos y roles.",
             "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
             "`/perfil [usuario] [seccion]` — todo lo tuyo (o de otra persona) en pestañas: 👤 Perfil (nivel, progreso, rango, racha y recompensas de nivel) · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings.",
-            "**Logros**: 36, con recompensa en monedas; en 🏅 Logros se ven (también los secretos) y se reclaman uno a uno o todos.",
+            `**Logros**: ${CATALOG.length}, con recompensa en monedas; en 🏅 Logros se ven (también los secretos) y se reclaman uno a uno o todos. Los de 🍿 Plex (horas vistas, películas, series, maratones...) cuentan lo que ves si tienes la cuenta de Plex vinculada.`,
             "**Rankings**: nivel, riqueza, casino, logros y TTCL, en una pantalla con un menú.",
         ],
     },

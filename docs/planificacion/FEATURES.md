@@ -19,7 +19,8 @@ Lo que más aporta con menos trabajo:
 
 Hechas el 2026-10-02 (ver el [CHANGELOG](../CHANGELOG.md)): F-EC-01 (recompensa diaria), F-PX-01 ("ya está en
 Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partido), F-AD-01 (alertas por DM) y,
-con el sistema de ⚔️ Retos, F-AP-01 (apuestas 1 contra 1), F-EC-04 (duelos de casino) y F-AP-11 (porras propias).
+con el sistema de ⚔️ Retos, F-AP-01 (apuestas 1 contra 1), F-EC-04 (duelos de casino) y F-AP-11 (porras propias),
+y la fase 1 de F-PX-02 (logros genéricos de Plex con la copia del historial de Tautulli).
 
 ---
 
@@ -54,7 +55,8 @@ con el sistema de ⚔️ Retos, F-AP-01 (apuestas 1 contra 1), F-EC-04 (duelos d
 
 | ID | Idea | Esfuerzo | Detalle |
 |---|---|---|---|
-| F-PX-02 | **Logros de Plex** | S | "100 horas vistas", "maratón de 5 episodios en un día", en el catálogo de logros actual. |
+| F-PX-02b | **Trofeos de cada serie o película** (fase 2 de los logros de Plex) | M | Con la copia del historial que ya existe (`plex_reproducciones`): terminar una temporada, una serie entera o una saga (colecciones de Plex), con un nombre temático que propone Gemini la primera vez y se guarda ("Say my name" al terminar *Breaking Bad*). Necesita un catálogo en la BD (no en el código), las fichas de Tautulli (`get_metadata`: episodios de cada serie, colecciones) y anunciarlos en el canal de novedades. Opción para ocultar tus trofeos de Plex. Aquí entran también las "series terminadas". |
+| F-PX-02c | **Trofeos por significado y a medida** (fase 3) | M | Por género ("20 películas de terror"), director ("todas las de Nolan"), década o país, con las fichas de la fase 2. Y trofeos que crea un admin desde `/paneladmin` → Plex (título, condición, nombre, recompensa). Rareza: "solo el 8 % del servidor lo tiene". |
 | F-PX-03 | **Recomendaciones personales** | M | A partir de lo que cada uno ve en Tautulli, con botón "Pedir en Seerr". |
 | F-PX-04 | **Plex Wrapped mensual** | M | Imagen con horas vistas, top series y el más viciado (ya hay `canvas` para las gráficas de cripto). |
 | F-PX-05 | **Sesión de cine** | M | `/cine peli hora`: convocatoria con botones de "me apunto" y recordatorio 10 min antes. |

@@ -162,12 +162,16 @@ client.once("clientReady", async () => {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
-    // Novedades de Plex y, después (para que el "Nuevo en Plex" salga antes), el aviso a quien lo pidió en Seerr.
+    // Novedades de Plex y, después (para que el "Nuevo en Plex" salga antes), el aviso a quien lo pidió en Seerr. Al
+    // final, el historial de Plex para los logros (la primera vez importa el historial entero: puede tardar).
     cron.schedule(
         "*/30 * * * *",
         async () => {
             await runJob("Novedades de Plex", () => tautulliClient.checkAllGuildsForNewContent(client));
             await runJob("Avisos de pedidos de Seerr", () => require("./systems/pedidosSeerr").avisarDisponibles(client));
+            await runJob("Historial y logros de Plex", () => require("./systems/plexHistorial").sincronizarTodos(client), {
+                slowMs: 120_000,
+            });
         },
         { noOverlap: true },
     );

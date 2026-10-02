@@ -84,6 +84,17 @@ async function getHistory(guildId, { userId, afterDate, length = 50 } = {}) {
     return data?.data || [];
 }
 
+/**
+ * Una página del historial sin agrupar (cada reproducción por separado), de la más reciente a la más antigua.
+ * `after`: solo lo posterior a esa fecha (AAAA-MM-DD). Para copiar el historial entero a la BD (systems/plexHistorial).
+ */
+async function getHistoryPage(guildId, { start = 0, length = 1000, after = null } = {}) {
+    const params = { start, length, grouping: 0, order_column: "date", order_dir: "desc" };
+    if (after) params.after = after;
+    const data = await call(guildId, "get_history", params);
+    return data?.data || [];
+}
+
 async function getUserWatchTimeStats(guildId, userId, queryDays = "7,30,0") {
     const data = await call(guildId, "get_user_watch_time_stats", { user_id: userId, query_days: queryDays });
     return data || [];
@@ -204,6 +215,7 @@ module.exports = {
     getConfig,
     getUsers,
     getHistory,
+    getHistoryPage,
     getUserWatchTimeStats,
     getActivity,
     getRecentlyAdded,

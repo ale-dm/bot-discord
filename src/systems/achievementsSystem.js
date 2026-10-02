@@ -368,6 +368,37 @@ const CATALOG = [
         target: 20000,
         rewardCoins: 6000,
     },
+    // 🍿 Plex: se calculan con el historial de Tautulli de quien tiene la cuenta vinculada (systems/plexHistorial).
+    // Todos son "max": el evento trae el total actual (horas, películas...), no lo que se suma.
+    ...[
+        ["plex_horas_10", "Palomitas en mano", "Ve 10 horas en Plex", "plex_horas", 10, 300],
+        ["plex_horas_100", "Cinéfilo", "Ve 100 horas en Plex", "plex_horas", 100, 1500],
+        ["plex_horas_500", "Okupa del sofá", "Ve 500 horas en Plex", "plex_horas", 500, 5000],
+        ["plex_horas_1000", "Leyenda del sofá", "Ve 1.000 horas en Plex", "plex_horas", 1000, 10000],
+        ["plex_pelis_1", "Se apagan las luces", "Ve tu primera película entera", "plex_peliculas", 1, 100],
+        ["plex_pelis_25", "Socio del videoclub", "Ve 25 películas distintas", "plex_peliculas", 25, 1200],
+        ["plex_pelis_100", "Filmoteca andante", "Ve 100 películas distintas", "plex_peliculas", 100, 4000],
+        ["plex_eps_50", "Enganchado", "Ve 50 episodios distintos", "plex_episodios", 50, 800],
+        ["plex_eps_250", "Seriéfilo", "Ve 250 episodios distintos", "plex_episodios", 250, 3000],
+        ["plex_eps_1000", "Previously on...", "Ve 1.000 episodios distintos", "plex_episodios", 1000, 9000],
+        ["plex_series_10", "Picoteo de series", "Ve episodios de 10 series distintas", "plex_series", 10, 1000],
+        ["plex_series_30", "Zapping infinito", "Ve episodios de 30 series distintas", "plex_series", 30, 3500],
+        ["plex_maraton_6", "Maratón", "Ve 6 horas en un mismo día", "plex_maraton", 6, 800],
+        ["plex_maraton_10", "Sin pestañear", "Ve 10 horas en un mismo día", "plex_maraton", 10, 2000, true],
+        ["plex_atracon_5", "Atracón", "Ve 5 episodios de la misma serie en un día", "plex_atracon", 5, 700],
+        ["plex_atracon_10", "Temporada de una sentada", "Ve 10 episodios de la misma serie en un día", "plex_atracon", 10, 1800, true],
+        ["plex_noche_5", "Noctámbulo", "Ve algo de madrugada (entre las 3 y las 6) en 5 noches distintas", "plex_noctambulo", 5, 900, true],
+    ].map(([id, name, desc, event, target, rewardCoins, hidden]) => ({
+        id,
+        name,
+        desc,
+        category: "plex",
+        event,
+        metric: "max",
+        target,
+        rewardCoins,
+        ...(hidden ? { hidden: true } : {}),
+    })),
 ];
 
 function getLogrosSettings(guildId) {

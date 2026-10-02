@@ -2,6 +2,27 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (🍿 Logros de Plex, fase 1)
+
+Rama `feature/elduendejavier`. Primera fase de los logros de Plex (F-PX-02 en
+[FEATURES.md](planificacion/FEATURES.md); las fases 2 y 3, trofeos de cada título y por significado, quedan como
+F-PX-02b y F-PX-02c). Migración **013** (tablas `plex_reproducciones` y `plex_sync`).
+
+- **Copia del historial de Tautulli** (`systems/plexHistorial.js`): cada 30 min (después de novedades y Seerr) se
+  guardan en la BD las reproducciones nuevas de películas y episodios (`get_history` sin agrupar, por páginas de
+  1.000; la primera vez, el historial entero). De todos los usuarios de Tautulli: si alguien se vincula después, su
+  historial ya está.
+- **17 logros nuevos en la categoría `plex`** (53 en total): horas vistas (10 · 100 · 500 · 1.000), películas (1 · 25 ·
+  100), episodios (50 · 250 · 1.000), series distintas (10 · 30), maratón (6 h en un día; 10 h, oculto), atracón (5
+  episodios de una serie en un día; 10, oculto) y noctámbulo (5 noches viendo algo entre las 3 y las 6, oculto). Solo
+  para quien tiene la cuenta de Plex vinculada; los días en hora de Madrid; sin contar repeticiones.
+- **Primera vez**: los logros que salen al importar el historial no se anuncian en el canal; a cada uno le llega un DM
+  con el resumen. Después se anuncian como cualquier logro.
+- **Panel admin → Plex**: cuántas reproducciones hay guardadas y cuándo se sincronizó, y el botón 📼 Sincronizar
+  historial.
+- `/ayuda` → Niveles cuenta los logros del catálogo (ya no pone 36 a mano) y menciona los de Plex.
+- Tests: 261 (`tests/plexHistorial.test.js`).
+
 ## 2026-10-02 (⚔️ Retos entre jugadores)
 
 Rama `feature/elduendejavier`. Un único sistema de retos con el dinero retenido que cubre tres ideas de

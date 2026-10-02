@@ -86,6 +86,13 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
 - El comando `/juegos` cambia (opción `seccion: ⚔️ Retos`): se vuelve a registrar solo al arrancar.
 - Si hay reglas de canales/roles (ACL) sobre `juegos`, también valen para los botones de los retos.
 
+### Logros de Plex (migración 013, 2026-10-02)
+
+- **013** crea `plex_reproducciones` (copia del historial de Tautulli) y `plex_sync`. No hay que copiar nada.
+- Como mucho media hora después de arrancar (o al pulsar Panel admin → Plex → 📼 Sincronizar historial) se importa el historial entero
+  de Tautulli: según cuánto haya, puede tardar un poco (en el log, `Historial de ...: N reproducciones nuevas ...
+  (primera importación)`). A cada vinculado le llega un DM con los logros de Plex que ya tenía.
+
 Al arrancar, el contenedor registra los slash commands (los nuevos o eliminados aparecen solos),
 arranca el servidor de voz (Vosk) y después el bot. Si el bot se reinició con partidas de casino
 a medias, devuelve lo apostado.

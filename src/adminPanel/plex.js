@@ -9,6 +9,7 @@ const {
     MessageFlags,
 } = require("discord.js");
 const plexLinks = require("../systems/plexLinks");
+const plexHistorial = require("../systems/plexHistorial");
 const tautulliClient = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
 
@@ -34,13 +35,16 @@ function buildPlexHome(guildId) {
     const { novedades_channel_id } = guildSettings.getSettings(guildId).plex;
     const allowedChannels = tautulliClient.getAllowedChannels(guildId);
     const canalesTexto = allowedChannels.length ? allowedChannels.map((c) => `<#${c.channelId}>`).join(", ") : "todos (sin restricción)";
+    const historial = plexHistorial.estado(guildId);
 
     const embed = new EmbedBuilder()
         .setTitle("🎬 Plex / Tautulli")
         .setDescription(
             `Servidor Tautulli: ${url || "no configurado"}\n` +
                 `Canal de novedades: ${novedades_channel_id ? `<#${novedades_channel_id}>` : "desactivado"}\n` +
-                `Canales donde se puede preguntar por Plex: ${canalesTexto}\n\n` +
+                `Canales donde se puede preguntar por Plex: ${canalesTexto}\n` +
+                `📼 Historial para los logros: **${historial.reproducciones.toLocaleString("es")}** reproducciones · ` +
+                `${historial.ultimaSync ? `sincronizado <t:${Math.floor(historial.ultimaSync / 1000)}:R>` : "sin sincronizar todavía"} (cada 30 min)\n\n` +
                 `**Vinculados (${links.length})**\n${lines}`,
         )
         .setColor(0xe5a00d)
@@ -57,6 +61,7 @@ function buildPlexHome(guildId) {
             .setCustomId("paneladmin_plex_novedades_clear")
             .setLabel("🚫 Desactivar novedades")
             .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_historial").setLabel("📼 Sincronizar historial").setStyle(ButtonStyle.Primary),
     );
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_plex_channel_add").setLabel("📺 Permitir canal").setStyle(ButtonStyle.Secondary),
@@ -73,6 +78,27 @@ async function handlePlexButton(interaction) {
 
     if (id === "paneladmin_plex_home") {
         await interaction.update(buildPlexHome(guildId));
+        return true;
+    }
+
+    // Copia ya lo nuevo del historial y recalcula los logros de Plex (sin esperar al cron de cada 30 min).
+    if (id === "paneladmin_plex_historial") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        try {
+            const r = await plexHistorial.sincronizar(guildId);
+            const logros = await plexHistorial.actualizarLogros(interaction.guild || guildId, interaction.client);
+            const desbloqueados = logros.reduce((s, x) => s + x.desbloqueados.length, 0);
+            log.info(`${interaction.user.tag} sincronizó el historial de Plex: ${r.nuevas} nuevas, ${desbloqueados} logros`);
+            await interaction.editReply({
+                content:
+                    `📼 Historial sincronizado: **${r.nuevas.toLocaleString("es")}** reproducciones nuevas` +
+                    `${r.primera ? " (primera importación)" : ""} · **${plexHistorial.estado(guildId).reproducciones.toLocaleString("es")}** guardadas.\n` +
+                    `🏅 Logros de Plex desbloqueados ahora: **${desbloqueados}** (${logros.length} vinculados).`,
+            });
+        } catch (e) {
+            log.warn(`Error sincronizando el historial de Plex: ${e.message}`);
+            await interaction.editReply({ content: `❌ No se pudo sincronizar: ${e.message}` });
+        }
         return true;
     }
 

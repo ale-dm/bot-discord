@@ -127,6 +127,16 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Movimientos con el filtro ⚔️ Retos; 📊 Stats con la línea de retos; la pestaña ⚔️ Retos con los enlaces a
       cada reto; `/ayuda` → Apuestas con el botón Abrir Retos.
 
+**🍿 Logros de Plex, fase 1 (2026-10-02, rama `feature/elduendejavier`)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 013_plex_historial`.
+- [ ] Panel admin → Plex: la línea 📼 Historial para los logros y el botón 📼 Sincronizar historial. La primera vez
+      importa el historial entero (en el log, `(primera importación)`): comprobar que el número de reproducciones
+      cuadra más o menos con Tautulli y cuánto tarda.
+- [ ] A cada vinculado le llega un DM con los logros de Plex que ya tenía, y no se anuncian en el canal de logros.
+- [ ] `/perfil` → 🏅 Logros: los de categoría `plex`, con su progreso, y reclamar uno.
+- [ ] Ver algo en Plex y, en la siguiente media hora, que se actualice el progreso (y que un logro nuevo sí se anuncie).
+- [ ] Mirar que las horas de alguien se parezcan a las de Tautulli (sus estadísticas de usuario, "All Time").
+
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %
       con doble clic rápido: solo debe venderse una vez.

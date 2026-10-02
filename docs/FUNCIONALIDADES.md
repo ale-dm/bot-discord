@@ -194,7 +194,7 @@ Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en
 
 ## 5. Logros
 
-36 logros en 5 categorías que se completan solos al hacer cosas; la recompensa en monedas se reclama a mano.
+53 logros en 6 categorías que se completan solos al hacer cosas; la recompensa en monedas se reclama a mano.
 
 | Categoría | Logros (objetivo → recompensa) |
 |---|---|
@@ -203,8 +203,17 @@ Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en
 | Casino | Primera apuesta → 150 · 10.000 apostadas → 800 · 50.000 → 3.500 · 25 victorias → 1.200 · 100 → 4.500 · 5.000 netas ganadas → 2.000 · 20.000 → 7.500 · *(oculto)* 50 derrotas → 1.800 |
 | Cripto | Primera compra → 150 · 10 operaciones → 900 · 50 → 4.000 · 20.000 movidas → 1.500 · 100.000 → 7.000 · 25 ventas → 2.500 · *(ocultos)* tener 500 TTCL → 1.800 · 2.000 TTCL → 9.000 |
 | Tienda | Primera compra → 120 · 20 compras → 1.100 · 50 → 3.200 · 5.000 gastadas → 1.300 · 20.000 → 6.000 |
+| 🍿 Plex | Horas vistas 10 → 300 · 100 → 1.500 · 500 → 5.000 · 1.000 → 10.000 · Películas 1 → 100 · 25 → 1.200 · 100 → 4.000 · Episodios 50 → 800 · 250 → 3.000 · 1.000 → 9.000 · Series distintas 10 → 1.000 · 30 → 3.500 · Maratón (horas en un día) 6 → 800 · Atracón (episodios de una serie en un día) 5 → 700 · *(ocultos)* 10 horas en un día → 2.000 · 10 episodios de una serie en un día → 1.800 · 5 noches viendo algo entre las 3 y las 6 → 900 |
 
-Las recompensas se multiplican por `logros.reward_multiplier` y se pueden desactivar categorías enteras.
+Las recompensas se multiplican por `logros.reward_multiplier` y se pueden desactivar categorías enteras (la de Plex
+es `plex`).
+
+**Logros de Plex**: solo para quien tiene su cuenta de Plex vinculada (Panel admin → Plex). Cada 30 minutos se copia
+el historial de Tautulli a la BD (`plex_reproducciones`) y se recalculan. Películas y episodios cuentan una vez aunque
+se vuelvan a ver, y solo si Tautulli los da por vistos (su % de "visto"); las horas cuentan todo lo reproducido, sin
+pausas. Los días van en hora de Madrid (una sesión cuenta entera en el día en que empezó). La primera vez se importa
+el historial entero: los logros que salen de golpe no se anuncian en el canal, sino en un DM de resumen a cada uno.
+Después se anuncian como los demás.
 
 Se ven y se reclaman en `/perfil` → 🏅 Logros (antes era `/logros`): lista con páginas y progreso, 👁️ Ver secretos,
 un menú 🎁 para reclamar uno y 🎁 Reclamar todo. En el perfil de otra persona se ven sus logros, sin reclamar. El
@@ -415,7 +424,10 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 - El Duende puede responder preguntas sobre Plex (ver [herramientas](#herramientas-datos-reales)) en los
   canales permitidos.
 - Un admin **vincula** cada cuenta de Plex con su usuario de Discord (Panel admin → Plex), necesario para las
-  consultas sobre personas concretas.
+  consultas sobre personas concretas y para los [logros de Plex](#5-logros).
+- ⏱️ **Historial para los logros**: cada 30 minutos se copia a la BD lo nuevo del historial de Tautulli (la primera vez,
+  entero). Panel admin → Plex enseña cuántas reproducciones hay guardadas y cuándo se sincronizó, y tiene el botón
+  📼 Sincronizar historial para hacerlo en el momento.
 
 ### Seerr
 
@@ -483,7 +495,7 @@ Duende siguen en `/duende set | add | remove`.
 | Cada minuto | XP de voz |
 | Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) |
 | Cada 10 minutos | Registra el precio de $TTCL |
-| Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr |
+| Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr · copia del historial de Plex y logros de Plex |
 | Cada hora (min. 15) | Liquidación de apuestas deportivas, retos a partidos y quinielas + DM a ganadores + resumen en el canal de resultados |
 | Cada hora | Limpia historiales de conversación del Duende sin actividad en 24 h |
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
