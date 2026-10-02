@@ -1,5 +1,5 @@
 // El dinero de cada uno, en dos sitios (tabla `banco`):
-// - 💵 Efectivo (columna `enMano`): lo que se gasta. Casino, apuestas, quiniela, tienda, cripto y
+// - 💵 Efectivo (columna `enMano`): lo que se gasta. Casino, apuestas, quiniela, retos, tienda, cripto y
 //   transferencias cobran de aquí, y los premios, reembolsos, ventas y recompensas llegan aquí.
 // - 🏦 Banco (columna `saldo`): el sitio seguro. Solo se ingresa y se saca; no se gasta directamente.
 // Todo movimiento de dinero pasa por este módulo, y se apunta en el historial con su `tipo` (para filtrar
@@ -18,6 +18,7 @@ const LIMITE_OPERACION = 1_000_000;
 const TIPOS = {
     casino: "🎰 Casino",
     apuestas: "⚽ Apuestas",
+    retos: "⚔️ Retos",
     tienda: "🛒 Tienda",
     cripto: "📈 Cripto",
     banco: "🏦 Banco",

@@ -2,6 +2,35 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (⚔️ Retos entre jugadores)
+
+Rama `feature/elduendejavier`. Un único sistema de retos con el dinero retenido que cubre tres ideas de
+[FEATURES.md](planificacion/FEATURES.md): **F-AP-01** (apuestas 1 contra 1), **F-EC-04** (duelos de casino) y
+**F-AP-11** (porras propias). Migración **012** (tablas `retos` y `retos_participantes`).
+
+- **Pestaña nueva ⚔️ Retos en `/juegos`** (y `seccion: ⚔️ Retos`): los retos que te han lanzado, los que esperan
+  respuesta, lo que está en juego y los últimos cerrados, con enlace a cada uno, y los botones para lanzar uno nuevo.
+  Las pestañas de `/juegos` pasan a ser cinco.
+- **Lo común** (`systems/retos.js`): cobrar del efectivo al entrar, guardar a cada participante con lo que puso, y al
+  cerrar pagar al ganador o devolverlo todo, en una transacción y una sola vez (dos clics o el cron y un botón a la
+  vez no pagan dos veces). El bot no se queda nada. Entre 10 y 100.000 por persona. Tipo `retos` en Movimientos.
+- **⚽ Reto a un partido**: partido → resultado → rival → cantidad. El rival va con lo contrario. Se resuelve en la
+  liquidación de cada hora (que ahora también consulta los partidos con retos pendientes), se devuelve si el partido
+  se queda sin resultado y sale en el canal de resultados.
+- **🎲 Duelos**: piedra, papel o tijera (jugadas en secreto, empate → otra ronda, 5 empates → se devuelve), dados
+  (se tiran al aceptar) y blackjack (cada uno juega su mano en privado; sin crupier). La partida se guarda en la BD:
+  un reinicio no la pierde.
+- **🗳️ Porras**: pregunta, 2 a 5 opciones y entrada fija. Cualquiera entra; un admin la resuelve con un menú privado y
+  el bote se reparte entre los que acertaron (si nadie, se devuelve). Cerrar apuestas, quien la creó o un admin;
+  anular, un admin (o quien la creó si no ha entrado nadie más).
+- **Mensaje público** por reto, que menciona al rival y se actualiza solo (también desde el cron y la liquidación).
+  Cada botón comprueba a quién le toca: aceptar o rechazar, el rival; cancelar, quien retó; jugar, los dos del duelo.
+- **Plazos** (cron cada 5 min): 24 h para aceptar (en los de partido, hasta que empiece), duelos abandonados 15 min
+  (el blackjack se resuelve plantando a quien no terminó; el resto se devuelve) y porras sin resolver en 30 días. Se
+  avisa por DM de lo devuelto o ganado.
+- 📊 Stats suma los retos al total; `/ayuda` → Apuestas los explica y tiene el botón Abrir Retos.
+- Tests: 254 (`tests/retos.test.js`: duelos, retos a partidos con la liquidación, porras, plazos y botones).
+
 ## 2026-10-02 (mejoras rápidas: diario, avisos, alertas y herramientas del Duende)
 
 Rama `feature/elduendejavier`. Las cinco ideas más rápidas de [FEATURES.md](planificacion/FEATURES.md) y dos de las

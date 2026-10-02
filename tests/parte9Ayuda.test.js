@@ -43,7 +43,7 @@ test("/ayuda es pública y cada sección trae los botones de sus paneles, sin id
         ["progresion", ["ayuda_abrir_perfil_perfil", "ayuda_abrir_perfil_logros", "ayuda_abrir_perfil_rankings"]],
         ["economia", ["ayuda_abrir_perfil_eco", "ayuda_abrir_tienda_ver", "ayuda_abrir_tienda_inventario"]],
         ["casino", ["ayuda_abrir_juegos_casino", "ayuda_abrir_juegos_stats"]],
-        ["apuestas", ["ayuda_abrir_juegos_apuestas", "ayuda_abrir_juegos_jugadas"]],
+        ["apuestas", ["ayuda_abrir_juegos_apuestas", "ayuda_abrir_juegos_retos", "ayuda_abrir_juegos_jugadas"]],
         ["cripto", ["ayuda_abrir_cripto_"]],
     ]) {
         const b = interaccion(`ayuda_${seccion}`);

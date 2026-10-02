@@ -17,7 +17,7 @@ Casi todo está en **cinco paneles** con pestañas y botones, enlazados entre s�
 | Panel | Qué hay |
 |---|---|
 | `/perfil [usuario] [seccion]` | 👤 Perfil (nivel, racha, recompensas) · 💰 Economía (efectivo y banco, ingresar, sacar, transferir, movimientos, 🎁 recompensa diaria) · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. El de otra persona se ve entero; los botones de acción, solo en el tuyo |
-| `/juegos [seccion]` | 🎰 Casino (blackjack, tragaperras, ruleta, adivinar, PPT) · ⚽ Apuestas (partidos y quiniela) · 📋 Mis jugadas · 📊 Stats |
+| `/juegos [seccion]` | 🎰 Casino (blackjack, tragaperras, ruleta, adivinar, PPT) · ⚽ Apuestas (partidos y quiniela) · ⚔️ Retos (1 contra 1 a un partido, duelos y porras) · 📋 Mis jugadas · 📊 Stats |
 | `/tienda ver \| inventario \| historial` | 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras |
 | `/cripto` | Precios, gráficos, compra y venta, cartera e historial (BTC, ETH… y $TTCL) |
 | `/paneladmin` 🔒 | Banco, niveles, configuración, apuestas, catálogo, sistema, Plex, Seerr y auditoría |
@@ -64,9 +64,9 @@ el-duende/
 │   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas)
 │   │   ├── admin/            /paneladmin (banco, niveles, config, apuestas, catálogo, sistema...)
 │   │   └── general/          /ayuda /ping
-│   ├── juegos/             Juegos del casino y apuestas: no son comandos (se entra por /juegos), pero
+│   ├── juegos/             Juegos del casino, apuestas y retos: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
-│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas)
+│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/)
 │   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
 │   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda y /cripto
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, apuestas, catálogo, sistema, Plex, Seerr, apodos y
@@ -74,7 +74,8 @@ el-duende/
 │   ├── systems/            Lógica del bot que usan varios comandos
 │   │                         XP, logros, apodos, ajustes por servidor, auditoría, transacciones del
 │   │                         casino, partidas en curso, vínculos de Plex, backups, reglas del blackjack,
-│   │                         dinero (efectivo, banco y movimientos), recompensa diaria, tienda, objetos,
+│   │                         dinero (efectivo, banco y movimientos), recompensa diaria, retos entre
+│   │                         jugadores (dinero retenido hasta resolverse), tienda, objetos,
 │   │                         alertas por DM a los admins, avisos de lo pedido en Seerr; xp/ (niveles,
 │   │                         rachas, roles), apuestas/ (liquidación, recordatorios y mis jugadas),
 │   │                         duende/ (memoria, perfiles, personas) y cripto/ (mercado y gráficos)

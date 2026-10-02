@@ -1,24 +1,36 @@
-// Pestaña "📊 Stats" de /juegos: casino y apuestas juntos, con el beneficio total. El resto de pestañas
-// están en paneles/casino (Casino), juegos/apuestas (Apuestas) y paneles/misJugadas (Mis jugadas).
+// Pestaña "📊 Stats" de /juegos: casino, apuestas y retos juntos, con el beneficio total. El resto de pestañas
+// están en paneles/casino (Casino), juegos/apuestas (Apuestas), paneles/retos (Retos) y paneles/misJugadas (Mis jugadas).
 const casino = require("./casino");
 const { camposStatsApuestas } = require("./misJugadas");
 const { filaPestanas } = require("./pestanasJuegos");
+const retos = require("../systems/retos");
 
 function buildStatsJuegos(userId, username) {
-    // Las del casino (resumen y por juego), y debajo las de apuestas.
+    // Las del casino (resumen y por juego), y debajo las de apuestas y retos.
     const { embeds } = casino.buildStats(userId, username);
     const embed = embeds[0];
     const netoCasino = casino.getUserStats(userId).ganancia;
     const { campos, beneficio } = camposStatsApuestas(userId);
-    const total = netoCasino + beneficio;
+    const r = retos.estadisticas(userId);
+    const total = netoCasino + beneficio + r.beneficio;
     embed
         .setTitle(`📊 Estadísticas de ${username}`)
         .spliceFields(0, 1, { ...embed.data.fields[0], name: "🎰 Casino" })
-        .addFields(...campos, {
-            name: "📊 Total",
-            value: `Casino **${fmt(netoCasino)}** · Apuestas **${fmt(beneficio)}** → **${fmt(total)}** ${total >= 0 ? "🟢" : "🔴"}`,
-            inline: false,
-        })
+        .addFields(
+            ...campos,
+            {
+                name: "⚔️ Retos",
+                value:
+                    `• **${r.ganados}** ganados | **${r.perdidos}** perdidos | **${r.devueltos}** devueltos → **${fmt(r.beneficio)}**` +
+                    (r.enJuego ? `\n• **${r.enJuego}** en juego` : ""),
+                inline: false,
+            },
+            {
+                name: "📊 Total",
+                value: `Casino **${fmt(netoCasino)}** · Apuestas **${fmt(beneficio)}** · Retos **${fmt(r.beneficio)}** → **${fmt(total)}** ${total >= 0 ? "🟢" : "🔴"}`,
+                inline: false,
+            },
+        )
         .setColor(total >= 0 ? 0x27ae60 : 0xe74c3c);
     return { embeds: [embed], components: [filaPestanas(userId, "stats")] };
 }

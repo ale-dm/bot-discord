@@ -151,6 +151,7 @@ async function handleApuestasButton(interaction) {
         }
         void liquidacion.avisarGanadores(interaction.client, resumen.pagos);
         void liquidacion.anunciarResultados(interaction.client, resumen);
+        void require("../juegos/retos/retos").actualizarMensajes(interaction.client, resumen.retosCerrados);
         await interaction.editReply({ embeds: [liquidacion.resumenEmbed(resumen)] });
         return true;
     }

@@ -12,14 +12,14 @@ pocos (se ven en el log y en `/diagnostico`).
 
 Lo que más aporta con menos trabajo:
 
-1. [F-AP-01](#apuestas-deportivas) Apuestas 1 contra 1: lo más social y no gasta cuota.
-2. [F-EC-04](#economía-y-juego) Duelos de casino: comparte con F-AP-01 el dinero retenido hasta que se resuelve.
-3. [F-AD-02](#administración) Resumen semanal para admins: ya llegan DMs a los admins (alertas).
-4. [F-AP-03](#apuestas-deportivas) Ranking de apostadores.
-5. [F-EC-03](#economía-y-juego) Clasificación semanal con premios.
+1. [F-AD-02](#administración) Resumen semanal para admins: ya llegan DMs a los admins (alertas).
+2. [F-AP-03](#apuestas-deportivas) Ranking de apostadores (podría incluir los retos).
+3. [F-EC-03](#economía-y-juego) Clasificación semanal con premios.
+4. [F-AP-12](#apuestas-deportivas) Liga de pronósticos por temporada.
 
 Hechas el 2026-10-02 (ver el [CHANGELOG](../CHANGELOG.md)): F-EC-01 (recompensa diaria), F-PX-01 ("ya está en
-Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partido) y F-AD-01 (alertas por DM).
+Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partido), F-AD-01 (alertas por DM) y,
+con el sistema de ⚔️ Retos, F-AP-01 (apuestas 1 contra 1), F-EC-04 (duelos de casino) y F-AP-11 (porras propias).
 
 ---
 
@@ -27,7 +27,6 @@ Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partid
 
 | ID | Idea | Tipo | Esfuerzo | Créditos | Detalle |
 |---|---|---|---|---|---|
-| F-AP-01 | **Apuestas 1 contra 1** | Entre jugadores | M | 0 | "Te apuesto 500 a que gana el Madrid": el otro acepta con un botón y el dinero queda retenido hasta el resultado. |
 | F-AP-02 | **Combinadas** | Mercado | M | 0 | Varios partidos en un boleto; cuota final = producto de las cuotas; se gana solo si se aciertan todos. |
 | F-AP-03 | **Ranking de apostadores** | Entre jugadores | S | 0 | Beneficio, % de acierto y mejor racha (ya se guarda el premio de cada apuesta). |
 | F-AP-04 | **Cartera de apuestas** | Seguimiento | S | 0 | Mejorar `/misapuestas`: total en juego, posible premio y beneficio del mes. |
@@ -35,7 +34,6 @@ Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partid
 | F-AP-07 | **Partido destacado del día** | Seguimiento | S | 0 | Mensaje con las cuotas del partido grande de la jornada y botón de apostar (usa la caché). Podría ir al canal de resultados. |
 | F-AP-09 | **Límites por jugador** | Reglas | S | 0 | Tope diario apostado y máximo por partido, configurables en el panel (el sistema de límites del casino ya existe). |
 | F-AP-10 | **Marcador exacto** | Mercado | S | 0 | Sin cuota de la API: premio fijo (p. ej. ×8) o bote repartido entre los que acierten, como la quiniela. |
-| F-AP-11 | **Porras propias** | Entre jugadores | M | 0 | Cualquiera crea una apuesta ("¿Llegará Jorge tarde?"), los demás apuestan y un admin decide el resultado. Bote común. |
 | F-AP-12 | **Liga de pronósticos por temporada** | Entre jugadores | M | 0 | Puntos por acierto en cada quiniela, clasificación acumulada y premio al final de temporada. |
 | F-AP-13 | **Más/menos goles (2,5)** | Mercado | M | +1 por descarga | Mercado `totals`. Se liquida con el marcador que ya se consulta. |
 | F-AP-14 | **Hándicap** | Mercado | M | +1 por descarga | Mercado `spreads` ("Barça −1,5"). Mismo coste que F-AP-13: mejor elegir uno de los dos. |
@@ -48,7 +46,7 @@ Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partid
 |---|---|---|---|
 | F-DU-01 | **"¿Qué me he perdido?"** | S | `/resumen [horas]`: el Duende resume el canal con su personalidad (ya guarda historial por canal). |
 | F-DU-02 | **Personalidad según la hora o el canal** | S | Más borde de madrugada, más formal en ciertos canales. |
-| F-DU-03 | **El Duende participa en la economía** | S | Herramientas para que apueste contigo, preste monedas o te rete a piedra-papel-tijera desde el chat. |
+| F-DU-03 | **El Duende participa en la economía** | S | Herramientas para que apueste contigo, preste monedas o te rete a piedra-papel-tijera desde el chat (los retos ya existen: le faltaría poder lanzar uno). |
 | F-DU-04 | **Recuerdos automáticos** | M | Detecta cosas memorables de la conversación y propone guardarlas como nota; un admin las aprueba con un botón. |
 | F-DU-05 | **Conversación de voz continua** | M | Modo "tertulia": escucha a todos los del canal, no solo a una persona. |
 
@@ -67,7 +65,6 @@ Plex"), F-AP-06 (resultados en el canal), F-AP-08 (recordatorio antes del partid
 |---|---|---|---|
 | F-EC-02 | **Eventos temporales** | S | Happy hour de XP ×2, fin de semana con premios del casino subidos (los multiplicadores ya existen). |
 | F-EC-03 | **Clasificación semanal con premios** | S | Cada lunes, premio automático al más rico, al más activo y al mejor apostador (con F-AP-03). |
-| F-EC-04 | **Duelos de casino entre jugadores** | M | Dados, piedra-papel-tijera o blackjack 1v1, con el dinero retenido (el sistema de partidas en curso ya lo permite). |
 | F-EC-05 | **Pase de batalla** | L | Diseñado en [diseno/pase-de-batalla-s1.md](diseno/pase-de-batalla-s1.md). |
 | F-EC-06 | **Impuestos, robos y dinero negro** | M | Sobre el efectivo y el banco del [plan de paneles](diseno/reorganizacion-paneles.md#4-plan-de-ejecución) (parte 5): el banco es seguro y el efectivo se puede perder. Robar efectivo a otro, impuestos sobre ingresos o saldo, dinero negro que no se puede ingresar sin "blanquearlo". Por diseñar. |
 

@@ -42,7 +42,7 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Algún mensaje privado (p. ej. un error al sacar del banco) sigue saliendo solo para quien lo pide.
 
 **`/juegos` (partes 2 a 4 de paneles)**
-- [ ] `/juegos` sin opciones abre 🎰 Casino; `/juegos seccion:` abre cada pestaña. Las cuatro pestañas de abajo
+- [ ] `/juegos` sin opciones abre 🎰 Casino; `/juegos seccion:` abre cada pestaña. Las pestañas de abajo
       llevan de una a otra en el mismo mensaje, con la actual resaltada.
 - [ ] 🎰 Casino: una partida de cada juego (blackjack normal, doblando y separando; ruleta a color, docena y
       número exacto; tragaperras; adivinar; PPT) y los botones del final (🔄 Repetir, 🎲 Otra apuesta,
@@ -111,6 +111,21 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Preguntar al Duende "¿qué hay en la tienda?", "¿qué tengo en el inventario?", "¿cómo van mis apuestas?",
       "¿cuánto llevo perdido en el casino?" y "¿puedo cobrar el diario?": que use las herramientas (en el log,
       `Herramienta usada: consultar_...`).
+
+**⚔️ Retos (2026-10-02, rama `feature/elduendejavier`)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 012_retos`; en `/juegos` sale la pestaña ⚔️ Retos (cinco pestañas) y
+      `/juegos seccion: ⚔️ Retos` la abre.
+- [ ] ⚽ Retar a un partido: elegir partido, resultado, rival y cantidad. Sale un mensaje nuevo que menciona al rival;
+      otra persona no puede aceptarlo; el rival acepta. Cuando acabe el partido, la liquidación paga al que acertó,
+      llega el DM, se edita el mensaje del reto y sale en el canal de resultados.
+- [ ] 🎲 Duelo de piedra, papel o tijera: cada uno elige (el mensaje solo dice quién ha elegido), un empate pide otra
+      ronda y al final paga al ganador. Duelo de dados (se resuelve al aceptar) y de blackjack (🃏 Mi mano en privado,
+      Pedir y Plantarse; el mensaje se actualiza y al final enseña las dos manos).
+- [ ] ❌ Rechazar y 🚫 Cancelar devuelven el dinero; un reto sin aceptar en 24 h se devuelve solo (con DM).
+- [ ] 🗳️ Porra: crearla con 3 opciones, entrar desde dos cuentas, 🔒 Cerrar apuestas, ⚖️ Resolver (sin ser admin
+      no deja; como admin, menú privado) y ver que el bote se reparte. 🚫 Anular devuelve a todos.
+- [ ] Movimientos con el filtro ⚔️ Retos; 📊 Stats con la línea de retos; la pestaña ⚔️ Retos con los enlaces a
+      cada reto; `/ayuda` → Apuestas con el botón Abrir Retos.
 
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %

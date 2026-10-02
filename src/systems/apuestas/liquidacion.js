@@ -1,9 +1,10 @@
-// Liquidación de apuestas a partidos y quinielas (cron de cada hora en index.js, y el botón 💸 Liquidar ahora del
-// panel de admin → ⚽ Apuestas; antes el comando /pagarapuestas). Después: DM a quien cobra y, si el servidor tiene
-// canal de resultados, un resumen público de lo cerrado.
+// Liquidación de apuestas a partidos, retos 1 contra 1 a un partido y quinielas (cron de cada hora en index.js, y el
+// botón 💸 Liquidar ahora del panel de admin → ⚽ Apuestas; antes el comando /pagarapuestas). Después: DM a quien
+// cobra y, si el servidor tiene canal de resultados, un resumen público de lo cerrado.
 const { EmbedBuilder } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../dinero");
+const retos = require("../retos");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -58,6 +59,11 @@ function caducarSinResultado(limite, resumen) {
                 // premio = cantidad: se le devuelve lo apostado.
                 db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(ap.cantidad, ap.id);
             }
+            // Los retos 1 contra 1 a ese partido, igual: cada uno recupera lo suyo.
+            const devueltos = retos.devolverPorPartido(p.match_id, "el partido se quedó sin resultado");
+            resumen.reembolsos += devueltos.pagos.length;
+            resumen.pagos.push(...devueltos.pagos);
+            resumen.retosCerrados.push(...devueltos.cerrados.map((r) => r.id));
             db.prepare("UPDATE apuestas_partidos SET estado = 'caducado' WHERE id = ?").run(p.id);
         }
         for (const q of quinielas) {
@@ -108,6 +114,9 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             // Lo que se ha cerrado en esta pasada, para publicarlo en el canal de resultados (anunciarResultados).
             partidos: [],
             quinielas: [],
+            retos: [],
+            // Ids de todos los retos cerrados (también los devueltos), para repintar sus mensajes.
+            retosCerrados: [],
         };
         const ahora = Date.now();
         const corte = new Date(ahora - minHorasDesdeInicio * 3600 * 1000).toISOString();
@@ -140,14 +149,15 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 `
             SELECT * FROM apuestas_partidos
             WHERE estado = 'abierto' AND start_time < ? AND start_time >= ?
-              -- Solo los que tienen apuestas pendientes: preguntar por el resto gasta cuota para nada.
-              AND EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
+              -- Solo los que tienen apuestas o retos pendientes: preguntar por el resto gasta cuota para nada.
+              AND (EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
+                   OR EXISTS (SELECT 1 FROM retos r WHERE r.match_id = apuestas_partidos.match_id AND r.estado IN ('pendiente', 'en_juego')))
         `,
             )
             .all(corte, limite);
         (partidos.length ? logInfo : logDebug)(`[PAGARAPUESTAS] (${origen}) ${partidos.length} partidos pendientes de cierre`);
 
-        const cerrarPartido = db.transaction((partido, resultado) => {
+        const cerrarPartido = db.transaction((partido, resultado, marcador) => {
             db.prepare("UPDATE apuestas_partidos SET estado = 'finalizado', resultado = ? WHERE match_id = ?").run(
                 resultado,
                 partido.match_id,
@@ -185,6 +195,22 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                     ap.id,
                 );
             }
+            // Retos 1 contra 1 al partido: el ganador se lleva lo de los dos (los que nadie aceptó se devuelven).
+            const deRetos = retos.resolverPartido(partido.match_id, resultado, marcador);
+            resumen.pagos.push(...deRetos.pagos);
+            for (const r of deRetos.cerrados) {
+                resumen.retosCerrados.push(r.id);
+                const ganador = r.participantes.find((p) => p.premio > 0 && r.estado === "resuelto");
+                if (ganador) {
+                    resumen.retos.push({
+                        creador: r.creador,
+                        rival: r.rival,
+                        ganador: ganador.userId,
+                        premio: ganador.premio,
+                        partido: r.resultado,
+                    });
+                }
+            }
             return cierre;
         });
 
@@ -199,14 +225,12 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 continue;
             }
             logInfo(`[PAGARAPUESTAS] ${partido.home_team} ${r.home.score}-${r.away.score} ${partido.away_team} -> ${r.resultado}`);
-            const cierre = cerrarPartido(partido, r.resultado);
-            resumen.partidos.push({
-                deporte: deporteKey,
-                home: partido.home_team,
-                away: partido.away_team,
-                marcador: `${r.home.score}-${r.away.score}`,
-                ...cierre,
-            });
+            const marcador = `${r.home.score}-${r.away.score}`;
+            const cierre = cerrarPartido(partido, r.resultado, marcador);
+            // Un partido con solo retos no sale como "nadie acertó (0 apuestas)": sus retos van aparte.
+            if (cierre.apostantes) {
+                resumen.partidos.push({ deporte: deporteKey, home: partido.home_team, away: partido.away_team, marcador, ...cierre });
+            }
             resumen.partidosProcesados[deporteKey] = (resumen.partidosProcesados[deporteKey] || 0) + 1;
         }
 
@@ -374,6 +398,11 @@ function resultadosEmbed(resumen) {
             : `↩️ Nadie llegó a ${q.minimo} aciertos (máximo ${q.maxAciertos}): se devuelve lo apostado a ${q.jugadores} ${q.jugadores === 1 ? "jugador" : "jugadores"}`;
         lineas.push(`🧾 **Quiniela ${q.jornada}** · ${comp}\n${detalle}`);
     }
+    for (const r of resumen.retos || []) {
+        lineas.push(
+            `⚔️ **Reto** <@${r.creador}> vs <@${r.rival}> · ${r.partido}\n🏆 Gana <@${r.ganador}> y se lleva **${fmt(r.premio)}** 🪙`,
+        );
+    }
     if (!lineas.length) return null;
     let descripcion = "";
     for (const l of lineas) {
@@ -426,7 +455,8 @@ function resumenEmbed(resumen) {
         const deporteInfo = DEPORTES[deporte];
         if (deporteInfo && cantidad > 0) descripcionDeportes += `• ${deporteInfo.name}: **${cantidad}** partidos\n`;
     }
-    const nada = resumen.total === 0 && resumen.quinielasCerradas === 0 && resumen.caducados === 0;
+    const retosCerrados = resumen.retosCerrados?.length || 0;
+    const nada = resumen.total === 0 && resumen.quinielasCerradas === 0 && resumen.caducados === 0 && !retosCerrados;
     return new EmbedBuilder()
         .setTitle("💸 Pago de apuestas deportivas")
         .setDescription(
@@ -436,6 +466,7 @@ function resumenEmbed(resumen) {
                 `🗓️ **Partidos finalizados:** ${Object.values(resumen.partidosProcesados).reduce((a, b) => a + b, 0)}\n\n` +
                 `🧾 **Quinielas cerradas:** ${resumen.quinielasCerradas}\n` +
                 `🎁 **Premios quiniela repartidos:** ${resumen.premiosQuiniela}\n` +
+                (retosCerrados ? `⚔️ **Retos a partidos cerrados:** ${retosCerrados}\n` : "") +
                 (resumen.caducados
                     ? `↩️ **Sin resultado (más de 3 días):** ${resumen.caducados} · **apuestas reembolsadas:** ${resumen.reembolsos}\n`
                     : "") +

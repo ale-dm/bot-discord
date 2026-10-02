@@ -78,7 +78,7 @@ const SECCIONES = {
             ["juegos", "stats", "Stats", "📊"],
         ],
         texto: [
-            "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats.",
+            "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",
             "**Juegos**: blackjack (×2, blackjack ×2,5), tragaperras con jackpot, ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
             "Eliges juego e importe con botones; al acabar: 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.",
             "Una partida sin tocar 15 min se da por perdida; si el bot se reinicia a mitad, se te devuelve lo apostado.",
@@ -87,14 +87,16 @@ const SECCIONES = {
     apuestas: {
         boton: "Apuestas",
         emoji: "⚽",
-        titulo: "Apuestas deportivas",
+        titulo: "Apuestas deportivas y retos",
         abrir: [
             ["juegos", "apuestas", "Apuestas", "⚽"],
+            ["juegos", "retos", "Retos", "⚔️"],
             ["juegos", "jugadas", "Mis jugadas", "📋"],
         ],
         texto: [
             "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas.",
             "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
+            "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve.",
             "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego, con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto.",
             "Se pagan solas cada hora cuando acaban los partidos, y te aviso por DM si ganas.",
         ],

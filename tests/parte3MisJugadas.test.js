@@ -67,7 +67,7 @@ test("/quiniela, si ya has apostado, enseña tus pronósticos y el botón de Mis
     expect(texto(payload)).toMatch(/1✅ 2❌ X⏳ 1⏳/);
     expect(ids(payload).slice(0, 3)).toEqual(["misapuestas_activas_ana", "quiniela_refrescar_laliga", "apuestas_pagina_laliga_1"]);
     // Y debajo, las pestañas de /juegos.
-    expect(ids(payload).slice(3)).toEqual(["juegos_casino", "juegos_apuestas_laliga", "juegos_jugadas", "juegos_stats"]);
+    expect(ids(payload).slice(3)).toEqual(["juegos_casino", "juegos_apuestas_laliga", "juegos_retos", "juegos_jugadas", "juegos_stats"]);
 
     const otro = interaccion({ user: { id: "luis" } });
     await quiniela.run(null, otro);

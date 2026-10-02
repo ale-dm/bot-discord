@@ -177,6 +177,10 @@ client.once("clientReady", async () => {
         () => runJob("Recordatorio de partidos", () => require("./systems/apuestas/recordatorios").enviarRecordatorios(client)),
         { noOverlap: true },
     );
+    // ⚔️ Retos colgados: sin aceptar a tiempo, duelos abandonados y porras sin resolver (se devuelven o se resuelven).
+    cron.schedule("*/5 * * * *", () => runJob("Retos caducados", () => require("./juegos/retos/retos").revisarRetos(client)), {
+        noOverlap: true,
+    });
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
         "15 * * * *",
@@ -191,6 +195,7 @@ client.once("clientReady", async () => {
                     if (resumen) {
                         await pagarapuestas.avisarGanadores(client, resumen.pagos);
                         await pagarapuestas.anunciarResultados(client, resumen);
+                        await require("./juegos/retos/retos").actualizarMensajes(client, resumen.retosCerrados);
                     }
                 },
                 { slowMs: 120_000 },

@@ -1,11 +1,12 @@
-// /juegos: todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats.
-// Sustituye a /blackjack, /ruleta, /tragaperras, /adivinar, /ppt, /apuestas, /quiniela y /misapuestas: su
+// /juegos: todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas ·
+// 📊 Stats. Sustituye a /blackjack, /ruleta, /tragaperras, /adivinar, /ppt, /apuestas, /quiniela y /misapuestas: su
 // lógica sigue en src/juegos (sin comando), y aquí se reparten los botones del casino (casino_*) y las
 // pestañas (juegos_*). Los paneles están en src/paneles.
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const casino = require("../../paneles/casino");
 const { buildMisJugadas } = require("../../paneles/misJugadas");
 const { buildStatsJuegos } = require("../../paneles/juegos");
+const { buildRetos } = require("../../paneles/retos");
 const apuestas = require("../../juegos/apuestas/apuestas");
 
 module.exports = {
@@ -15,7 +16,7 @@ module.exports = {
     ],
     data: new SlashCommandBuilder()
         .setName("juegos")
-        .setDescription("Casino, apuestas deportivas y quiniela: juega, mira tus jugadas y tus estadísticas")
+        .setDescription("Casino, apuestas deportivas, quiniela y retos: juega, mira tus jugadas y tus estadísticas")
         .addStringOption((o) =>
             o
                 .setName("seccion")
@@ -23,6 +24,7 @@ module.exports = {
                 .addChoices(
                     { name: "🎰 Casino", value: "casino" },
                     { name: "⚽ Apuestas", value: "apuestas" },
+                    { name: "⚔️ Retos", value: "retos" },
                     { name: "📋 Mis jugadas", value: "jugadas" },
                     { name: "📊 Stats", value: "stats" },
                 )
@@ -41,7 +43,9 @@ module.exports = {
                 ? buildMisJugadas(userId, "activas")
                 : seccion === "stats"
                   ? buildStatsJuegos(userId, interaction.user.username)
-                  : casino.buildHome(userId);
+                  : seccion === "retos"
+                    ? buildRetos(userId)
+                    : casino.buildHome(userId);
         await interaction.reply(payload);
     },
 
@@ -63,6 +67,10 @@ module.exports = {
         }
         if (id === "juegos_stats") {
             await interaction.update(buildStatsJuegos(interaction.user.id, interaction.user.username));
+            return;
+        }
+        if (id === "juegos_retos") {
+            await interaction.update(buildRetos(interaction.user.id));
             return;
         }
         // juegos_apuestas_{competición}: la lista de partidos de esa competición.

@@ -25,12 +25,13 @@ const interaccion = (extra = {}) => ({
     ...extra,
 });
 const pestanas = (payload) => payload.components.at(-1).components.map((b) => [b.data.custom_id, b.data.style]);
-const PESTANAS = ["juegos_casino", "juegos_apuestas_laliga", "juegos_jugadas", "juegos_stats"];
+const PESTANAS = ["juegos_casino", "juegos_apuestas_laliga", "juegos_retos", "juegos_jugadas", "juegos_stats"];
 
 test.each([
     ["casino", "🎰 Casino — Tu resumen", 0],
-    ["jugadas", "⏳ Lo que tienes en juego", 2],
-    ["stats", "📊 Estadísticas de u4", 3],
+    ["retos", "⚔️ Retos", 2],
+    ["jugadas", "⏳ Lo que tienes en juego", 3],
+    ["stats", "📊 Estadísticas de u4", 4],
 ])("/juegos seccion:%s abre su pestaña, con la fila de pestañas y la actual resaltada", async (seccion, titulo, actual) => {
     const i = interaccion({ options: { getString: () => seccion } });
     await juegos.run(null, i);

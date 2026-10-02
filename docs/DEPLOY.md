@@ -80,6 +80,12 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   🩺 Sistema → 🔔 Alertas.
 - Al conectar, el bot prueba el modelo de Gemini (`Modelo de Gemini ...: funciona y usa herramientas`).
 
+### Retos entre jugadores (migración 012, 2026-10-02)
+
+- **012** crea `retos` y `retos_participantes` (⚔️ Retos en `/juegos`). No hay que copiar nada.
+- El comando `/juegos` cambia (opción `seccion: ⚔️ Retos`): se vuelve a registrar solo al arrancar.
+- Si hay reglas de canales/roles (ACL) sobre `juegos`, también valen para los botones de los retos.
+
 Al arrancar, el contenedor registra los slash commands (los nuevos o eliminados aparecen solos),
 arranca el servidor de voz (Vosk) y después el bot. Si el bot se reinició con partidas de casino
 a medias, devuelve lo apostado.

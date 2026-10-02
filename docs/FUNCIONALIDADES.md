@@ -34,13 +34,13 @@ El Duende es un bot de Discord para un grupo de amigos (un único servidor). Com
 - **Un personaje con IA** (Gemini) que participa en el chat, con memoria de la gente, personalidades,
   herramientas que consultan datos reales del bot y respuestas por voz.
 - **Progresión**: XP por mensajes y voz, niveles, rachas diarias, rangos con roles y logros.
-- **Economía virtual**: banco, tienda de objetos, casino, apuestas de fútbol reales y criptomonedas
+- **Economía virtual**: banco, tienda de objetos, casino, apuestas de fútbol reales, retos entre jugadores y criptomonedas
   (una propia, $TTCL, y reales con precio de CoinGecko).
 - **Integración con Plex** (vía Tautulli) y **Seerr** para consultar y pedir películas/series.
 - **Panel de administración** para configurarlo todo desde Discord.
 
 Casi todo se hace desde **cinco paneles** con pestañas y botones, enlazados entre sí: `/perfil` (perfil, economía,
-juegos, logros y rankings), `/juegos` (casino, apuestas, mis jugadas y stats), `/tienda` (catálogo, inventario y
+juegos, logros y rankings), `/juegos` (casino, apuestas, retos, mis jugadas y stats), `/tienda` (catálogo, inventario y
 compras), `/cripto` y, para admins, `/paneladmin`. `/ayuda` explica cada parte y tiene botones para abrirlas.
 
 **Público o privado:** de momento los paneles y las partidas son **públicos** (los ve todo el canal), pero solo quien
@@ -221,7 +221,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 |---|---|
 | 👤 Perfil | Nivel, XP, rango, racha, ranking, logros X/Y, dinero y próxima recompensa, con el botón 🎭 Recompensas de nivel |
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
-| 🎲 Juegos | Abre `/juegos` (casino, apuestas, mis jugadas y stats) |
+| 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
 | 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL |
 
@@ -294,8 +294,9 @@ cupo diario de compras.
 
 ## 8. Casino
 
-Todo lo que es apostar monedas (casino, apuestas deportivas y quiniela) está en **`/juegos [seccion]`**, en
-cuatro pestañas que salen siempre en la última fila: **🎰 Casino · ⚽ Apuestas · 📋 Mis jugadas · 📊 Stats**.
+Todo lo que es apostar monedas (casino, apuestas deportivas, quiniela y retos entre jugadores) está en
+**`/juegos [seccion]`**, en cinco pestañas que salen siempre en la última fila: **🎰 Casino · ⚽ Apuestas ·
+⚔️ Retos · 📋 Mis jugadas · 📊 Stats**.
 Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `/ppt`, `/apuestas`,
 `/quiniela` y `/misapuestas`, que ya no existen. El botón 🎰 Casino de `/perfil` abre la pestaña Casino.
 
@@ -339,7 +340,8 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y
 | ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre LaLiga, Premier y Champions) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
 | 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
 | 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. |
-| 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
+| ⚔️ Retos | Apuestas contra otras personas (ver [Retos entre jugadores](#retos-entre-jugadores)). |
+| 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, retos, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
 
 Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
 
@@ -360,6 +362,32 @@ desactiva y se cambian los minutos en `/paneladmin` → ⚽ Apuestas → ⏰ Rec
 
 La API solo da resultados de los **últimos 3 días**: un partido (o una quiniela con partidos) que empezó hace
 más y sigue sin resultado se marca como caducado y **se devuelve lo apostado** (con aviso por DM).
+
+### Retos entre jugadores
+
+`/juegos` → ⚔️ Retos: apostar contra otras personas. Todos funcionan igual: a cada uno se le cobra del 💵 efectivo
+al entrar, el dinero queda guardado hasta que el reto se resuelve y entonces se paga o se devuelve. **El bot no se
+queda nada**: el ganador se lleva lo de todos. Entre 10 y 100.000 por persona. Tipo `retos` en Movimientos.
+
+| Tipo | Cómo es |
+|---|---|
+| ⚽ Partido | Eliges un partido de los próximos (cualquier competición), qué crees que pasará (gana el local, empate o gana el visitante), a quién retas y cuánto. El rival va con lo contrario («empate o gana el Sevilla»). Se resuelve solo en la liquidación de cada hora, con el resultado real; si el partido se queda sin resultado, se devuelve. Si acaba el plazo o empieza el partido sin que lo acepten, se devuelve. |
+| 🎲 Duelo | Contra una persona, a 🪨 **piedra, papel o tijera** (cada uno elige en secreto con los botones del reto; si empatáis, otra ronda, y tras 5 empates seguidos se devuelve), 🎲 **dados** (dos dados cada uno al aceptar, gana la suma más alta; si empatan, se vuelve a tirar) o 🃏 **blackjack** (cada uno juega su mano en privado con 🃏 Mi mano, sin ver la del otro; gana el que más se acerque a 21 sin pasarse, un blackjack natural gana a un 21 normal y un empate devuelve lo apostado). |
+| 🗳️ Porra | Una pregunta con 2 a 5 opciones («¿Llegará Jorge tarde?» · Sí / No) y una entrada fija. Crearla no cuesta nada: entra quien quiera eligiendo una opción (una vez dentro no se cambia). Quien la creó o un admin puede 🔒 cerrar las apuestas; un **admin** dice cuál ha ganado (⚖️ Resolver, con un menú privado) y el bote se reparte a partes iguales entre los que la eligieron. Si nadie la eligió, se devuelve todo. 🚫 Anular la devuelve: un admin, o quien la creó si no ha entrado nadie más. |
+
+- Al lanzar un reto, el panel vuelve a ⚔️ Retos y el reto sale en un **mensaje público** nuevo que menciona al rival.
+  Los botones de ese mensaje solo hacen algo a quien le toca: aceptar o rechazar, el rival; cancelar, quien retó
+  (mientras nadie lo haya aceptado); jugar, los dos del duelo; resolver la porra, un admin. El mensaje se actualiza
+  solo cuando el reto cambia o se resuelve.
+- Un reto de partido o duelo hay que **aceptarlo en 24 h** (los de partido, como mucho hasta que empieza): si no,
+  se devuelve. Cada uno puede tener como mucho 5 retos sin aceptar a la vez.
+- Un duelo sin tocar **15 minutos**: en el blackjack, quien no había terminado se planta y se resuelve; en piedra,
+  papel o tijera se devuelve. Una porra que nadie resuelve en **30 días** se devuelve.
+- Lo que se resuelve o devuelve solo (liquidación, plazos) se avisa por DM, y los retos a partidos resueltos salen
+  también en el canal de resultados.
+- La pestaña ⚔️ Retos enseña los retos que te han lanzado, los que esperan respuesta, lo que está en juego y los
+  últimos cerrados (con lo que ganaste o perdiste), cada uno con un enlace a su mensaje.
+- Las partidas se guardan en la BD (no en memoria): un reinicio del bot no pierde ningún reto.
 
 ---
 
@@ -453,10 +481,10 @@ Duende siguen en `/duende set | add | remove`.
 |---|---|
 | Al arrancar | Registra los slash commands · crea índices de BD · **devuelve lo apostado en partidas interrumpidas** · asigna roles de nivel que falten · prueba el modelo de Gemini (alerta si no funciona) · manda las alertas del arranque |
 | Cada minuto | XP de voz |
-| Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto |
+| Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) |
 | Cada 10 minutos | Registra el precio de $TTCL |
 | Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr |
-| Cada hora (min. 15) | Liquidación de apuestas deportivas y quinielas + DM a ganadores + resumen en el canal de resultados |
+| Cada hora (min. 15) | Liquidación de apuestas deportivas, retos a partidos y quinielas + DM a ganadores + resumen en el canal de resultados |
 | Cada hora | Limpia historiales de conversación del Duende sin actividad en 24 h |
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
@@ -588,7 +616,7 @@ crearles cuenta, historial, inventario o partidas.
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/ia` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
-| `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) |
+| `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) · [Retos](#retos-entre-jugadores) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/paneladmin` 🔒 | [Administración](#12-administración) |
 | `/perfil` | [Perfil](#6-perfil) |
