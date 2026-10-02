@@ -80,6 +80,34 @@ function responder(q) {
             const lista = hijos[`${q.rating_key}|${q.media_type}`] || [];
             return ok({ children_count: lista.length, children_type: "x", title: "x", children_list: lista });
         }
+        case "get_stream_data": {
+            // Las películas, en inglés sin subtítulos; Frieren, en japonés con subtítulos en castellano; la borrada, nada.
+            const id = Number(q.row_id);
+            if (id >= 10 && id <= 12)
+                return ok({
+                    media_type: "movie",
+                    audio_language: "English",
+                    audio_language_code: "eng",
+                    stream_audio_language: "English",
+                    stream_audio_language_code: "eng",
+                    subtitles: 0,
+                    subtitle_language: "",
+                    stream_subtitle_language: "",
+                });
+            if (id >= 20 && id <= 22)
+                return ok({
+                    media_type: "episode",
+                    audio_language: "Japanese",
+                    audio_language_code: "jpn",
+                    stream_audio_language_code: "jpn",
+                    subtitles: 1,
+                    subtitle_language: "Spanish",
+                    stream_subtitle_language: "Spanish",
+                    subtitle_forced: 0,
+                    stream_subtitle_forced: 0,
+                });
+            return { response: { result: "error", message: "No data", data: {} } };
+        }
         case "get_history": {
             const base = Date.UTC(2026, 6, 1) / 1000;
             const filas = [
@@ -171,6 +199,12 @@ describe("cliente de Tautulli", () => {
         expect(ultima("get_children_metadata")).toMatchObject({ rating_key: "900", media_type: "show" });
     });
 
+    test("get_stream_data: por row_id; null si Tautulli no tiene los datos", async () => {
+        expect(await tautulli.getStreamData(G, 21)).toMatchObject({ audio_language_code: "jpn", stream_subtitle_language: "Spanish" });
+        expect(ultima("get_stream_data")).toMatchObject({ apikey: CLAVE, row_id: "21" });
+        expect(await tautulli.getStreamData(G, 999)).toBeNull();
+    });
+
     test("get_library_media_info: por páginas, con el total", async () => {
         expect(await tautulli.getLibraryMediaInfo(G, "1", { start: 1, length: 1 })).toEqual({
             filas: [expect.objectContaining({ rating_key: "102", title: "Interstellar" })],
@@ -193,7 +227,7 @@ describe("cliente de Tautulli", () => {
 describe("de punta a punta", () => {
     let resultado;
     beforeAll(async () => {
-        ({ logros: resultado } = await plexHistorial.sincronizarYCalcular(guild, { presupuesto: 1000 }));
+        ({ logros: resultado } = await plexHistorial.sincronizarYCalcular(guild, { boton: true }));
     });
 
     test("historial sin agrupar, fichas de la biblioteca y de las series vistas (la borrada, marcada)", () => {
@@ -233,6 +267,27 @@ describe("de punta a punta", () => {
         expect(canal.send).toHaveBeenCalledTimes(1);
         expect(canal.send.mock.calls[0][0].content).toMatch(
             /🏅 \*\*Frieren: completada\*\* — 🎌 Termina Frieren entera \(3 episodios\) · lo tiene el 100 % del servidor/,
+        );
+    });
+
+    test("idiomas: Frieren en japonés con subtítulos en castellano y las películas en inglés sin subtítulos", () => {
+        expect(require("../src/systems/plexIdiomas").estado(G)).toEqual({ revisadas: 7, pendientes: 0 });
+        const ids = resultado[0].desbloqueados.map((a) => a.id);
+        expect(ids).toContain("plext:idioma:900:anime_jap_sub_es");
+        const db = require("../src/core/db");
+        expect(db.prepare("SELECT audio, subs FROM plex_reproducciones WHERE guildId = ? AND id = 10").get(G)).toEqual({
+            audio: "en",
+            subs: "no",
+        });
+        expect(db.prepare("SELECT audio, subs FROM plex_reproducciones WHERE guildId = ? AND id = 30").get(G)).toEqual({
+            audio: null,
+            subs: null,
+        });
+        const datos = require("../src/systems/plexTrofeos").datosUsuario(G, "5", require("../src/systems/plexTrofeos").contexto(G));
+        expect(datos.cuentas.idioma.ingles_sin_subs).toEqual({ eps: 0, pelis: 3, series: 0 });
+        expect(datos.cuentas.idioma.anime_jap_sub_es).toEqual({ eps: 3, pelis: 0, series: 1 });
+        expect(canal.send.mock.calls[0][0].content).toMatch(
+            /🏅 \*\*Frieren en japonés con subtítulos en castellano\*\* — 🎌 🇯🇵 Termina Frieren entera en japonés con subtítulos en castellano \(3 episodios\) · lo tiene el 100 % del servidor · 🟡 Normal/,
         );
     });
 

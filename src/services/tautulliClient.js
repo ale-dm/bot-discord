@@ -117,6 +117,19 @@ async function getChildrenMetadata(guildId, ratingKey, mediaType) {
     return data?.children_list || [];
 }
 
+/** Los datos técnicos de una reproducción del historial (row_id): idioma del audio y de los subtítulos, entre otros.
+ * null si Tautulli no los tiene (reproducciones importadas de antes de Tautulli, filas borradas). */
+async function getStreamData(guildId, rowId) {
+    let data;
+    try {
+        data = await call(guildId, "get_stream_data", { row_id: rowId });
+    } catch (e) {
+        if (e.respuestaDeTautulli) return null;
+        throw e;
+    }
+    return data && Object.keys(data).length ? data : null;
+}
+
 /** Una página de lo que hay en una biblioteca (rating_key, título y año de cada película). Tarda la primera vez. */
 async function getLibraryMediaInfo(guildId, sectionId, { start = 0, length = 1000 } = {}) {
     const data = await call(
@@ -251,6 +264,7 @@ module.exports = {
     getHistoryPage,
     getMetadata,
     getChildrenMetadata,
+    getStreamData,
     getLibraryMediaInfo,
     getUserWatchTimeStats,
     getActivity,

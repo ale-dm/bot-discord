@@ -7,6 +7,7 @@ const achievements = require("../systems/achievementsSystem");
 const dinero = require("../systems/dinero");
 const plexLinks = require("../systems/plexLinks");
 const plexTrofeos = require("../systems/plexTrofeos");
+const plexIdiomas = require("../systems/plexIdiomas");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
 
 function colorByLevel(level) {
@@ -158,7 +159,8 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
                   const status = a.completed ? (a.claimable ? "🎁" : "✅") : "⏳";
                   const p = Math.min(a.progress, a.target);
                   const rareza = a.category === "plex" && a.completed ? ` · 🏆 ${plexTrofeos.textoRareza(rarezas.get(a.id))}` : "";
-                  return `${status} **${a.name}** (${a.category})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}\n`;
+                  const dificultad = a.dificultad ? ` · ${plexIdiomas.textoDificultad(a.dificultad)}` : "";
+                  return `${status} **${a.name}** (${a.category}${dificultad})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}\n`;
               })
               .join("\n")
         : "No hay logros en esta vista.";
@@ -173,6 +175,19 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
         )
         .setColor(0xf1c40f)
         .setTimestamp();
+    // Los de Plex completados, por dificultad (si tiene alguno).
+    const plexHechos = achievements
+        .listUserAchievements(guildId, userId, { ...opciones, includeHidden: true })
+        .filter((a) => a.category === "plex" && a.completed && a.dificultad);
+    if (plexHechos.length) {
+        embed.addFields({
+            name: "🍿 Plex por dificultad",
+            value: Object.keys(plexIdiomas.DIFICULTADES)
+                .map((d) => `${plexIdiomas.textoDificultad(d)}: **${plexHechos.filter((a) => a.dificultad === d).length}**`)
+                .join(" · "),
+            inline: false,
+        });
+    }
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()

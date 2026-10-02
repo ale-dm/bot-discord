@@ -13,6 +13,7 @@ const plexLinks = require("../systems/plexLinks");
 const plexHistorial = require("../systems/plexHistorial");
 const plexFichas = require("../systems/plexFichas");
 const plexTrofeos = require("../systems/plexTrofeos");
+const plexIdiomas = require("../systems/plexIdiomas");
 const achievements = require("../systems/achievementsSystem");
 const tautulliClient = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
@@ -84,13 +85,15 @@ const NOMBRE_TIPO = {
     director: "🎥 directores",
     genero: "🎭 géneros",
     decada: "📼 décadas",
+    idioma: "🗣️ por idioma",
     admin: "✍️ de admin",
 };
 
-/** 🏆 Trofeos de Plex (fases 2 y 3): fichas, qué es anime, trofeos creados y los de admin. */
+/** 🏆 Trofeos de Plex: fichas e idiomas, qué es anime, trofeos creados (por tipo y dificultad) y los de admin. */
 function buildPlexTrofeos(guildId) {
     const f = plexFichas.estado(guildId);
-    const { porTipo, admin } = plexTrofeos.resumen(guildId);
+    const idiomas = plexIdiomas.estado(guildId);
+    const { porTipo, porDificultad, admin } = plexTrofeos.resumen(guildId);
     const anime = plexFichas.configAnime(guildId);
     const nombres = plexFichas.nombresBibliotecas(guildId);
     const animeTexto = anime.auto
@@ -99,14 +102,17 @@ function buildPlexTrofeos(guildId) {
     const creados = Object.entries(NOMBRE_TIPO)
         .map(([tipo, nombre]) => `${nombre} **${porTipo[tipo] || 0}**`)
         .join(" · ");
+    const dificultades = Object.keys(plexIdiomas.DIFICULTADES)
+        .map((d) => `${plexIdiomas.textoDificultad(d)} **${porDificultad[d]}**`)
+        .join(" · ");
     let lista = admin.length
         ? admin
               .map(
                   (t) =>
-                      `• **${t.nombre}** — \`${t.condicion}\` · 🪙 ${t.recompensa.toLocaleString("es")} · lo ${t.completados === 1 ? "tiene 1" : `tienen ${t.completados}`}`,
+                      `• ${plexIdiomas.DIFICULTADES[t.dificultad].emoji} **${t.nombre}** — \`${t.condicion}\` · 🪙 ${t.recompensa.toLocaleString("es")} · lo ${t.completados === 1 ? "tiene 1" : `tienen ${t.completados}`}`,
               )
               .join("\n")
-        : "Ninguno todavía. Con ➕ Crear trofeo: nombre, condición y recompensa.";
+        : "Ninguno todavía. Con ➕ Crear trofeo: nombre, condición, recompensa y dificultad.";
     if (lista.length > 1500) lista = `${lista.slice(0, 1500)}…`;
     const ayuda = Object.values(plexTrofeos.CONDICIONES)
         .filter((c) => c.ayuda)
@@ -120,8 +126,10 @@ function buildPlexTrofeos(guildId) {
                 `**${f.pendientes.toLocaleString("es")}** pendientes (se piden poco a poco cada 30 min)\n` +
                 `Biblioteca repasada: ${f.bibliotecaRevisada ? `<t:${Math.floor(f.bibliotecaRevisada / 1000)}:R>` : "todavía no"} · ` +
                 `"Todas las de…" y sagas: ${f.completa ? "✅ activos" : "⏳ cuando estén todas las fichas de películas"}\n` +
+                `🗣️ Idiomas: **${idiomas.revisadas.toLocaleString("es")}** reproducciones revisadas · ` +
+                `**${idiomas.pendientes.toLocaleString("es")}** pendientes\n` +
                 `🎌 Anime: ${animeTexto}\n\n` +
-                `**Creados**: ${creados}\n\n` +
+                `**Creados**: ${creados}\n**Por dificultad**: ${dificultades}\n\n` +
                 `**Trofeos de admin (${admin.length})**\n${lista}\n\n**Condiciones**\n${ayuda}`,
         )
         .setColor(0xe5a00d)
@@ -169,6 +177,13 @@ async function handlePlexButton(interaction) {
                     placeholder: "Se pone sola según la condición",
                     required: false,
                     maxLength: 200,
+                },
+                {
+                    id: "dificultad",
+                    label: "Dificultad: fácil, normal o gordo (opcional)",
+                    placeholder: "normal",
+                    required: false,
+                    maxLength: 20,
                 },
             ]),
         );
@@ -241,10 +256,9 @@ async function handlePlexButton(interaction) {
             const {
                 historial: r,
                 fichas,
+                idiomas,
                 logros,
-            } = await plexHistorial.sincronizarYCalcular(interaction.guild || { id: guildId }, {
-                presupuesto: plexFichas.PRESUPUESTO.boton,
-            });
+            } = await plexHistorial.sincronizarYCalcular(interaction.guild || { id: guildId }, { boton: true });
             const desbloqueados = logros.reduce((s, x) => s + x.desbloqueados.length, 0);
             log.info(`${interaction.user.tag} sincronizó el historial de Plex: ${r.nuevas} nuevas, ${desbloqueados} logros`);
             await interaction.editReply({
@@ -256,6 +270,9 @@ async function handlePlexButton(interaction) {
                         : achievements.categoriaActiva(guildId, "plex")
                           ? "📚 Fichas: no se pudieron pedir (mira el log).\n"
                           : "📚 Fichas: no se piden con los logros de Plex desactivados (Config Global → Logros).\n") +
+                    (idiomas
+                        ? `🗣️ Idiomas: **${idiomas.revisadas.toLocaleString("es")}** reproducciones revisadas ahora · **${idiomas.pendientes.toLocaleString("es")}** pendientes.\n`
+                        : "") +
                     `🏅 Logros de Plex desbloqueados ahora: **${desbloqueados}** (${logros.length} vinculados).`,
             });
         } catch (e) {
@@ -432,7 +449,13 @@ async function handlePlexModal(interaction) {
         };
         const r = plexTrofeos.crearAdmin(
             interaction.guildId,
-            { nombre: campo("nombre"), condicion: campo("condicion"), recompensa: campo("recompensa"), descripcion: campo("descripcion") },
+            {
+                nombre: campo("nombre"),
+                condicion: campo("condicion"),
+                recompensa: campo("recompensa"),
+                descripcion: campo("descripcion"),
+                dificultad: campo("dificultad"),
+            },
             interaction.user.id,
         );
         if (!r.ok) {
@@ -448,7 +471,7 @@ async function handlePlexModal(interaction) {
         await interaction.reply({
             content:
                 `✅ Trofeo **${r.trofeo.nombre}** creado (\`${r.trofeo.condicion}\`, 🪙 ${r.trofeo.recompensa.toLocaleString("es")}): ` +
-                `${r.trofeo.descripcion}. Se calcula ya para los vinculados y en cada sincronización.`,
+                `${r.trofeo.descripcion} · ${plexIdiomas.textoDificultad(r.trofeo.dificultad)}. Se calcula ya para los vinculados y en cada sincronización.`,
             flags: MessageFlags.Ephemeral,
         });
         // Sin esperar al cron: quien ya lo cumple lo recibe ahora.

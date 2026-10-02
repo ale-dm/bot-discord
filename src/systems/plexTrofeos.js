@@ -4,12 +4,16 @@
 //     series y anime (🎌): lo que es anime lo dicen las bibliotecas (configAnime).
 //   - Fase 3, por significado: películas de un género (10 y 25), todas las de un director que hay en Plex, 10 películas
 //     de una década (antes de 2000), y los que crea un admin en /paneladmin → Plex → 🏆 Trofeos.
-//   - Contadores fijos del catálogo (achievementsSystem): películas, series y episodios de anime y series terminadas.
+//   - Contadores fijos del catálogo (achievementsSystem): películas, series y episodios de anime y series terminadas, y
+//     por idioma (systems/plexIdiomas): episodios, películas y series enteras en inglés, VOSE, castellano...
+//   - Por idioma, de cada serie: terminarla entera en una versión ("Breaking Bad en inglés").
 // Los de cada título y los de significado se crean la primera vez que alguien los consigue, con un nombre temático que
 // propone Gemini ("Say my name" al terminar Breaking Bad) y que se guarda; para los demás solo se ven cuando los
 // consiguen. Son logros normales de la categoría plex (id "plext:…"): se reclaman en /perfil → 🏅 Logros.
+// Todos tienen dificultad: 🟢 fácil, 🟡 normal o 🎰 "Gordo del Plex".
 const db = require("../core/db");
 const plexFichas = require("./plexFichas");
+const plexIdiomas = require("./plexIdiomas");
 const plexLinks = require("./plexLinks");
 const guildSettings = require("./guildSettings");
 const { createLogger } = require("../core/logger");
@@ -42,7 +46,26 @@ const RECOMPENSA = {
     director: (peliculas) => Math.min(1000, 100 * peliculas),
     genero: { 10: 400, 25: 1000 },
     decada: 400,
+    idioma: (episodios) => Math.min(2000, 300 + 15 * episodios),
 };
+
+/** Dificultad de cada trofeo automático: lo largo que es (episodios o películas). */
+const DIFICULTAD = {
+    temporada: () => "facil",
+    serie: (episodios) => (episodios >= 100 ? "gordo" : "normal"),
+    idioma: (episodios) => (episodios >= 100 ? "gordo" : "normal"),
+    saga: (peliculas) => (peliculas >= 8 ? "gordo" : "normal"),
+    director: (peliculas) => (peliculas >= 10 ? "gordo" : "normal"),
+    genero: (umbral) => (umbral >= 25 ? "normal" : "facil"),
+    decada: () => "normal",
+};
+/** La de un trofeo guardado antes de que hubiera dificultades (sin el número de episodios): por su tipo. */
+function dificultadGuardada(t) {
+    if (plexIdiomas.DIFICULTADES[t.dificultad]) return t.dificultad;
+    if (t.tipo === "temporada") return "facil";
+    if (t.tipo === "genero") return /:10$/.test(t.id) ? "facil" : "normal";
+    return "normal";
+}
 
 const EMOJI = { temporada: "📺", serie: "📺", saga: "🎬", director: "🎥", genero: "🎭", decada: "📼", admin: "🏆" };
 
@@ -110,9 +133,10 @@ function aLogro(t) {
         metric: "max",
         target: Math.max(1, Number(t.objetivo) || 1),
         rewardCoins: Number(t.recompensa) || 0,
-        emoji: t.anime ? "🎌" : EMOJI[t.tipo],
+        emoji: t.anime ? "🎌" : t.tipo === "idioma" ? plexIdiomas.MODOS[t.id.split(":")[2]]?.emoji || "🗣️" : EMOJI[t.tipo],
         trofeo: t.tipo,
         anime: Boolean(t.anime),
+        dificultad: dificultadGuardada(t),
         // Los de admin se ven siempre (con su progreso); el resto, solo a quien los tiene.
         soloCompletado: t.tipo !== "admin",
     };
@@ -163,21 +187,26 @@ function contexto(guildId) {
     return { completa, anime, peliculas, peliculasPorKey, peliculasPorTitulo, seriesPorKey, seriesPorTitulo, directores, sagas };
 }
 
-/** Qué ha visto alguien, cruzado con las fichas: películas (por título), series con sus temporadas terminadas y cuentas. */
+/** Qué ha visto alguien, cruzado con las fichas: películas (por título), series con sus temporadas terminadas, cuentas
+ * y, por cada versión de idioma (plexIdiomas.MODOS), episodios, películas y series enteras vistas así. */
 function datosUsuario(guildId, tautulliUserId, ctx) {
     const pelis = db
         .prepare(
-            "SELECT DISTINCT rating_key, titulo, anio FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'movie' AND visto = 1",
+            "SELECT DISTINCT rating_key, titulo, anio, audio, subs FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'movie' AND visto = 1",
         )
         .all(guildId, String(tautulliUserId));
     const vistas = new Set();
     const fichasVistas = new Map();
+    const pelisPorModo = new Map(Object.keys(plexIdiomas.MODOS).map((m) => [m, new Set()]));
     for (const r of pelis) {
         vistas.add(clavePelicula(r.titulo, r.anio));
         const f = ctx.peliculasPorKey.get(r.rating_key) || ctx.peliculasPorTitulo.get(clavePelicula(r.titulo, r.anio));
+        // La película, una vez aunque se viera varias veces (y en varios idiomas: cuenta en cada uno).
+        const clave = f ? clavePelicula(f.titulo, f.anio) : clavePelicula(r.titulo, r.anio);
+        for (const m of plexIdiomas.modosDe(r.audio, r.subs, f ? plexFichas.esAnime(f, ctx.anime) : false)) pelisPorModo.get(m).add(clave);
         if (!f) continue;
-        vistas.add(clavePelicula(f.titulo, f.anio));
-        fichasVistas.set(clavePelicula(f.titulo, f.anio), f);
+        vistas.add(clave);
+        fichasVistas.set(clave, f);
     }
 
     const porGenero = new Map();
@@ -201,7 +230,7 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
     // mismo título; así lo visto antes y después de volver a añadirla cuenta junto.
     const eps = db
         .prepare(
-            `SELECT DISTINCT serie_key, serie, temporada, episodio FROM plex_reproducciones
+            `SELECT DISTINCT serie_key, serie, temporada, episodio, audio, subs FROM plex_reproducciones
              WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'episode' AND visto = 1 AND temporada IS NOT NULL AND episodio IS NOT NULL`,
         )
         .all(guildId, String(tautulliUserId));
@@ -210,17 +239,27 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
         const porKey = ctx.seriesPorKey.get(r.serie_key);
         const f = porKey?.encontrada ? porKey : ctx.seriesPorTitulo.get(normalizar(r.serie)) || porKey;
         if (!f) continue;
-        if (!porSerie.has(f.rating_key)) porSerie.set(f.rating_key, { ficha: f, vistos: new Set() });
-        porSerie.get(f.rating_key).vistos.add(`${r.temporada}:${r.episodio}`);
+        if (!porSerie.has(f.rating_key))
+            porSerie.set(f.rating_key, { ficha: f, anime: plexFichas.esAnime(f, ctx.anime), vistos: new Set(), porModo: new Map() });
+        const s = porSerie.get(f.rating_key);
+        const ep = `${r.temporada}:${r.episodio}`;
+        s.vistos.add(ep);
+        for (const m of plexIdiomas.modosDe(r.audio, r.subs, s.anime)) {
+            if (!s.porModo.has(m)) s.porModo.set(m, new Set());
+            s.porModo.get(m).add(ep);
+        }
     }
     const series = [];
-    const cuentas = { animePeliculas, animeSeries: 0, animeEpisodios: 0, animeCompletas: 0, seriesCompletas: 0 };
-    for (const { ficha, vistos } of porSerie.values()) {
-        const anime = plexFichas.esAnime(ficha, ctx.anime);
+    const idioma = Object.fromEntries(
+        Object.keys(plexIdiomas.MODOS).map((m) => [m, { eps: 0, pelis: pelisPorModo.get(m).size, series: 0 }]),
+    );
+    const cuentas = { animePeliculas, animeSeries: 0, animeEpisodios: 0, animeCompletas: 0, seriesCompletas: 0, idioma };
+    for (const { ficha, anime, vistos, porModo } of porSerie.values()) {
         const temporadas = Object.entries(ficha.temporadas || {})
             .map(([n, lista]) => ({ n: Number(n), episodios: lista }))
             .filter((t) => t.n > 0 && t.episodios.length)
             .sort((a, b) => a.n - b.n);
+        const todos = (set) => temporadas.every((t) => t.episodios.every((e) => set.has(`${t.n}:${e}`)));
         const terminadas = temporadas.filter((t) => t.episodios.every((e) => vistos.has(`${t.n}:${e}`)));
         const total = temporadas.reduce((s, t) => s + t.episodios.length, 0);
         const completa = temporadas.length > 0 && terminadas.length === temporadas.length && total >= 2;
@@ -230,7 +269,16 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
             cuentas.animeEpisodios += vistos.size;
             if (completa) cuentas.animeCompletas++;
         } else if (completa) cuentas.seriesCompletas++;
-        series.push({ ficha, anime, temporadas, terminadas, total, completa, vistosEnFicha });
+        // Por idioma: cada episodio visto así, y la serie entera si todos sus episodios se vieron así (alguna vez).
+        const completaEn = [];
+        for (const [m, set] of porModo) {
+            idioma[m].eps += set.size;
+            if (completa && todos(set)) {
+                idioma[m].series++;
+                completaEn.push(m);
+            }
+        }
+        series.push({ ficha, anime, temporadas, terminadas, total, completa, vistosEnFicha, completaEn });
     }
     return { vistas, fichasVistas, porGenero, porDecada, series, cuentas };
 }
@@ -252,6 +300,7 @@ function candidatos(datos, ctx) {
                     tipo: "temporada",
                     anime,
                     recompensa: RECOMPENSA.temporada(t.episodios.length),
+                    dificultad: DIFICULTAD.temporada(),
                     nombre: `${ficha.titulo}: temporada ${t.n}`,
                     descripcion: `${marca}Termina la temporada ${t.n} de ${ficha.titulo}`,
                     ia: `Terminar la temporada ${t.n} (de ${s.temporadas.length}) de la ${tipoSerie} "${ficha.titulo}"${anio}`,
@@ -264,9 +313,23 @@ function candidatos(datos, ctx) {
                 tipo: "serie",
                 anime,
                 recompensa: RECOMPENSA.serie(s.total),
+                dificultad: DIFICULTAD.serie(s.total),
                 nombre: `${ficha.titulo}: completada`,
                 descripcion: `${marca}Termina ${ficha.titulo} entera (${s.total} episodios)`,
                 ia: `Terminar entera la ${tipoSerie} "${ficha.titulo}"${anio}, ${s.total} episodios`,
+            });
+        }
+        // Entera en una versión de idioma: "Breaking Bad en inglés" (nombre fijo, sin Gemini).
+        for (const m of s.completaEn) {
+            const modo = plexIdiomas.MODOS[m];
+            lista.push({
+                id: `idioma:${ficha.rating_key}:${m}`,
+                tipo: "idioma",
+                anime,
+                recompensa: RECOMPENSA.idioma(s.total),
+                dificultad: DIFICULTAD.idioma(s.total),
+                nombre: `${ficha.titulo} ${modo.texto}`,
+                descripcion: `${marca}${modo.emoji} Termina ${ficha.titulo} entera ${modo.texto} (${s.total} episodios)`,
             });
         }
     }
@@ -281,6 +344,7 @@ function candidatos(datos, ctx) {
                 tipo: "director",
                 anime: false,
                 recompensa: RECOMPENSA.director(pelis.length),
+                dificultad: DIFICULTAD.director(pelis.length),
                 nombre: `Filmografía de ${d.nombre}`,
                 descripcion: `Ve todas las películas de ${d.nombre} que hay en Plex (${pelis.length})`,
                 ia: `Ver todas las películas dirigidas por ${d.nombre}: ${titulos(d.peliculas)}`,
@@ -295,6 +359,7 @@ function candidatos(datos, ctx) {
                 tipo: "saga",
                 anime,
                 recompensa: RECOMPENSA.saga(pelis.length),
+                dificultad: DIFICULTAD.saga(pelis.length),
                 nombre: `Saga completa: ${s.nombre}`,
                 descripcion: `${anime ? "🎌 " : ""}Ve todas las películas de la colección ${s.nombre} (${pelis.length})`,
                 ia: `Ver todas las películas de la saga "${s.nombre}": ${titulos(s.peliculas)}`,
@@ -311,6 +376,7 @@ function candidatos(datos, ctx) {
                 tipo: "genero",
                 anime: k === "anime",
                 recompensa: RECOMPENSA.genero[u],
+                dificultad: DIFICULTAD.genero(u),
                 nombre: u === UMBRALES_GENERO[0] ? base : `${base} · Experto`,
                 descripcion: `Ve ${u} películas de ${g.nombre}`,
             });
@@ -324,6 +390,7 @@ function candidatos(datos, ctx) {
             tipo: "decada",
             anime: false,
             recompensa: RECOMPENSA.decada,
+            dificultad: DIFICULTAD.decada(),
             nombre: `Máquina del tiempo: los ${dd}`,
             descripcion: `Ve ${DECADA.peliculas} películas de los años ${d < 1930 ? d : dd}`,
         });
@@ -356,7 +423,17 @@ const CONDICIONES = {
     "anime-series": { n: true },
     "anime-episodios": { n: true },
     "anime-completas": { n: true },
+    // Por idioma: la versión va como valor (ingles, vose, ingles-sin-subs, castellano, anime-castellano, anime-jap-sub-es,
+    // anime-ingles, anime-jap-sub-en, anime-jap-sin-subs).
+    "idioma-episodios": {
+        valor: "modo",
+        n: true,
+        ayuda: "`idioma-episodios:ingles 50` · `idioma-peliculas:castellano 20` · `idioma-series:anime-jap-sub-es 3`",
+    },
+    "idioma-peliculas": { valor: "modo", n: true },
+    "idioma-series": { valor: "modo", n: true },
 };
+const TIPO_IDIOMA = { "idioma-episodios": "eps", "idioma-peliculas": "pelis", "idioma-series": "series" };
 
 /** Lee una condición escrita por un admin ("genero:Terror 20"). @returns {{ ok: true, cond } | { ok: false, error }} */
 function parsearCondicion(texto) {
@@ -381,6 +458,16 @@ function parsearCondicion(texto) {
     if (def.valor === "anio") {
         if (!/^\d{4}$/.test(valor)) return { ok: false, error: "La década va con el año: `decada:1980 10`." };
         valor = String(Math.floor(Number(valor) / 10) * 10);
+    }
+    if (def.valor === "modo") {
+        const modo = plexIdiomas.modoPorSlug(valor);
+        if (!modo) {
+            const lista = Object.values(plexIdiomas.MODOS)
+                .map((x) => `\`${x.slug}\``)
+                .join(", ");
+            return { ok: false, error: `No conozco la versión "${valor}". Hay: ${lista}.` };
+        }
+        valor = plexIdiomas.MODOS[modo].slug;
     }
     if (def.n === true && !(n > 0)) return { ok: false, error: `Falta cuántos: ${def.ayuda || `\`${tipo} 10\``}` };
     if (def.n === undefined && n !== null) n = null;
@@ -442,6 +529,10 @@ function evaluarCondicion(cond, datos, ctx, stats = {}) {
             return { progreso: stats.horas || 0, objetivo: n };
         case "series-completas":
             return { progreso: datos.cuentas.seriesCompletas, objetivo: n };
+        case "idioma-episodios":
+        case "idioma-peliculas":
+        case "idioma-series":
+            return { progreso: datos.cuentas.idioma[plexIdiomas.modoPorSlug(valor)][TIPO_IDIOMA[tipo]], objetivo: n };
         case "anime-peliculas":
             return { progreso: datos.cuentas.animePeliculas, objetivo: n };
         case "anime-series":
@@ -513,8 +604,8 @@ async function crear(guildId, lista) {
     const conIA = lista.filter((c) => c.ia).slice(0, MAX_NOMBRES_IA);
     const nombres = await nombrarConIA(guildId, conIA);
     const insertar = db.prepare(
-        `INSERT OR IGNORE INTO plex_trofeos (guildId, id, tipo, nombre, descripcion, objetivo, recompensa, anime, nombre_ia, creado)
-         VALUES (@guildId, @id, @tipo, @nombre, @descripcion, 1, @recompensa, @anime, @nombre_ia, @creado)`,
+        `INSERT OR IGNORE INTO plex_trofeos (guildId, id, tipo, nombre, descripcion, objetivo, recompensa, anime, nombre_ia, creado, dificultad)
+         VALUES (@guildId, @id, @tipo, @nombre, @descripcion, 1, @recompensa, @anime, @nombre_ia, @creado, @dificultad)`,
     );
     const ahora = Date.now();
     db.transaction(() => {
@@ -526,6 +617,7 @@ async function crear(guildId, lista) {
                 nombre: nombres.get(c.id) || c.nombre,
                 descripcion: c.descripcion,
                 recompensa: c.recompensa,
+                dificultad: c.dificultad,
                 anime: c.anime ? 1 : 0,
                 nombre_ia: nombres.has(c.id) ? 1 : 0,
                 creado: ahora,
@@ -556,6 +648,8 @@ async function eventosDe(guildId, links, statsPorUsuario = new Map()) {
     for (const link of links) {
         const datos = datosUsuario(guildId, link.tautulliUserId, ctx);
         const eventos = Object.entries(EVENTOS_FICHAS).map(([campo, event]) => ({ event, value: datos.cuentas[campo] }));
+        for (const [modo, c] of Object.entries(datos.cuentas.idioma))
+            for (const tipo of ["eps", "pelis", "series"]) eventos.push({ event: plexIdiomas.evento(tipo, modo), value: c[tipo] });
         for (const c of candidatos(datos, ctx)) {
             if (!existentes.has(c.id) && !nuevos.has(c.id)) nuevos.set(c.id, c);
             eventos.push({ event: PREFIJO + c.id, value: 1 });
@@ -600,11 +694,16 @@ function textoRareza(pct) {
     return pct <= 10 ? `solo el ${pct} % del servidor lo tiene` : `lo tiene el ${pct} % del servidor`;
 }
 
-/** Para el anuncio: a los trofeos (fases 2 y 3) se les añade de qué son y lo raros que son. */
+/** Para el anuncio: a cada logro de Plex se le añade su dificultad y, a los trofeos (fases 2 y 3), de qué son y lo raros
+ * que son. */
 function paraAnuncio(guildId, desbloqueados) {
-    if (!desbloqueados.some((a) => a.trofeo)) return desbloqueados;
+    if (!desbloqueados.some((a) => a.trofeo || a.dificultad)) return desbloqueados;
     const r = rarezas(guildId);
-    return desbloqueados.map((a) => (a.trofeo ? { ...a, detalleAnuncio: `${a.desc} · ${textoRareza(r.get(a.id))}` } : a));
+    return desbloqueados.map((a) => {
+        const partes = a.trofeo ? [a.desc, textoRareza(r.get(a.id))] : [];
+        if (a.dificultad) partes.push(plexIdiomas.textoDificultad(a.dificultad));
+        return partes.length ? { ...a, detalleAnuncio: partes.join(" · ") } : a;
+    });
 }
 
 function oculto(guildId, userId) {
@@ -619,8 +718,8 @@ function setOculto(guildId, userId, valor) {
     log.info(`${userId} ${valor ? "oculta" : "enseña"} sus logros de Plex en ${guildId}`);
 }
 
-/** Crea un trofeo de admin. @returns {{ ok: true, trofeo } | { ok: false, error }} */
-function crearAdmin(guildId, { nombre, descripcion, condicion, recompensa }, actorId) {
+/** Crea un trofeo de admin (dificultad: fácil, normal —por defecto— o gordo). @returns {{ ok: true, trofeo } | { ok: false, error }} */
+function crearAdmin(guildId, { nombre, descripcion, condicion, recompensa, dificultad }, actorId) {
     const p = parsearCondicion(condicion);
     if (!p.ok) return p;
     const n = limpiarNombre(nombre);
@@ -628,6 +727,8 @@ function crearAdmin(guildId, { nombre, descripcion, condicion, recompensa }, act
     const coins = Math.floor(Number(String(recompensa ?? "").replace(/\./g, "")));
     if (!Number.isFinite(coins) || coins < 0 || coins > 1_000_000)
         return { ok: false, error: "La recompensa tiene que ser un número entre 0 y 1.000.000." };
+    const dif = plexIdiomas.leerDificultad(dificultad);
+    if (!dif) return { ok: false, error: "La dificultad tiene que ser fácil, normal o gordo (el Gordo del Plex)." };
     // Id único aunque se creen dos en el mismo milisegundo.
     const existe = db.prepare("SELECT 1 FROM plex_trofeos WHERE guildId = ? AND id = ?");
     let id = `admin:${Date.now().toString(36)}`;
@@ -643,16 +744,17 @@ function crearAdmin(guildId, { nombre, descripcion, condicion, recompensa }, act
                 .slice(0, 200) || describirCondicion(p.cond),
         objetivo: p.cond.n || 1,
         recompensa: coins,
+        dificultad: dif,
         condicion: p.texto,
         creado: Date.now(),
         creado_por: actorId || null,
     };
     db.prepare(
-        `INSERT INTO plex_trofeos (guildId, id, tipo, nombre, descripcion, objetivo, recompensa, condicion, creado, creado_por)
-         VALUES (@guildId, @id, @tipo, @nombre, @descripcion, @objetivo, @recompensa, @condicion, @creado, @creado_por)`,
+        `INSERT INTO plex_trofeos (guildId, id, tipo, nombre, descripcion, objetivo, recompensa, dificultad, condicion, creado, creado_por)
+         VALUES (@guildId, @id, @tipo, @nombre, @descripcion, @objetivo, @recompensa, @dificultad, @condicion, @creado, @creado_por)`,
     ).run(trofeo);
     cacheCatalogo.delete(guildId);
-    log.info(`Trofeo de Plex creado en ${guildId} por ${actorId}: "${n}" (${p.texto}, ${coins} monedas)`);
+    log.info(`Trofeo de Plex creado en ${guildId} por ${actorId}: "${n}" (${p.texto}, ${coins} monedas, ${dif})`);
     return { ok: true, trofeo };
 }
 
@@ -673,6 +775,12 @@ function describirCondicion({ tipo, valor, n }) {
         "anime-episodios": `Ve ${n} episodios de anime`,
         "anime-completas": `Termina ${n} series de anime`,
     };
+    if (TIPO_IDIOMA[tipo]) {
+        const modo = plexIdiomas.MODOS[plexIdiomas.modoPorSlug(valor)];
+        const de = modo.anime ? "de anime " : "";
+        const que = { eps: `${n} episodios ${de}`, pelis: `${n} películas ${de}`, series: `${n} series ${de}enteras ` }[TIPO_IDIOMA[tipo]];
+        return `${TIPO_IDIOMA[tipo] === "series" ? "Termina" : "Ve"} ${que}${modo.texto}`;
+    }
     return textos[tipo] || tipo;
 }
 
@@ -684,7 +792,8 @@ function borrar(guildId, id) {
     return r.changes > 0;
 }
 
-/** Cuántos trofeos hay de cada tipo y cuántas personas tienen cada uno de los de admin (para el panel). */
+/** Cuántos trofeos hay de cada tipo y de cada dificultad, y cuántas personas tienen cada uno de los de admin (para el
+ * panel). */
 function resumen(guildId) {
     const porTipo = Object.fromEntries(
         db
@@ -692,6 +801,8 @@ function resumen(guildId) {
             .all(guildId)
             .map((f) => [f.tipo, f.n]),
     );
+    const porDificultad = { facil: 0, normal: 0, gordo: 0 };
+    for (const t of catalogo(guildId)) porDificultad[t.dificultad]++;
     const quienes = new Map(
         db
             .prepare(
@@ -701,7 +812,11 @@ function resumen(guildId) {
             .all(guildId)
             .map((f) => [f.achievementId.slice(PREFIJO.length), f.n]),
     );
-    return { porTipo, admin: trofeos(guildId, "admin").map((t) => ({ ...t, completados: quienes.get(t.id) || 0 })) };
+    return {
+        porTipo,
+        porDificultad,
+        admin: trofeos(guildId, "admin").map((t) => ({ ...t, dificultad: dificultadGuardada(t), completados: quienes.get(t.id) || 0 })),
+    };
 }
 
 module.exports = {

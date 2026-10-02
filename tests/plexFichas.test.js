@@ -8,6 +8,7 @@ jest.mock("../src/services/tautulliClient", () => ({
     getLibraryMediaInfo: jest.fn(),
     getMetadata: jest.fn(),
     getChildrenMetadata: jest.fn(),
+    getStreamData: jest.fn(),
 }));
 const tautulli = require("../src/services/tautulliClient");
 const db = require("../src/core/db");

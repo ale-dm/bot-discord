@@ -9,6 +9,7 @@ jest.mock("../src/services/tautulliClient", () => ({
     getLibraryMediaInfo: jest.fn(async () => ({ filas: [], total: 0 })),
     getMetadata: jest.fn(async () => null),
     getChildrenMetadata: jest.fn(async () => []),
+    getStreamData: jest.fn(async () => null),
 }));
 const tautulli = require("../src/services/tautulliClient");
 const db = require("../src/core/db");
@@ -119,6 +120,16 @@ describe("sincronización", () => {
         jest.spyOn(plexFichas, "actualizar").mockRejectedValueOnce(new Error("Tautulli raro"));
         const r = await plexHistorial.sincronizarYCalcular(guildDe(g));
         expect(r.fichas).toBeNull();
+        expect(r.logros[0].desbloqueados.map((a) => a.id)).toContain("plex_pelis_1");
+    });
+
+    test("si la revisión de idiomas falla, se calcula igual con lo que hay", async () => {
+        const g = nuevoGuild();
+        plexLinks.setLink(g, "disc-1", "1", "uno");
+        verPeli(g, 1, "e");
+        jest.spyOn(require("../src/systems/plexIdiomas"), "actualizar").mockRejectedValueOnce(new Error("Tautulli raro"));
+        const r = await plexHistorial.sincronizarYCalcular(guildDe(g));
+        expect(r.idiomas).toBeNull();
         expect(r.logros[0].desbloqueados.map((a) => a.id)).toContain("plex_pelis_1");
     });
 

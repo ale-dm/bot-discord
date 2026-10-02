@@ -2,6 +2,32 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-03 (🍿 Logros de Plex por idioma y por dificultad)
+
+Rama `feature/elduendejavier`. Migración **016** (columnas `audio`, `subs` e `idioma_revisado` en
+`plex_reproducciones`; `dificultad` en `plex_trofeos`). Detalle en
+[FUNCIONALIDADES.md](FUNCIONALIDADES.md#logros-de-plex-por-idioma).
+
+- **Dificultad** de todos los logros de Plex: 🟢 Fácil, 🟡 Normal o 🎰 **Gordo del Plex**. Los 29 fijos que había
+  la tienen puesta; los trofeos automáticos según lo largos que son (una serie de 100 episodios o más es 🎰); los de
+  admin, la que elija el admin (campo nuevo en ➕ Crear trofeo). Se ve en `/perfil` → 🏅 Logros (junto a la categoría
+  y un recuento por dificultad), en el anuncio y en Panel admin → Plex → 🏆 Trofeos.
+- **Idioma de lo que se ve** (`systems/plexIdiomas.js`): de cada reproducción vista por los vinculados, el idioma del
+  audio y de los subtítulos (`get_stream_data` de Tautulli, nuevo en `tautulliClient`), poco a poco (1.500 por
+  sincronización, 5.000 con el botón). El latino se distingue cuando la pista lo dice; los subtítulos forzados no
+  cuentan.
+- **51 logros fijos por idioma**: episodios, películas y series enteras 🇬🇧 en inglés, 📝 en VOSE, 🎧 en inglés sin
+  subtítulos y 🇪🇸 en castellano; y del anime, doblado al castellano, en japonés con subtítulos en castellano, doblado al
+  inglés, en japonés con subtítulos en inglés y en japonés sin subtítulos. 80 logros fijos de Plex, 116 en total.
+- **Trofeo de serie en un idioma**: terminar una serie entera en una versión ("Breaking Bad en inglés").
+- **Trofeos de admin por idioma**: `idioma-episodios:<versión> N`, `idioma-peliculas:<versión> N` e
+  `idioma-series:<versión> N`.
+- `sincronizarYCalcular(guild, { boton })` en vez de pasar el presupuesto de las fichas.
+- Tests: 480. Nuevo `tests/plexIdiomas.test.js` (reconocer idiomas por código y nombre, versiones, revisión desde
+  Tautulli, los 51 logros, series enteras en un idioma, anime, películas, latino, dificultad en catálogo, perfil,
+  anuncio y panel, condiciones de admin); `get_stream_data` en el Tautulli de mentira por HTTP; migración 016 sobre una
+  BD en la 015; carga con idiomas (~1 s). Los tests de antes, con la dificultad en los anuncios y el perfil.
+
 ## 2026-10-02 (🍿 Trofeos de Plex, fases 2 y 3)
 
 Rama `feature/elduendejavier`. **F-PX-02b** y **F-PX-02c** de [FEATURES.md](planificacion/FEATURES.md), separando

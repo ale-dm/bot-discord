@@ -9,6 +9,7 @@ jest.mock("../src/services/tautulliClient", () => ({
     getLibraryMediaInfo: jest.fn(),
     getMetadata: jest.fn(),
     getChildrenMetadata: jest.fn(),
+    getStreamData: jest.fn(async () => null),
 }));
 jest.mock("../src/services/geminiClient", () => ({
     ...jest.requireActual("../src/services/geminiClient"),
@@ -349,7 +350,7 @@ describe("trofeos de admin", () => {
         });
         expect(achievements.listUserAchievements(G, "disc-8").find((a) => a.id === t.id)).toMatchObject({ completed: true });
         expect(achievements.listUserAchievements(G, "disc-9").find((a) => a.id === t.id)).toMatchObject({ completed: false, progress: 2 });
-        expect(buildPlexTrofeos(G).embeds[0].data.description).toMatch(/• \*\*Nolanista\*\* — `director:Nolan` · 🪙 1500 · lo tiene 1/);
+        expect(buildPlexTrofeos(G).embeds[0].data.description).toMatch(/• 🟡 \*\*Nolanista\*\* — `director:Nolan` · 🪙 1500 · lo tiene 1/);
 
         const mal = jest.fn(async () => {});
         await handlePlexModal({ ...i, fields: { getTextInputValue: (k) => ({ ...campos, condicion: "genero:Terror" })[k] }, reply: mal });
@@ -428,8 +429,8 @@ describe("panel y preferencias", () => {
         expect(plexTrofeos.oculto(G, "disc-9")).toBe(true);
 
         const ajeno = perfilPanel.buildLogros(G, "disc-8", "disc-9", 0, true).embeds[0].data.description;
-        expect(ajeno).not.toMatch(/\(plex\)/);
-        expect(perfilPanel.buildLogros(G, "disc-9", "disc-9", 0, true).embeds[0].data.description).toMatch(/\(plex\)/);
+        expect(ajeno).not.toMatch(/\(plex/);
+        expect(perfilPanel.buildLogros(G, "disc-9", "disc-9", 0, true).embeds[0].data.description).toMatch(/\(plex · /);
 
         // Luis ve 10 películas más de terror: el trofeo sale, pero no se anuncia.
         const antes = canal.send.mock.calls.length;

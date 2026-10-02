@@ -156,6 +156,17 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Mirar que las recompensas de la primera importación no desequilibran la economía (si sí, bajar
       `logros.reward_multiplier` antes de que se reclamen).
 
+**🍿 Logros de Plex por idioma y dificultad (2026-10-03, rama `feature/elduendejavier`)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 016_plex_idiomas_dificultad`.
+- [ ] Panel admin → Plex → 🏆 Trofeos: la línea 🗣️ Idiomas (revisadas y pendientes) y "Por dificultad". 📼 Sincronizar
+      ahora hasta que los idiomas pendientes lleguen a 0.
+- [ ] Comprobar con algo que se sepa en qué idioma se vio (una serie en VOSE, un anime en japonés con subtítulos) que
+      cuenta en su versión: en `/perfil` → 🏅 Logros, el progreso de "Leyendo abajo", "Itadakimasu"...
+- [ ] Si alguien ve en latino: que no cuente como castellano (y, si la pista no dice "Latino", avisarme con lo que pone).
+- [ ] `/perfil` → 🏅 Logros: "(plex · 🟢 Fácil)" en cada logro de Plex y el campo 🍿 Plex por dificultad. Un anuncio con
+      la dificultad al final de cada línea.
+- [ ] ➕ Crear trofeo con dificultad "gordo" y condición `idioma-episodios:vose 10`: sale con 🎰 en el panel.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

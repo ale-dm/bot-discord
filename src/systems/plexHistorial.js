@@ -9,6 +9,7 @@ const tautulli = require("../services/tautulliClient");
 const plexLinks = require("./plexLinks");
 const achievements = require("./achievementsSystem");
 const plexFichas = require("./plexFichas");
+const plexIdiomas = require("./plexIdiomas");
 const plexTrofeos = require("./plexTrofeos");
 const { createLogger } = require("../core/logger");
 
@@ -209,19 +210,28 @@ async function actualizarLogros(guildOrId) {
     return resultado;
 }
 
-/** Copia lo nuevo del historial, pide las fichas que falten (sin pasarse de `presupuesto` llamadas) y recalcula. */
-async function sincronizarYCalcular(guild, { presupuesto } = {}) {
+/**
+ * Copia lo nuevo del historial, pide las fichas y los idiomas que falten (sin pasarse de su presupuesto de llamadas) y
+ * recalcula. `boton`: con los presupuestos más grandes del botón del panel.
+ */
+async function sincronizarYCalcular(guild, { boton = false } = {}) {
     const historial = await sincronizar(guild.id);
     let fichas = null;
+    let idiomas = null;
     if (achievements.categoriaActiva(guild.id, "plex")) {
         try {
-            fichas = await plexFichas.actualizar(guild.id, { presupuesto });
+            fichas = await plexFichas.actualizar(guild.id, { presupuesto: plexFichas.PRESUPUESTO[boton ? "boton" : "cron"] });
         } catch (e) {
             log.warn(`No se pudieron actualizar las fichas de Plex de ${guild.name || guild.id}: ${e.message}`);
         }
+        try {
+            idiomas = await plexIdiomas.actualizar(guild.id, { presupuesto: plexIdiomas.PRESUPUESTO[boton ? "boton" : "cron"] });
+        } catch (e) {
+            log.warn(`No se pudieron revisar los idiomas de Plex de ${guild.name || guild.id}: ${e.message}`);
+        }
     }
     const logros = await actualizarLogros(guild);
-    return { historial, fichas, logros };
+    return { historial, fichas, idiomas, logros };
 }
 
 /** Cron: sincroniza y recalcula en cada servidor con Tautulli configurado y alguien vinculado. */

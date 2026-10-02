@@ -131,3 +131,33 @@ test("la segunda vez, sin nada nuevo, no anuncia nada y también va rápido", as
     expect(r.every((x) => x.desbloqueados.length === 0)).toBe(true);
     expect(canal.send).not.toHaveBeenCalled();
 });
+
+test("con el idioma de todo lo visto: trofeos por idioma para todos, rápido y cabiendo en Discord", async () => {
+    // Un reparto de versiones: inglés con y sin subtítulos, castellano y japonés con subtítulos.
+    const versiones = [
+        ["en", "es"],
+        ["en", "no"],
+        ["es", "no"],
+        ["ja", "es"],
+        ["ja", "en"],
+    ];
+    db.transaction(() => {
+        const poner = db.prepare(
+            "UPDATE plex_reproducciones SET audio = ?, subs = ?, idioma_revisado = 1 WHERE guildId = ? AND tautulliUserId = ?",
+        );
+        for (let u = 1; u <= USUARIOS; u++) poner.run(...versiones[u % versiones.length], G, String(u));
+    })();
+    canal.send.mockClear();
+    const t0 = Date.now();
+    const r = await plexHistorial.actualizarLogros(guild);
+    expect(Date.now() - t0).toBeLessThan(20000);
+    // Todos tienen algún logro de idioma (los contadores); las series enteras en un idioma, quien termina series (los
+    // usuarios múltiplos de 3 en estos datos).
+    const deIdioma = new Set(require("../src/systems/plexIdiomas").LOGROS.map(([id]) => id));
+    expect(r.every((x) => x.desbloqueados.some((a) => deIdioma.has(a.id)))).toBe(true);
+    for (const x of r.filter((y) => Number(y.discordUserId.split("-")[1]) % 3 === 0))
+        expect(x.desbloqueados.some((a) => a.id.startsWith("plext:idioma:"))).toBe(true);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM plex_trofeos WHERE guildId = ? AND tipo = 'idioma'").get(G).n).toBeGreaterThan(50);
+    expect(canal.send).toHaveBeenCalledTimes(USUARIOS);
+    for (const [m] of canal.send.mock.calls) expect(m.content.length).toBeLessThan(2000);
+});

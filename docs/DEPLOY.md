@@ -107,6 +107,15 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   muchos, en lotes de 40 y como mucho 150 por sincronización. Si falla, se quedan con un nombre por defecto.
 - Comprobar en 🏆 Trofeos que 🎌 Anime coge las bibliotecas buenas; si no, elegirlas con 🎌 Bibliotecas de anime.
 
+### Logros de Plex por idioma y dificultad (migración 016, 2026-10-03)
+
+- **016** añade `audio`, `subs` e `idioma_revisado` a `plex_reproducciones` y `dificultad` a `plex_trofeos`. No hay que
+  copiar nada; los trofeos ya creados toman la dificultad de su tipo.
+- Después de las fichas, en cada sincronización se revisa el idioma de 1.500 reproducciones vistas por los vinculados
+  (5.000 con 📼 Sincronizar ahora); con muchas, tarda unas horas en tenerlas todas. En el log:
+  `Idiomas de Plex de ...: N reproducciones revisadas, ... pendientes`. Las que vienen de antes de Tautulli no tienen
+  idioma y no cuentan.
+
 ### Voz con DAVE y Node 22 (2026-10-02)
 
 - Discord exige DAVE (cifrado de extremo a extremo) en los canales de voz desde marzo de 2026. El bot usa ahora

@@ -9,6 +9,7 @@ jest.mock("../src/services/tautulliClient", () => ({
     getLibraryMediaInfo: jest.fn(async () => ({ filas: [], total: 0 })),
     getMetadata: jest.fn(async () => null),
     getChildrenMetadata: jest.fn(async () => []),
+    getStreamData: jest.fn(async () => null),
 }));
 const fs = require("fs");
 const path = require("path");
@@ -129,7 +130,7 @@ describe("/paneladmin → Plex → 🏆 Trofeos", () => {
         expect(r.reply.mock.calls[0][0].content).toBe("No hay trofeos de admin.");
     });
 
-    test("➕ Crear trofeo abre el formulario con nombre, condición, recompensa y descripción opcional", async () => {
+    test("➕ Crear trofeo abre el formulario con nombre, condición, recompensa, y descripción y dificultad opcionales", async () => {
         const i = await boton("paneladmin_plex_trofeo_crear");
         const modal = i.showModal.mock.calls[0][0].toJSON();
         expect(modal.custom_id).toBe("paneladmin_plex_trofeo_modal");
@@ -139,7 +140,10 @@ describe("/paneladmin → Plex → 🏆 Trofeos", () => {
             ["condicion", true],
             ["recompensa", true],
             ["descripcion", false],
+            ["dificultad", false],
         ]);
+        // Discord no deja etiquetas de más de 45 caracteres.
+        expect(campos.every((c) => c.label.length <= 45)).toBe(true);
     });
 
     test("el formulario crea el trofeo (por /paneladmin), lo calcula enseguida y lo anuncia", async () => {
@@ -210,7 +214,7 @@ describe("/paneladmin → Plex → 🏆 Trofeos", () => {
     test("📼 Sincronizar: historial, fichas y logros; con los logros de Plex desactivados no pide fichas", async () => {
         const i = await boton("paneladmin_plex_historial");
         expect(i.editReply.mock.calls[0][0].content).toMatch(
-            /📼 Historial sincronizado: \*\*0\*\* reproducciones nuevas[\s\S]*\n📚 Fichas: \*\*0\*\* pedidas ahora · \*\*0\*\* pendientes\.\n🏅/,
+            /📼 Historial sincronizado: \*\*0\*\* reproducciones nuevas[\s\S]*\n📚 Fichas: \*\*0\*\* pedidas ahora · \*\*0\*\* pendientes\.\n🗣️ Idiomas: \*\*3\*\* reproducciones revisadas ahora · \*\*0\*\* pendientes\.\n🏅/,
         );
         guildSettings.setSetting(G, "logros.disabled_categories", "plex");
         const j = await boton("paneladmin_plex_historial");
@@ -316,7 +320,8 @@ describe("/perfil → 🏅 Logros", () => {
         expect(boton.data).toMatchObject({ custom_id: "perfil_plexoculto_disc-1_disc-1_0", label: "🍿 Enseñar mis logros de Plex" });
         // Los demás ven su perfil sin Plex, también en el resumen.
         const ajeno = perfilPanel.buildLogros(G, "disc-2", "disc-1", 0, true);
-        expect(ajeno.embeds[0].data.description).not.toMatch(/\(plex\)/);
+        expect(ajeno.embeds[0].data.description).not.toMatch(/\(plex/);
+        expect(ajeno.embeds[0].data.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
         const total = achievements.getSummary(G, "disc-1").total;
         expect(ajeno.embeds[0].data.fields[0].value).not.toMatch(new RegExp(`/${total} `));
         await pulsar(0);
@@ -374,7 +379,7 @@ describe("migración 015", () => {
             m.prepare("INSERT INTO schema_migrations VALUES (?, ?, ?)").run(mig.version, mig.name, Date.now());
         }
         m.prepare("INSERT INTO plex_sync (guildId, ultimo_inicio, ultima_sync) VALUES ('g', 123, 456)").run();
-        expect(runMigrations(m)).toBe(1);
+        expect(runMigrations(m)).toBe(listMigrations().length - 14);
         expect(m.prepare("SELECT * FROM plex_sync").get()).toEqual({
             guildId: "g",
             ultimo_inicio: 123,
@@ -382,5 +387,43 @@ describe("migración 015", () => {
             biblioteca_revisada: null,
         });
         expect(runMigrations(m)).toBe(0);
+    });
+
+    test("016 sobre una BD en la 015 con reproducciones y trofeos: añade las columnas sin tocar nada", () => {
+        const m = new Database(":memory:");
+        const { listMigrations } = require("../src/core/migrations");
+        const log = {
+            info() {},
+            warn() {},
+            debug() {},
+            child() {
+                return this;
+            },
+        };
+        m.exec("CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at INTEGER NOT NULL)");
+        for (const mig of listMigrations().filter((x) => x.version <= 15)) {
+            require(mig.file).up(m, { log });
+            m.prepare("INSERT INTO schema_migrations VALUES (?, ?, ?)").run(mig.version, mig.name, Date.now());
+        }
+        m.prepare(
+            "INSERT INTO plex_reproducciones (guildId, id, tautulliUserId, tipo, inicio, segundos, visto) VALUES ('g', 1, '5', 'movie', 100, 60, 1)",
+        ).run();
+        m.prepare(
+            "INSERT INTO plex_trofeos (guildId, id, tipo, nombre, descripcion, creado) VALUES ('g', 'serie:1', 'serie', 'S', 'd', 1)",
+        ).run();
+        expect(runMigrations(m)).toBe(listMigrations().length - 15);
+        expect(m.prepare("SELECT id, audio, subs, idioma_revisado FROM plex_reproducciones").get()).toEqual({
+            id: 1,
+            audio: null,
+            subs: null,
+            idioma_revisado: 0,
+        });
+        expect(m.prepare("SELECT id, nombre, dificultad FROM plex_trofeos").get()).toEqual({
+            id: "serie:1",
+            nombre: "S",
+            dificultad: null,
+        });
+        const indices = m.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'plex_reproducciones'").pluck().all();
+        expect(indices).toContain("idx_plex_reproducciones_idioma");
     });
 });

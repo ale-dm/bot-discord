@@ -9,6 +9,8 @@ jest.mock("../src/services/tautulliClient", () => ({
     getMetadata: jest.fn(async () => null),
     getChildrenMetadata: jest.fn(async () => []),
     getLibraryMediaInfo: jest.fn(async () => ({ filas: [], total: 0 })),
+    // Los idiomas están en plexIdiomas.test.js: aquí, sin datos.
+    getStreamData: jest.fn(async () => null),
 }));
 const tautulli = require("../src/services/tautulliClient");
 const guildSettings = require("../src/systems/guildSettings");
@@ -130,7 +132,10 @@ describe("estadísticas y logros", () => {
         expect(r.desbloqueados.map((a) => a.id).sort()).toEqual(["plex_atracon_5", "plex_pelis_1"]);
         expect(canal.send).toHaveBeenCalledTimes(1);
         expect(anuncio(0)).toEqual({
-            content: expect.stringMatching(/^🎉 <@disc-8> desbloqueó logros:\n🏅 \*\*Se apagan las luces\*\*\n🏅 \*\*Atracón\*\*/),
+            // Cada logro de Plex con su dificultad.
+            content: expect.stringMatching(
+                /^🎉 <@disc-8> desbloqueó logros:\n🏅 \*\*Se apagan las luces\*\* — 🟢 Fácil\n🏅 \*\*Atracón\*\* — 🟢 Fácil\n/,
+            ),
             allowedMentions: { users: ["disc-8"] },
         });
         const horas = achievements.listUserAchievements(G, "disc-8").find((a) => a.id === "plex_horas_10");
@@ -144,7 +149,7 @@ describe("estadísticas y logros", () => {
         historial([pelicula(8, "m4", madrid(20, 21))]);
         await plexHistorial.sincronizarTodos(client);
         expect(canal.send).toHaveBeenCalledTimes(2);
-        expect(anuncio(1).content).toMatch(/<@disc-8> desbloqueó logros:\n🏅 \*\*Palomitas en mano\*\*\nReclámalos/);
+        expect(anuncio(1).content).toMatch(/<@disc-8> desbloqueó logros:\n🏅 \*\*Palomitas en mano\*\* — 🟢 Fácil\nReclámalos/);
         // Y se pueden reclamar como los demás.
         expect(achievements.claimAchievement(G, "disc-8", "plex_horas_10").ok).toBe(true);
     });
@@ -179,9 +184,17 @@ describe("estadísticas y logros", () => {
     });
 });
 
-test("hay 29 logros fijos de Plex en el catálogo (17 de la fase 1 y 12 de anime y series terminadas), todos con su evento", () => {
+test("hay 80 logros fijos de Plex (17 de la fase 1, 12 de anime y series terminadas y 51 por idioma), todos con su evento y dificultad", () => {
     const plex = achievements.CATALOG.filter((a) => a.category === "plex");
-    expect(plex).toHaveLength(29);
+    expect(plex).toHaveLength(80);
     const { EVENTOS_FICHAS } = require("../src/systems/plexTrofeos");
-    expect(new Set(plex.map((a) => a.event))).toEqual(new Set([...Object.values(plexHistorial.EVENTOS), ...Object.values(EVENTOS_FICHAS)]));
+    const plexIdiomas = require("../src/systems/plexIdiomas");
+    const eventosIdioma = plexIdiomas.LOGROS.map(([, , modo, tipo]) => plexIdiomas.evento(tipo, modo));
+    expect(new Set(plex.map((a) => a.event))).toEqual(
+        new Set([...Object.values(plexHistorial.EVENTOS), ...Object.values(EVENTOS_FICHAS), ...eventosIdioma]),
+    );
+    expect(plex.every((a) => ["facil", "normal", "gordo"].includes(a.dificultad))).toBe(true);
+    // Los ids, únicos en todo el catálogo; y los logros que no son de Plex siguen sin dificultad.
+    expect(new Set(achievements.CATALOG.map((a) => a.id)).size).toBe(achievements.CATALOG.length);
+    expect(achievements.CATALOG.filter((a) => a.category !== "plex").some((a) => a.dificultad)).toBe(false);
 });

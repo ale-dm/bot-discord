@@ -155,7 +155,13 @@ describe("series", () => {
         const ids = r[0].desbloqueados.map((a) => a.id);
         expect(ids).toEqual(expect.arrayContaining(["plex_anime_series_3", "plex_anime_completas_1", "plex_completas_1"]));
         const datos = plexTrofeos.datosUsuario(g, "1", plexTrofeos.contexto(g));
-        expect(datos.cuentas).toEqual({ animePeliculas: 0, animeSeries: 3, animeEpisodios: 4, animeCompletas: 1, seriesCompletas: 1 });
+        expect(datos.cuentas).toMatchObject({
+            animePeliculas: 0,
+            animeSeries: 3,
+            animeEpisodios: 4,
+            animeCompletas: 1,
+            seriesCompletas: 1,
+        });
         expect(catalogo(g).get("plext:serie:a1")).toMatchObject({ anime: true, emoji: "🎌" });
     });
 });
