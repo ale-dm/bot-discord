@@ -51,7 +51,7 @@ test("comprar un consumible: botones para verlo en el inventario o usarlo ya, y 
 });
 
 test("las tres pestañas en todas las pantallas, y /tienda inventario abre la suya", async () => {
-    const esperadas = ["tienda_volver_1", "tienda_inv_1", "historial_ver_1"];
+    const esperadas = ["tienda_volver_1", "tienda_inv_1_tab", "historial_ver_1"];
     const inv = interaccion();
     await comando.run(null, inv);
     const payload = inv.reply.mock.calls[0][0];
@@ -59,6 +59,30 @@ test("las tres pestañas en todas las pantallas, y /tienda inventario abre la su
     for (const id of ["tienda_volver_1", "historial_ver_1"]) {
         const p = await boton(id);
         expect(p.components.at(-1).components.map((b) => b.data.custom_id)).toEqual(esperadas);
+        const lista = ids(p);
+        expect(lista.filter((x, n) => lista.indexOf(x) !== n)).toEqual([]);
+    }
+});
+
+// Con más de una página de inventario, ⬅️ Anterior de la página 2 era igual que la pestaña 🎒 Inventario y Discord
+// rechazaba el mensaje (COMPONENT_CUSTOM_ID_DUPLICATED).
+test("un inventario de varias páginas: ninguna página repite un customId, y la pestaña sigue abriéndolo", async () => {
+    for (let n = 0; n < 7; n++) {
+        db.prepare("INSERT INTO inventario (userId, itemId, fecha) VALUES ('coleccionista', ?, '2026-09-02')").run(n % 2 ? 70 : 71);
+        db.prepare("INSERT INTO objeto (id, nombre, descripcion, tipo) VALUES (?, ?, 'x', 'otro')").run(80 + n, `Cosa ${n}`);
+        db.prepare("INSERT INTO inventario (userId, itemId, fecha) VALUES ('coleccionista', ?, '2026-09-02')").run(80 + n);
+    }
+    const de = (customId) =>
+        interaccion({
+            customId,
+            user: { id: "coleccionista", username: "c", tag: "c" },
+            message: { interaction: { user: { id: "coleccionista" } } },
+        });
+    for (const id of ["tienda_inv_1_tab", "tienda_inv_2", "tienda_inv_1", "tienda_inv_3"]) {
+        const i = de(id);
+        await comando.handleButton(null, i);
+        const p = i.update.mock.calls[0][0];
+        expect(p.embeds[0].data.title).toBe("🎒 Tu inventario");
         const lista = ids(p);
         expect(lista.filter((x, n) => lista.indexOf(x) !== n)).toEqual([]);
     }

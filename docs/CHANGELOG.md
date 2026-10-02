@@ -2,6 +2,34 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (errores tras desplegar: botones repetidos y voz)
+
+Rama `feature/elduendejavier`, a partir de los logs de producción.
+
+### Errores corregidos
+
+- **🏅 Logros y 🏆 Rankings de `/perfil` fallaban** con `COMPONENT_CUSTOM_ID_DUPLICATED` al pasar a la página 2, al ver
+  los secretos o en la página 2 del ranking de nivel: ◀ (a la página 1), 🙈 Ocultar secretos y ⏮️ tenían el mismo id
+  que las pestañas Logros y Rankings, y Discord rechaza un mensaje con dos botones iguales. Ya pasaba desde la parte 6
+  de paneles; con los 17 logros de Plex hay más páginas y se notó. Las dos pestañas llevan ahora `_tab` al final (los
+  mensajes ya enviados siguen funcionando).
+- **🎒 Inventario de `/tienda`, igual**: en la página 2, ⬅️ Anterior era igual que la pestaña Inventario. La pestaña
+  lleva `_tab`.
+- **La voz no conectaba** (`/tts`, `/escuchar` y las respuestas por voz del Duende): "Error al unirse al canal de voz:
+  AbortError". Desde el 1 de marzo de 2026 Discord exige **DAVE** (cifrado de extremo a extremo) para entrar en un
+  canal de voz, y `@discordjs/voice` 0.18 no lo tiene: la conexión no llegaba a estar lista y se cortaba a los 20 s.
+  Se actualiza a **0.19.2**, que trae DAVE (`@snazzah/davey`). Esa versión pide Node 22.12 o más: la imagen de Docker
+  pasa de `node:20` a **`node:22`** y `engines` a `>=22.12`.
+
+### Tests
+
+- Se pulsan todos los botones de 🏅 Logros (todas las páginas, con y sin secretos, con y sin logros por reclamar) y
+  de 🏆 Rankings, los tres del log y un inventario de dos páginas, y se comprueba que ningún mensaje repite un id.
+  Fallan sin el arreglo.
+- `tests/dependenciasVoz.test.js`: `@discordjs/voice` es 0.19 o más y encuentra la librería de DAVE, Opus y cifrado, y
+  el Node de la imagen de Docker cumple lo que pide `package.json`.
+- Tests: 272.
+
 ## 2026-10-02 (anuncio de cada logro con mención)
 
 Rama `feature/elduendejavier`. Migración **014**.

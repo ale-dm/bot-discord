@@ -140,6 +140,14 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Ver algo en Plex y, en la siguiente media hora, que se actualice el progreso (y que un logro nuevo sí se anuncie).
 - [ ] Mirar que las horas de alguien se parezcan a las de Tautulli (sus estadísticas de usuario, "All Time").
 
+**Arreglos tras desplegar (2026-10-02)**
+- [ ] Reconstruir la imagen (pasa a Node 22) y, en un canal de voz, `/tts hola`, `/escuchar` y que el Duende conteste
+      por voz: ya no debe salir "Error al unirse al canal de voz: AbortError".
+- [ ] `/perfil` → 🏅 Logros: ▶ a la página 2, ◀ de vuelta, 👁️ Ver secretos y 🙈 Ocultar secretos. 🏆 Rankings →
+      ⏭️ y ⏮️ en el de nivel. `/tienda inventario` con más de 5 objetos: ➡️ y ⬅️. Ninguno debe dar error.
+- [ ] Añadir el apodo "coneyo" (y los que falten) en `/paneladmin` → Duende → Apodos, o importar el fichero de apodos
+      (ver T-02 "Antes"): el Duende no supo quién era "el coneyo" porque ese apodo no está en la BD de producción.
+
 **Resto**
 - [ ] `/cripto`: comprar y vender algo y ver un gráfico (el comando se ha partido en paneles); vender el 100 %
       con doble clic rápido: solo debe venderse una vez.

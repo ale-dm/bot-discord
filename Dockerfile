@@ -1,4 +1,5 @@
-FROM node:20-bookworm-slim
+# Node 22: @discordjs/voice 0.19 (DAVE, el cifrado de voz que Discord exige desde marzo de 2026) pide Node >= 22.12.
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 

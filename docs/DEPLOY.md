@@ -94,6 +94,14 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   (primera importación)`). Los logros de Plex que ya tenía cada vinculado se anuncian en el canal de logros, un
   mensaje por persona.
 
+### Voz con DAVE y Node 22 (2026-10-02)
+
+- Discord exige DAVE (cifrado de extremo a extremo) en los canales de voz desde marzo de 2026. El bot usa ahora
+  `@discordjs/voice` 0.19.2, que lo trae, y la imagen pasa a **`node:22-bookworm-slim`**. Hay que **reconstruir la
+  imagen** (`docker build`); no basta con reiniciar el contenedor.
+- Para comprobarlo: `/tts hola` en un canal de voz. Si sigue fallando, con el nivel de log en `debug` (🩺 Sistema) sale
+  el paso a paso de la conexión (`[Duende:Voz]`).
+
 ### Anuncio de logros (migración 014, 2026-10-02)
 
 - **014** pone `874776941000020018` (el canal de las subidas de nivel) como canal de logros en el servidor que lo usa

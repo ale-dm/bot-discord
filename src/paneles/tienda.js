@@ -10,7 +10,10 @@ const ITEMS_POR_PAGINA = 4; // una fila con un botón de compra por objeto
 const HISTORIAL_POR_PAGINA = 5;
 const INVENTARIO_POR_PAGINA = 5; // una fila con un botón de Usar por objeto
 
-/** Pestañas de /tienda (la actual, resaltada), en la última fila de sus pantallas. */
+/**
+ * Pestañas de /tienda (la actual, resaltada), en la última fila de sus pantallas. La de Inventario lleva "_tab": sin
+ * eso era igual que ⬅️ Anterior de la página 2 del inventario y Discord rechazaba el mensaje (COMPONENT_CUSTOM_ID_DUPLICATED).
+ */
 function filaPestanasTienda(actual) {
     const boton = (id, customId, label) =>
         new ButtonBuilder()
@@ -19,7 +22,7 @@ function filaPestanasTienda(actual) {
             .setStyle(id === actual ? ButtonStyle.Primary : ButtonStyle.Secondary);
     return new ActionRowBuilder().addComponents(
         boton("catalogo", "tienda_volver_1", "🛒 Catálogo"),
-        boton("inventario", "tienda_inv_1", "🎒 Inventario"),
+        boton("inventario", "tienda_inv_1_tab", "🎒 Inventario"),
         boton("compras", "historial_ver_1", "🧾 Mis compras"),
     );
 }

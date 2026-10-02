@@ -49,8 +49,8 @@ test("las cinco pestañas, con la actual resaltada, en todas las pantallas", asy
         "perfil_ver_yo_yo",
         "perfil_eco_yo_yo",
         "perfil_juegos_yo_yo",
-        "perfil_logros_yo_yo_0_0",
-        "perfil_rank_yo_yo_nivel_0",
+        "perfil_logros_yo_yo_0_0_tab",
+        "perfil_rank_yo_yo_nivel_0_tab",
     ];
     for (const [seccion, actual] of [
         ["perfil", 0],
@@ -102,6 +102,56 @@ test("rankings: uno por pantalla con un menú, y el de nivel con páginas", asyn
     const riqueza = interaccion({ customId: "perfil_ranksel_yo_yo", values: ["riqueza"] });
     await perfil.handleSelect(null, riqueza);
     expect(riqueza.update.mock.calls[0][0].embeds[0].data.description).toMatch(/<@otra>.*5[.,]?020/);
+});
+
+// Discord rechaza un mensaje con dos botones con el mismo customId (COMPONENT_CUSTOM_ID_DUPLICATED). Pasó en producción
+// con ◀ a la página 1 de logros, 🙈 Ocultar secretos y ⏮️ del ranking, que eran iguales que las pestañas Logros y
+// Rankings. Se pulsa cada botón de esas pantallas (con y sin logros por reclamar) y se revisa lo que sale.
+describe("ninguna pantalla de logros o rankings repite un customId", () => {
+    const pulsar = async (customId) => {
+        const i = interaccion({ customId });
+        await perfil.handleButton(null, i);
+        expect(i.reply).not.toHaveBeenCalled();
+        return i.update.mock.calls[0][0];
+    };
+    // Todos los botones de una pantalla, pulsados uno a uno (sin los desactivados), y lo que sale, revisado.
+    async function recorrer(customId, vistos = new Set()) {
+        if (vistos.has(customId)) return;
+        vistos.add(customId);
+        const payload = await pulsar(customId);
+        sinRepetidos(payload);
+        const botones = payload.components
+            .flatMap((r) => (r.toJSON ? r.toJSON() : r).components)
+            .filter((c) => c.type === 2 && !c.disabled && /^perfil_(logros|rank)_/.test(c.custom_id));
+        for (const b of botones) await recorrer(b.custom_id, vistos);
+        return vistos;
+    }
+
+    test("los botones del log de producción", async () => {
+        for (const id of ["perfil_logros_yo_yo_1_0", "perfil_logros_yo_yo_0_1", "perfil_rank_yo_yo_nivel_1"])
+            sinRepetidos(await pulsar(id));
+    });
+
+    test("logros: todas las páginas, con y sin secretos, sin y con logros por reclamar", async () => {
+        const sinReclamar = await recorrer("perfil_logros_yo_yo_0_0_tab");
+        expect(sinReclamar.size).toBeGreaterThan(10);
+        db.prepare(
+            "INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt) VALUES (?, 'yo', 'primer_mensaje', 1, ?)",
+        ).run(G, Date.now());
+        const conReclamar = await pulsar("perfil_logros_yo_yo_1_1");
+        expect(ids(conReclamar).some((id) => id.startsWith("perfil_reclamar_"))).toBe(true);
+        await recorrer("perfil_logros_yo_yo_0_0_tab");
+    });
+
+    test("rankings: la pestaña y las páginas del de nivel", async () => {
+        await recorrer("perfil_rank_yo_yo_nivel_0_tab");
+        sinRepetidos(await pulsar("perfil_rank_yo_yo_nivel_2"));
+    });
+
+    test("los ids de las pestañas de mensajes ya enviados (sin _tab) siguen funcionando", async () => {
+        expect((await pulsar("perfil_logros_yo_yo_0_0")).embeds[0].data.title).toMatch(/logros/i);
+        expect((await pulsar("perfil_rank_yo_yo_nivel_0")).embeds[0].data.title).toBeTruthy();
+    });
 });
 
 test("los botones de mensajes antiguos (/nivel, /logros, /perfil anterior) llevan a su pestaña", async () => {
