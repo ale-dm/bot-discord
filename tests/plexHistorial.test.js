@@ -4,6 +4,11 @@ jest.mock("../src/services/tautulliClient", () => ({
     ...jest.requireActual("../src/services/tautulliClient"),
     getHistoryPage: jest.fn(),
     getConfig: jest.fn(() => ({ url: "http://tautulli.local", apiKey: "clave" })),
+    // Las fichas (fases 2 y 3) están en plexTrofeos.test.js: aquí, una biblioteca vacía.
+    getLibraries: jest.fn(async () => []),
+    getMetadata: jest.fn(async () => null),
+    getChildrenMetadata: jest.fn(async () => []),
+    getLibraryMediaInfo: jest.fn(async () => ({ filas: [], total: 0 })),
 }));
 const tautulli = require("../src/services/tautulliClient");
 const guildSettings = require("../src/systems/guildSettings");
@@ -174,8 +179,9 @@ describe("estadísticas y logros", () => {
     });
 });
 
-test("hay 17 logros de Plex en el catálogo, todos con su evento", () => {
+test("hay 29 logros fijos de Plex en el catálogo (17 de la fase 1 y 12 de anime y series terminadas), todos con su evento", () => {
     const plex = achievements.CATALOG.filter((a) => a.category === "plex");
-    expect(plex).toHaveLength(17);
-    expect(new Set(plex.map((a) => a.event))).toEqual(new Set(Object.values(plexHistorial.EVENTOS)));
+    expect(plex).toHaveLength(29);
+    const { EVENTOS_FICHAS } = require("../src/systems/plexTrofeos");
+    expect(new Set(plex.map((a) => a.event))).toEqual(new Set([...Object.values(plexHistorial.EVENTOS), ...Object.values(EVENTOS_FICHAS)]));
 });

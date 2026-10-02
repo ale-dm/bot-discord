@@ -3,10 +3,13 @@
 // 30 min en index.js y botón 📼 Sincronizar historial en /paneladmin → Plex. Solo cuenta a quien tiene la cuenta de
 // Plex vinculada (plex_links), pero se guarda el historial de todos: si alguien se vincula después, ya está.
 // La primera vez se importa el historial entero: lo que sale de golpe se anuncia en un solo mensaje por persona.
+// Después de copiar, se piden las fichas que falten (systems/plexFichas) para los trofeos de las fases 2 y 3.
 const db = require("../core/db");
 const tautulli = require("../services/tautulliClient");
 const plexLinks = require("./plexLinks");
 const achievements = require("./achievementsSystem");
+const plexFichas = require("./plexFichas");
+const plexTrofeos = require("./plexTrofeos");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Plex");
@@ -170,24 +173,50 @@ function estadisticas(guildId, tautulliUserId) {
 /**
  * Recalcula los logros de Plex de todos los vinculados de un servidor (el servidor o su id) y anuncia lo desbloqueado
  * en el canal de logros: un solo mensaje por persona con todo lo nuevo (al importar el historial pueden salir muchos
- * de golpe).
+ * de golpe). Incluye los trofeos de las fases 2 y 3 (systems/plexTrofeos) con las fichas que ya haya. A quien ha
+ * ocultado sus logros de Plex no se le anuncia nada.
  * @returns {Promise<Array<{ discordUserId, stats, desbloqueados }>>}
  */
 async function actualizarLogros(guildOrId) {
     const guildId = typeof guildOrId === "string" ? guildOrId : guildOrId.id;
+    const links = plexLinks.getLinks(guildId);
+    const stats = new Map(links.map((l) => [l.discordUserId, estadisticas(guildId, l.tautulliUserId)]));
+    let extra = new Map();
+    try {
+        extra = await plexTrofeos.eventosDe(guildId, links, stats);
+    } catch (e) {
+        log.error(`No se pudieron calcular los trofeos de Plex de ${guildId}:`, e);
+    }
     const resultado = [];
-    for (const link of plexLinks.getLinks(guildId)) {
-        const stats = estadisticas(guildId, link.tautulliUserId);
-        const desbloqueados = [];
-        for (const [campo, evento] of Object.entries(EVENTOS)) {
-            desbloqueados.push(
-                ...(await achievements.applyEvent(guildOrId, link.discordUserId, evento, stats[campo], { anunciar: false })),
-            );
+    for (const link of links) {
+        const s = stats.get(link.discordUserId);
+        const eventos = [
+            ...Object.entries(EVENTOS).map(([campo, event]) => ({ event, value: s[campo] })),
+            ...(extra.get(link.discordUserId) || []),
+        ];
+        const desbloqueados = await achievements.applyEvents(guildOrId, link.discordUserId, eventos, { anunciar: false });
+        resultado.push({ discordUserId: link.discordUserId, stats: s, desbloqueados });
+    }
+    // Se anuncia después de calcular a todos, para que la rareza ("lo tiene el 8 %") cuente lo de esta vez.
+    for (const { discordUserId, desbloqueados } of resultado) {
+        if (desbloqueados.length && !plexTrofeos.oculto(guildId, discordUserId)) {
+            await achievements.anunciarLogros(guildOrId, discordUserId, plexTrofeos.paraAnuncio(guildId, desbloqueados));
         }
-        if (desbloqueados.length) await achievements.anunciarLogros(guildOrId, link.discordUserId, desbloqueados);
-        resultado.push({ discordUserId: link.discordUserId, stats, desbloqueados });
     }
     return resultado;
+}
+
+/** Copia lo nuevo del historial, pide las fichas que falten (sin pasarse de `presupuesto` llamadas) y recalcula. */
+async function sincronizarYCalcular(guild, { presupuesto } = {}) {
+    const historial = await sincronizar(guild.id);
+    let fichas = null;
+    try {
+        fichas = await plexFichas.actualizar(guild.id, { presupuesto });
+    } catch (e) {
+        log.warn(`No se pudieron actualizar las fichas de Plex de ${guild.name || guild.id}: ${e.message}`);
+    }
+    const logros = await actualizarLogros(guild);
+    return { historial, fichas, logros };
 }
 
 /** Cron: sincroniza y recalcula en cada servidor con Tautulli configurado y alguien vinculado. */
@@ -196,8 +225,7 @@ async function sincronizarTodos(client) {
         const { url, apiKey } = tautulli.getConfig(guild.id);
         if (!url || !apiKey || !plexLinks.getLinks(guild.id).length) continue;
         try {
-            await sincronizar(guild.id);
-            const r = await actualizarLogros(guild);
+            const { logros: r } = await sincronizarYCalcular(guild);
             const n = r.reduce((s, x) => s + x.desbloqueados.length, 0);
             if (n) log.info(`Logros de Plex en ${guild.name}: ${n} desbloqueados`);
         } catch (e) {
@@ -206,4 +234,4 @@ async function sincronizarTodos(client) {
     }
 }
 
-module.exports = { sincronizar, sincronizarTodos, actualizarLogros, estadisticas, estado, momento, EVENTOS, PAGINA };
+module.exports = { sincronizar, sincronizarYCalcular, sincronizarTodos, actualizarLogros, estadisticas, estado, momento, EVENTOS, PAGINA };

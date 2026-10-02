@@ -73,8 +73,8 @@ el-duende/
 │   │                         perfiles del Duende, auditoría)
 │   ├── systems/            Lógica del bot que usan varios comandos
 │   │                         XP, logros, apodos, ajustes por servidor, auditoría, transacciones del
-│   │                         casino, partidas en curso, vínculos de Plex, historial de Plex para los
-│   │                         logros, backups, reglas del blackjack,
+│   │                         casino, partidas en curso, vínculos de Plex, historial y fichas de Plex
+│   │                         para los logros y trofeos, backups, reglas del blackjack,
 │   │                         dinero (efectivo, banco y movimientos), recompensa diaria, retos entre
 │   │                         jugadores (dinero retenido hasta resolverse), tienda, objetos,
 │   │                         alertas por DM a los admins, avisos de lo pedido en Seerr; xp/ (niveles,

@@ -5,6 +5,8 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelect
 const xp = require("../systems/xpSystem");
 const achievements = require("../systems/achievementsSystem");
 const dinero = require("../systems/dinero");
+const plexLinks = require("../systems/plexLinks");
+const plexTrofeos = require("../systems/plexTrofeos");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
 
 function colorByLevel(level) {
@@ -136,8 +138,12 @@ function barraLogro(progress, target) {
 function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false) {
     const userId = targetId;
     const propio = ownerId === targetId;
-    const list = achievements.listUserAchievements(guildId, userId, { includeHidden });
-    const summary = achievements.getSummary(guildId, userId);
+    // Quien oculta sus logros de Plex (lo que ve) no los enseña en su perfil a los demás.
+    const plexOculto = plexTrofeos.oculto(guildId, userId);
+    const opciones = !propio && plexOculto ? { excluirCategorias: ["plex"] } : {};
+    const list = achievements.listUserAchievements(guildId, userId, { ...opciones, includeHidden });
+    const summary = achievements.getSummary(guildId, userId, opciones);
+    const rarezas = list.some((a) => a.category === "plex") ? plexTrofeos.rarezas(guildId) : new Map();
 
     const pageSize = 6;
     const maxPage = Math.max(0, Math.ceil(list.length / pageSize) - 1);
@@ -151,7 +157,8 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
                   if (a.hidden && !a.completed && !includeHidden) return "❓ **Logro secreto**";
                   const status = a.completed ? (a.claimable ? "🎁" : "✅") : "⏳";
                   const p = Math.min(a.progress, a.target);
-                  return `${status} **${a.name}** (${a.category})\n${a.desc}\n${barraLogro(p, a.target)}\n`;
+                  const rareza = a.category === "plex" && a.completed ? ` · 🏆 ${plexTrofeos.textoRareza(rarezas.get(a.id))}` : "";
+                  return `${status} **${a.name}** (${a.category})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}\n`;
               })
               .join("\n")
         : "No hay logros en esta vista.";
@@ -189,6 +196,15 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
                 .setCustomId(`perfil_reclamartodo_${ownerId}_${targetId}`)
                 .setLabel("🎁 Reclamar todo")
                 .setStyle(ButtonStyle.Success),
+        );
+    }
+    // Solo a quien tiene la cuenta de Plex vinculada: que sus logros de Plex no se anuncien ni los vean los demás.
+    if (propio && plexLinks.getLinkByDiscordId(guildId, userId)) {
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`perfil_plexoculto_${ownerId}_${targetId}_${plexOculto ? 0 : 1}`)
+                .setLabel(plexOculto ? "🍿 Enseñar mis logros de Plex" : "🍿 Ocultar mis logros de Plex")
+                .setStyle(ButtonStyle.Secondary),
         );
     }
 

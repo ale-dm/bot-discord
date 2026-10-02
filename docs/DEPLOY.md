@@ -94,6 +94,19 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   (primera importación)`). Los logros de Plex que ya tenía cada vinculado se anuncian en el canal de logros, un
   mensaje por persona.
 
+### Trofeos de Plex, fases 2 y 3 (migración 015, 2026-10-02)
+
+- **015** crea `plex_fichas`, `plex_trofeos` y `plex_preferencias`, y añade `biblioteca_revisada` a `plex_sync`. No hay
+  que copiar nada ni cambiar el stack.
+- En cada sincronización (cada 30 min) se piden como mucho 300 fichas a Tautulli; la primera vez repasa la lista de
+  películas de cada biblioteca de películas (`get_library_media_info`: con muchas películas, la primera llamada puede
+  tardar hasta un minuto). Hasta tener todas, los trofeos van saliendo poco a poco y los de director y sagas esperan.
+  Para ir más rápido, Panel admin → Plex → 🏆 Trofeos → 📼 Sincronizar ahora (1.200 por pulsación). En el log:
+  `Fichas de Plex de ...: N actualizadas, ... pendientes`.
+- Los nombres de los trofeos los pone Gemini (`GOOGLE_API_KEY`, el modelo del Duende): la primera vez pueden ser
+  muchos, en lotes de 40 y como mucho 150 por sincronización. Si falla, se quedan con un nombre por defecto.
+- Comprobar en 🏆 Trofeos que 🎌 Anime coge las bibliotecas buenas; si no, elegirlas con 🎌 Bibliotecas de anime.
+
 ### Voz con DAVE y Node 22 (2026-10-02)
 
 - Discord exige DAVE (cifrado de extremo a extremo) en los canales de voz desde marzo de 2026. El bot usa ahora

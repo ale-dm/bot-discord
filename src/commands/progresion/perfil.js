@@ -114,6 +114,19 @@ module.exports = {
         }
 
         const [, accion, , targetId] = parts;
+        // perfil_plexoculto_{o}_{t}_{1|0}: ocultar (1) o enseñar (0) tus logros de Plex.
+        if (accion === "plexoculto") {
+            const ocultar = parts[4] === "1";
+            require("../../systems/plexTrofeos").setOculto(interaction.guildId, userId, ocultar);
+            const payload = perfil.buildLogros(interaction.guildId, userId, userId);
+            await interaction.update({
+                ...payload,
+                content: ocultar
+                    ? "🙈 Tus logros de Plex ya no se anuncian ni los ven los demás en tu perfil."
+                    : "🍿 Tus logros de Plex vuelven a anunciarse y a verse en tu perfil.",
+            });
+            return;
+        }
         if (accion === "reclamartodo") {
             const r = achievements.claimAll(interaction.guildId, userId);
             const payload = perfil.buildLogros(interaction.guildId, userId, userId);

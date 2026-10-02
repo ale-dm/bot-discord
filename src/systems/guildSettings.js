@@ -42,6 +42,7 @@ const DEFAULT_FLAT = {
     "plex.tautulli_url": "",
     "plex.tautulli_api_key": "",
     "plex.novedades_channel_id": "",
+    "plex.bibliotecas_anime": "",
 
     "seerr.url": "",
     "seerr.api_key": "",
@@ -100,6 +101,7 @@ const KEY_TYPES = {
     "plex.tautulli_url": "string",
     "plex.tautulli_api_key": "string",
     "plex.novedades_channel_id": "string",
+    "plex.bibliotecas_anime": "string",
 
     "seerr.url": "string",
     "seerr.api_key": "string",
@@ -179,6 +181,7 @@ function flattenToNested(flat) {
             tautulli_url: flat["plex.tautulli_url"],
             tautulli_api_key: flat["plex.tautulli_api_key"],
             novedades_channel_id: flat["plex.novedades_channel_id"],
+            bibliotecas_anime: flat["plex.bibliotecas_anime"],
         },
         seerr: {
             url: flat["seerr.url"],

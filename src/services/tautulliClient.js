@@ -42,7 +42,7 @@ function getConfig(guildId) {
     };
 }
 
-async function call(guildId, cmd, params = {}) {
+async function call(guildId, cmd, params = {}, { timeout = 10000 } = {}) {
     const { url, apiKey } = getConfig(guildId);
     if (!url || !apiKey) throw new Error("Tautulli no está configurado (falta TAUTULLI_URL/TAUTULLI_API_KEY).");
 
@@ -53,7 +53,7 @@ async function call(guildId, cmd, params = {}) {
     try {
         res = await axios.get(`${url}/api/v2`, {
             params: { apikey: apiKey, cmd, ...params },
-            timeout: 10000,
+            timeout,
         });
     } catch (e) {
         log.warn(
@@ -93,6 +93,30 @@ async function getHistoryPage(guildId, { start = 0, length = 1000, after = null 
     if (after) params.after = after;
     const data = await call(guildId, "get_history", params);
     return data?.data || [];
+}
+
+/** La ficha de una película, serie, temporada o episodio (géneros, directores, colecciones, biblioteca...). Si Plex ya
+ * no lo tiene, Tautulli responde con un objeto vacío: aquí, null. */
+async function getMetadata(guildId, ratingKey) {
+    const data = await call(guildId, "get_metadata", { rating_key: ratingKey });
+    return data && data.rating_key ? data : null;
+}
+
+/** Los hijos de un elemento: las temporadas de una serie o los episodios de una temporada (con su media_index). */
+async function getChildrenMetadata(guildId, ratingKey, mediaType) {
+    const data = await call(guildId, "get_children_metadata", { rating_key: ratingKey, media_type: mediaType });
+    return data?.children_list || [];
+}
+
+/** Una página de lo que hay en una biblioteca (rating_key, título y año de cada película). Tarda la primera vez. */
+async function getLibraryMediaInfo(guildId, sectionId, { start = 0, length = 1000 } = {}) {
+    const data = await call(
+        guildId,
+        "get_library_media_info",
+        { section_id: sectionId, start, length, order_column: "sort_title", order_dir: "asc" },
+        { timeout: 60000 },
+    );
+    return { filas: data?.data || [], total: Number(data?.recordsFiltered ?? data?.recordsTotal ?? 0) };
 }
 
 async function getUserWatchTimeStats(guildId, userId, queryDays = "7,30,0") {
@@ -216,6 +240,9 @@ module.exports = {
     getUsers,
     getHistory,
     getHistoryPage,
+    getMetadata,
+    getChildrenMetadata,
+    getLibraryMediaInfo,
     getUserWatchTimeStats,
     getActivity,
     getRecentlyAdded,

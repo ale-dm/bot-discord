@@ -388,6 +388,19 @@ const CATALOG = [
         ["plex_atracon_5", "Atracón", "Ve 5 episodios de la misma serie en un día", "plex_atracon", 5, 700],
         ["plex_atracon_10", "Temporada de una sentada", "Ve 10 episodios de la misma serie en un día", "plex_atracon", 10, 1800, true],
         ["plex_noche_5", "Noctámbulo", "Ve algo de madrugada (entre las 3 y las 6) en 5 noches distintas", "plex_noctambulo", 5, 900, true],
+        // Fases 2 y 3: salen de las fichas de Tautulli (systems/plexTrofeos). Lo que es anime lo dicen sus bibliotecas.
+        ["plex_completas_1", "Créditos finales", "Termina una serie entera (sin contar anime)", "plex_series_completas", 1, 400],
+        ["plex_completas_5", "Sin cabos sueltos", "Termina 5 series enteras (sin contar anime)", "plex_series_completas", 5, 1500],
+        ["plex_completas_15", "Completista", "Termina 15 series enteras (sin contar anime)", "plex_series_completas", 15, 4000],
+        ["plex_anime_pelis_1", "Primera de anime", "Ve tu primera película de anime", "plex_anime_peliculas", 1, 150],
+        ["plex_anime_pelis_10", "Otaku de cine", "Ve 10 películas de anime distintas", "plex_anime_peliculas", 10, 1200],
+        ["plex_anime_pelis_25", "Sensei de la gran pantalla", "Ve 25 películas de anime distintas", "plex_anime_peliculas", 25, 3000],
+        ["plex_anime_series_3", "Opening en bucle", "Ve episodios de 3 series de anime distintas", "plex_anime_series", 3, 600],
+        ["plex_anime_series_10", "Otaku confirmado", "Ve episodios de 10 series de anime distintas", "plex_anime_series", 10, 2000],
+        ["plex_anime_eps_100", "Relleno incluido", "Ve 100 episodios de anime distintos", "plex_anime_episodios", 100, 1200],
+        ["plex_anime_eps_500", "Arco infinito", "Ve 500 episodios de anime distintos", "plex_anime_episodios", 500, 4000],
+        ["plex_anime_completas_1", "Sayonara", "Termina una serie de anime entera", "plex_anime_completas", 1, 500],
+        ["plex_anime_completas_5", "Nakama", "Termina 5 series de anime enteras", "plex_anime_completas", 5, 2500],
     ].map(([id, name, desc, event, target, rewardCoins, hidden]) => ({
         id,
         name,
@@ -421,19 +434,33 @@ function getCategorySet(disabledCategories) {
     );
 }
 
+// Los trofeos de Plex de cada servidor (fases 2 y 3) están en la BD, no en el código: se añaden al catálogo fijo.
+function catalogoDinamico(guildId) {
+    if (!guildId) return [];
+    try {
+        return require("./plexTrofeos").catalogo(guildId);
+    } catch (e) {
+        log.warn(`No se pudieron leer los trofeos de Plex de ${guildId}: ${e.message}`);
+        return [];
+    }
+}
+
 function getCatalog(guildId) {
     const cfg = getLogrosSettings(guildId);
     const disabled = getCategorySet(cfg.disabled_categories);
-    return CATALOG.filter((a) => !disabled.has(String(a.category || "").toLowerCase()));
+    return [...CATALOG, ...catalogoDinamico(guildId)].filter((a) => !disabled.has(String(a.category || "").toLowerCase()));
 }
 
-function getById(id) {
-    return CATALOG.find((a) => a.id === id) || null;
+function getById(id, guildId) {
+    return CATALOG.find((a) => a.id === id) || catalogoDinamico(guildId).find((a) => a.id === id) || null;
 }
 
+// `excluirCategorias`: para el perfil de alguien que ha ocultado sus logros de Plex a los demás.
+// Los `soloCompletado` (los trofeos de cada serie, saga...) solo salen a quien los tiene, también con los secretos.
 function listUserAchievements(guildId, userId, opts = {}) {
     const includeHidden = Boolean(opts.includeHidden);
-    const catalog = getCatalog(guildId);
+    const excluir = new Set(opts.excluirCategorias || []);
+    const catalog = getCatalog(guildId).filter((a) => !excluir.has(a.category));
     const rows = db
         .prepare("SELECT achievementId, progress, completedAt, claimedAt FROM achievements_progress WHERE guildId = ? AND userId = ?")
         .all(guildId, userId);
@@ -447,6 +474,7 @@ function listUserAchievements(guildId, userId, opts = {}) {
         const claimedAt = row?.claimedAt || null;
         const completed = !!completedAt;
 
+        if (ach.soloCompletado && !completed) continue;
         if (ach.hidden && !completed && !includeHidden) continue;
 
         list.push({
@@ -462,8 +490,8 @@ function listUserAchievements(guildId, userId, opts = {}) {
     return list.sort((a, b) => Number(Boolean(b.completed)) - Number(Boolean(a.completed)) || a.target - b.target);
 }
 
-function getSummary(guildId, userId) {
-    const all = listUserAchievements(guildId, userId, { includeHidden: true });
+function getSummary(guildId, userId, opts = {}) {
+    const all = listUserAchievements(guildId, userId, { ...opts, includeHidden: true });
     const visible = all.filter((a) => !a.hidden || a.completed);
     const completed = visible.filter((a) => a.completed).length;
     const claimable = visible.filter((a) => a.claimable).length;
@@ -512,7 +540,17 @@ async function maybeNotifyUnlocked(guildOrId, userId, unlocked) {
         return;
     }
 
-    const names = unlocked.map((a) => `🏅 **${a.name}**`).join("\n");
+    // Al importar el historial de Plex pueden salir decenas de golpe: lo que no cabe en un mensaje (2.000 caracteres)
+    // se resume en "…y N más".
+    const lineas = unlocked.map((a) => `🏅 **${a.name}**${a.detalleAnuncio ? ` — ${a.detalleAnuncio}` : ""}`);
+    let names = "";
+    let caben = 0;
+    for (const l of lineas) {
+        if (names.length + l.length + 1 > 1700) break;
+        names += (names ? "\n" : "") + l;
+        caben++;
+    }
+    if (caben < lineas.length) names += `\n…y ${lineas.length - caben} más`;
     try {
         await channel.send({
             content: `🎉 <@${userId}> desbloqueó logros:\n${names}\nReclámalos en /perfil → 🏅 Logros.`,
@@ -528,32 +566,46 @@ async function maybeNotifyUnlocked(guildOrId, userId, unlocked) {
 // `anunciar: false` para quien junta varios eventos y anuncia una vez al final (los logros de Plex).
 async function applyEvent(guildOrId, userId, event, value = 1, opciones = {}) {
     try {
-        return await applyEventUnsafe(guildOrId, userId, event, value, opciones);
+        return await applyEventsUnsafe(guildOrId, userId, [{ event, value }], opciones);
     } catch (e) {
         log.error(`Error aplicando el evento ${event} (${value}) a ${userId}:`, e);
         return [];
     }
 }
 
-async function applyEventUnsafe(guildOrId, userId, event, value = 1, { anunciar = true } = {}) {
+/** Varios eventos de golpe ([{ event, value }]), en una transacción y leyendo el catálogo una vez (los de Plex). */
+async function applyEvents(guildOrId, userId, eventos, opciones = {}) {
+    try {
+        return await applyEventsUnsafe(guildOrId, userId, eventos, opciones);
+    } catch (e) {
+        log.error(`Error aplicando ${eventos?.length} eventos a ${userId}:`, e);
+        return [];
+    }
+}
+
+async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true } = {}) {
     const guildId = typeof guildOrId === "string" ? guildOrId : guildOrId?.id;
-    if (!guildId || !userId || !event) return [];
+    const valores = new Map((eventos || []).filter((e) => e?.event).map((e) => [e.event, e.value ?? 1]));
+    if (!guildId || !userId || !valores.size) return [];
 
     const cfg = getLogrosSettings(guildId);
     if (!cfg.enabled) return [];
 
-    const catalog = getCatalog(guildId).filter((a) => a.event === event);
+    const catalog = getCatalog(guildId).filter((a) => valores.has(a.event));
     if (!catalog.length) return [];
 
     const unlocked = [];
     const tx = db.transaction(() => {
         for (const ach of catalog) {
+            const value = valores.get(ach.event);
             const row = db
                 .prepare("SELECT progress, completedAt FROM achievements_progress WHERE guildId = ? AND userId = ? AND achievementId = ?")
                 .get(guildId, userId, ach.id);
 
             const current = Number(row?.progress || 0);
             const done = !!row?.completedAt;
+            // Un "max" sin cambios no se vuelve a escribir (los de Plex se repasan enteros cada 30 min).
+            if (ach.metric === "max" && row && done && Number(value || 0) <= current) continue;
             const next = ach.metric === "max" ? Math.max(current, Number(value || 0)) : current + Number(value || 0);
 
             let completedAt = row?.completedAt || null;
@@ -569,7 +621,9 @@ async function applyEventUnsafe(guildOrId, userId, event, value = 1, { anunciar 
     tx();
 
     if (unlocked.length) {
-        log.info(`${userId} desbloqueó en ${guildId}: ${unlocked.map((a) => a.id).join(", ")} (evento ${event})`);
+        log.info(
+            `${userId} desbloqueó en ${guildId}: ${unlocked.map((a) => a.id).join(", ")} (eventos ${[...new Set(unlocked.map((a) => a.event))].join(", ")})`,
+        );
         if (anunciar) await maybeNotifyUnlocked(guildOrId, userId, unlocked);
     }
     return unlocked;
@@ -582,7 +636,7 @@ function rewardCoinsFor(ach, guildId) {
 }
 
 function claimAchievement(guildId, userId, achievementId) {
-    const ach = getById(achievementId);
+    const ach = getById(achievementId, guildId);
     if (!ach) return { ok: false, msg: "Logro no existe." };
 
     const row = db
@@ -674,6 +728,7 @@ module.exports = {
     listUserAchievements,
     getSummary,
     applyEvent,
+    applyEvents,
     claimAchievement,
     rewardCoinsFor,
     claimAll,

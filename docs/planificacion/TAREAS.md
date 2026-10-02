@@ -140,6 +140,22 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Ver algo en Plex y, en la siguiente media hora, que se actualice el progreso (y que un logro nuevo sí se anuncie).
 - [ ] Mirar que las horas de alguien se parezcan a las de Tautulli (sus estadísticas de usuario, "All Time").
 
+**🍿 Trofeos de Plex, fases 2 y 3 (2026-10-02, rama `feature/elduendejavier`)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 015_plex_trofeos`.
+- [ ] Panel admin → Plex → 🏆 Trofeos: 🎌 Anime coge las bibliotecas de anime de verdad (si no, 🎌 Bibliotecas de anime).
+- [ ] 📼 Sincronizar ahora unas cuantas veces hasta que "pendientes" llegue a 0 (en el log, `Fichas de Plex de ...`):
+      mirar cuánto tarda la primera (la lista de películas) y que "Todas las de…" y sagas pase a ✅ activos.
+- [ ] En el canal de logros, los trofeos con su nombre de Gemini, de qué son y la rareza; que no salgan cortados raros.
+      Si muchos se quedan con el nombre por defecto ("X: completada"), mirar en el log el aviso de Gemini.
+- [ ] Comprobar con alguien que ha terminado una serie que la tiene, y que una de anime sale con 🎌 (y cuenta en
+      "Sayonara", no en "Créditos finales").
+- [ ] ➕ Crear trofeo con `director:Nolan` (o alguno que alguien ya cumpla): sale enseguida a quien lo cumple y en el
+      panel pone cuántos lo tienen. Uno con una condición mal escrita avisa. 🗑️ Borrarlo.
+- [ ] `/perfil` → 🏅 Logros: la rareza en los de Plex; 🍿 Ocultar mis logros de Plex y, desde otra cuenta,
+      `/perfil usuario:` sin los de Plex. Volver a enseñarlos.
+- [ ] Mirar que las recompensas de la primera importación no desequilibran la economía (si sí, bajar
+      `logros.reward_multiplier` antes de que se reclamen).
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

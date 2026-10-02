@@ -5,11 +5,14 @@ const {
     ButtonStyle,
     UserSelectMenuBuilder,
     ChannelSelectMenuBuilder,
+    StringSelectMenuBuilder,
     ChannelType,
     MessageFlags,
 } = require("discord.js");
 const plexLinks = require("../systems/plexLinks");
 const plexHistorial = require("../systems/plexHistorial");
+const plexFichas = require("../systems/plexFichas");
+const plexTrofeos = require("../systems/plexTrofeos");
 const tautulliClient = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
 
@@ -54,6 +57,7 @@ function buildPlexHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_plex_link").setLabel("➕ Vincular").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_plex_unlink").setLabel("🗑️ Quitar").setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId("paneladmin_plex_test").setLabel("🔌 Test conexión").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_trofeos").setLabel("🏆 Trofeos").setStyle(ButtonStyle.Primary),
     );
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_plex_novedades_channel").setLabel("📢 Canal novedades").setStyle(ButtonStyle.Secondary),
@@ -72,6 +76,72 @@ function buildPlexHome(guildId) {
     return { embeds: [embed], components: [row1, row2, row3, navRow()] };
 }
 
+const NOMBRE_TIPO = {
+    temporada: "📺 temporadas",
+    serie: "📺 series",
+    saga: "🎬 sagas",
+    director: "🎥 directores",
+    genero: "🎭 géneros",
+    decada: "📼 décadas",
+    admin: "✍️ de admin",
+};
+
+/** 🏆 Trofeos de Plex (fases 2 y 3): fichas, qué es anime, trofeos creados y los de admin. */
+function buildPlexTrofeos(guildId) {
+    const f = plexFichas.estado(guildId);
+    const { porTipo, admin } = plexTrofeos.resumen(guildId);
+    const anime = plexFichas.configAnime(guildId);
+    const nombres = plexFichas.nombresBibliotecas(guildId);
+    const animeTexto = anime.auto
+        ? "automático (bibliotecas con «anime» en el nombre y lo que tenga el género Anime)"
+        : [...anime.ids].map((id) => `**${nombres.get(id) || `biblioteca ${id}`}**`).join(", ");
+    const creados = Object.entries(NOMBRE_TIPO)
+        .map(([tipo, nombre]) => `${nombre} **${porTipo[tipo] || 0}**`)
+        .join(" · ");
+    let lista = admin.length
+        ? admin
+              .map(
+                  (t) =>
+                      `• **${t.nombre}** — \`${t.condicion}\` · 🪙 ${t.recompensa.toLocaleString("es")} · lo ${t.completados === 1 ? "tiene 1" : `tienen ${t.completados}`}`,
+              )
+              .join("\n")
+        : "Ninguno todavía. Con ➕ Crear trofeo: nombre, condición y recompensa.";
+    if (lista.length > 1500) lista = `${lista.slice(0, 1500)}…`;
+    const ayuda = Object.values(plexTrofeos.CONDICIONES)
+        .filter((c) => c.ayuda)
+        .map((c) => `• ${c.ayuda}`)
+        .join("\n");
+
+    const embed = new EmbedBuilder()
+        .setTitle("🏆 Trofeos de Plex")
+        .setDescription(
+            `📚 Fichas: **${f.peliculas.toLocaleString("es")}** películas de la biblioteca · **${f.series.toLocaleString("es")}** series vistas · ` +
+                `**${f.pendientes.toLocaleString("es")}** pendientes (se piden poco a poco cada 30 min)\n` +
+                `Biblioteca repasada: ${f.bibliotecaRevisada ? `<t:${Math.floor(f.bibliotecaRevisada / 1000)}:R>` : "todavía no"} · ` +
+                `"Todas las de…" y sagas: ${f.completa ? "✅ activos" : "⏳ cuando estén todas las fichas de películas"}\n` +
+                `🎌 Anime: ${animeTexto}\n\n` +
+                `**Creados**: ${creados}\n\n` +
+                `**Trofeos de admin (${admin.length})**\n${lista}\n\n**Condiciones**\n${ayuda}`,
+        )
+        .setColor(0xe5a00d)
+        .setTimestamp();
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_plex_trofeo_crear").setLabel("➕ Crear trofeo").setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_plex_trofeo_borrar")
+            .setLabel("🗑️ Borrar trofeo")
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(!admin.length),
+        new ButtonBuilder().setCustomId("paneladmin_plex_anime").setLabel("🎌 Bibliotecas de anime").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_historial").setLabel("📼 Sincronizar ahora").setStyle(ButtonStyle.Primary),
+    );
+    const nav = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_plex_trofeos").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_plex_home").setLabel("◀ Plex").setStyle(ButtonStyle.Secondary),
+    );
+    return { embeds: [embed], components: [row, nav] };
+}
+
 async function handlePlexButton(interaction) {
     const id = interaction.customId;
     const guildId = interaction.guildId;
@@ -81,18 +151,108 @@ async function handlePlexButton(interaction) {
         return true;
     }
 
-    // Copia ya lo nuevo del historial y recalcula los logros de Plex (sin esperar al cron de cada 30 min).
+    if (id === "paneladmin_plex_trofeos") {
+        await interaction.update(buildPlexTrofeos(guildId));
+        return true;
+    }
+
+    if (id === "paneladmin_plex_trofeo_crear") {
+        await interaction.showModal(
+            simpleModal("paneladmin_plex_trofeo_modal", "Nuevo trofeo de Plex", [
+                { id: "nombre", label: "Nombre", placeholder: "Maratón Nolan", maxLength: 60 },
+                { id: "condicion", label: "Condición", placeholder: "director:Christopher Nolan · genero:Terror 20", maxLength: 100 },
+                { id: "recompensa", label: "Recompensa (monedas)", placeholder: "1000", maxLength: 7 },
+                {
+                    id: "descripcion",
+                    label: "Descripción (opcional)",
+                    placeholder: "Se pone sola según la condición",
+                    required: false,
+                    maxLength: 200,
+                },
+            ]),
+        );
+        return true;
+    }
+
+    if (id === "paneladmin_plex_trofeo_borrar") {
+        const { admin } = plexTrofeos.resumen(guildId);
+        if (!admin.length) {
+            await interaction.reply({ content: "No hay trofeos de admin.", flags: MessageFlags.Ephemeral });
+            return true;
+        }
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId("paneladmin_plex_trofeo_borrar_select")
+            .setPlaceholder("Qué trofeo borrar")
+            .addOptions(
+                admin
+                    .slice(0, 25)
+                    .map((t) => ({ label: t.nombre.slice(0, 100), description: String(t.condicion).slice(0, 100), value: t.id })),
+            );
+        await interaction.reply({
+            content: "¿Qué trofeo borro? Se quita a quien lo tenga (lo ya reclamado no se devuelve).",
+            components: [new ActionRowBuilder().addComponents(menu)],
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+
+    if (id === "paneladmin_plex_anime") {
+        let libs;
+        try {
+            libs = (await plexFichas.bibliotecas(guildId)).filter((l) => l.tipo === "movie" || l.tipo === "show");
+        } catch (e) {
+            await interaction.reply({ content: `❌ No se pudo consultar Tautulli: ${e.message}`, flags: MessageFlags.Ephemeral });
+            return true;
+        }
+        const cfg = plexFichas.configAnime(guildId);
+        const opciones = [
+            {
+                label: "🤖 Automático",
+                description: "Las que tienen «anime» en el nombre y el género Anime",
+                value: "auto",
+                default: cfg.auto,
+            },
+            ...libs.slice(0, 24).map((l) => ({
+                label: l.nombre.slice(0, 100) || l.id,
+                description: `${l.tipo === "movie" ? "Películas" : "Series"} · ${l.items.toLocaleString("es")}`,
+                value: l.id,
+                default: !cfg.auto && cfg.ids.has(l.id),
+            })),
+        ];
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId("paneladmin_plex_anime_select")
+            .setPlaceholder("Bibliotecas que son anime")
+            .setMinValues(1)
+            .setMaxValues(opciones.length)
+            .addOptions(opciones);
+        await interaction.reply({
+            content: "¿Qué bibliotecas son de anime (series y películas)? Con 🤖 Automático, las que tienen «anime» en el nombre.",
+            components: [new ActionRowBuilder().addComponents(menu)],
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+
+    // Copia ya lo nuevo del historial, pide más fichas de las que se piden cada 30 min y recalcula los logros de Plex.
     if (id === "paneladmin_plex_historial") {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         try {
-            const r = await plexHistorial.sincronizar(guildId);
-            const logros = await plexHistorial.actualizarLogros(interaction.guild || guildId);
+            const {
+                historial: r,
+                fichas,
+                logros,
+            } = await plexHistorial.sincronizarYCalcular(interaction.guild || { id: guildId }, {
+                presupuesto: plexFichas.PRESUPUESTO.boton,
+            });
             const desbloqueados = logros.reduce((s, x) => s + x.desbloqueados.length, 0);
             log.info(`${interaction.user.tag} sincronizó el historial de Plex: ${r.nuevas} nuevas, ${desbloqueados} logros`);
             await interaction.editReply({
                 content:
                     `📼 Historial sincronizado: **${r.nuevas.toLocaleString("es")}** reproducciones nuevas` +
                     `${r.primera ? " (primera importación)" : ""} · **${plexHistorial.estado(guildId).reproducciones.toLocaleString("es")}** guardadas.\n` +
+                    (fichas
+                        ? `📚 Fichas: **${fichas.fichas.toLocaleString("es")}** pedidas ahora · **${fichas.pendientes.toLocaleString("es")}** pendientes.\n`
+                        : "📚 Fichas: no se pudieron pedir (mira el log).\n") +
                     `🏅 Logros de Plex desbloqueados ahora: **${desbloqueados}** (${logros.length} vinculados).`,
             });
         } catch (e) {
@@ -259,6 +419,42 @@ async function handlePlexUserSelect(interaction) {
 }
 
 async function handlePlexModal(interaction) {
+    if (interaction.customId === "paneladmin_plex_trofeo_modal") {
+        const campo = (k) => {
+            try {
+                return interaction.fields.getTextInputValue(k) || "";
+            } catch {
+                return "";
+            }
+        };
+        const r = plexTrofeos.crearAdmin(
+            interaction.guildId,
+            { nombre: campo("nombre"), condicion: campo("condicion"), recompensa: campo("recompensa"), descripcion: campo("descripcion") },
+            interaction.user.id,
+        );
+        if (!r.ok) {
+            await interaction.reply({ content: `❌ ${r.error}`, flags: MessageFlags.Ephemeral });
+            return true;
+        }
+        adminAudit.logAdminAction({
+            guildId: interaction.guildId,
+            actorId: interaction.user.id,
+            action: "plex.trofeo.crear",
+            details: { id: r.trofeo.id, nombre: r.trofeo.nombre, condicion: r.trofeo.condicion, recompensa: r.trofeo.recompensa },
+        });
+        await interaction.reply({
+            content:
+                `✅ Trofeo **${r.trofeo.nombre}** creado (\`${r.trofeo.condicion}\`, 🪙 ${r.trofeo.recompensa.toLocaleString("es")}): ` +
+                `${r.trofeo.descripcion}. Se calcula ya para los vinculados y en cada sincronización.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        // Sin esperar al cron: quien ya lo cumple lo recibe ahora.
+        plexHistorial
+            .actualizarLogros(interaction.guild || interaction.guildId)
+            .catch((e) => log.warn(`No se pudo calcular el trofeo nuevo: ${e.message}`));
+        return true;
+    }
+
     if (interaction.customId === "paneladmin_plex_channel_remove_modal") {
         const channelId = interaction.fields.getTextInputValue("channel_id").trim();
         if (!/^\d{17,19}$/.test(channelId)) {
@@ -311,4 +507,48 @@ async function handlePlexModal(interaction) {
     return true;
 }
 
-module.exports = { buildPlexHome, handlePlexButton, handlePlexUserSelect, handlePlexModal, handlePlexChannelSelect };
+async function handlePlexStringSelect(interaction) {
+    if (interaction.customId === "paneladmin_plex_trofeo_borrar_select") {
+        const id = interaction.values[0];
+        const ok = plexTrofeos.borrar(interaction.guildId, id);
+        adminAudit.logAdminAction({
+            guildId: interaction.guildId,
+            actorId: interaction.user.id,
+            action: "plex.trofeo.borrar",
+            details: { id },
+        });
+        await interaction.update({ content: ok ? "✅ Trofeo borrado." : "Ese trofeo ya no existía.", components: [] });
+        return true;
+    }
+
+    if (interaction.customId === "paneladmin_plex_anime_select") {
+        const valores = interaction.values.filter((v) => v !== "auto");
+        const valor = interaction.values.includes("auto") ? "" : valores.join(",");
+        guildSettings.setSetting(interaction.guildId, "plex.bibliotecas_anime", valor);
+        adminAudit.logAdminAction({
+            guildId: interaction.guildId,
+            actorId: interaction.user.id,
+            action: "plex.anime.bibliotecas",
+            details: { bibliotecas: valor || "auto" },
+        });
+        await interaction.update({
+            content: valor
+                ? `✅ Cuentan como anime ${valores.length === 1 ? "esa biblioteca" : `esas ${valores.length} bibliotecas`}. Se nota en la próxima sincronización.`
+                : "✅ Anime automático: las bibliotecas con «anime» en el nombre y lo que tenga el género Anime.",
+            components: [],
+        });
+        return true;
+    }
+
+    return false;
+}
+
+module.exports = {
+    buildPlexHome,
+    buildPlexTrofeos,
+    handlePlexButton,
+    handlePlexUserSelect,
+    handlePlexModal,
+    handlePlexChannelSelect,
+    handlePlexStringSelect,
+};

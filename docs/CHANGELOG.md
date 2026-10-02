@@ -2,6 +2,37 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (🍿 Trofeos de Plex, fases 2 y 3)
+
+Rama `feature/elduendejavier`. **F-PX-02b** y **F-PX-02c** de [FEATURES.md](planificacion/FEATURES.md), separando
+películas, series, series de anime y películas de anime. Migración **015** (tablas `plex_fichas`, `plex_trofeos` y
+`plex_preferencias`; columna `plex_sync.biblioteca_revisada`). Detalle en
+[FUNCIONALIDADES.md](FUNCIONALIDADES.md#trofeos-de-plex).
+
+- **Fichas de Tautulli** (`systems/plexFichas.js`): el historial no dice la biblioteca, los géneros ni los episodios de
+  cada temporada, así que en cada sincronización se piden poco a poco (300 llamadas; 1.200 con el botón) las fichas de
+  todas las películas de las bibliotecas de películas y de las series vistas (`get_metadata`, `get_children_metadata`,
+  `get_library_media_info`, nuevas en `tautulliClient`). Las películas se reconocen por título y año aunque estén en
+  dos bibliotecas o se hayan vuelto a añadir con otra clave; las series, por clave o por título.
+- **Fase 2, trofeos de cada título** (`systems/plexTrofeos.js`): terminar una temporada, una serie entera o una saga
+  (colección de Plex). Se crean la primera vez que alguien los consigue, con un nombre temático de **Gemini** que se
+  guarda ("Say my name"); solo los ve quien los tiene.
+- **Fase 3, por significado**: 10 y 25 películas de un género (Terror y Horror cuentan juntos), todas las de un director
+  que hay en Plex, 10 películas de una década anterior a 2000, y **trofeos de admin** con una condición en texto
+  (`genero:Terror 20`, `director:Nolan`, `serie:Breaking Bad`, `anime-peliculas 10`...) desde Panel admin → Plex →
+  🏆 Trofeos. **Rareza** en el perfil y en el anuncio ("solo el 8 % del servidor lo tiene").
+- **Anime aparte** 🎌: las bibliotecas de anime (automático por el nombre y el género Anime, o elegidas en 🎌
+  Bibliotecas de anime). 12 logros fijos nuevos en la categoría `plex`: series terminadas sin anime (1 · 5 · 15),
+  películas de anime (1 · 10 · 25), series de anime (3 · 10), episodios de anime (100 · 500) y series de anime
+  terminadas (1 · 5). 65 logros fijos en total.
+- **🍿 Ocultar mis logros de Plex** en `/perfil` → 🏅 Logros: no se anuncian y los demás no los ven en tu perfil.
+- **Logros**: el catálogo junta los fijos y los trofeos del servidor; `applyEvents` aplica muchos eventos en una
+  transacción; un anuncio con muchos logros se corta en "…y N más" para no pasar de 2.000 caracteres (al importar el
+  historial podían salir decenas); los logros de Plex se anuncian después de calcular a todos (la rareza cuenta lo de
+  esa sincronización).
+- Sin trofeos por país (Tautulli no lo da): queda como F-PX-02d.
+- Tests: 305 (`tests/plexTrofeos.test.js`).
+
 ## 2026-10-02 (la voz del Duende: revisión completa)
 
 Rama `feature/elduendejavier`. Tras el arreglo de DAVE el bot ya entra en el canal de voz, pero no decía nada:

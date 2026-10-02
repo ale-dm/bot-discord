@@ -17,7 +17,13 @@ const { handleApuestasButton, handleApuestasChannelSelect, handleApuestasModal }
 const { handleCatalogoButton, handleCatalogoModal } = require("../../adminPanel/catalogo");
 const { handleSistemaButton, handleSistemaSelect, handleSistemaModal } = require("../../adminPanel/sistema");
 const { handleAuditButton } = require("../../adminPanel/audit");
-const { handlePlexButton, handlePlexUserSelect, handlePlexModal, handlePlexChannelSelect } = require("../../adminPanel/plex");
+const {
+    handlePlexButton,
+    handlePlexUserSelect,
+    handlePlexModal,
+    handlePlexChannelSelect,
+    handlePlexStringSelect,
+} = require("../../adminPanel/plex");
 const { handleSeerrButton, handleSeerrChannelSelect, handleSeerrModal } = require("../../adminPanel/seerr");
 const { handleApodosButton, handleApodosUserSelect, handleApodosModal } = require("../../adminPanel/apodos");
 const {
@@ -33,7 +39,7 @@ module.exports = {
         { types: ["modal"], prefixes: ["paneladmin_"], method: "handleModal" },
         {
             types: ["stringSelect"],
-            prefixes: ["paneladmin_levels_reward_search_pick_", "paneladmin_perfiles_", "paneladmin_sis_"],
+            prefixes: ["paneladmin_levels_reward_search_pick_", "paneladmin_perfiles_", "paneladmin_sis_", "paneladmin_plex_"],
             method: "handleStringSelect",
         },
         {
@@ -201,6 +207,7 @@ module.exports = {
             }
             if (await handlePerfilesStringSelect(interaction)) return;
             if (await handleSistemaSelect(interaction)) return;
+            if (await handlePlexStringSelect(interaction)) return;
             await handleLevelsStringSelect(interaction);
         } catch (err) {
             log.error(`handleStringSelect falló (${interaction.customId || "/paneladmin"}):`, err);
