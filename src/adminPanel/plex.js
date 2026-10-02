@@ -86,7 +86,7 @@ async function handlePlexButton(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         try {
             const r = await plexHistorial.sincronizar(guildId);
-            const logros = await plexHistorial.actualizarLogros(interaction.guild || guildId, interaction.client);
+            const logros = await plexHistorial.actualizarLogros(interaction.guild || guildId);
             const desbloqueados = logros.reduce((s, x) => s + x.desbloqueados.length, 0);
             log.info(`${interaction.user.tag} sincronizó el historial de Plex: ${r.nuevas} nuevas, ${desbloqueados} logros`);
             await interaction.editReply({

@@ -27,6 +27,9 @@ const client = new Client({
     ],
 });
 
+// Los logros que se calculan sin el servidor a mano (casino, cripto) lo buscan aquí para anunciarse.
+require("./systems/achievementsSystem").setClient(client);
+
 const Estado = process.env.ESTADOS ? process.env.ESTADOS.split(",") : ["Jugando"];
 const duendeCommand = require("./commands/duende/duende");
 const adivinar = require("./juegos/casino/adivinar.js");

@@ -487,8 +487,21 @@ function upsertProgress(guildId, userId, achievementId, progress, completedAt) {
     ).run(guildId, userId, achievementId, progress, completedAt || null);
 }
 
-async function maybeNotifyUnlocked(guild, userId, unlocked) {
-    if (!guild || !unlocked || !unlocked.length) return;
+// El cliente de Discord, para encontrar el servidor cuando solo llega su id (el casino y la cripto llaman con el id:
+// sin esto, sus logros nunca se anunciaban). Lo pone index.js al arrancar.
+let clienteDiscord = null;
+function setClient(client) {
+    clienteDiscord = client;
+}
+
+/**
+ * Anuncia en el canal de logros (Config Global → Logros) que alguien ha desbloqueado logros, mencionándole. Acepta el
+ * servidor o su id. Sin canal configurado, no hace nada.
+ */
+async function maybeNotifyUnlocked(guildOrId, userId, unlocked) {
+    if (!guildOrId || !unlocked || !unlocked.length) return;
+    const guild = typeof guildOrId === "string" ? clienteDiscord?.guilds?.cache?.get(guildOrId) : guildOrId;
+    if (!guild) return;
     const cfg = getLogrosSettings(guild.id);
     const channelId = cfg.notify_channel_id;
     if (!channelId) return;
@@ -501,7 +514,10 @@ async function maybeNotifyUnlocked(guild, userId, unlocked) {
 
     const names = unlocked.map((a) => `🏅 **${a.name}**`).join("\n");
     try {
-        await channel.send(`🎉 <@${userId}> desbloqueó logros:\n${names}\nReclámalos en /perfil → 🏅 Logros.`);
+        await channel.send({
+            content: `🎉 <@${userId}> desbloqueó logros:\n${names}\nReclámalos en /perfil → 🏅 Logros.`,
+            allowedMentions: { users: [String(userId)] },
+        });
     } catch (e) {
         log.warn(`No se pudo anunciar logros desbloqueados en #${channel.name}:`, e.message);
     }
@@ -509,18 +525,18 @@ async function maybeNotifyUnlocked(guild, userId, unlocked) {
 
 // Nunca lanza: se llama "de paso" (con void) desde el casino, la tienda, el XP... y un fallo
 // aquí no debe romper esa acción ni acabar como promesa rechazada sin capturar.
-async function applyEvent(guildOrId, userId, event, value = 1) {
+// `anunciar: false` para quien junta varios eventos y anuncia una vez al final (los logros de Plex).
+async function applyEvent(guildOrId, userId, event, value = 1, opciones = {}) {
     try {
-        return await applyEventUnsafe(guildOrId, userId, event, value);
+        return await applyEventUnsafe(guildOrId, userId, event, value, opciones);
     } catch (e) {
         log.error(`Error aplicando el evento ${event} (${value}) a ${userId}:`, e);
         return [];
     }
 }
 
-async function applyEventUnsafe(guildOrId, userId, event, value = 1) {
+async function applyEventUnsafe(guildOrId, userId, event, value = 1, { anunciar = true } = {}) {
     const guildId = typeof guildOrId === "string" ? guildOrId : guildOrId?.id;
-    const guild = typeof guildOrId === "string" ? null : guildOrId;
     if (!guildId || !userId || !event) return [];
 
     const cfg = getLogrosSettings(guildId);
@@ -554,7 +570,7 @@ async function applyEventUnsafe(guildOrId, userId, event, value = 1) {
 
     if (unlocked.length) {
         log.info(`${userId} desbloqueó en ${guildId}: ${unlocked.map((a) => a.id).join(", ")} (evento ${event})`);
-        await maybeNotifyUnlocked(guild, userId, unlocked);
+        if (anunciar) await maybeNotifyUnlocked(guildOrId, userId, unlocked);
     }
     return unlocked;
 }
@@ -652,6 +668,8 @@ function getTopUsers(guildId, limit = 10) {
 
 module.exports = {
     CATALOG,
+    setClient,
+    anunciarLogros: maybeNotifyUnlocked,
     getCatalog,
     listUserAchievements,
     getSummary,

@@ -212,8 +212,11 @@ es `plex`).
 el historial de Tautulli a la BD (`plex_reproducciones`) y se recalculan. Películas y episodios cuentan una vez aunque
 se vuelvan a ver, y solo si Tautulli los da por vistos (su % de "visto"); las horas cuentan todo lo reproducido, sin
 pausas. Los días van en hora de Madrid (una sesión cuenta entera en el día en que empezó). La primera vez se importa
-el historial entero: los logros que salen de golpe no se anuncian en el canal, sino en un DM de resumen a cada uno.
-Después se anuncian como los demás.
+el historial entero: lo que sale de golpe se anuncia en un solo mensaje por persona.
+
+**Anuncios**: cada logro desbloqueado (de cualquier categoría) se anuncia en el canal de logros mencionando a quien lo
+consigue: "🎉 @alguien desbloqueó logros: 🏅 …". El canal se elige en Config Global → Logros; en este servidor es el
+mismo que el de las subidas de nivel (`874776941000020018`, lo pone la migración 014). Sin canal, no se anuncia.
 
 Se ven y se reclaman en `/perfil` → 🏅 Logros (antes era `/logros`): lista con páginas y progreso, 👁️ Ver secretos,
 un menú 🎁 para reclamar uno y 🎁 Reclamar todo. En el perfil de otra persona se ven sus logros, sin reclamar. El

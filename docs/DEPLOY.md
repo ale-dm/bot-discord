@@ -91,7 +91,15 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
 - **013** crea `plex_reproducciones` (copia del historial de Tautulli) y `plex_sync`. No hay que copiar nada.
 - Como mucho media hora después de arrancar (o al pulsar Panel admin → Plex → 📼 Sincronizar historial) se importa el historial entero
   de Tautulli: según cuánto haya, puede tardar un poco (en el log, `Historial de ...: N reproducciones nuevas ...
-  (primera importación)`). A cada vinculado le llega un DM con los logros de Plex que ya tenía.
+  (primera importación)`). Los logros de Plex que ya tenía cada vinculado se anuncian en el canal de logros, un
+  mensaje por persona.
+
+### Anuncio de logros (migración 014, 2026-10-02)
+
+- **014** pone `874776941000020018` (el canal de las subidas de nivel) como canal de logros en el servidor que lo usa
+  para los niveles (en el log, `...: los logros se anuncian en 874776941000020018`). Si sale el aviso de que ningún
+  servidor lo usa, ponerlo a mano en `/paneladmin` → ⚙️ Config Global → 🏅 Logros.
+- Desde esta versión se anuncian también los logros del casino y la cripto (antes se completaban sin aviso).
 
 Al arrancar, el contenedor registra los slash commands (los nuevos o eliminados aparecen solos),
 arranca el servidor de voz (Vosk) y después el bot. Si el bot se reinició con partidas de casino

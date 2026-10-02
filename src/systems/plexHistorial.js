@@ -2,8 +2,7 @@
 // esa copia calcula los logros de la categoría "plex" (horas, películas, episodios, series, maratones...): cron cada
 // 30 min en index.js y botón 📼 Sincronizar historial en /paneladmin → Plex. Solo cuenta a quien tiene la cuenta de
 // Plex vinculada (plex_links), pero se guarda el historial de todos: si alguien se vincula después, ya está.
-// La primera vez se importa el historial entero: los logros que salen de golpe no se anuncian uno a uno, sino en un
-// solo DM de resumen.
+// La primera vez se importa el historial entero: lo que sale de golpe se anuncia en un solo mensaje por persona.
 const db = require("../core/db");
 const tautulli = require("../services/tautulliClient");
 const plexLinks = require("./plexLinks");
@@ -168,50 +167,25 @@ function estadisticas(guildId, tautulliUserId) {
     };
 }
 
-const IDS_PLEX = () => achievements.CATALOG.filter((a) => a.category === "plex").map((a) => a.id);
-
-/** ¿Es la primera vez que se le calculan los logros de Plex? (no tiene ningún progreso en ellos). */
-function primeraVez(guildId, userId) {
-    const ids = IDS_PLEX();
-    return !db
-        .prepare(
-            `SELECT 1 FROM achievements_progress WHERE guildId = ? AND userId = ? AND achievementId IN (${ids.map(() => "?").join(",")}) LIMIT 1`,
-        )
-        .get(guildId, String(userId), ...ids);
-}
-
-async function resumenPorDm(client, userId, desbloqueados) {
-    try {
-        const user = await client.users.fetch(userId);
-        const nombres = desbloqueados.map((a) => `**${a.name}**`).join(", ");
-        await user.send(
-            `🍿 He importado tu historial de Plex y ya tienes **${desbloqueados.length}** ${desbloqueados.length === 1 ? "logro" : "logros"}: ${nombres}.\n` +
-                "Reclámalos en `/perfil` → 🏅 Logros.",
-        );
-    } catch (e) {
-        log.debug(`No se pudo mandar el resumen de logros de Plex a ${userId}: ${e.message}`);
-    }
-}
-
 /**
- * Recalcula los logros de Plex de todos los vinculados de un servidor. `guild` (el objeto) para anunciar lo nuevo en
- * el canal de logros; la primera vez de cada persona no se anuncia nada y le llega un DM de resumen (con `client`).
- * @returns {Promise<Array<{ discordUserId, stats, desbloqueados, primeraVez }>>}
+ * Recalcula los logros de Plex de todos los vinculados de un servidor (el servidor o su id) y anuncia lo desbloqueado
+ * en el canal de logros: un solo mensaje por persona con todo lo nuevo (al importar el historial pueden salir muchos
+ * de golpe).
+ * @returns {Promise<Array<{ discordUserId, stats, desbloqueados }>>}
  */
-async function actualizarLogros(guildOrId, client = null) {
+async function actualizarLogros(guildOrId) {
     const guildId = typeof guildOrId === "string" ? guildOrId : guildOrId.id;
     const resultado = [];
     for (const link of plexLinks.getLinks(guildId)) {
         const stats = estadisticas(guildId, link.tautulliUserId);
-        const primera = primeraVez(guildId, link.discordUserId);
-        // Con el id (sin el servidor), applyEvent no anuncia nada.
-        const destino = primera ? guildId : guildOrId;
         const desbloqueados = [];
         for (const [campo, evento] of Object.entries(EVENTOS)) {
-            desbloqueados.push(...(await achievements.applyEvent(destino, link.discordUserId, evento, stats[campo])));
+            desbloqueados.push(
+                ...(await achievements.applyEvent(guildOrId, link.discordUserId, evento, stats[campo], { anunciar: false })),
+            );
         }
-        if (primera && desbloqueados.length && client) await resumenPorDm(client, link.discordUserId, desbloqueados);
-        resultado.push({ discordUserId: link.discordUserId, stats, desbloqueados, primeraVez: primera });
+        if (desbloqueados.length) await achievements.anunciarLogros(guildOrId, link.discordUserId, desbloqueados);
+        resultado.push({ discordUserId: link.discordUserId, stats, desbloqueados });
     }
     return resultado;
 }
@@ -223,7 +197,7 @@ async function sincronizarTodos(client) {
         if (!url || !apiKey || !plexLinks.getLinks(guild.id).length) continue;
         try {
             await sincronizar(guild.id);
-            const r = await actualizarLogros(guild, client);
+            const r = await actualizarLogros(guild);
             const n = r.reduce((s, x) => s + x.desbloqueados.length, 0);
             if (n) log.info(`Logros de Plex en ${guild.name}: ${n} desbloqueados`);
         } catch (e) {

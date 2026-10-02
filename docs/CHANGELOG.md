@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-02 (anuncio de cada logro con mención)
+
+Rama `feature/elduendejavier`. Migración **014**.
+
+- **Cada logro desbloqueado se anuncia en el canal `874776941000020018`** (el de las subidas de nivel) mencionando a
+  quien lo consigue. La migración 014 lo pone como canal de logros en el servidor que lo usa para los niveles; se
+  puede cambiar en Config Global → Logros.
+- **Corregido**: los logros del casino y la cripto nunca se anunciaban (se calculan con el id del servidor y el aviso
+  necesitaba el servidor). Ahora el sistema de logros tiene el cliente de Discord (`setClient`, desde index.js) y
+  encuentra el servidor por su id.
+- La mención solo avisa a esa persona (`allowedMentions`).
+- **Logros de Plex**: lo desbloqueado en cada sincronización, también al importar el historial la primera vez, sale en
+  un solo mensaje por persona en ese canal (antes, la primera vez era un DM de resumen).
+- Tests: 265 (`tests/avisoLogros.test.js`).
+
 ## 2026-10-02 (🍿 Logros de Plex, fase 1)
 
 Rama `feature/elduendejavier`. Primera fase de los logros de Plex (F-PX-02 en
@@ -17,7 +32,8 @@ F-PX-02b y F-PX-02c). Migración **013** (tablas `plex_reproducciones` y `plex_s
   episodios de una serie en un día; 10, oculto) y noctámbulo (5 noches viendo algo entre las 3 y las 6, oculto). Solo
   para quien tiene la cuenta de Plex vinculada; los días en hora de Madrid; sin contar repeticiones.
 - **Primera vez**: los logros que salen al importar el historial no se anuncian en el canal; a cada uno le llega un DM
-  con el resumen. Después se anuncian como cualquier logro.
+  con el resumen. Después se anuncian como cualquier logro. *(Cambiado justo después: ahora salen en el canal, un
+  mensaje por persona; ver la entrada de arriba.)*
 - **Panel admin → Plex**: cuántas reproducciones hay guardadas y cuándo se sincronizó, y el botón 📼 Sincronizar
   historial.
 - `/ayuda` → Niveles cuenta los logros del catálogo (ya no pone 36 a mano) y menciona los de Plex.

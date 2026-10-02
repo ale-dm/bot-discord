@@ -83,11 +83,8 @@ describe("copia del historial", () => {
 describe("estadísticas y logros", () => {
     const canal = { name: "logros", isTextBased: () => true, send: jest.fn(async () => {}) };
     const guild = { id: G, name: G, channels: { cache: new Map([["canal-logros", canal]]), fetch: async () => null } };
-    const dms = [];
-    const client = {
-        guilds: { cache: new Map([[G, guild]]) },
-        users: { fetch: async (id) => ({ send: async (texto) => dms.push({ id, texto }) }) },
-    };
+    const client = { guilds: { cache: new Map([[G, guild]]) } };
+    const anuncio = (n) => canal.send.mock.calls[n][0];
 
     beforeAll(async () => {
         historial([
@@ -123,22 +120,26 @@ describe("estadísticas y logros", () => {
         expect(plexHistorial.momento(madrid(11, 0, 30))).toEqual({ dia: "2026-07-11", hora: 0 });
     });
 
-    test("la primera vez no se anuncia cada logro: llega un DM con el resumen", async () => {
-        const [r] = await plexHistorial.actualizarLogros(guild, client);
-        expect(r.primeraVez).toBe(true);
+    test("lo desbloqueado de golpe (al importar el historial) sale en un solo mensaje que menciona a la persona", async () => {
+        const [r] = await plexHistorial.actualizarLogros(guild);
         expect(r.desbloqueados.map((a) => a.id).sort()).toEqual(["plex_atracon_5", "plex_pelis_1"]);
-        expect(canal.send).not.toHaveBeenCalled();
-        expect(dms).toEqual([{ id: "disc-8", texto: expect.stringMatching(/historial de Plex.*\*\*2\*\* logros: .*Se apagan las luces/) }]);
+        expect(canal.send).toHaveBeenCalledTimes(1);
+        expect(anuncio(0)).toEqual({
+            content: expect.stringMatching(/^🎉 <@disc-8> desbloqueó logros:\n🏅 \*\*Se apagan las luces\*\*\n🏅 \*\*Atracón\*\*/),
+            allowedMentions: { users: ["disc-8"] },
+        });
         const horas = achievements.listUserAchievements(G, "disc-8").find((a) => a.id === "plex_horas_10");
         expect(horas).toMatchObject({ progress: 9, completed: false });
+        // Sin nada nuevo, no se vuelve a anunciar.
+        await plexHistorial.actualizarLogros(guild);
+        expect(canal.send).toHaveBeenCalledTimes(1);
     });
 
-    test("después, lo nuevo se anuncia en el canal de logros como cualquier otro logro", async () => {
+    test("después, lo nuevo se anuncia igual", async () => {
         historial([pelicula(8, "m4", madrid(20, 21))]);
         await plexHistorial.sincronizarTodos(client);
-        expect(canal.send).toHaveBeenCalledTimes(1);
-        expect(canal.send.mock.calls[0][0]).toMatch(/<@disc-8> desbloqueó logros:\n🏅 \*\*Palomitas en mano\*\*/);
-        expect(dms).toHaveLength(1);
+        expect(canal.send).toHaveBeenCalledTimes(2);
+        expect(anuncio(1).content).toMatch(/<@disc-8> desbloqueó logros:\n🏅 \*\*Palomitas en mano\*\*\nReclámalos/);
         // Y se pueden reclamar como los demás.
         expect(achievements.claimAchievement(G, "disc-8", "plex_horas_10").ok).toBe(true);
     });
@@ -146,7 +147,7 @@ describe("estadísticas y logros", () => {
     test("con la categoría plex desactivada no cuenta nada", async () => {
         guildSettings.setSetting(G, "logros.disabled_categories", "plex");
         plexLinks.setLink(G, "disc-9", "9", "luis");
-        const r = await plexHistorial.actualizarLogros(guild, client);
+        const r = await plexHistorial.actualizarLogros(guild);
         expect(r.find((x) => x.discordUserId === "disc-9").desbloqueados).toEqual([]);
         guildSettings.setSetting(G, "logros.disabled_categories", "");
         plexLinks.removeLink(G, "disc-9");

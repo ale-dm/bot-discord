@@ -132,7 +132,10 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Panel admin → Plex: la línea 📼 Historial para los logros y el botón 📼 Sincronizar historial. La primera vez
       importa el historial entero (en el log, `(primera importación)`): comprobar que el número de reproducciones
       cuadra más o menos con Tautulli y cuánto tarda.
-- [ ] A cada vinculado le llega un DM con los logros de Plex que ya tenía, y no se anuncian en el canal de logros.
+- [ ] Los logros de Plex que ya tenía cada vinculado salen en el canal de logros, un solo mensaje por persona.
+- [ ] Al arrancar: `[Migraciones] Aplicada 014_canal_logros` y `...: los logros se anuncian en 874776941000020018`.
+      Completar un logro cualquiera (p. ej. la primera apuesta en el casino con una cuenta nueva) y ver que en ese
+      canal sale "🎉 @persona desbloqueó logros" con la mención.
 - [ ] `/perfil` → 🏅 Logros: los de categoría `plex`, con su progreso, y reclamar uno.
 - [ ] Ver algo en Plex y, en la siguiente media hora, que se actualice el progreso (y que un logro nuevo sí se anuncie).
 - [ ] Mirar que las horas de alguien se parezcan a las de Tautulli (sus estadísticas de usuario, "All Time").
