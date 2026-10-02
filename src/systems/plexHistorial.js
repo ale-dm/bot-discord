@@ -182,10 +182,13 @@ async function actualizarLogros(guildOrId) {
     const links = plexLinks.getLinks(guildId);
     const stats = new Map(links.map((l) => [l.discordUserId, estadisticas(guildId, l.tautulliUserId)]));
     let extra = new Map();
-    try {
-        extra = await plexTrofeos.eventosDe(guildId, links, stats);
-    } catch (e) {
-        log.error(`No se pudieron calcular los trofeos de Plex de ${guildId}:`, e);
+    // Con los logros de Plex desactivados no se crean trofeos (ni se le piden nombres a Gemini).
+    if (achievements.categoriaActiva(guildId, "plex")) {
+        try {
+            extra = await plexTrofeos.eventosDe(guildId, links, stats);
+        } catch (e) {
+            log.error(`No se pudieron calcular los trofeos de Plex de ${guildId}:`, e);
+        }
     }
     const resultado = [];
     for (const link of links) {
@@ -210,10 +213,12 @@ async function actualizarLogros(guildOrId) {
 async function sincronizarYCalcular(guild, { presupuesto } = {}) {
     const historial = await sincronizar(guild.id);
     let fichas = null;
-    try {
-        fichas = await plexFichas.actualizar(guild.id, { presupuesto });
-    } catch (e) {
-        log.warn(`No se pudieron actualizar las fichas de Plex de ${guild.name || guild.id}: ${e.message}`);
+    if (achievements.categoriaActiva(guild.id, "plex")) {
+        try {
+            fichas = await plexFichas.actualizar(guild.id, { presupuesto });
+        } catch (e) {
+            log.warn(`No se pudieron actualizar las fichas de Plex de ${guild.name || guild.id}: ${e.message}`);
+        }
     }
     const logros = await actualizarLogros(guild);
     return { historial, fichas, logros };

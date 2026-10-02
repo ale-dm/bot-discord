@@ -185,8 +185,9 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
     let animePeliculas = 0;
     for (const f of fichasVistas.values()) {
         if (plexFichas.esAnime(f, ctx.anime)) animePeliculas++;
-        for (const g of f.generos) {
-            const k = canonico(g);
+        // Una vez por película aunque tenga el mismo género en dos idiomas ("Terror" y "Horror").
+        const generos = new Map(f.generos.map((g) => [canonico(g), g]));
+        for (const [k, g] of generos) {
             if (!porGenero.has(k)) porGenero.set(k, { nombre: g, n: 0 });
             porGenero.get(k).n++;
         }
@@ -196,7 +197,8 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
         }
     }
 
-    // Episodios vistos de cada serie: la de su clave o, si se volvió a añadir con otra, la que tenga el mismo título.
+    // Episodios vistos de cada serie: la de su clave o, si esa ya no está (se volvió a añadir con otra), la que tenga el
+    // mismo título; así lo visto antes y después de volver a añadirla cuenta junto.
     const eps = db
         .prepare(
             `SELECT DISTINCT serie_key, serie, temporada, episodio FROM plex_reproducciones
@@ -205,7 +207,8 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
         .all(guildId, String(tautulliUserId));
     const porSerie = new Map();
     for (const r of eps) {
-        const f = ctx.seriesPorKey.get(r.serie_key) || ctx.seriesPorTitulo.get(normalizar(r.serie));
+        const porKey = ctx.seriesPorKey.get(r.serie_key);
+        const f = porKey?.encontrada ? porKey : ctx.seriesPorTitulo.get(normalizar(r.serie)) || porKey;
         if (!f) continue;
         if (!porSerie.has(f.rating_key)) porSerie.set(f.rating_key, { ficha: f, vistos: new Set() });
         porSerie.get(f.rating_key).vistos.add(`${r.temporada}:${r.episodio}`);
@@ -358,7 +361,11 @@ const CONDICIONES = {
 /** Lee una condición escrita por un admin ("genero:Terror 20"). @returns {{ ok: true, cond } | { ok: false, error }} */
 function parsearCondicion(texto) {
     const m = /^\s*([a-z-]+)\s*(?::\s*(.+?))?(?:\s+(\d+))?\s*$/i.exec(String(texto || ""));
-    if (!m) return { ok: false, error: "No entiendo la condición." };
+    if (!m)
+        return {
+            ok: false,
+            error: "No entiendo la condición: va como `tipo:valor número`, por ejemplo `genero:Terror 20` o `peliculas 50`.",
+        };
     const tipo = m[1].toLowerCase();
     const def = CONDICIONES[tipo];
     if (!def) return { ok: false, error: `No conozco el tipo "${tipo}".` };
@@ -621,9 +628,13 @@ function crearAdmin(guildId, { nombre, descripcion, condicion, recompensa }, act
     const coins = Math.floor(Number(String(recompensa ?? "").replace(/\./g, "")));
     if (!Number.isFinite(coins) || coins < 0 || coins > 1_000_000)
         return { ok: false, error: "La recompensa tiene que ser un número entre 0 y 1.000.000." };
+    // Id único aunque se creen dos en el mismo milisegundo.
+    const existe = db.prepare("SELECT 1 FROM plex_trofeos WHERE guildId = ? AND id = ?");
+    let id = `admin:${Date.now().toString(36)}`;
+    for (let i = 2; existe.get(guildId, id); i++) id = `admin:${Date.now().toString(36)}-${i}`;
     const trofeo = {
         guildId,
-        id: `admin:${Date.now().toString(36)}`,
+        id,
         tipo: "admin",
         nombre: n,
         descripcion:

@@ -445,6 +445,12 @@ function catalogoDinamico(guildId) {
     }
 }
 
+/** Si cuentan los logros de una categoría en un servidor (logros activados y la categoría sin desactivar). */
+function categoriaActiva(guildId, categoria) {
+    const cfg = getLogrosSettings(guildId);
+    return cfg.enabled && !getCategorySet(cfg.disabled_categories).has(String(categoria).toLowerCase());
+}
+
 function getCatalog(guildId) {
     const cfg = getLogrosSettings(guildId);
     const disabled = getCategorySet(cfg.disabled_categories);
@@ -724,6 +730,7 @@ module.exports = {
     CATALOG,
     setClient,
     anunciarLogros: maybeNotifyUnlocked,
+    categoriaActiva,
     getCatalog,
     listUserAchievements,
     getSummary,

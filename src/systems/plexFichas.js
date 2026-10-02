@@ -18,6 +18,7 @@ const log = createLogger("Plex");
 const PRESUPUESTO = { cron: 300, boton: 1200 };
 const EN_PARALELO = 4;
 const PAGINA_BIBLIOTECA = 2000;
+const MAX_PAGINAS_BIBLIOTECA = 100;
 const HORA = 3600 * 1000;
 const DIA = 24 * HORA;
 const REVISAR_BIBLIOTECA = 6 * HORA;
@@ -147,8 +148,10 @@ async function revisarBiblioteca(guildId, pedir) {
     let nuevas = 0;
     for (const lib of libs.filter((l) => l.tipo === "movie")) {
         const presentes = new Set();
-        for (let start = 0; ; start += PAGINA_BIBLIOTECA) {
+        for (let pagina = 0; pagina < MAX_PAGINAS_BIBLIOTECA; pagina++) {
+            const start = pagina * PAGINA_BIBLIOTECA;
             const { filas } = await pedir(() => tautulli.getLibraryMediaInfo(guildId, lib.id, { start, length: PAGINA_BIBLIOTECA }));
+            const antesDeLaPagina = presentes.size;
             db.transaction(() => {
                 for (const f of filas) {
                     if (!f.rating_key) continue;
@@ -159,7 +162,13 @@ async function revisarBiblioteca(guildId, pedir) {
                     if (!antes) nuevas++;
                 }
             })();
-            if (filas.length < PAGINA_BIBLIOTECA) break;
+            // Página incompleta (la última), o Tautulli no pagina y devuelve siempre lo mismo: se acabó.
+            if (filas.length !== PAGINA_BIBLIOTECA || presentes.size === antesDeLaPagina) break;
+        }
+        // Una lista vacía de una biblioteca que tiene películas es un fallo de Tautulli, no que se hayan borrado todas.
+        if (!presentes.size && lib.items > 0) {
+            log.warn(`La biblioteca ${lib.nombre} (${lib.id}) tiene ${lib.items} películas pero Tautulli no ha devuelto ninguna`);
+            continue;
         }
         // Las que ya no están en esa biblioteca dejan de contar para "todas las de…".
         const guardadas = db
@@ -198,13 +207,16 @@ function cola(guildId) {
     const vista = (f) => keysVistas.has(f.rating_key) || titulosVistos.has(clavePelicula(f.titulo, f.anio));
     const series = pendientes.filter((f) => f.tipo === "show");
     const peliculas = pendientes.filter((f) => f.tipo === "movie").sort((a, b) => Number(vista(b)) - Number(vista(a)));
+    // Series vistas hace poco con la ficha de hace más de 3 días, y las que se quedaron sin temporadas (Tautulli no las
+    // dio) de hace más de un día.
     const seriesViejas = db
         .prepare(
             `SELECT rating_key, tipo FROM plex_fichas f WHERE guildId = ? AND tipo = 'show' AND encontrada = 1 AND actualizada > 0
-                 AND actualizada < ? AND EXISTS (SELECT 1 FROM plex_reproducciones r WHERE r.guildId = f.guildId AND r.serie_key = f.rating_key AND r.inicio > ?)
+                 AND ((actualizada < ? AND EXISTS (SELECT 1 FROM plex_reproducciones r WHERE r.guildId = f.guildId AND r.serie_key = f.rating_key AND r.inicio > ?))
+                      OR (COALESCE(temporadas, '{}') = '{}' AND actualizada < ?))
              ORDER BY actualizada`,
         )
-        .all(guildId, ahora - REFRESCAR_SERIE, Math.floor((ahora - 30 * DIA) / 1000));
+        .all(guildId, ahora - REFRESCAR_SERIE, Math.floor((ahora - 30 * DIA) / 1000), ahora - DIA);
     const viejas = db
         .prepare(
             `SELECT rating_key, tipo FROM plex_fichas WHERE guildId = ? AND actualizada > 0
@@ -241,6 +253,31 @@ async function actualizar(guildId, { presupuesto = PRESUPUESTO.cron } = {}) {
     }
 
     const lista = cola(guildId);
+    // Si Plex no responde, Tautulli da cada ficha por perdida: antes de marcar nada, una que seguro que existe.
+    if (lista.length && r.llamadas < presupuesto) {
+        const conocida = db
+            .prepare(
+                "SELECT rating_key FROM plex_fichas WHERE guildId = ? AND tipo = 'movie' AND encontrada = 1 AND actualizada > 0 ORDER BY actualizada DESC LIMIT 1",
+            )
+            .pluck()
+            .get(guildId);
+        if (conocida) {
+            let ok = false;
+            try {
+                ok = Boolean(await pedir(() => tautulli.getMetadata(guildId, conocida)));
+            } catch (e) {
+                log.debug(`Comprobación de Plex: ${e.message}`);
+            }
+            if (!ok) {
+                r.errores++;
+                r.pendientes = estado(guildId).pendientes;
+                log.warn(
+                    `Fichas de Plex de ${guildId}: Plex no da la ficha de una película que sí está; se deja para la próxima sincronización`,
+                );
+                return r;
+            }
+        }
+    }
     let i = 0;
     const trabajador = async () => {
         while (i < lista.length && r.llamadas < presupuesto && erroresSeguidos < MAX_ERRORES_SEGUIDOS) {

@@ -33,6 +33,34 @@ películas, series, series de anime y películas de anime. Migración **015** (t
 - Sin trofeos por país (Tautulli no lo da): queda como F-PX-02d.
 - Tests: 305 (`tests/plexTrofeos.test.js`).
 
+### Revisión con tests a fondo (2026-10-03)
+
+Errores encontrados y corregidos al probar cada caso:
+
+- Una película con el género en dos idiomas ("Terror" y "Horror") contaba dos veces para ese género.
+- Una serie vuelta a añadir a Plex con otra clave: lo visto antes y después se repartía entre la ficha vieja y la
+  nueva y nunca salía completa. Ahora, si la ficha de su clave ya no está, se usa la que tenga el mismo título.
+- Si Tautulli ignorara `start`/`length` al listar la biblioteca, el repaso se quedaba en bucle; ahora para (y como
+  mucho 100 páginas).
+- Una lista vacía de una biblioteca que sí tiene películas (fallo de Tautulli) las daba todas por borradas.
+- Con Plex caído y Tautulli en pie, cada ficha salía como "no encontrada" y se marcaban cientos como perdidas. Antes de
+  pedir fichas se comprueba una película que seguro que existe; si no la da, se deja para la próxima vez.
+- Una serie borrada de Plex a la que Tautulli responde con error (en vez de vacío) contaba como fallo de red y podía
+  atascar la cola: ahora se marca como no encontrada. Los errores de Tautulli se distinguen de los de red
+  (`respuestaDeTautulli`).
+- Una serie de la que Tautulli no dio temporadas no se volvía a mirar nunca: ahora, al día siguiente.
+- Con la categoría `plex` (o los logros) desactivada se seguían pidiendo fichas, creando trofeos y llamando a Gemini.
+- Dos trofeos de admin creados en el mismo milisegundo tenían el mismo id y fallaba la BD.
+- Una condición sin `:` solo decía "No entiendo la condición": ahora explica el formato.
+
+Tests: 413. Nuevos: `plexFichas` (biblioteca, páginas, presupuesto, refrescos, fallos, Plex caído),
+`plexTautulliHttp` (el cliente real contra un Tautulli de mentira por HTTP y el flujo entero sin mocks),
+`plexTrofeosCasos` (cada regla y cada condición de admin, Gemini: fallos, lotes de 40 y máximo de 150),
+`plexTrofeosPaneles` (cada botón, menú y formulario por `/paneladmin` y por el enrutador, que lo que se manda a Discord
+es válido, el perfil y la migración sobre una BD en la 014), `plexTrofeosCarga` (12 vinculados, 3.000 películas, 300
+series y ~30.000 reproducciones: ~1 s por sincronización) y `plexTrofeosErrores` (Tautulli caído, fallos parciales,
+datos corruptos). Cobertura de líneas de las fichas, el historial y los trofeos: 99,7–100 %.
+
 ## 2026-10-02 (la voz del Duende: revisión completa)
 
 Rama `feature/elduendejavier`. Tras el arreglo de DAVE el bot ya entra en el canal de voz, pero no decía nada:

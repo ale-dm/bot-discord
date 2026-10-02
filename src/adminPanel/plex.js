@@ -13,6 +13,7 @@ const plexLinks = require("../systems/plexLinks");
 const plexHistorial = require("../systems/plexHistorial");
 const plexFichas = require("../systems/plexFichas");
 const plexTrofeos = require("../systems/plexTrofeos");
+const achievements = require("../systems/achievementsSystem");
 const tautulliClient = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
 
@@ -252,7 +253,9 @@ async function handlePlexButton(interaction) {
                     `${r.primera ? " (primera importación)" : ""} · **${plexHistorial.estado(guildId).reproducciones.toLocaleString("es")}** guardadas.\n` +
                     (fichas
                         ? `📚 Fichas: **${fichas.fichas.toLocaleString("es")}** pedidas ahora · **${fichas.pendientes.toLocaleString("es")}** pendientes.\n`
-                        : "📚 Fichas: no se pudieron pedir (mira el log).\n") +
+                        : achievements.categoriaActiva(guildId, "plex")
+                          ? "📚 Fichas: no se pudieron pedir (mira el log).\n"
+                          : "📚 Fichas: no se piden con los logros de Plex desactivados (Config Global → Logros).\n") +
                     `🏅 Logros de Plex desbloqueados ahora: **${desbloqueados}** (${logros.length} vinculados).`,
             });
         } catch (e) {

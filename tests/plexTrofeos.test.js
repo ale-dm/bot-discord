@@ -336,7 +336,10 @@ describe("trofeos de admin", () => {
         };
         expect(await handlePlexModal(i)).toBe(true);
         expect(reply.mock.calls[0][0].content).toMatch(/✅ Trofeo \*\*Nolanista\*\* creado \(`director:Nolan`, 🪙 1500\)/);
-        await new Promise((r) => setTimeout(r, 50)); // el cálculo va sin esperar a la respuesta
+        // El cálculo va sin esperar a la respuesta: se espera a que estén calculados Ana (lo tiene) y Luis (2 de 3).
+        const de = (u) => achievements.listUserAchievements(G, u).find((a) => a.name === "Nolanista") || {};
+        for (let n = 0; n < 100 && !(de("disc-8").completed && de("disc-9").progress === 2); n++)
+            await new Promise((r) => setTimeout(r, 20));
         const t = achievements.getCatalog(G).find((a) => a.name === "Nolanista");
         expect(t).toMatchObject({
             target: 3,

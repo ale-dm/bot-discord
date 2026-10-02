@@ -65,7 +65,10 @@ async function call(guildId, cmd, params = {}, { timeout = 10000 } = {}) {
     const response = res.data?.response;
     if (!response || response.result !== "success") {
         log.warn(`${cmd} respondió con error (${Date.now() - t0} ms): ${response?.message || "desconocido"}`);
-        throw new Error(`Tautulli respondió con error en ${cmd}: ${response?.message || "desconocido"}`);
+        const error = new Error(`Tautulli respondió con error en ${cmd}: ${response?.message || "desconocido"}`);
+        // Tautulli contestó, pero con un error (no es un fallo de red ni un timeout).
+        error.respuestaDeTautulli = true;
+        throw error;
     }
     log.debug(`${cmd} ok (${Date.now() - t0} ms)`);
     return response.data;
@@ -96,9 +99,15 @@ async function getHistoryPage(guildId, { start = 0, length = 1000, after = null 
 }
 
 /** La ficha de una película, serie, temporada o episodio (géneros, directores, colecciones, biblioteca...). Si Plex ya
- * no lo tiene, Tautulli responde con un objeto vacío: aquí, null. */
+ * no lo tiene, Tautulli responde con un objeto vacío o con un error: aquí, null. Un fallo de red sí se lanza. */
 async function getMetadata(guildId, ratingKey) {
-    const data = await call(guildId, "get_metadata", { rating_key: ratingKey });
+    let data;
+    try {
+        data = await call(guildId, "get_metadata", { rating_key: ratingKey });
+    } catch (e) {
+        if (e.respuestaDeTautulli) return null;
+        throw e;
+    }
     return data && data.rating_key ? data : null;
 }
 
