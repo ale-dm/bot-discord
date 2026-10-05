@@ -11,6 +11,8 @@ const achievements = require("./achievementsSystem");
 const plexFichas = require("./plexFichas");
 const plexIdiomas = require("./plexIdiomas");
 const plexTrofeos = require("./plexTrofeos");
+const plexImportacion = require("./plexImportacion");
+const plexGordos = require("./plexGordos");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Plex");
@@ -175,7 +177,8 @@ function estadisticas(guildId, tautulliUserId) {
  * Recalcula los logros de Plex de todos los vinculados de un servidor (el servidor o su id) y anuncia lo desbloqueado
  * en el canal de logros: un solo mensaje por persona con todo lo nuevo (al importar el historial pueden salir muchos
  * de golpe). Incluye los trofeos de las fases 2 y 3 (systems/plexTrofeos) con las fichas que ya haya. A quien ha
- * ocultado sus logros de Plex no se le anuncia nada.
+ * ocultado sus logros de Plex no se le anuncia nada. Lo que sale en la primera importación de cada uno da menos monedas
+ * (systems/plexImportacion) y, con el servidor de Discord, se dan los roles de 🎰 Gordos del Plex (systems/plexGordos).
  * @returns {Promise<Array<{ discordUserId, stats, desbloqueados }>>}
  */
 async function actualizarLogros(guildOrId) {
@@ -198,13 +201,24 @@ async function actualizarLogros(guildOrId) {
             ...Object.entries(EVENTOS).map(([campo, event]) => ({ event, value: s[campo] })),
             ...(extra.get(link.discordUserId) || []),
         ];
-        const desbloqueados = await achievements.applyEvents(guildOrId, link.discordUserId, eventos, { anunciar: false });
-        resultado.push({ discordUserId: link.discordUserId, stats: s, desbloqueados });
+        // Lo que sale mientras se le calcula lo antiguo (su primera importación) da menos monedas.
+        const importado = plexImportacion.importando(guildId, link.discordUserId);
+        const desbloqueados = await achievements.applyEvents(guildOrId, link.discordUserId, eventos, { anunciar: false, importado });
+        if (importado) plexImportacion.cerrarSiToca(guildId, link);
+        resultado.push({ discordUserId: link.discordUserId, stats: s, desbloqueados, importado });
     }
     // Se anuncia después de calcular a todos, para que la rareza ("lo tiene el 8 %") cuente lo de esta vez.
     for (const { discordUserId, desbloqueados } of resultado) {
         if (desbloqueados.length && !plexTrofeos.oculto(guildId, discordUserId)) {
             await achievements.anunciarLogros(guildOrId, discordUserId, plexTrofeos.paraAnuncio(guildId, desbloqueados));
+        }
+    }
+    // 🎰 Roles por Gordos del Plex (con el servidor de Discord; con el id solo no se pueden dar).
+    if (typeof guildOrId !== "string") {
+        try {
+            await plexGordos.repartir(guildOrId);
+        } catch (e) {
+            log.warn(`No se pudieron dar los roles de Gordos del Plex en ${guildId}: ${e.message}`);
         }
     }
     return resultado;

@@ -220,6 +220,24 @@ const DUENDE_PLEX_TOOL_DECLARATIONS = [
             },
         },
     },
+    {
+        name: "consultar_trofeos_plex",
+        description:
+            "Consulta los logros y trofeos de Plex del servidor (los del bot: series terminadas, sagas, idiomas, 🎰 Gordos del Plex...). Con 'persona': los que tiene esa persona. Con 'titulo': quién tiene el trofeo de esa serie, saga, película o director (p. ej. '¿quién ha terminado Breaking Bad?'). Sin nada: quién tiene más. Llámala con cualquier nombre o apodo.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona: {
+                    type: SchemaType.STRING,
+                    description: "Nombre o apodo de la persona por la que se pregunta, tal cual se ha usado en el mensaje (opcional)",
+                },
+                titulo: {
+                    type: SchemaType.STRING,
+                    description: "Serie, saga, película o director por el que se pregunta, p. ej. 'Breaking Bad' (opcional)",
+                },
+            },
+        },
+    },
 ];
 
 // Igual que las de Plex: se filtran por canal (ver seerrClient.isChannelAllowed), y en
@@ -363,7 +381,9 @@ const DUENDE_TOOL_EXECUTORS = {
     },
     consultar_logros(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const s = achievementsSystem.getSummary(ctx.guildId, ctx.userId);
+        // Como en su perfil: sin Plex vinculado, los de Plex que no tiene no cuentan.
+        const opciones = require("../../systems/plexTrofeos").opcionesPerfil(ctx.guildId, ctx.userId, true);
+        const s = achievementsSystem.getSummary(ctx.guildId, ctx.userId, opciones);
         return { logros_completados: s.completed, logros_totales: s.total, porcentaje: s.completionPct };
     },
     tirar_dado(args) {
@@ -607,6 +627,79 @@ const DUENDE_TOOL_EXECUTORS = {
             periodo: args?.periodo || "mes",
             dia_mas_activo: diaMasActivo,
             hora_mas_activa: horaMasActiva ? `${horaMasActiva}:00` : null,
+        };
+    },
+
+    async consultar_trofeos_plex(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const plexTrofeos = require("../../systems/plexTrofeos");
+        const plexIdiomas = require("../../systems/plexIdiomas");
+        const nombre = (discordId) =>
+            ctx.guild?.members?.cache?.get(discordId)?.displayName ||
+            plexLinks.getLinkByDiscordId(ctx.guildId, discordId)?.plexUsername ||
+            "alguien";
+        const dificultad = (d) => plexIdiomas.DIFICULTADES[d]?.nombre || null;
+
+        if (args?.persona) {
+            const r = await resolverPersonaVinculada(args.persona, ctx);
+            if (r.error) return r;
+            // Quien oculta sus logros de Plex no los enseña (salvo a sí mismo).
+            if (r.discordId !== ctx.userId && plexTrofeos.oculto(ctx.guildId, r.discordId)) {
+                return { persona: args.persona, oculto: true, error: `${args.persona} tiene sus logros de Plex ocultos.` };
+            }
+            const plex = achievementsSystem.listUserAchievements(ctx.guildId, r.discordId).filter((a) => a.category === "plex");
+            const hechos = plex.filter((a) => a.completed).sort((a, b) => b.completedAt - a.completedAt);
+            const rarezas = plexTrofeos.rarezas(ctx.guildId);
+            const porDificultad = (d) => hechos.filter((a) => a.dificultad === d).length;
+            return {
+                persona: args.persona,
+                logros_de_plex_completados: hechos.length,
+                logros_de_plex_totales: plex.length,
+                por_dificultad: { facil: porDificultad("facil"), normal: porDificultad("normal"), gordo_del_plex: porDificultad("gordo") },
+                trofeos: hechos
+                    .filter((a) => a.trofeo)
+                    .slice(0, 15)
+                    .map((a) => ({
+                        nombre: a.name,
+                        de_que_es: a.desc,
+                        dificultad: dificultad(a.dificultad),
+                        lo_tiene_el_pct_del_servidor: rarezas.get(a.id) || null,
+                    })),
+                ultimos_conseguidos: hechos.slice(0, 10).map((a) => ({
+                    nombre: a.name,
+                    descripcion: a.desc,
+                    fecha: new Date(a.completedAt).toISOString().slice(0, 10),
+                })),
+                sin_reclamar: hechos.filter((a) => a.claimable).length,
+            };
+        }
+
+        if (args?.titulo) {
+            const lista = plexTrofeos.buscar(ctx.guildId, args.titulo);
+            if (!lista.length) {
+                return {
+                    titulo: args.titulo,
+                    encontrado: false,
+                    nota: "Nadie tiene todavía un trofeo de eso (los de cada serie, saga o director se crean cuando alguien lo consigue).",
+                };
+            }
+            return {
+                titulo: args.titulo,
+                trofeos: lista.map((t) => ({
+                    nombre: t.nombre,
+                    de_que_es: t.descripcion,
+                    dificultad: dificultad(t.dificultad),
+                    quien_lo_tiene: t.quienes.map(nombre),
+                })),
+            };
+        }
+
+        const r = require("../../systems/plexRankings").rankings(ctx.guildId);
+        if (!r) return { error: "Nadie tiene la cuenta de Plex vinculada todavía." };
+        return {
+            mas_logros_de_plex: r.logros.map((x) => ({ persona: nombre(x.discordUserId), logros: x.n })),
+            mas_gordos_del_plex: r.gordos.map((x) => ({ persona: nombre(x.discordUserId), gordos: x.n })),
+            mas_poliglota: r.poliglota.map((x) => ({ persona: nombre(x.discordUserId), logros_de_idioma: x.n })),
         };
     },
 

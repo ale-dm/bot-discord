@@ -6,6 +6,7 @@ const {
     UserSelectMenuBuilder,
     ChannelSelectMenuBuilder,
     StringSelectMenuBuilder,
+    RoleSelectMenuBuilder,
     ChannelType,
     MessageFlags,
 } = require("discord.js");
@@ -15,6 +16,9 @@ const plexFichas = require("../systems/plexFichas");
 const plexTrofeos = require("../systems/plexTrofeos");
 const plexIdiomas = require("../systems/plexIdiomas");
 const plexRankingSemanal = require("../systems/plexRankingSemanal");
+const plexImportacion = require("../systems/plexImportacion");
+const plexGordos = require("../systems/plexGordos");
+const plexDiagnostico = require("../systems/plexDiagnostico");
 const achievements = require("../systems/achievementsSystem");
 const tautulliClient = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
@@ -92,7 +96,14 @@ const NOMBRE_TIPO = {
     admin: "✍️ de admin",
 };
 
-/** 🏆 Trofeos de Plex: fichas e idiomas, qué es anime, trofeos creados (por tipo y dificultad) y los de admin. */
+/** "1 → @rol · 5 → sin rol · 10 → sin rol": los roles de 🎰 Gordos del Plex. */
+function textoRolesGordos(guildId) {
+    const roles = new Map(plexGordos.roles(guildId).map((r) => [r.umbral, r.roleId]));
+    return plexGordos.UMBRALES.map((u) => `${u} → ${roles.has(u) ? `<@&${roles.get(u)}>` : "sin rol"}`).join(" · ");
+}
+
+/** 🏆 Trofeos de Plex: fichas e idiomas, qué es anime, la importación, los roles de Gordos, trofeos creados (por tipo y
+ * dificultad) y los de admin. */
 function buildPlexTrofeos(guildId) {
     const f = plexFichas.estado(guildId);
     const idiomas = plexIdiomas.estado(guildId);
@@ -117,10 +128,10 @@ function buildPlexTrofeos(guildId) {
               .join("\n")
         : "Ninguno todavía. Con ➕ Crear trofeo: nombre, condición, recompensa y dificultad.";
     if (lista.length > 1500) lista = `${lista.slice(0, 1500)}…`;
-    const ayuda = Object.values(plexTrofeos.CONDICIONES)
-        .filter((c) => c.ayuda)
+    const ayuda = [...Object.values(plexTrofeos.CONDICIONES).filter((c) => c.ayuda), { ayuda: plexTrofeos.AYUDA_FECHAS }]
         .map((c) => `• ${c.ayuda}`)
         .join("\n");
+    const importando = plexImportacion.cuantosImportando(guildId);
 
     const embed = new EmbedBuilder()
         .setTitle("🏆 Trofeos de Plex")
@@ -131,7 +142,10 @@ function buildPlexTrofeos(guildId) {
                 `"Todas las de…" y sagas: ${f.completa ? "✅ activos" : "⏳ cuando estén todas las fichas de películas"}\n` +
                 `🗣️ Idiomas: **${idiomas.revisadas.toLocaleString("es")}** reproducciones revisadas · ` +
                 `**${idiomas.pendientes.toLocaleString("es")}** pendientes\n` +
-                `🎌 Anime: ${animeTexto}\n\n` +
+                `🎌 Anime: ${animeTexto}\n` +
+                `📼 Importación: lo que se desbloquea con lo antiguo da el **${achievements.porcentajeImportacion(guildId)} %** de las ` +
+                `monedas · ${importando === 1 ? "**1** vinculado importando" : `**${importando}** vinculados importando`} ahora\n` +
+                `🎰 Roles de Gordos del Plex: ${textoRolesGordos(guildId)}\n\n` +
                 `**Creados**: ${creados}\n**Por dificultad**: ${dificultades}\n\n` +
                 `**Trofeos de admin (${admin.length})**\n${lista}\n\n**Condiciones**\n${ayuda}`,
         )
@@ -147,11 +161,81 @@ function buildPlexTrofeos(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_plex_anime").setLabel("🎌 Bibliotecas de anime").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_plex_historial").setLabel("📼 Sincronizar ahora").setStyle(ButtonStyle.Primary),
     );
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_plex_importacion").setLabel("🪙 % de la importación").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_gordos").setLabel("🎰 Roles de Gordos").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_idiomas").setLabel("🔍 Idiomas").setStyle(ButtonStyle.Secondary),
+    );
     const nav = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_plex_trofeos").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_plex_home").setLabel("◀ Plex").setStyle(ButtonStyle.Secondary),
     );
-    return { embeds: [embed], components: [row, nav] };
+    return { embeds: [embed], components: [row, row2, nav] };
+}
+
+/** 🎰 Roles de Gordos del Plex: un menú de roles por umbral (vacío = sin rol). */
+function buildRolesGordos(guildId) {
+    const roles = new Map(plexGordos.roles(guildId).map((r) => [r.umbral, r.roleId]));
+    return {
+        content:
+            `🎰 Roles por 🎰 Gordos del Plex (logros de Plex de la dificultad más alta): ${textoRolesGordos(guildId)}.\n` +
+            "Se dan en cada sincronización (cada 30 min) a quien llega, y no se quitan. Para quitar el rol de un umbral, deja su menú vacío.",
+        components: plexGordos.UMBRALES.map((u) => {
+            const menu = new RoleSelectMenuBuilder()
+                .setCustomId(`paneladmin_plex_gordos_rol_${u}`)
+                .setPlaceholder(`Rol al llegar a ${u} 🎰`)
+                .setMinValues(0)
+                .setMaxValues(1);
+            if (roles.has(u)) menu.setDefaultRoles(roles.get(u));
+            return new ActionRowBuilder().addComponents(menu);
+        }),
+        allowedMentions: { parse: [] },
+        flags: MessageFlags.Ephemeral,
+    };
+}
+
+/** 🔍 Idiomas: lo que se ha detectado de cada audio y subtítulo, y los nombres que no se reconocen (pregunta a Tautulli
+ * por unas cuantas). Para ajustar plexIdiomas.codigoIdioma si hiciera falta. */
+async function buildDiagnosticoIdiomas(guildId) {
+    const g = plexDiagnostico.idiomasGuardados(guildId);
+    const total = Object.values(g.audio).reduce((s, n) => s + n, 0);
+    const pct = (n) => (total ? `${Math.round((n / total) * 100)} %` : "—");
+    const AUDIO = { es: "🇪🇸 castellano", lat: "🌎 latino", en: "🇬🇧 inglés", ja: "🇯🇵 japonés", otro: "❓ otro" };
+    const SUBS = { no: "sin subtítulos", es: "en castellano", en: "en inglés", otro: "❓ otro" };
+    const lineas = (mapa, nombres) =>
+        Object.entries(mapa)
+            .sort((a, b) => b[1] - a[1])
+            .map(([k, n]) => `${nombres[k] || k}: **${n.toLocaleString("es")}** (${pct(n)})`)
+            .join("\n") || "Nada todavía.";
+    let raros;
+    try {
+        const r = await plexDiagnostico.noReconocidos(guildId);
+        const nombres = [
+            ...[...r.audio].map(([k, n]) => `audio "${k}" (${n})`),
+            ...[...r.subs].map(([k, n]) => `subtítulos "${k}" (${n})`),
+        ];
+        raros = r.revisadas
+            ? nombres.join("\n") || "Todos reconocidos."
+            : r.errores
+              ? "No se pudo preguntar a Tautulli."
+              : 'Ninguna reproducción con un idioma "otro".';
+    } catch (e) {
+        raros = `No se pudo preguntar a Tautulli: ${e.message}`;
+    }
+    const embed = new EmbedBuilder()
+        .setTitle("🔍 Idiomas detectados en Plex")
+        .setDescription(
+            `De lo visto por los vinculados: **${g.revisadas.toLocaleString("es")}** revisadas · **${g.pendientes.toLocaleString("es")}** ` +
+                `pendientes · **${g.sinDato.toLocaleString("es")}** sin dato (Tautulli no lo tiene: normal en lo muy antiguo).`,
+        )
+        .addFields(
+            { name: "🔊 Audio", value: lineas(g.audio, AUDIO), inline: true },
+            { name: "💬 Subtítulos", value: lineas(g.subs, SUBS), inline: true },
+            { name: "❓ Nombres que no se reconocen (últimas 15)", value: raros.slice(0, 1024), inline: false },
+        )
+        .setFooter({ text: "Si sale algo raro: plexIdiomas.codigoIdioma. El latino no cuenta como castellano." })
+        .setColor(0xe5a00d);
+    return { embeds: [embed] };
 }
 
 /** 📣 Ranking semanal: el canal, cómo queda el de la semana pasada (sin avisar a nadie), cambiar el canal y publicarlo ya. */
@@ -220,6 +304,32 @@ async function handlePlexButton(interaction) {
 
     if (id === "paneladmin_plex_trofeos") {
         await interaction.update(buildPlexTrofeos(guildId));
+        return true;
+    }
+
+    if (id === "paneladmin_plex_importacion") {
+        await interaction.showModal(
+            simpleModal("paneladmin_plex_importacion_modal", "Monedas de la primera importación", [
+                {
+                    id: "pct",
+                    label: "% de las monedas (0 = nada, 100 = todas)",
+                    placeholder: "50",
+                    value: String(achievements.porcentajeImportacion(guildId)),
+                    maxLength: 3,
+                },
+            ]),
+        );
+        return true;
+    }
+
+    if (id === "paneladmin_plex_gordos") {
+        await interaction.reply(buildRolesGordos(guildId));
+        return true;
+    }
+
+    if (id === "paneladmin_plex_idiomas") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.editReply(await buildDiagnosticoIdiomas(guildId));
         return true;
     }
 
@@ -513,6 +623,30 @@ async function handlePlexUserSelect(interaction) {
 }
 
 async function handlePlexModal(interaction) {
+    if (interaction.customId === "paneladmin_plex_importacion_modal") {
+        const texto = interaction.fields.getTextInputValue("pct").trim().replace(/%$/, "").trim();
+        const pct = Number(texto);
+        if (!/^\d{1,3}$/.test(texto) || pct > 100) {
+            await interaction.reply({ content: "❌ Tiene que ser un número de 0 a 100.", flags: MessageFlags.Ephemeral });
+            return true;
+        }
+        const antes = achievements.porcentajeImportacion(interaction.guildId);
+        guildSettings.setSetting(interaction.guildId, "plex.importacion_pct", pct);
+        adminAudit.logAdminAction({
+            guildId: interaction.guildId,
+            actorId: interaction.user.id,
+            action: "plex.importacion.pct",
+            details: { antes, ahora: pct },
+        });
+        await interaction.reply({
+            content:
+                `✅ Lo desbloqueado en la primera importación de Plex da ahora el **${pct} %** de las monedas (antes, el ${antes} %). ` +
+                "Cuenta al reclamarlo: también para lo que ya está desbloqueado y sin reclamar.",
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+
     if (interaction.customId === "paneladmin_plex_trofeo_modal") {
         const campo = (k) => {
             try {
@@ -607,6 +741,30 @@ async function handlePlexModal(interaction) {
     return true;
 }
 
+/** 🎰 Roles de Gordos: paneladmin_plex_gordos_rol_{umbral} (sin rol elegido = quitar el de ese umbral). */
+async function handlePlexRoleSelect(interaction) {
+    const m = /^paneladmin_plex_gordos_rol_(\d+)$/.exec(interaction.customId);
+    if (!m || !plexGordos.UMBRALES.includes(Number(m[1]))) return false;
+    const umbral = Number(m[1]);
+    const roleId = interaction.values[0] || "";
+    guildSettings.setSetting(interaction.guildId, `plex.rol_gordos_${umbral}`, roleId);
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "plex.gordos.rol",
+        details: { umbral, roleId: roleId || null },
+    });
+    // Al editar el mensaje (ya privado) no se vuelve a mandar la marca de privado.
+    // eslint-disable-next-line no-unused-vars
+    const { flags, ...vista } = buildRolesGordos(interaction.guildId);
+    await interaction.update(vista);
+    // Quien ya llega lo recibe ahora, sin esperar a la siguiente sincronización.
+    if (roleId && interaction.guild) {
+        plexGordos.repartir(interaction.guild).catch((e) => log.warn(`No se pudieron dar los roles de Gordos del Plex: ${e.message}`));
+    }
+    return true;
+}
+
 async function handlePlexStringSelect(interaction) {
     if (interaction.customId === "paneladmin_plex_trofeo_borrar_select") {
         const id = interaction.values[0];
@@ -646,9 +804,12 @@ async function handlePlexStringSelect(interaction) {
 module.exports = {
     buildPlexHome,
     buildPlexTrofeos,
+    buildRolesGordos,
+    buildDiagnosticoIdiomas,
     handlePlexButton,
     handlePlexUserSelect,
     handlePlexModal,
     handlePlexChannelSelect,
     handlePlexStringSelect,
+    handlePlexRoleSelect,
 };

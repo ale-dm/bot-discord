@@ -45,6 +45,10 @@ const DEFAULT_FLAT = {
     "plex.bibliotecas_anime": "",
     "plex.ranking_canal": "",
     "plex.ranking_ultima_semana": "",
+    "plex.importacion_pct": 50,
+    "plex.rol_gordos_1": "",
+    "plex.rol_gordos_5": "",
+    "plex.rol_gordos_10": "",
 
     "seerr.url": "",
     "seerr.api_key": "",
@@ -106,6 +110,10 @@ const KEY_TYPES = {
     "plex.bibliotecas_anime": "string",
     "plex.ranking_canal": "string",
     "plex.ranking_ultima_semana": "string",
+    "plex.importacion_pct": "number",
+    "plex.rol_gordos_1": "string",
+    "plex.rol_gordos_5": "string",
+    "plex.rol_gordos_10": "string",
 
     "seerr.url": "string",
     "seerr.api_key": "string",
@@ -188,6 +196,10 @@ function flattenToNested(flat) {
             bibliotecas_anime: flat["plex.bibliotecas_anime"],
             ranking_canal: flat["plex.ranking_canal"],
             ranking_ultima_semana: flat["plex.ranking_ultima_semana"],
+            importacion_pct: flat["plex.importacion_pct"],
+            rol_gordos_1: flat["plex.rol_gordos_1"],
+            rol_gordos_5: flat["plex.rol_gordos_5"],
+            rol_gordos_10: flat["plex.rol_gordos_10"],
         },
         seerr: {
             url: flat["seerr.url"],

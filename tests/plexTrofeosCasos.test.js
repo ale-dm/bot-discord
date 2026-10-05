@@ -288,7 +288,7 @@ describe("Gemini", () => {
         ]);
     }
 
-    test("si falla, se quedan los nombres por defecto (y no se vuelve a preguntar por esos)", async () => {
+    test("si falla, se quedan los nombres por defecto y se vuelven a pedir en la siguiente sincronización (F-PX-14)", async () => {
         const g = nuevoGuild();
         preparar(g);
         process.env.GOOGLE_API_KEY = "x";
@@ -296,8 +296,54 @@ describe("Gemini", () => {
         await trofeosDe(g);
         expect(catalogo(g).get("plext:serie:bb").name).toBe("Breaking Bad: completada");
         expect(db.prepare("SELECT nombre_ia FROM plex_trofeos WHERE guildId = ? AND id = 'serie:bb'").get(g).nombre_ia).toBe(0);
-        await trofeosDe(g);
+        // En la misma sincronización no se repite; en la siguiente, sí (y si sigue fallando, se quedan como estaban).
         expect(gemini.generateContentWithTimeout).toHaveBeenCalledTimes(1);
+        await trofeosDe(g);
+        expect(gemini.generateContentWithTimeout).toHaveBeenCalledTimes(2);
+        expect(catalogo(g).get("plext:serie:bb").name).toBe("Breaking Bad: completada");
+        // Gemini vuelve: se renombran, sin crear nada nuevo y sin tocar el progreso de nadie.
+        gemini.generateContentWithTimeout.mockImplementation(async ({ contents }) => {
+            const ids = [...contents[0].parts[0].text.matchAll(/^(\S+:\S+) → /gm)].map((m) => m[1]);
+            return { text: JSON.stringify(Object.fromEntries(ids.map((id) => [id, id === "serie:bb" ? "Say my name" : `IA ${id}`]))) };
+        });
+        await trofeosDe(g);
+        const pedidos = gemini.generateContentWithTimeout.mock.calls[2][0].contents[0].parts[0].text;
+        // Se le pide con la descripción del trofeo (sin el emoji del principio).
+        expect(pedidos).toMatch(/^serie:bb → Termina Breaking Bad entera \(2 episodios\)$/m);
+        expect(catalogo(g).get("plext:serie:bb").name).toBe("Say my name");
+        expect(catalogo(g).get("plext:temporada:bb:1").name).toBe("IA temporada:bb:1");
+        expect(db.prepare("SELECT COUNT(*) AS n FROM plex_trofeos WHERE guildId = ? AND nombre_ia = 0").get(g).n).toBe(0);
+        expect(achievements.listUserAchievements(g, "disc-1").find((a) => a.id === "plext:serie:bb")).toMatchObject({ completed: true });
+        // Ya no queda ninguno por renombrar: no se vuelve a llamar.
+        await trofeosDe(g);
+        expect(gemini.generateContentWithTimeout).toHaveBeenCalledTimes(3);
+    });
+
+    test("los de idioma también llevan nombre de Gemini, que juega con el idioma (F-PX-14)", async () => {
+        const g = nuevoGuild();
+        vincular(g, 1);
+        serie(g, "bb", "Breaking Bad", { 1: [1, 2] });
+        verEps(g, 1, "bb", "Breaking Bad", [
+            [1, 1],
+            [1, 2],
+        ]);
+        db.prepare("UPDATE plex_reproducciones SET audio = 'en', subs = 'es', idioma_revisado = 1 WHERE guildId = ?").run(g);
+        process.env.GOOGLE_API_KEY = "x";
+        gemini.generateContentWithTimeout.mockImplementation(async ({ contents }) => {
+            const ids = [...contents[0].parts[0].text.matchAll(/^(\S+:\S+) → /gm)].map((m) => m[1]);
+            return { text: JSON.stringify(Object.fromEntries(ids.map((id) => [id, `IA ${id}`]))) };
+        });
+        await trofeosDe(g);
+        const prompt = gemini.generateContentWithTimeout.mock.calls[0][0].contents[0].parts[0].text;
+        expect(prompt).toMatch(/Si el trofeo es de verla en un idioma, que el nombre juegue con ese idioma/);
+        expect(prompt).toMatch(
+            /^idioma:bb:vose → Terminar entera la serie "Breaking Bad" en VOSE .*\(que el nombre juegue con el idioma\)$/m,
+        );
+        expect(catalogo(g).get("plext:idioma:bb:vose")).toMatchObject({
+            name: "IA idioma:bb:vose",
+            desc: "📝 Termina Breaking Bad entera en VOSE (inglés con subtítulos en castellano) (2 episodios)",
+        });
+        expect(catalogo(g).get("plext:idioma:bb:ingles").name).toBe("IA idioma:bb:ingles");
     });
 
     test("JSON roto, ids inventados, nombres vacíos o larguísimos: solo vale lo bueno", async () => {
@@ -515,6 +561,8 @@ describe("logros", () => {
 
     test("cuentan en el ranking de logros y en 'reclamar todo'", async () => {
         const g = nuevoGuild();
+        // La recompensa entera (la de la primera importación está en plexImportacion.test.js).
+        guildSettings.setSetting(g, "plex.importacion_pct", 100);
         vincular(g, 1);
         serie(g, "s", "S", { 1: [1, 2], 2: [1, 2] });
         verEps(g, 1, "s", "S", [

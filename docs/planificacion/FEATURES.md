@@ -23,7 +23,11 @@ con el sistema de ⚔️ Retos, F-AP-01 (apuestas 1 contra 1), F-EC-04 (duelos d
 y las tres fases de F-PX-02 (logros genéricos de Plex con la copia del historial de Tautulli; trofeos de cada serie,
 temporada y saga con nombre de Gemini, por género, director y década, de admin, separados en series y anime, con
 rareza y opción de ocultarlos). El 2026-10-03, además, logros de Plex por idioma (inglés, VOSE, castellano y las
-versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex).
+versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex). El 2026-10-06, todo lo que quedaba de la
+gamificación de Plex: F-PX-02e (filtro en 🏅 Logros), F-PX-02f (el Duende conoce los trofeos), F-PX-06
+(`npm run plex:check`), F-PX-07 (🔍 Idiomas en el panel), F-PX-08 (la primera importación da menos monedas), F-PX-09
+(🍿 Plex en `/perfil`), F-PX-10 (ranking de Plex), F-PX-11 (trofeos con fecha), F-PX-12 (trofeos sociales), F-PX-13
+(roles por Gordos del Plex) y F-PX-14 (nombres de Gemini para los de idioma).
 
 ---
 
@@ -58,21 +62,10 @@ versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex).
 
 | ID | Idea | Esfuerzo | Detalle |
 |---|---|---|---|
-| F-PX-02d | **Trofeos por país** | M | Lo único que quedó fuera de las fases 2 y 3: Tautulli no da el país de las películas. Habría que leerlo de Plex directamente (con un token de Plex) o de TMDB a partir del `guid`. |
-| F-PX-02e | **Filtro de categoría en 🏅 Logros** | S | Hay 80 logros fijos de Plex (con los de idioma) que ve todo el mundo, también quien no tiene Plex vinculado, y además los trofeos de quien ve mucho: la pestaña pasa de 20 páginas. Un menú para ver solo una categoría, solo los trofeos o solo una dificultad, y quizá esconder los de Plex a quien no lo tiene vinculado. |
-| F-PX-02f | **El Duende conoce los trofeos** | S | Herramienta para "¿qué trofeos de Plex tiene X?" o "¿quién ha terminado Breaking Bad?" con las tablas `plex_trofeos` y `achievements_progress`. |
+| F-PX-02d | **Trofeos por país** | M | Lo único que queda de la gamificación de Plex: Tautulli no da el país de las películas. Habría que leerlo de Plex directamente (con un token de Plex) o de TMDB a partir del `guid` (hace falta una clave nueva). |
 | F-PX-03 | **Recomendaciones personales** | M | A partir de lo que cada uno ve en Tautulli, con botón "Pedir en Seerr". |
 | F-PX-04 | **Plex Wrapped mensual** | M | Imagen con horas vistas, top series y el más viciado (ya hay `canvas` para las gráficas de cripto). |
 | F-PX-05 | **Sesión de cine** | M | `/cine peli hora`: convocatoria con botones de "me apunto" y recordatorio 10 min antes. |
-| F-PX-06 | **`npm run plex:check` contra el Tautulli real** | S | Script de solo lectura (como `voz:test`): unas reproducciones con el idioma que se detecta (y cuántas salen "otro" o sin dato), las bibliotecas y cuáles cuentan como anime, la ficha de una serie con sus temporadas. Para comprobar los supuestos de [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md#3-lo-que-hay-que-comprobar-con-datos-reales) en dos minutos. |
-| F-PX-07 | **🔍 Diagnóstico de idiomas en el panel** | S | En Panel admin → Plex → 🏆 Trofeos: cuántas reproducciones hay de cada audio y subtítulo, y qué nombres no se reconocen (para ajustar `plexIdiomas.codigoIdioma`). |
-| F-PX-08 | **Proteger la economía en la primera importación** | S | Al importar el historial entero cada vinculado desbloquea decenas de logros de golpe. Que lo de la primera importación dé la mitad (o nada), o un tope diario de monedas por logros. |
-| F-PX-09 | **Pestaña 🍿 Plex en `/perfil` con "casi lo tienes"** | M | Horas, series terminadas, reparto de idiomas ("60 % en VOSE") y lo que le falta poco: "3 episodios para terminar *Dark* en inglés", "2 películas para *Cineclub*". Los datos ya los calcula `plexTrofeos.datosUsuario`. |
-| F-PX-10 | **Ranking de Plex en 🏆 Rankings** | S | Más trofeos, más 🎰 Gordos del Plex, más horas (del mes o de siempre), más políglota. El menú de rankings ya existe (`paneles/perfil.js`). |
-| F-PX-11 | **Trofeos con fecha** | M | Condiciones de admin con fechas ("Halloween: 5 de terror en octubre") y eventos de temporada. |
-| F-PX-12 | **Trofeos sociales** | M | "Cine compartido" (lo mismo que otro vinculado el mismo día), "Sin spoilers" (en las 24 h desde que llega a Plex), "Primero del servidor" en ver un estreno. |
-| F-PX-13 | **Roles por Gordos del Plex** | S | Un rol al llegar a 1, 5 y 10 🎰; con el sistema de roles de niveles. |
-| F-PX-14 | **Nombres de Gemini para los trofeos de idioma** | S | Y renombrar después los que se quedaron con el nombre por defecto por pasar del tope de 150 por sincronización. |
 
 ## Economía y juego
 

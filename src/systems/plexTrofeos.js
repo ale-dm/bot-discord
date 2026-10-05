@@ -7,9 +7,13 @@
 //   - Contadores fijos del catálogo (achievementsSystem): películas, series y episodios de anime y series terminadas, y
 //     por idioma (systems/plexIdiomas): episodios, películas y series enteras en inglés, VOSE, castellano...
 //   - Por idioma, de cada serie: terminarla entera en una versión ("Breaking Bad en inglés").
+//   - Sociales (F-PX-12, contadores fijos): la misma película que otro el mismo día, verlo en las 24 h desde que llega
+//     a Plex y ser el primero del servidor en ver un estreno.
+//   - Los de admin pueden llevar fechas (F-PX-11): solo cuenta lo visto entre ellas (eventos de temporada).
 // Los de cada título y los de significado se crean la primera vez que alguien los consigue, con un nombre temático que
-// propone Gemini ("Say my name" al terminar Breaking Bad) y que se guarda; para los demás solo se ven cuando los
-// consiguen. Son logros normales de la categoría plex (id "plext:…"): se reclaman en /perfil → 🏅 Logros.
+// propone Gemini ("Say my name" al terminar Breaking Bad) y que se guarda (los que se quedan con el de por defecto se
+// renombran en las siguientes sincronizaciones, F-PX-14); para los demás solo se ven cuando los consiguen. Son logros
+// normales de la categoría plex (id "plext:…"): se reclaman en /perfil → 🏅 Logros.
 // Todos tienen dificultad: 🟢 fácil, 🟡 normal o 🎰 "Gordo del Plex".
 const db = require("../core/db");
 const plexFichas = require("./plexFichas");
@@ -124,7 +128,11 @@ const NOMBRE_GENERO = {
 const cacheCatalogo = new Map();
 
 function aLogro(t) {
+    // Un trofeo de admin con fecha de fin: pasado el plazo, solo lo ve quien lo consiguió.
+    const p = t.tipo === "admin" && t.condicion ? parsearCondicion(t.condicion) : null;
+    const rango = p?.ok ? rangoDe(p.cond) : null;
     return {
+        ...(rango && rango.hasta < Number.MAX_SAFE_INTEGER ? { visibleHasta: rango.hasta * 1000 } : {}),
         id: PREFIJO + t.id,
         name: t.nombre,
         desc: t.descripcion,
@@ -188,13 +196,17 @@ function contexto(guildId) {
 }
 
 /** Qué ha visto alguien, cruzado con las fichas: películas (por título), series con sus temporadas terminadas, cuentas
- * y, por cada versión de idioma (plexIdiomas.MODOS), episodios, películas y series enteras vistas así. */
-function datosUsuario(guildId, tautulliUserId, ctx) {
+ * y, por cada versión de idioma (plexIdiomas.MODOS), episodios, películas y series enteras vistas así.
+ * `rango` ({ desde, hasta } unix en segundos, hasta sin incluir): solo lo empezado a ver entre esas fechas (los trofeos
+ * de admin con fechas). */
+function datosUsuario(guildId, tautulliUserId, ctx, rango = null) {
+    const [desde, hasta] = rango ? [rango.desde, rango.hasta] : [0, Number.MAX_SAFE_INTEGER];
     const pelis = db
         .prepare(
-            "SELECT DISTINCT rating_key, titulo, anio, audio, subs FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'movie' AND visto = 1",
+            `SELECT DISTINCT rating_key, titulo, anio, audio, subs FROM plex_reproducciones
+             WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'movie' AND visto = 1 AND inicio >= ? AND inicio < ?`,
         )
-        .all(guildId, String(tautulliUserId));
+        .all(guildId, String(tautulliUserId), desde, hasta);
     const vistas = new Set();
     const fichasVistas = new Map();
     const pelisPorModo = new Map(Object.keys(plexIdiomas.MODOS).map((m) => [m, new Set()]));
@@ -231,9 +243,10 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
     const eps = db
         .prepare(
             `SELECT DISTINCT serie_key, serie, temporada, episodio, audio, subs FROM plex_reproducciones
-             WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'episode' AND visto = 1 AND temporada IS NOT NULL AND episodio IS NOT NULL`,
+             WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'episode' AND visto = 1 AND temporada IS NOT NULL AND episodio IS NOT NULL
+                 AND inicio >= ? AND inicio < ?`,
         )
-        .all(guildId, String(tautulliUserId));
+        .all(guildId, String(tautulliUserId), desde, hasta);
     const porSerie = new Map();
     for (const r of eps) {
         const porKey = ctx.seriesPorKey.get(r.serie_key);
@@ -278,9 +291,22 @@ function datosUsuario(guildId, tautulliUserId, ctx) {
                 completaEn.push(m);
             }
         }
-        series.push({ ficha, anime, temporadas, terminadas, total, completa, vistosEnFicha, completaEn });
+        series.push({ ficha, anime, temporadas, terminadas, total, completa, vistosEnFicha, completaEn, vistos, porModo });
     }
     return { vistas, fichasVistas, porGenero, porDecada, series, cuentas };
+}
+
+/** Horas, películas y episodios distintos vistos entre dos fechas (unix, s): para los trofeos de admin con fechas. */
+function estadisticasEntre(guildId, tautulliUserId, { desde, hasta }) {
+    const r = db
+        .prepare(
+            `SELECT COALESCE(SUM(segundos), 0) AS segundos,
+                    COUNT(DISTINCT CASE WHEN tipo = 'movie' AND visto = 1 THEN rating_key END) AS peliculas,
+                    COUNT(DISTINCT CASE WHEN tipo = 'episode' AND visto = 1 THEN rating_key END) AS episodios
+             FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND inicio >= ? AND inicio < ?`,
+        )
+        .get(guildId, String(tautulliUserId), desde, hasta);
+    return { horas: Math.floor(r.segundos / 3600), peliculas: r.peliculas, episodios: r.episodios };
 }
 
 // ─── Trofeos automáticos ─────────────────────────────────────────────────────
@@ -319,7 +345,7 @@ function candidatos(datos, ctx) {
                 ia: `Terminar entera la ${tipoSerie} "${ficha.titulo}"${anio}, ${s.total} episodios`,
             });
         }
-        // Entera en una versión de idioma: "Breaking Bad en inglés" (nombre fijo, sin Gemini).
+        // Entera en una versión de idioma: "Breaking Bad en inglés" (el nombre, de Gemini, que juegue con el idioma).
         for (const m of s.completaEn) {
             const modo = plexIdiomas.MODOS[m];
             lista.push({
@@ -330,6 +356,7 @@ function candidatos(datos, ctx) {
                 dificultad: DIFICULTAD.idioma(s.total),
                 nombre: `${ficha.titulo} ${modo.texto}`,
                 descripcion: `${marca}${modo.emoji} Termina ${ficha.titulo} entera ${modo.texto} (${s.total} episodios)`,
+                ia: `Terminar entera la ${tipoSerie} "${ficha.titulo}"${anio} ${modo.texto}, ${s.total} episodios (que el nombre juegue con el idioma)`,
             });
         }
     }
@@ -434,9 +461,66 @@ const CONDICIONES = {
     "idioma-series": { valor: "modo", n: true },
 };
 const TIPO_IDIOMA = { "idioma-episodios": "eps", "idioma-peliculas": "pelis", "idioma-series": "series" };
+/** Trofeos con fecha (F-PX-11): cualquier condición puede llevar `desde:` y `hasta:` (días en hora de Madrid, incluidos):
+ * solo cuenta lo que se empezó a ver entre esas fechas. Para eventos de temporada (Halloween, Navidad...). */
+const AYUDA_FECHAS = "`genero:Terror 5 desde:2026-10-01 hasta:2026-10-31` → 🎃 con fechas: solo cuenta lo visto entre esos días";
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-/** Lee una condición escrita por un admin ("genero:Terror 20"). @returns {{ ok: true, cond } | { ok: false, error }} */
+/** Unix (s) del comienzo de un día (AAAA-MM-DD) en hora de Madrid (a medianoche es UTC+1 o UTC+2). */
+function inicioDia(dia) {
+    const [y, m, d] = dia.split("-").map(Number);
+    const { momento } = require("./plexHistorial");
+    for (const horas of [1, 2]) {
+        const t = Date.UTC(y, m - 1, d, -horas) / 1000;
+        const x = momento(t);
+        if (x.dia === dia && x.hora === 0) return t;
+    }
+    return Date.UTC(y, m - 1, d) / 1000;
+}
+const diaSiguiente = (dia) => new Date(Date.parse(`${dia}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+const diaValido = (dia) => {
+    const t = /^\d{4}-\d{2}-\d{2}$/.test(dia) ? Date.parse(`${dia}T00:00:00Z`) : NaN;
+    return !isNaN(t) && new Date(t).toISOString().slice(0, 10) === dia;
+};
+
+/** El rango en unix (s) de una condición con fechas ({ desde, hasta } con hasta sin incluir), o null si no tiene. */
+function rangoDe(cond) {
+    if (!cond.desde && !cond.hasta) return null;
+    return {
+        desde: cond.desde ? inicioDia(cond.desde) : 0,
+        hasta: cond.hasta ? inicioDia(diaSiguiente(cond.hasta)) : Number.MAX_SAFE_INTEGER,
+    };
+}
+
+function textoFechas({ desde, hasta }) {
+    const f = (dia) => {
+        const [y, m, d] = dia.split("-").map(Number);
+        return `${d} de ${MESES[m - 1]} de ${y}`;
+    };
+    if (desde && hasta) return `del ${f(desde)} al ${f(hasta)}`;
+    return desde ? `desde el ${f(desde)}` : `hasta el ${f(hasta)}`;
+}
+
+/** Lee una condición escrita por un admin ("genero:Terror 20", con `desde:`/`hasta:` si tiene fechas).
+ * @returns {{ ok: true, cond, texto } | { ok: false, error }} */
 function parsearCondicion(texto) {
+    const fechas = {};
+    let resto = String(texto || "");
+    for (const [, clave, dia] of [...resto.matchAll(/\s+(desde|hasta):\s*(\S+)/gi)]) {
+        if (!diaValido(dia))
+            return { ok: false, error: `La fecha de "${clave.toLowerCase()}" va como AAAA-MM-DD: \`${clave.toLowerCase()}:2026-10-31\`.` };
+        fechas[clave.toLowerCase()] = dia;
+    }
+    resto = resto.replace(/\s+(desde|hasta):\s*\S+/gi, "");
+    if (fechas.desde && fechas.hasta && fechas.hasta < fechas.desde)
+        return { ok: false, error: 'La fecha de "hasta" es anterior a la de "desde".' };
+    const r = parsearSinFechas(resto);
+    if (!r.ok) return r;
+    const sufijo = `${fechas.desde ? ` desde:${fechas.desde}` : ""}${fechas.hasta ? ` hasta:${fechas.hasta}` : ""}`;
+    return { ok: true, cond: { ...r.cond, ...fechas }, texto: r.texto + sufijo };
+}
+
+function parsearSinFechas(texto) {
     const m = /^\s*([a-z-]+)\s*(?::\s*(.+?))?(?:\s+(\d+))?\s*$/i.exec(String(texto || ""));
     if (!m)
         return {
@@ -570,7 +654,8 @@ async function nombrarConIA(guildId, items) {
             "gana al terminar algo. El nombre tiene que sonar a esa obra: una frase mítica, un guiño o un personaje (por " +
             'ejemplo, al terminar Breaking Bad: "Say my name"; Juego de Tronos: "Winter is coming"). Corto (máximo 40 ' +
             "caracteres), sin spoilers del final, sin comillas ni emojis, en español salvo que la frase célebre sea en su " +
-            "idioma original. Distinto para cada trofeo.\n\n" +
+            "idioma original. Si el trofeo es de verla en un idioma, que el nombre juegue con ese idioma. Distinto para cada " +
+            "trofeo.\n\n" +
             lote.map((x) => `${x.id} → ${x.ia}`).join("\n") +
             '\n\nResponde solo con un objeto JSON: {"<id>": "<nombre>", ...} con todos los id de arriba.';
         try {
@@ -599,7 +684,7 @@ async function nombrarConIA(guildId, items) {
     return nombres;
 }
 
-/** Guarda los trofeos nuevos (con el nombre de Gemini si lo hay). */
+/** Guarda los trofeos nuevos (con el nombre de Gemini si lo hay). @returns {Promise<string[]>} ids pedidos a Gemini */
 async function crear(guildId, lista) {
     const conIA = lista.filter((c) => c.ia).slice(0, MAX_NOMBRES_IA);
     const nombres = await nombrarConIA(guildId, conIA);
@@ -626,12 +711,108 @@ async function crear(guildId, lista) {
     })();
     cacheCatalogo.delete(guildId);
     log.info(`Trofeos de Plex nuevos en ${guildId}: ${lista.length} (${nombres.size} con nombre de Gemini)`);
+    return process.env.GOOGLE_API_KEY ? conIA.map((c) => c.id) : [];
+}
+
+/** Los tipos de trofeo que llevan nombre de Gemini (los de género y década tienen uno fijo; los de admin, el suyo). */
+const TIPOS_CON_IA = ["temporada", "serie", "saga", "director", "idioma"];
+
+/**
+ * Pide a Gemini el nombre de los trofeos que se quedaron con el de por defecto ("X: completada"), porque Gemini falló o
+ * porque se pasó del tope de nombres de una sincronización, o porque son de antes de que los de idioma lo llevaran. Como
+ * mucho `max` (lo que sobra del tope en esta sincronización), sin los de `yaPedidos` (los de esta sincronización: si
+ * Gemini acaba de fallar con ellos, se prueba en la siguiente). @returns {Promise<number>} renombrados
+ */
+async function renombrar(guildId, max, yaPedidos = new Set()) {
+    if (max <= 0 || !process.env.GOOGLE_API_KEY) return 0;
+    const filas = db
+        .prepare(
+            `SELECT id, descripcion FROM plex_trofeos WHERE guildId = ? AND nombre_ia = 0 AND tipo IN (${TIPOS_CON_IA.map(() => "?").join(",")})
+             ORDER BY creado, id`,
+        )
+        .all(guildId, ...TIPOS_CON_IA)
+        .filter((f) => !yaPedidos.has(f.id))
+        .slice(0, max);
+    if (!filas.length) return 0;
+    // La descripción ya dice de qué es ("Termina Breaking Bad entera (62 episodios)"); sin los emojis del principio.
+    const items = filas.map((f) => ({ id: f.id, ia: String(f.descripcion).replace(/^[^\p{L}\p{N}]+/u, "") }));
+    const nombres = await nombrarConIA(guildId, items);
+    const guardar = db.prepare("UPDATE plex_trofeos SET nombre = ?, nombre_ia = 1 WHERE guildId = ? AND id = ?");
+    db.transaction(() => {
+        for (const [id, nombre] of nombres) guardar.run(nombre, guildId, id);
+    })();
+    if (nombres.size) cacheCatalogo.delete(guildId);
+    log.info(`Trofeos de Plex renombrados con Gemini en ${guildId}: ${nombres.size} de ${filas.length}`);
+    return nombres.size;
+}
+
+// ─── Trofeos sociales (F-PX-12) ──────────────────────────────────────────────
+/** Contadores fijos del catálogo (achievementsSystem, categoría plex) de los trofeos sociales. */
+const EVENTOS_SOCIALES = { compartidas: "plex_cine_compartido", sinSpoilers: "plex_sin_spoilers", primero: "plex_primero" };
+/** "Sin spoilers": verlo en las 24 h desde que llega a Plex. "Estreno": en su primera semana en Plex. */
+const SIN_SPOILERS_S = 24 * 3600;
+const ESTRENO_S = 7 * 24 * 3600;
+
+/**
+ * Lo social de cada vinculado, con la copia del historial de todos y cuándo llegó cada cosa a Plex (las fichas):
+ *   - compartidas: veces que ha visto la misma película que otro vinculado el mismo día (en hora de Madrid).
+ *   - sinSpoilers: episodios y películas distintos vistos en las 24 h desde que llegaron a Plex.
+ *   - primero: estrenos (en su primera semana en Plex) que vio antes que nadie del servidor (vinculado o no).
+ * Lo que no tiene la fecha de llegada (fichas de antes de guardarla) no cuenta para los dos últimos.
+ * @returns {Map<string, { compartidas: number, sinSpoilers: number, primero: number }>} discordUserId → cuentas
+ */
+function sociales(guildId, links, ctx) {
+    const { momento } = require("./plexHistorial");
+    const porTautulli = new Map(links.map((l) => [String(l.tautulliUserId), l.discordUserId]));
+    const cuentas = new Map(links.map((l) => [l.discordUserId, { compartidas: 0, sinSpoilers: new Set(), primero: 0 }]));
+    if (!links.length) return new Map();
+    const filas = db
+        .prepare(
+            `SELECT id, tautulliUserId, tipo, rating_key, serie_key, serie, titulo, anio, temporada, episodio, inicio
+             FROM plex_reproducciones WHERE guildId = ? AND visto = 1`,
+        )
+        .all(guildId);
+    const pelisPorDia = new Map(); // "día|película" → vinculados que la vieron ese día
+    const primeraVista = new Map(); // cosa → la primera reproducción de un estreno { inicio, id, tautulliUserId }
+    for (const f of filas) {
+        const u = porTautulli.get(String(f.tautulliUserId));
+        let cosa;
+        let alta = null;
+        if (f.tipo === "movie") {
+            const ficha = ctx.peliculasPorKey.get(f.rating_key) || ctx.peliculasPorTitulo.get(clavePelicula(f.titulo, f.anio));
+            cosa = `p|${ficha ? clavePelicula(ficha.titulo, ficha.anio) : clavePelicula(f.titulo, f.anio)}`;
+            alta = ficha?.alta || null;
+            if (u) {
+                const k = `${momento(f.inicio).dia}|${cosa}`;
+                if (!pelisPorDia.has(k)) pelisPorDia.set(k, new Set());
+                pelisPorDia.get(k).add(u);
+            }
+        } else {
+            if (f.temporada === null || f.episodio === null) continue;
+            const porKey = ctx.seriesPorKey.get(f.serie_key);
+            const ficha = porKey?.encontrada ? porKey : ctx.seriesPorTitulo.get(normalizar(f.serie)) || porKey;
+            cosa = `e|${ficha?.rating_key || f.serie_key}|${f.temporada}:${f.episodio}`;
+            alta = ficha?.altas?.[`${f.temporada}:${f.episodio}`] || null;
+        }
+        const desdeQueLlego = alta ? f.inicio - alta : null;
+        if (desdeQueLlego === null || desdeQueLlego < 0 || desdeQueLlego > ESTRENO_S) continue;
+        if (u && desdeQueLlego <= SIN_SPOILERS_S) cuentas.get(u).sinSpoilers.add(cosa);
+        const antes = primeraVista.get(cosa);
+        if (!antes || f.inicio < antes.inicio || (f.inicio === antes.inicio && f.id < antes.id)) primeraVista.set(cosa, f);
+    }
+    for (const usuarios of pelisPorDia.values()) if (usuarios.size >= 2) for (const u of usuarios) cuentas.get(u).compartidas++;
+    for (const f of primeraVista.values()) {
+        const u = porTautulli.get(String(f.tautulliUserId));
+        if (u) cuentas.get(u).primero++;
+    }
+    return new Map([...cuentas].map(([u, c]) => [u, { compartidas: c.compartidas, sinSpoilers: c.sinSpoilers.size, primero: c.primero }]));
 }
 
 // ─── Evaluación ──────────────────────────────────────────────────────────────
 /**
- * Los eventos de logros de cada vinculado que salen de las fichas: los contadores fijos (anime, series terminadas), los
- * trofeos automáticos que tiene (creándolos si es el primero) y su progreso en los de admin.
+ * Los eventos de logros de cada vinculado que salen de las fichas: los contadores fijos (anime, series terminadas,
+ * sociales), los trofeos automáticos que tiene (creándolos si es el primero) y su progreso en los de admin (los que
+ * tienen fechas, con solo lo visto entre ellas).
  * @param {Array<{ discordUserId, tautulliUserId }>} links
  * @param {Map<string, object>} statsPorUsuario estadísticas de la fase 1 (plexHistorial.estadisticas) de cada uno
  * @returns {Promise<Map<string, Array<{ event: string, value: number }>>>} discordUserId → eventos
@@ -645,24 +826,43 @@ async function eventosDe(guildId, links, statsPorUsuario = new Map()) {
     const nuevos = new Map();
     const objetivos = new Map();
     const porUsuario = new Map();
+    const social = sociales(guildId, links, ctx);
     for (const link of links) {
         const datos = datosUsuario(guildId, link.tautulliUserId, ctx);
         const eventos = Object.entries(EVENTOS_FICHAS).map(([campo, event]) => ({ event, value: datos.cuentas[campo] }));
         for (const [modo, c] of Object.entries(datos.cuentas.idioma))
             for (const tipo of ["eps", "pelis", "series"]) eventos.push({ event: plexIdiomas.evento(tipo, modo), value: c[tipo] });
+        const s = social.get(link.discordUserId);
+        for (const [campo, event] of Object.entries(EVENTOS_SOCIALES)) eventos.push({ event, value: s[campo] });
         for (const c of candidatos(datos, ctx)) {
             if (!existentes.has(c.id) && !nuevos.has(c.id)) nuevos.set(c.id, c);
             eventos.push({ event: PREFIJO + c.id, value: 1 });
         }
+        // Los de admin con fechas: con lo visto entre ellas (una vez por rango y persona).
+        const porRango = new Map();
         for (const { t, p } of admin) {
-            const r = evaluarCondicion(p.cond, datos, ctx, statsPorUsuario.get(link.discordUserId));
+            const rango = rangoDe(p.cond);
+            let d = datos;
+            let st = statsPorUsuario.get(link.discordUserId);
+            if (rango) {
+                const k = `${rango.desde}|${rango.hasta}`;
+                if (!porRango.has(k))
+                    porRango.set(k, {
+                        datos: datosUsuario(guildId, link.tautulliUserId, ctx, rango),
+                        stats: estadisticasEntre(guildId, link.tautulliUserId, rango),
+                    });
+                ({ datos: d, stats: st } = porRango.get(k));
+            }
+            const r = evaluarCondicion(p.cond, d, ctx, st);
             if (!r) continue;
             if (r.objetivo > 0) objetivos.set(t.id, r.objetivo);
             eventos.push({ event: PREFIJO + t.id, value: r.progreso });
         }
         porUsuario.set(link.discordUserId, eventos);
     }
-    if (nuevos.size) await crear(guildId, [...nuevos.values()]);
+    // Los nombres de Gemini que sobren del tope de esta sincronización, para los de antes que se quedaron sin él.
+    const pedidos = nuevos.size ? await crear(guildId, [...nuevos.values()]) : [];
+    await renombrar(guildId, Math.min(LOTE_IA, MAX_NOMBRES_IA - pedidos.length), new Set(pedidos));
     // El objetivo de "todas las de…" o "terminar una serie" cambia si se añaden películas o episodios.
     const cambiar = db.prepare("UPDATE plex_trofeos SET objetivo = ? WHERE guildId = ? AND id = ? AND objetivo != ?");
     let cambiados = 0;
@@ -708,6 +908,16 @@ function paraAnuncio(guildId, desbloqueados) {
 
 function oculto(guildId, userId) {
     return Boolean(db.prepare("SELECT ocultar FROM plex_preferencias WHERE guildId = ? AND userId = ?").get(guildId, userId)?.ocultar);
+}
+
+/**
+ * Qué logros de Plex se ven en el perfil de alguien (para listUserAchievements y getSummary): ninguno si los ha ocultado
+ * y no es su perfil; solo los que ya tiene si no tiene la cuenta de Plex vinculada (los fijos de Plex no le dicen nada).
+ */
+function opcionesPerfil(guildId, userId, propio) {
+    if (!propio && oculto(guildId, userId)) return { excluirCategorias: ["plex"] };
+    if (!plexLinks.getLinkByDiscordId(guildId, userId)) return { ocultarPendientes: ["plex"] };
+    return {};
 }
 
 function setOculto(guildId, userId, valor) {
@@ -758,7 +968,8 @@ function crearAdmin(guildId, { nombre, descripcion, condicion, recompensa, dific
     return { ok: true, trofeo };
 }
 
-function describirCondicion({ tipo, valor, n }) {
+function describirCondicion(cond) {
+    const { tipo, valor, n } = cond;
     const textos = {
         genero: `Ve ${n} películas de ${valor}`,
         decada: `Ve ${n} películas de los años ${String(valor).slice(2)}`,
@@ -775,13 +986,43 @@ function describirCondicion({ tipo, valor, n }) {
         "anime-episodios": `Ve ${n} episodios de anime`,
         "anime-completas": `Termina ${n} series de anime`,
     };
+    let texto = textos[tipo] || tipo;
     if (TIPO_IDIOMA[tipo]) {
         const modo = plexIdiomas.MODOS[plexIdiomas.modoPorSlug(valor)];
         const de = modo.anime ? "de anime " : "";
         const que = { eps: `${n} episodios ${de}`, pelis: `${n} películas ${de}`, series: `${n} series ${de}enteras ` }[TIPO_IDIOMA[tipo]];
-        return `${TIPO_IDIOMA[tipo] === "series" ? "Termina" : "Ve"} ${que}${modo.texto}`;
+        texto = `${TIPO_IDIOMA[tipo] === "series" ? "Termina" : "Ve"} ${que}${modo.texto}`;
     }
-    return textos[tipo] || tipo;
+    return cond.desde || cond.hasta ? `${texto} (${textoFechas(cond)})` : texto;
+}
+
+const ORDEN_TIPO = ["serie", "idioma", "saga", "director", "temporada", "admin", "genero", "decada"];
+
+/**
+ * Los trofeos cuyo nombre, descripción o condición tiene un texto ("Breaking Bad", "Nolan"), primero las series, y quién
+ * tiene cada uno (sin quien oculta sus logros de Plex). Para el Duende: "¿quién ha terminado Breaking Bad?".
+ * @returns {Array<{ id, nombre, descripcion, tipo, dificultad, quienes: string[] }>}
+ */
+function buscar(guildId, texto, limite = 10) {
+    const t = normalizar(texto);
+    if (t.length < 2) return [];
+    const quienes = db
+        .prepare(
+            "SELECT userId FROM achievements_progress WHERE guildId = ? AND achievementId = ? AND completedAt IS NOT NULL ORDER BY completedAt",
+        )
+        .pluck();
+    return trofeos(guildId)
+        .filter((x) => [x.nombre, x.descripcion, x.condicion].some((v) => normalizar(v).includes(t)))
+        .sort((a, b) => ORDEN_TIPO.indexOf(a.tipo) - ORDEN_TIPO.indexOf(b.tipo) || a.creado - b.creado)
+        .slice(0, limite)
+        .map((x) => ({
+            id: PREFIJO + x.id,
+            nombre: x.nombre,
+            descripcion: x.descripcion,
+            tipo: x.tipo,
+            dificultad: dificultadGuardada(x),
+            quienes: quienes.all(guildId, PREFIJO + x.id).filter((u) => !oculto(guildId, u)),
+        }));
 }
 
 /** Borra un trofeo (y el progreso de cada uno en él; lo ya reclamado no se devuelve). */
@@ -822,11 +1063,17 @@ function resumen(guildId) {
 module.exports = {
     PREFIJO,
     EVENTOS_FICHAS,
+    EVENTOS_SOCIALES,
     CONDICIONES,
+    AYUDA_FECHAS,
     catalogo,
     eventosDe,
     datosUsuario,
     contexto,
+    sociales,
+    renombrar,
+    buscar,
+    rangoDe,
     parsearCondicion,
     crearAdmin,
     borrar,
@@ -836,4 +1083,5 @@ module.exports = {
     paraAnuncio,
     oculto,
     setOculto,
+    opcionesPerfil,
 };

@@ -175,6 +175,30 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] El lunes a las 10:00: el mensaje en el canal, con el aviso solo al primero. (O antes, con 📣 Publicar ahora, sabiendo
       que entonces el lunes no saldrá otro de esa semana).
 
+**🍿 Lo pendiente de la gamificación de Plex (2026-10-06, rama `feature/elduendejavier`)**
+- [ ] Antes de desplegar: `npm run plex:check` (en el servidor, `docker exec -it duende-bot npm run plex:check`). Todo con
+      ✓; si sale ⚠ o ✗, mirar la línea (y la tabla de [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md#3-lo-que-hay-que-comprobar-con-datos-reales)).
+- [ ] Al arrancar: `[Migraciones] Aplicada 018_plex_importacion_y_sociales` y, en la primera sincronización, `Importación
+      de Plex de …: empieza` por cada vinculado; horas después, `…: terminada`.
+- [ ] Panel admin → Plex → 🏆 Trofeos: las líneas 📼 Importación (50 %, N importando) y 🎰 Roles de Gordos, y los
+      botones 🪙 % de la importación, 🎰 Roles de Gordos y 🔍 Idiomas. Decidir el % antes de que la gente reclame.
+- [ ] 🔍 Idiomas: el reparto tiene sentido (mucho castellano e inglés, algo de japonés) y los "no reconocidos" son pocos.
+- [ ] Reclamar un logro de Plex de la importación: el menú dice "+N 🪙 (📼 de la importación)" y cobra ese N.
+- [ ] 🎰 Roles de Gordos: elegir un rol para 1 y ver que quien ya tiene un 🎰 lo recibe (y nadie que oculte sus logros).
+- [ ] `/perfil` → 🏅 Logros: el menú "Qué logros ver" (una categoría, 🏆 solo trofeos, 🟢/🟡/🎰); pasar página y reclamar
+      sin perder el filtro. Con una cuenta sin Plex vinculado: no salen los logros de Plex y el total de logros baja.
+- [ ] `/perfil` → 👤 Perfil → 🍿 Plex (y `/perfil seccion:🍿 Plex`): horas, idiomas y "Te falta poco" con sentido; en el de
+      otro se ve, salvo si lo oculta.
+- [ ] `/perfil` → 🏆 Rankings → 🍿 Plex: los cinco rankings; las horas de siempre se parecen a las de Tautulli.
+- [ ] Preguntar al Duende (en un canal de Plex) "¿qué trofeos de Plex tiene X?" y "¿quién ha terminado <una serie>?":
+      en el log, `Herramienta usada: consultar_trofeos_plex`.
+- [ ] ➕ Crear trofeo con fechas (`genero:Terror 5 desde:2026-10-01 hasta:2026-10-31`): la descripción dice las fechas y
+      solo cuenta lo de esos días.
+- [ ] Los trofeos de series en un idioma que ya había ("Breaking Bad en inglés") van cogiendo nombre de Gemini en las
+      siguientes sincronizaciones (en el log, `Trofeos de Plex renombrados con Gemini`).
+- [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
+      de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

@@ -99,6 +99,8 @@ const ver = (user, serie, t, e) =>
 
 beforeAll(async () => {
     guildSettings.setSetting(G, "logros.notify_channel_id", "canal-logros");
+    // Aquí se prueba la recompensa de cada trofeo; la de la primera importación está en plexImportacion.test.js.
+    guildSettings.setSetting(G, "plex.importacion_pct", 100);
     plexLinks.setLink(G, "disc-1", "1", "uno");
     plexLinks.setLink(G, "disc-2", "2", "dos");
     db.prepare(

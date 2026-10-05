@@ -5,6 +5,7 @@
 //     de un director o de una colección hay en Plex ("todas las de Nolan", sagas).
 //   - Las series que alguien ha visto, con los episodios de cada temporada (sin especiales), para saber quién ha
 //     terminado una temporada o la serie entera. Las vistas hace poco se vuelven a mirar cada 3 días (episodios nuevos).
+//   - Cuándo llegó a Plex cada película y cada episodio (added_at), para los trofeos sociales ("Sin spoilers").
 // Se piden poco a poco (un máximo de llamadas por sincronización, primero lo que alguien ha visto), así la primera vez no
 // se satura Tautulli: con una biblioteca grande tarda unas horas en estar completa.
 const db = require("../core/db");
@@ -96,22 +97,28 @@ async function fichaPelicula(guildId, key, pedir) {
     db.prepare(
         `UPDATE plex_fichas SET titulo = COALESCE(@titulo, titulo), anio = COALESCE(@anio, anio), section_id = COALESCE(@section_id, section_id),
                 biblioteca = COALESCE(@biblioteca, biblioteca), generos = @generos, directores = @directores, colecciones = @colecciones,
-                encontrada = 1, actualizada = @ahora
+                alta = COALESCE(@alta, alta), encontrada = 1, actualizada = @ahora
          WHERE guildId = @guildId AND rating_key = @key`,
     ).run({
         ...datosComunes(m),
         directores: JSON.stringify(etiquetas(m.directors)),
         colecciones: JSON.stringify(etiquetas(m.collections)),
+        alta: alta(m),
         ahora: Date.now(),
         guildId,
         key,
     });
 }
 
+/** Cuándo llegó a Plex (added_at de Tautulli, unix en segundos), o null si no lo dice. */
+const alta = (m) => (Number(m?.added_at) > 0 ? Number(m.added_at) : null);
+
 async function fichaSerie(guildId, key, pedir) {
     const m = await pedir(() => tautulli.getMetadata(guildId, key));
     if (!m) return guardarPerdida(guildId, key);
     const temporadas = {};
+    // Cuándo llegó a Plex cada episodio ("temporada:episodio" → unix), para los trofeos sociales.
+    const altas = {};
     const hijas = await pedir(() => tautulli.getChildrenMetadata(guildId, key, "show"));
     for (const t of hijas) {
         const n = Number(t.media_index);
@@ -119,16 +126,18 @@ async function fichaSerie(guildId, key, pedir) {
         const episodios = await pedir(() => tautulli.getChildrenMetadata(guildId, t.rating_key, "season"));
         const numeros = [...new Set(episodios.map((e) => Number(e.media_index)).filter((x) => x > 0))].sort((a, b) => a - b);
         if (numeros.length) temporadas[n] = numeros;
+        for (const e of episodios) if (Number(e.media_index) > 0 && alta(e)) altas[`${n}:${Number(e.media_index)}`] = alta(e);
     }
     db.prepare(
         `UPDATE plex_fichas SET titulo = COALESCE(@titulo, titulo), anio = COALESCE(@anio, anio), section_id = COALESCE(@section_id, section_id),
                 biblioteca = COALESCE(@biblioteca, biblioteca), generos = @generos, colecciones = @colecciones, temporadas = @temporadas,
-                encontrada = 1, actualizada = @ahora
+                altas = @altas, encontrada = 1, actualizada = @ahora
          WHERE guildId = @guildId AND rating_key = @key`,
     ).run({
         ...datosComunes(m),
         colecciones: JSON.stringify(etiquetas(m.collections)),
         temporadas: JSON.stringify(temporadas),
+        altas: JSON.stringify(altas),
         ahora: Date.now(),
         guildId,
         key,
@@ -341,6 +350,7 @@ function cargar(guildId) {
         directores: leerJson(f.directores, []),
         colecciones: leerJson(f.colecciones, []),
         temporadas: leerJson(f.temporadas, null),
+        altas: leerJson(f.altas, {}),
     }));
     return {
         peliculas: fichas.filter((f) => f.tipo === "movie"),
