@@ -390,13 +390,23 @@ module.exports = {
                 .filter((p) => !speakerProfile || p.key !== speakerProfile.key)
                 .slice(0, 3);
 
+            // Con pocas notas se dan todas (perfiles.notasRelevantes no llama a Gemini); con
+            // muchas, solo las más relacionadas con lo que se acaba de decir en vez de
+            // siempre las últimas MAX_NOTAS — así no se pierden notas antiguas que sí vienen
+            // a cuento ahora. Si falla la llamada a Gemini, cae a las últimas como antes.
+            const conNotasRelevantes = async (p) => p && { ...p, notas: await perfiles.notasRelevantes(p, userInput) };
+            const [speakerConNotas, ...mentionedConNotas] = await Promise.all([
+                conNotasRelevantes(speakerProfile),
+                ...mentionedProfiles.map(conNotasRelevantes),
+            ]);
+
             const perfilesDestacados = [];
-            if (speakerProfile) {
+            if (speakerConNotas) {
                 perfilesDestacados.push(
-                    `${speakerProfile.name} (quien te habla ahora): ${truncateText(buildPersonProfileText(speakerProfile), perfiles.MAX_PERFIL_PROMPT)}`,
+                    `${speakerConNotas.name} (quien te habla ahora): ${truncateText(buildPersonProfileText(speakerConNotas), perfiles.MAX_PERFIL_PROMPT)}`,
                 );
             }
-            for (const p of mentionedProfiles) {
+            for (const p of mentionedConNotas) {
                 perfilesDestacados.push(
                     `${p.name} (mencionado en el mensaje): ${truncateText(buildPersonProfileText(p), perfiles.MAX_PERFIL_PROMPT)}`,
                 );
