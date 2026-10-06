@@ -2,6 +2,26 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-06 (🧠 Memoria del Duende por similitud, no solo por fecha)
+
+[F-DU-06](https://github.com/ale-dm/bot-discord/issues/17). Migración **019**.
+
+- **Las notas de `/duende recuerda` se eligen por lo relacionado que esté con el mensaje actual**,
+  no solo por ser las últimas: con más de 6 notas guardadas, se embeben con Gemini
+  (`gemini-embedding-001`, $0,15/M tokens de entrada) y se comparan por similitud coseno contra
+  el mensaje que se está respondiendo (`perfiles.notasRelevantes`). Antes, con más de
+  `MAX_PERFIL_PROMPT` (2.500) caracteres entre descripción y notas, las más recientes podían
+  quedarse fuera por el truncado; ahora se eligen las que de verdad vienen a cuento.
+- **Con 6 notas o menos no se llama a Gemini** — se dan todas, como antes. Los vectores se
+  cachean por nota (`duende_notas_vectores`, tabla nueva) para no volver a calcular los de
+  siempre en cada mensaje; solo se pide el de las notas nuevas y el del mensaje actual.
+- **Si la llamada a Gemini falla** (sin API key, sin cuota, red...) cae a las últimas notas, el
+  comportamiento de siempre — nunca rompe la respuesta del Duende por esto.
+- Nuevo servicio `services/duende/embeddings.js` (`embedTexts`, `cosineSimilarity`), sin base de
+  datos vectorial: con el volumen de este server, comparar a pelo en SQLite basta.
+- Tests: 590 (de 586). Nuevos: `notasEmbeddings` (umbral sin llamar a Gemini, similitud,
+  fallback si falla, caché entre llamadas).
+
 ## 2026-10-06 (🎬 Resync de Plex y herramientas que sobreviven al cambio de personalidad)
 
 - **🔄 Resincronizar IDs en `/paneladmin` → 🎬 Plex**: el `tautulliUserId` guardado en `plex_links` es interno de cada
