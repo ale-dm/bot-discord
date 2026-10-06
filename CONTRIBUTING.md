@@ -73,6 +73,8 @@ git push
 - Si el PR cierra una idea, se cierra su [Issue](https://github.com/ale-dm/bot-discord/issues?q=is%3Aopen+label%3Afeature-idea)
   (poner "Closes #N" en la descripción del PR) y se apunta en [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 - Revisar el PR del otro antes de aprobar, aunque sea rápido — para eso somos dos.
+- **Excepción**: los PRs que abre Claude Code los mergea él mismo (squash) en cuanto pasan `npm test` en local,
+  sin esperar revisión — así lo pidió `ale-dm`. Si ves uno mergeado sin tu aprobación, es por esto, no un descuido.
 
 ## CI
 
