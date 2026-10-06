@@ -129,6 +129,7 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario. |
 | `/tts texto* [voz]` | El bot entra en tu canal de voz y lee el texto (Gemini TTS). Voces: Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina. El idioma se detecta solo. Los textos se ponen en cola por servidor. |
 | `/escuchar [usuario]` | El bot escucha a un usuario en el canal de voz, transcribe lo que dice (Vosk, local) y le responde **por voz** como el Duende, encadenando turnos mientras la conversación siga activa. |
+| `/conversar` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Vuelve a usar `/conversar` para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Funcionalidad aparte de `/escuchar`, que sigue igual. |
 | `/bola8 pregunta*` | Respuesta al azar de la bola 8 mágica. |
 
 ---
@@ -732,6 +733,15 @@ Duende siguen en `/duende set | add | remove`.
 | `VOSK_MODEL_PATH` | modelo español pequeño | Modelo |
 | `STT_LISTEN_TIMEOUT_MS`, `STT_ONLY_USER_ID`, `STT_FIXED_USER_ID` | | Ajustes de `/escuchar` (el detalle de STT sale con `LOG_LEVEL=debug`; `STT_VERBBOSE` ya no se usa) |
 
+### Voz en directo (Gemini Live, `/conversar`)
+
+| Variable | Por defecto | Qué controla |
+|---|---|---|
+| `DUENDE_LIVE_MODEL` | `gemini-live-2.5-flash-preview` | Modelo de audio bidireccional en tiempo real (no confundir con `GEMINI_TTS_MODEL`, que es por lotes) |
+| `DUENDE_LIVE_VOICE` | `DUENDE_TTS_VOICE` o `Puck` | Voz de `/conversar` |
+| `DUENDE_LIVE_IDLE_DISCONNECT_MS` | 300000 (5 min) | Corta la conversación tras este tiempo sin que nadie hable — se cobra mientras la conexión esté abierta, no solo al hablar |
+| `DUENDE_LIVE_MAX_DURATION_MS` | 1800000 (30 min) | Tope duro de duración, haya actividad o no |
+
 ### Otros
 
 | Variable | Por defecto | Qué controla |
@@ -799,6 +809,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 |---|---|
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/conversar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
