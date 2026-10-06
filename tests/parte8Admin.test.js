@@ -148,6 +148,7 @@ test("quedan 14 comandos, sin los de admin sueltos", () => {
         [
             "ayuda",
             "bola8",
+            "conversar",
             "cripto",
             "duende",
             "escuchar",

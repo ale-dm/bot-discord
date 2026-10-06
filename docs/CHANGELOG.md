@@ -2,6 +2,28 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-06 (🎙️ Conversación de voz en directo)
+
+[F-DU-07](https://github.com/ale-dm/bot-discord/issues/18).
+
+- **`/conversar`**: conversación de voz en directo con el Duende (Gemini Live API), audio
+  bidireccional real en vez de por turnos — no hace falta esperar a que termines de hablar.
+  **No sustituye a `/escuchar`** (Vosk + TTS por lotes, que sigue exactamente igual): es una
+  funcionalidad nueva y aparte, pedida explícitamente así.
+- Usa las mismas herramientas que el chat de texto (saldo, nivel, Plex, Seerr...) con el mismo
+  criterio de qué Plex/Seerr se permite según el canal de texto desde donde se invoca.
+- **Dos cortes de coste obligatorios**, no opcionales: se cobra mientras la conexión esté
+  abierta, no solo cuando se habla. `DUENDE_LIVE_IDLE_DISCONNECT_MS` (5 min por defecto) corta
+  tras ese tiempo sin que nadie hable; `DUENDE_LIVE_MAX_DURATION_MS` (30 min) es un tope duro
+  pase lo que pase. `/conversar` otra vez también la termina a mano.
+- Nuevo servicio `services/duende/liveVoz.js`: une el audio de Discord (Opus → PCM 16kHz) con
+  la sesión en directo de Gemini, y la respuesta (PCM 24kHz) con la salida de voz de Discord
+  (vía `ffmpeg`, ya en la imagen para Vosk). Sin tabla ni migración nueva.
+- Tests: 600 (de 590). Nuevos: `liveVoz` (una conversación a la vez por servidor, los dos
+  cortes de coste con temporizadores simulados, las herramientas se ejecutan y responden, una
+  desconocida no rompe nada) — todo con el audio y la conexión a Discord simulados: queda
+  pendiente de probar de verdad en Discord.
+
 ## 2026-10-06 (🧠 Memoria del Duende por similitud, no solo por fecha)
 
 [F-DU-06](https://github.com/ale-dm/bot-discord/issues/17). Migración **019**.
