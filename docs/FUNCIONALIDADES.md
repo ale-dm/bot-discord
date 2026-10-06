@@ -89,6 +89,11 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   (no las menciones), sin enlaces, emojis del servidor ni formato, y como mucho 200 caracteres. En una charla de voz
   (`/escuchar`), si no puede hablar (el TTS falla, no hay conexión...), contesta por texto en el canal ("🗣️ …").
 - Si Gemini bloquea la respuesta por contenido, reintenta con un tono neutro manteniendo las herramientas.
+- **Mensajes espontáneos** (Config Global → Duende → 💬 Mensajes solos): de vez en cuando, sin que nadie le hable,
+  comenta en el canal elegido algo real del server (un objeto de la tienda que nadie compra, un partido con pocas
+  apuestas, quién va primero en dinero...) para animar a la gente a usar el bot. Solo si ese canal lleva un rato sin
+  mensajes de verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00.
+  Si no hay nada real que comentar, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
 
 ### Herramientas (datos reales)
 
@@ -721,6 +726,8 @@ Duende siguen en `/duende set | add | remove`.
 | `DUENDE_TEMPERATURE` | 0.7 | Creatividad (también en el panel) |
 | `DUENDE_PROMPT_MSG_MAX_CHARS` | 280 | Recorte de cada mensaje del historial |
 | `DUENDE_LOG_FULL_PROMPT` | 0 | `1` = guarda el prompt completo en el log |
+| `DUENDE_ESPONTANEO_PROB` | 0.15 | Probabilidad de mensaje espontáneo por hora (11:00-23:00); canal y activado en el panel |
+| `DUENDE_ESPONTANEO_QUIET_MS` | 7200000 (2h) | Tiempo sin mensajes de verdad en el canal para considerarlo "parado" |
 | `IMAGE_GEN_MODEL`, `IMAGE_GEN_TIMEOUT_MS`, `IMAGE_GEN_MAX_RETRIES`, `IMAGE_GEN_RETRY_BASE_MS`, `IMAGE_GEN_COOLDOWN_MS` | | `/imagen` e imágenes de `/ia` |
 | `IA_COOLDOWN_MS` | 15000 | Cooldown de `/ia` |
 
