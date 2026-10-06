@@ -22,8 +22,8 @@ feature/y ──┘
 
 - Siempre por PR, aunque sea un cambio pequeño — así el otro ve qué ha cambiado y por qué, y los tests corren solos.
 - La plantilla de PR pide marcar si `npm test` pasa y si se ha probado en Discord. Rellenarla de verdad, no por rellenar.
-- Si el PR cierra una idea de [`docs/planificacion/FEATURES.md`](docs/planificacion/FEATURES.md), se borra de ahí y se
-  apunta en [`docs/CHANGELOG.md`](docs/CHANGELOG.md), como ya se hacía antes de tener PRs.
+- Si el PR cierra una idea, se cierra su [Issue](https://github.com/ale-dm/bot-discord/issues?q=is%3Aopen+label%3Afeature-idea)
+  (poner "Closes #N" en la descripción del PR) y se apunta en [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 - Revisar el PR del otro antes de aprobar, aunque sea rápido — para eso somos dos.
 
 ## CI
@@ -41,3 +41,13 @@ Para que las reglas de arriba se cumplan solas y no dependan de acordarnos:
    - Opcional con dos personas: "Require approvals" (1) para que el otro tenga que aprobar antes de mergear.
 2. Con eso activo, GitHub ya no deja hacer push directo a `main`/`developer` ni mergear un PR con los tests en rojo,
    ni para el admin del repo si se marca "Do not allow bypassing the above settings".
+3. **Project board** (pestaña *Projects* del repo → *New project* → plantilla *Board*): esto no se puede crear con la
+   API usada aquí, hay que darle una vez a mano. Columnas sugeridas: Por hacer / En progreso / Hecho. Luego
+   *Add item* → *Add from repository* → filtrar por `label:feature-idea` para meter de golpe los 39 issues migrados
+   de `FEATURES.md`.
+
+## Ideas de funcionalidad
+
+Viven en [Issues con label `feature-idea`](https://github.com/ale-dm/bot-discord/issues?q=is%3Aopen+label%3Afeature-idea),
+no en un markdown. Labels: categoría (`apuestas`, `duende-ia`, `plex-seerr`, `economia`, `administracion`) y esfuerzo
+(`esfuerzo-S`/`M`/`L`). `prioridad` marca las que más aportan con menos trabajo.

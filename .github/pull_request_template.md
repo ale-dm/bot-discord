@@ -1,6 +1,6 @@
 ## Qué cambia
 
-<!-- Resumen breve. Si cierra una idea de docs/planificacion/FEATURES.md, pon el ID (p. ej. F-DU-06) y bórrala de ahí. -->
+<!-- Resumen breve. Si cierra una idea, pon "Closes #N" para que el issue se cierre solo al mergear. -->
 
 ## Por qué
 
