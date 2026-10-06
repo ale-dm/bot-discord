@@ -124,6 +124,21 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
 - El bot necesita permiso para escribir en ese canal. Se publica el lunes a las 10:00 (Madrid); para probarlo antes,
   📣 Publicar ahora (cuenta como el de esa semana: el lunes ya no saldría otro).
 
+### Importación, trofeos sociales y roles de Gordos (migración 018, 2026-10-06)
+
+- **018** crea `plex_importacion`, y añade `importado` a `achievements_progress` y `alta` y `altas` a `plex_fichas`. No
+  hay que copiar nada ni cambiar el stack. Desplegar **018 a la vez que 015–017** (o antes de que se calcule lo de
+  Plex con ellas): lo que se desbloquea en la primera importación de cada uno da el 50 % de las monedas, pero solo
+  desde que existe 018. Lo que ya estuviera desbloqueado antes, da todo.
+- El % se cambia antes de que la gente reclame en Panel admin → Plex → 🏆 Trofeos → 🪙 % de la importación (0 = nada,
+  100 = todo; cuenta al reclamar). En el log: `Importación de Plex de ...: empieza` y `...: terminada`.
+- Las fechas de llegada a Plex (para "Sin spoilers" y "Primero del servidor") llegan con las fichas: las nuevas ya las
+  traen; las de antes, cuando se vuelven a pedir (series vistas en el último mes, cada 3 días; películas, cada 30).
+- 🎰 Roles de Gordos: elegirlos en 🏆 Trofeos. El bot necesita "Gestionar roles" y estar por encima de esos roles en la
+  lista (como con los de nivel).
+- Antes de desplegar (o justo después), `docker exec -it duende-bot npm run plex:check` comprueba contra el Tautulli de
+  verdad lo que se ha supuesto de sus datos (idiomas, anime, temporadas, fechas de llegada, horas), sin tocar la BD.
+
 ### Voz con DAVE y Node 22 (2026-10-02)
 
 - Discord exige DAVE (cifrado de extremo a extremo) en los canales de voz desde marzo de 2026. El bot usa ahora

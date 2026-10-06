@@ -23,6 +23,7 @@ const {
     handlePlexModal,
     handlePlexChannelSelect,
     handlePlexStringSelect,
+    handlePlexRoleSelect,
 } = require("../../adminPanel/plex");
 const { handleSeerrButton, handleSeerrChannelSelect, handleSeerrModal } = require("../../adminPanel/seerr");
 const { handleApodosButton, handleApodosUserSelect, handleApodosModal } = require("../../adminPanel/apodos");
@@ -47,7 +48,7 @@ module.exports = {
             prefixes: ["paneladmin_bank_", "paneladmin_plex_", "paneladmin_apodos_", "paneladmin_perfiles_"],
             method: "handleUserSelect",
         },
-        { types: ["roleSelect"], prefixes: ["paneladmin_levels_reward_role_"], method: "handleRoleSelect" },
+        { types: ["roleSelect"], prefixes: ["paneladmin_levels_reward_role_", "paneladmin_plex_gordos_rol_"], method: "handleRoleSelect" },
         {
             types: ["channelSelect"],
             ids: [
@@ -169,6 +170,7 @@ module.exports = {
                 await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
                 return;
             }
+            if (await handlePlexRoleSelect(interaction)) return;
             await handleLevelsRoleSelect(interaction);
         } catch (err) {
             log.error(`handleRoleSelect falló (${interaction.customId || "/paneladmin"}):`, err);

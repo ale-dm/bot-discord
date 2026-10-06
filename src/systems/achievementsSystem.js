@@ -444,6 +444,62 @@ const CATALOG = [
         ["plex_anime_eps_500", "Arco infinito", "Ve 500 episodios de anime distintos", "plex_anime_episodios", 500, 4000, "gordo"],
         ["plex_anime_completas_1", "Sayonara", "Termina una serie de anime entera", "plex_anime_completas", 1, 500, "facil"],
         ["plex_anime_completas_5", "Nakama", "Termina 5 series de anime enteras", "plex_anime_completas", 5, 2500, "normal"],
+        // Sociales (systems/plexTrofeos.sociales): con los demás y con lo que acaba de llegar a Plex.
+        [
+            "plex_compartido_1",
+            "Cine compartido",
+            "Ve la misma película que otro vinculado el mismo día",
+            "plex_cine_compartido",
+            1,
+            300,
+            "facil",
+        ],
+        [
+            "plex_compartido_10",
+            "Sesión doble",
+            "Ve la misma película que otro vinculado el mismo día, 10 veces",
+            "plex_cine_compartido",
+            10,
+            1500,
+            "normal",
+        ],
+        ["plex_spoilers_1", "Sin spoilers", "Ve algo en las 24 h desde que llega a Plex", "plex_sin_spoilers", 1, 200, "facil"],
+        [
+            "plex_spoilers_25",
+            "Al día",
+            "Ve 25 episodios o películas en las 24 h desde que llegan a Plex",
+            "plex_sin_spoilers",
+            25,
+            1500,
+            "normal",
+        ],
+        [
+            "plex_spoilers_100",
+            "Inmune a los spoilers",
+            "Ve 100 episodios o películas en las 24 h desde que llegan a Plex",
+            "plex_sin_spoilers",
+            100,
+            5000,
+            "gordo",
+        ],
+        [
+            "plex_primero_1",
+            "Primero del servidor",
+            "Sé el primero del servidor en ver un estreno (algo en su primera semana en Plex)",
+            "plex_primero",
+            1,
+            300,
+            "facil",
+        ],
+        [
+            "plex_primero_25",
+            "Estreno en primera fila",
+            "Sé el primero del servidor en ver 25 estrenos (en su primera semana en Plex)",
+            "plex_primero",
+            25,
+            2500,
+            "normal",
+        ],
     ].map(([id, name, desc, event, target, rewardCoins, dificultad, hidden]) => ({
         id,
         name,
@@ -508,13 +564,18 @@ function getById(id, guildId) {
 }
 
 // `excluirCategorias`: para el perfil de alguien que ha ocultado sus logros de Plex a los demás.
+// `ocultarPendientes`: categorías de las que solo salen los completados (los de Plex a quien no lo tiene vinculado).
+// `visibleHasta` (ms) en un logro: pasado ese momento, solo sale a quien lo completó.
 // Los `soloCompletado` (los trofeos de cada serie, saga...) solo salen a quien los tiene, también con los secretos.
 function listUserAchievements(guildId, userId, opts = {}) {
     const includeHidden = Boolean(opts.includeHidden);
     const excluir = new Set(opts.excluirCategorias || []);
+    const ocultarPendientes = new Set(opts.ocultarPendientes || []);
     const catalog = getCatalog(guildId).filter((a) => !excluir.has(a.category));
     const rows = db
-        .prepare("SELECT achievementId, progress, completedAt, claimedAt FROM achievements_progress WHERE guildId = ? AND userId = ?")
+        .prepare(
+            "SELECT achievementId, progress, completedAt, claimedAt, importado FROM achievements_progress WHERE guildId = ? AND userId = ?",
+        )
         .all(guildId, userId);
     const byId = new Map(rows.map((r) => [r.achievementId, r]));
 
@@ -528,6 +589,9 @@ function listUserAchievements(guildId, userId, opts = {}) {
 
         if (ach.soloCompletado && !completed) continue;
         if (ach.hidden && !completed && !includeHidden) continue;
+        if (ocultarPendientes.has(ach.category) && !completed) continue;
+        // Con plazo (los trofeos de Plex con fecha): pasado, solo sale a quien lo consiguió.
+        if (ach.visibleHasta && !completed && Date.now() >= ach.visibleHasta) continue;
 
         list.push({
             ...ach,
@@ -536,6 +600,7 @@ function listUserAchievements(guildId, userId, opts = {}) {
             completedAt,
             claimedAt,
             claimable: completed && !claimedAt,
+            importado: Boolean(row?.importado),
         });
     }
 
@@ -555,16 +620,18 @@ function getSummary(guildId, userId, opts = {}) {
     };
 }
 
-function upsertProgress(guildId, userId, achievementId, progress, completedAt) {
+// `importado`: se desbloquea ahora con lo antiguo (la primera importación de Plex): da menos monedas al reclamarlo.
+function upsertProgress(guildId, userId, achievementId, progress, completedAt, importado = false) {
     db.prepare(
         `
-        INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt, importado)
+        VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(guildId, userId, achievementId) DO UPDATE SET
             progress = excluded.progress,
-            completedAt = COALESCE(achievements_progress.completedAt, excluded.completedAt)
+            completedAt = COALESCE(achievements_progress.completedAt, excluded.completedAt),
+            importado = CASE WHEN achievements_progress.completedAt IS NULL THEN excluded.importado ELSE achievements_progress.importado END
     `,
-    ).run(guildId, userId, achievementId, progress, completedAt || null);
+    ).run(guildId, userId, achievementId, progress, completedAt || null, importado ? 1 : 0);
 }
 
 // El cliente de Discord, para encontrar el servidor cuando solo llega su id (el casino y la cripto llaman con el id:
@@ -616,6 +683,7 @@ async function maybeNotifyUnlocked(guildOrId, userId, unlocked) {
 // Nunca lanza: se llama "de paso" (con void) desde el casino, la tienda, el XP... y un fallo
 // aquí no debe romper esa acción ni acabar como promesa rechazada sin capturar.
 // `anunciar: false` para quien junta varios eventos y anuncia una vez al final (los logros de Plex).
+// `importado: true` si lo que se desbloquee sale de lo antiguo (la primera importación de Plex, ver plexHistorial).
 async function applyEvent(guildOrId, userId, event, value = 1, opciones = {}) {
     try {
         return await applyEventsUnsafe(guildOrId, userId, [{ event, value }], opciones);
@@ -635,7 +703,7 @@ async function applyEvents(guildOrId, userId, eventos, opciones = {}) {
     }
 }
 
-async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true } = {}) {
+async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true, importado = false } = {}) {
     const guildId = typeof guildOrId === "string" ? guildOrId : guildOrId?.id;
     const valores = new Map((eventos || []).filter((e) => e?.event).map((e) => [e.event, e.value ?? 1]));
     if (!guildId || !userId || !valores.size) return [];
@@ -661,12 +729,13 @@ async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true }
             const next = ach.metric === "max" ? Math.max(current, Number(value || 0)) : current + Number(value || 0);
 
             let completedAt = row?.completedAt || null;
-            if (!done && next >= Number(ach.target || 1)) {
+            const ahora = !done && next >= Number(ach.target || 1);
+            if (ahora) {
                 completedAt = Date.now();
-                unlocked.push(ach);
+                unlocked.push(importado ? { ...ach, importado: true } : ach);
             }
 
-            upsertProgress(guildId, userId, ach.id, next, completedAt);
+            upsertProgress(guildId, userId, ach.id, next, completedAt, ahora && importado);
         }
     });
 
@@ -681,10 +750,19 @@ async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true }
     return unlocked;
 }
 
+/** Qué % de las monedas da lo desbloqueado en la primera importación de Plex (Panel admin → Plex → 🏆 Trofeos). */
+function porcentajeImportacion(guildId) {
+    const pct = Number(guildSettings.getSettings(guildId).plex.importacion_pct);
+    return Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 100;
+}
+
+/** Las monedas que da un logro al reclamarlo: su recompensa por el multiplicador de logros y, si se desbloqueó en la
+ * importación de Plex (`ach.importado`), por el % de la importación. */
 function rewardCoinsFor(ach, guildId) {
     const cfg = getLogrosSettings(guildId);
     const base = Number(ach?.rewardCoins || 0);
-    return Math.max(0, Math.floor(base * cfg.reward_multiplier));
+    const importacion = ach?.importado ? porcentajeImportacion(guildId) / 100 : 1;
+    return Math.max(0, Math.floor(base * cfg.reward_multiplier * importacion));
 }
 
 function claimAchievement(guildId, userId, achievementId) {
@@ -693,14 +771,14 @@ function claimAchievement(guildId, userId, achievementId) {
 
     const row = db
         .prepare(
-            "SELECT progress, completedAt, claimedAt FROM achievements_progress WHERE guildId = ? AND userId = ? AND achievementId = ?",
+            "SELECT progress, completedAt, claimedAt, importado FROM achievements_progress WHERE guildId = ? AND userId = ? AND achievementId = ?",
         )
         .get(guildId, userId, achievementId);
 
     if (!row?.completedAt) return { ok: false, msg: "Ese logro todavía no está completado." };
     if (row.claimedAt) return { ok: false, msg: "Ese logro ya fue reclamado." };
 
-    const reward = rewardCoinsFor(ach, guildId);
+    const reward = rewardCoinsFor({ ...ach, importado: Boolean(row.importado) }, guildId);
 
     const tx = db.transaction(() => {
         if (reward > 0) {
@@ -722,8 +800,8 @@ function claimAchievement(guildId, userId, achievementId) {
     });
 
     tx();
-    log.info(`${userId} reclamó ${ach.id} en ${guildId}: +${reward} monedas`);
-    return { ok: true, reward, achievement: ach };
+    log.info(`${userId} reclamó ${ach.id} en ${guildId}: +${reward} monedas${row.importado ? " (de la importación de Plex)" : ""}`);
+    return { ok: true, reward, achievement: ach, importado: Boolean(row.importado) };
 }
 
 function claimAll(guildId, userId) {
@@ -784,6 +862,7 @@ module.exports = {
     applyEvents,
     claimAchievement,
     rewardCoinsFor,
+    porcentajeImportacion,
     claimAll,
     getTopUsers,
 };

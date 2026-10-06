@@ -39,7 +39,8 @@ npm start                   # servidor de voz + registro de comandos + bot
 ```
 
 Otros comandos: `npm run start:bot` (sin voz) · `npm test` · `npm run db:check` · `npm run db:backup` ·
-`npm run commands` (solo registrar los slash commands) · `npm run stt:test ruta.wav`.
+`npm run commands` (solo registrar los slash commands) · `npm run stt:test ruta.wav` · `npm run plex:check`
+(comprueba los logros de Plex contra el Tautulli de verdad, sin tocar la BD).
 
 Antes de subir cambios: `npm run check` (ESLint + Prettier + tests). `npm run lint:fix` y `npm run format`
 corrigen lo automático.

@@ -98,7 +98,7 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | Grupo | Herramientas | Dónde |
 |---|---|---|
 | Básicas | Nivel, XP y racha · saldo · precio de TTCL · logros · tirar un dado · lo que hay en la tienda · tu inventario · tus apuestas en juego y tu balance · tus últimas partidas del casino · si puedes cobrar la recompensa diaria (solo la consulta) | Siempre |
-| Plex (Tautulli) | Qué ha visto alguien · qué se ve ahora · horas vistas · última conexión · novedades · comparar a dos personas · top del servidor · buscar en Plex · ranking de quién más ve · bibliotecas · día/hora de más actividad | Solo en canales permitidos para Plex |
+| Plex (Tautulli) | Qué ha visto alguien · qué se ve ahora · horas vistas · última conexión · novedades · comparar a dos personas · top del servidor · buscar en Plex · ranking de quién más ve · bibliotecas · día/hora de más actividad · **trofeos de Plex** (los de alguien, quién tiene el de una serie, saga o director —"¿quién ha terminado Breaking Bad?"— o quién tiene más; sin los de quien los oculta) | Solo en canales permitidos para Plex |
 | Seerr | Buscar contenido · **pedir** película/serie (también "en nombre de" otra persona) · ver peticiones recientes | Solo en canales permitidos para Seerr |
 
 - Pedir contenido en Seerr está limitado a 5 peticiones diarias por persona (`seerr.daily_request_limit`)
@@ -196,7 +196,7 @@ Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en
 
 ## 5. Logros
 
-116 logros fijos en 6 categorías que se completan solos al hacer cosas, más los [trofeos de Plex](#trofeos-de-plex)
+123 logros fijos en 6 categorías que se completan solos al hacer cosas, más los [trofeos de Plex](#trofeos-de-plex)
 que se van creando; la recompensa en monedas se reclama a mano. Los de Plex (fijos y trofeos) tienen
 [dificultad](#dificultad-de-los-logros-de-plex).
 
@@ -210,6 +210,7 @@ que se van creando; la recompensa en monedas se reclama a mano. Los de Plex (fij
 | 🍿 Plex | Horas vistas 10 → 300 · 100 → 1.500 · 500 → 5.000 · 1.000 → 10.000 · Películas 1 → 100 · 25 → 1.200 · 100 → 4.000 · Episodios 50 → 800 · 250 → 3.000 · 1.000 → 9.000 · Series distintas 10 → 1.000 · 30 → 3.500 · Maratón (horas en un día) 6 → 800 · Atracón (episodios de una serie en un día) 5 → 700 · *(ocultos)* 10 horas en un día → 2.000 · 10 episodios de una serie en un día → 1.800 · 5 noches viendo algo entre las 3 y las 6 → 900 |
 | 🍿 Plex: series y anime | Series terminadas (sin anime) 1 → 400 · 5 → 1.500 · 15 → 4.000 · 🎌 Películas de anime 1 → 150 · 10 → 1.200 · 25 → 3.000 · Series de anime distintas 3 → 600 · 10 → 2.000 · Episodios de anime 100 → 1.200 · 500 → 4.000 · Series de anime terminadas 1 → 500 · 5 → 2.500 |
 | 🍿 Plex: por idioma | 51 logros, ver [Logros de Plex por idioma](#logros-de-plex-por-idioma) |
+| 🍿 Plex: sociales | Cine compartido (la misma película que otro vinculado el mismo día) 1 → 300 · 10 → 1.500 · Sin spoilers (verlo en las 24 h desde que llega a Plex) 1 → 200 · 25 → 1.500 · 100 → 5.000 · Primero del servidor (el primero en ver un estreno, en su primera semana en Plex) 1 → 300 · 25 → 2.500. Ver [Trofeos sociales](#trofeos-sociales-de-plex) |
 
 Las recompensas se multiplican por `logros.reward_multiplier` y se pueden desactivar categorías enteras (la de Plex
 es `plex`).
@@ -219,6 +220,14 @@ el historial de Tautulli a la BD (`plex_reproducciones`) y se recalculan. Pelíc
 se vuelvan a ver, y solo si Tautulli los da por vistos (su % de "visto"); las horas cuentan todo lo reproducido, sin
 pausas. Los días van en hora de Madrid (una sesión cuenta entera en el día en que empezó). La primera vez se importa
 el historial entero: lo que sale de golpe se anuncia en un solo mensaje por persona.
+
+**Primera importación** (`systems/plexImportacion`): lo que se desbloquea mientras se le calcula a alguien lo antiguo
+da solo una parte de las monedas al reclamarlo: el **50 %** por defecto (`plex.importacion_pct`, de 0 a 100, en Panel
+admin → Plex → 🏆 Trofeos → 🪙 % de la importación; vale al reclamar, también para lo ya desbloqueado). La importación
+de cada vinculado empieza con su primer cálculo y termina cuando ya no queda nada antiguo por revisar (las fichas del
+servidor y los idiomas de lo que ha visto), como mucho a los 7 días. Quien se vincula más tarde tiene la suya, y
+vincularse con otra cuenta de Plex empieza otra. En 🏅 Logros y en el menú de reclamar se ve "📼 de la importación"
+(salvo al 100 %). Se multiplica además por `logros.reward_multiplier`.
 
 ### Trofeos de Plex
 
@@ -237,14 +246,17 @@ vuelven a mirar cada 3 días por si hay episodios nuevos). Lo que alguien ha vis
 | 🎭 Género | 10 y 25 películas de un género (en español e inglés cuentan juntos: Terror = Horror) | 400 · 1.000 |
 | 📼 Década | 10 películas de una década anterior a 2000 | 400 |
 | 🗣️ Serie en un idioma | Terminar una serie entera en una versión: "Breaking Bad en inglés", "Frieren en japonés con subtítulos en castellano" (todos sus episodios vistos así alguna vez) | 300 + 15 por episodio (máx. 2.000) |
-| ✍️ De admin | Lo que diga su condición | La que ponga el admin |
+| ✍️ De admin | Lo que diga su condición (con fechas, solo lo visto entre ellas) | La que ponga el admin |
 
 - **Anime** 🎌: series y películas de las bibliotecas de anime. Por defecto, las que tienen "anime" en el nombre y lo
   que tenga el género Anime; se pueden elegir en Panel admin → Plex → 🏆 Trofeos → 🎌 Bibliotecas de anime. Los trofeos
   de anime llevan 🎌 y cuentan en sus propios logros fijos (arriba), no en los de series.
-- Cada trofeo se crea la primera vez que alguien lo consigue. Los de temporada, serie, saga y director con un nombre
-  temático que propone **Gemini** ("Say my name" al terminar Breaking Bad) y que se guarda para los siguientes; si
-  Gemini falla, uno por defecto ("Breaking Bad: completada"). Los de género y década tienen nombres fijos.
+- Cada trofeo se crea la primera vez que alguien lo consigue. Los de temporada, serie, saga, director y serie en un
+  idioma con un nombre temático que propone **Gemini** ("Say my name" al terminar Breaking Bad; los de idioma, que
+  jueguen con el idioma) y que se guarda para los siguientes; si Gemini falla, uno por defecto ("Breaking Bad:
+  completada"). Los que se quedan con el de por defecto (Gemini falló o se pasó del tope de 150 nombres por
+  sincronización) se vuelven a pedir en las siguientes sincronizaciones, hasta 40 cada vez. Los de género y década
+  tienen nombres fijos.
 - Solo los ve quien los tiene (tampoco con 👁️ Ver secretos), salvo los de admin, que se ven siempre con su progreso.
 - **Rareza**: en 🏅 Logros y en el anuncio, qué parte de los vinculados a Plex lo tiene ("solo el 8 % del servidor lo
   tiene").
@@ -258,8 +270,14 @@ vuelven a mirar cada 3 días por si hay episodios nuevos). Lo que alguien ha vis
   `idioma-peliculas:<versión> N` e `idioma-series:<versión> N` (versiones: `ingles`, `vose`, `ingles-sin-subs`,
   `castellano`, `anime-castellano`, `anime-jap-sub-es`, `anime-ingles`, `anime-jap-sub-en`, `anime-jap-sin-subs`). Se
   calcula al crearlo; 🗑️ Borrar trofeo lo quita (lo ya reclamado no se devuelve).
-- **🍿 Ocultar mis logros de Plex** (en tu 🏅 Logros, si tienes Plex vinculado): tus logros de Plex no se anuncian y
-  los demás no los ven en tu perfil.
+- **Con fechas** (eventos de temporada): cualquier condición puede llevar `desde:AAAA-MM-DD` y `hasta:AAAA-MM-DD`
+  (días en hora de Madrid, incluidos) y solo cuenta lo que se empezó a ver entre esas fechas:
+  `genero:Terror 5 desde:2026-10-01 hasta:2026-10-31` (Halloween), `genero:Familia 3 desde:2026-12-20 hasta:2027-01-06`
+  (Navidad), `horas 10 hasta:2026-12-24`. La descripción dice las fechas. Pasado el `hasta`, solo lo ve quien lo
+  consiguió.
+- **🍿 Ocultar mis logros de Plex** (en tu 🏅 Logros, si tienes Plex vinculado): tus logros de Plex no se anuncian, los
+  demás no los ven en tu perfil (ni tu pantalla 🍿 Plex), no sales en los rankings de logros de Plex, el Duende no los
+  cuenta y no se te dan los roles de Gordos. En el ranking semanal y en los de horas sí sales (no son logros).
 - No hay trofeos por país: Tautulli no da el país de las películas.
 
 ### Logros de Plex por idioma
@@ -294,6 +312,32 @@ Un episodio o película visto en dos idiomas cuenta en los dos; visto dos veces 
 
 Además, el trofeo de [serie en un idioma](#trofeos-de-plex) de cada serie que alguien termina entera en una versión.
 
+**🔍 Diagnóstico** (Panel admin → Plex → 🏆 Trofeos → 🔍 Idiomas): cuántas reproducciones de los vinculados hay de cada
+audio y subtítulo (y cuántas sin dato o pendientes) y qué nombres de idioma no se reconocen (pregunta a Tautulli por
+las últimas 15 guardadas como "otro"), para ajustar `plexIdiomas.codigoIdioma`. Para comprobarlo todo contra el
+Tautulli de verdad sin tocar la BD: `npm run plex:check` (ver [Datos, logs y despliegue](#16-datos-logs-y-despliegue)).
+
+### Trofeos sociales de Plex
+
+Con la copia del historial de todo el servidor y cuándo llegó cada película y cada episodio a Plex (`added_at` de las
+fichas de Tautulli, que se guarda desde la migración 018):
+
+- **Cine compartido**: ver la misma película (aunque sea otra copia, p. ej. la 4K) que otro vinculado el mismo día
+  (hora de Madrid). Cuenta cada vez.
+- **Sin spoilers**: episodios y películas distintos vistos en las 24 h desde que llegaron a Plex.
+- **Primero del servidor**: ser el primero de todo el servidor (vinculado o no) en ver un estreno, algo en su primera
+  semana en Plex.
+
+Lo que no tiene la fecha de llegada (fichas pedidas antes de la migración 018) no cuenta para los dos últimos hasta que
+se vuelve a pedir su ficha (las series vistas en el último mes, cada 3 días; las películas, cada 30).
+
+### Roles por Gordos del Plex
+
+En Panel admin → Plex → 🏆 Trofeos → 🎰 Roles de Gordos se elige un rol para 1, 5 y 10 logros de Plex 🎰 (Gordo del
+Plex) conseguidos (`plex.rol_gordos_1`, `_5` y `_10`; menú vacío = sin rol). Se dan después de cada cálculo de los
+logros de Plex (cada 30 min, con 📼 Sincronizar y al elegir el rol), como los roles de nivel: solo se dan, no se quitan.
+A quien oculta sus logros de Plex no se le dan. El bot necesita "Gestionar roles" y estar por encima de esos roles.
+
 ### Dificultad de los logros de Plex
 
 Cada logro de Plex (fijo o trofeo) es 🟢 **Fácil**, 🟡 **Normal** o 🎰 **Gordo del Plex** (los más difíciles). Se ve
@@ -307,8 +351,11 @@ consigue: "🎉 @alguien desbloqueó logros: 🏅 …". El canal se elige en Con
 mismo que el de las subidas de nivel (`874776941000020018`, lo pone la migración 014). Sin canal, no se anuncia.
 
 Se ven y se reclaman en `/perfil` → 🏅 Logros (antes era `/logros`): lista con páginas y progreso, 👁️ Ver secretos,
-un menú 🎁 para reclamar uno y 🎁 Reclamar todo. En el perfil de otra persona se ven sus logros, sin reclamar. El
-ranking de logros está en 🏆 Rankings.
+un menú para **filtrar** (una categoría, 🏆 solo los trofeos de Plex o una dificultad; las opciones de Plex solo salen a
+quien tiene logros de Plex), un menú 🎁 para reclamar uno y 🎁 Reclamar todo (se queda en el filtro). En el perfil de
+otra persona se ven sus logros, sin reclamar. **A quien no tiene Plex vinculado no le salen los logros de Plex que no
+tiene** (ni cuentan en su total de logros, en el perfil ni para el Duende); los que ya consiguió, sí. El ranking de
+logros está en 🏆 Rankings.
 
 ---
 
@@ -319,11 +366,22 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 
 | Pestaña | Qué hay |
 |---|---|
-| 👤 Perfil | Nivel, XP, rango, racha, ranking, logros X/Y, dinero y próxima recompensa, con el botón 🎭 Recompensas de nivel |
+| 👤 Perfil | Nivel, XP, rango, racha, ranking, logros X/Y, dinero y próxima recompensa, con los botones 🎭 Recompensas de nivel y 🍿 Plex (si tiene Plex vinculado) |
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex |
+
+**🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
+admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
+del Plex y a cuántos está el siguiente rol; récords (horas en un día, atracón, noches); en qué idiomas lo ve ("🇬🇧 Inglés
+55 % (📝 VOSE 40 %)") y **🎯 Te falta poco**: series a medias ("3 episodios para terminar *Dark* 📝 en VOSE", con la
+versión si todo lo visto es en una) y los logros de Plex más avanzados ("13 películas para **Socio del videoclub**").
+Con un botón a 🏅 Logros filtrado por Plex. La de quien oculta sus logros de Plex no la ven los demás.
+
+**🍿 Rankings de Plex**: los 5 primeros en logros de Plex, 🎰 Gordos del Plex, políglota (logros de idioma) y horas
+(este mes, desde el día 1 en hora de Madrid, y de siempre). Solo los vinculados; quien oculta sus logros de Plex no
+sale en los de logros.
 
 **El perfil de otra persona se ve entero** (economía y movimientos incluidos), pero las acciones (ingresar, sacar,
 transferir, reclamar) solo salen en el tuyo, y todos los botones llevan a su perfil, no al tuyo. Los botones de un
@@ -531,6 +589,8 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
   idioma (audio y subtítulos) de lo visto. Panel admin → Plex → 🏆 Trofeos enseña cuántas hay y cuántas faltan, qué
   bibliotecas son anime, cuántos trofeos hay de cada tipo y dificultad, y los de admin (crear, borrar). Ver
   [Trofeos de Plex](#trofeos-de-plex) y [por idioma](#logros-de-plex-por-idioma).
+- ⏱️ **Logros de Plex en cada sincronización**: la [primera importación](#5-logros) de cada vinculado da menos monedas,
+  los nombres de Gemini que faltaban se vuelven a pedir y se dan los [roles de Gordos](#roles-por-gordos-del-plex).
 
 ### Seerr
 
@@ -561,7 +621,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
 | ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
-| 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, y crear y borrar trofeos de admin |
+| 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, crear y borrar trofeos de admin (también con fechas), 🪙 % de la importación (y cuántos vinculados están importando), 🎰 Roles de Gordos y 🔍 Idiomas (diagnóstico) |
 | 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |
 
 ### 🔔 Alertas por DM
@@ -598,7 +658,7 @@ Duende siguen en `/duende set | add | remove`.
 | Cada minuto | XP de voz |
 | Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) |
 | Cada 10 minutos | Registra el precio de $TTCL |
-| Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr · copia del historial de Plex, fichas de Tautulli, idioma de lo visto y logros y trofeos de Plex |
+| Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr · copia del historial de Plex, fichas de Tautulli, idioma de lo visto y logros y trofeos de Plex (con los nombres de Gemini que falten y los roles de Gordos) |
 | Cada hora (min. 15) | Liquidación de apuestas deportivas, retos a partidos y quinielas + DM a ganadores + resumen en el canal de resultados |
 | Cada hora | Limpia historiales de conversación del Duende sin actividad en 24 h |
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
@@ -720,6 +780,14 @@ crearles cuenta, historial, inventario o partidas.
 
 **Tests**: `npm test` (Jest) usa una BD en memoria y carpetas temporales; nunca toca los datos reales.
 `npm run check` pasa además ESLint y Prettier.
+
+**Comprobar Plex contra el Tautulli de verdad**: `npm run plex:check` (`scripts/plex-check.js`, solo lee y no toca
+la BD). Coge la URL y la clave de Tautulli de la BD (`--bd ruta`, por defecto `data/banco.db`; con varios servidores,
+`--guild <id>`) o de `TAUTULLI_URL`/`TAUTULLI_API_KEY`, y comprueba cada supuesto de los logros de Plex: conexión,
+bibliotecas y cuáles son anime, que la lista de películas pagina, los idiomas de las últimas reproducciones
+(`--muestra 40`) y los nombres que no se reconocen, la ficha de una serie (temporadas, episodios y fecha de llegada)
+y las horas del historial contra las de Tautulli. ✓ / ⚠ / ✗ por paso; sale con 1 si algo falla. Dentro del
+contenedor: `docker exec -it duende-bot npm run plex:check`.
 
 **Estructura del código**: ver el [README](../README.md) (carpetas, convenciones y cómo añadir un comando).
 

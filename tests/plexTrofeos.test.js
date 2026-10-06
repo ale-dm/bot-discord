@@ -148,6 +148,8 @@ const ids = (lista) => lista.map((a) => a.id).sort();
 
 beforeAll(async () => {
     process.env.GOOGLE_API_KEY = "clave-de-prueba";
+    // Aquí se prueba la recompensa de cada trofeo; la de la primera importación está en plexImportacion.test.js.
+    guildSettings.setSetting(G, "plex.importacion_pct", 100);
     montarTautulli();
     historial([
         // Ana (8): las tres de Nolan (Origen con la clave de antes: se reconoce por título y año), las dos de Harry

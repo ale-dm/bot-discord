@@ -1,6 +1,7 @@
 // Pantallas de /perfil: 👤 Perfil (ficha de nivel, racha, dinero y próxima recompensa), 🏅 Logros (con páginas,
-// secretos y reclamar), 🏆 Rankings (nivel, riqueza, casino, logros y TTCL en una pantalla) y 🎭 Recompensas de
-// nivel. La pestaña 💰 Economía está en paneles/economia. Antes eran /nivel y /logros.
+// secretos, filtro y reclamar), 🏆 Rankings (nivel, riqueza, casino, logros, TTCL y Plex en una pantalla),
+// 🎭 Recompensas de nivel y 🍿 Plex (horas, idiomas y lo que le falta poco; se entra desde 👤 Perfil). La pestaña
+// 💰 Economía está en paneles/economia. Antes eran /nivel y /logros.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const xp = require("../systems/xpSystem");
 const achievements = require("../systems/achievementsSystem");
@@ -8,7 +9,12 @@ const dinero = require("../systems/dinero");
 const plexLinks = require("../systems/plexLinks");
 const plexTrofeos = require("../systems/plexTrofeos");
 const plexIdiomas = require("../systems/plexIdiomas");
+const plexRankings = require("../systems/plexRankings");
+const plexResumen = require("../systems/plexResumen");
+const { duracion } = require("../systems/plexRankingSemanal");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
+
+const MEDALLAS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
 
 function colorByLevel(level) {
     if (level >= 60) return 0x8e44ad;
@@ -24,7 +30,8 @@ function progressBar(current, needed, size = 14) {
     return "█".repeat(filled) + "░".repeat(Math.max(0, size - filled));
 }
 
-async function buildProfileEmbed(guild, userId) {
+// `opcionesLogros`: qué logros de Plex cuentan en el resumen (plexTrofeos.opcionesPerfil).
+async function buildProfileEmbed(guild, userId, opcionesLogros = {}) {
     const profile = xp.getProfile(guild.id, userId);
     const member = guild.members.cache.get(userId) || (await guild.members.fetch(userId).catch(() => null));
     const username = member?.user?.username || member?.user?.tag || `<@${userId}>`;
@@ -34,7 +41,7 @@ async function buildProfileEmbed(guild, userId) {
     const vozHoras = (profile.voz_segundos || 0) / 3600;
     const rewards = xp.getRewards(guild.id);
     const nextReward = rewards.find((r) => r.nivel > profile.nivel);
-    const summary = achievements.getSummary(guild.id, userId);
+    const summary = achievements.getSummary(guild.id, userId, opcionesLogros);
     const currentTitle = profile.title || { title: "SIN RANGO", emoji: "▫️" };
     const xpPct = profile.xp_need > 0 ? Math.floor((profile.xp / profile.xp_need) * 100) : 0;
     const history = xp.getLevelHistory(guild.id, userId, 4);
@@ -136,15 +143,60 @@ function barraLogro(progress, target) {
     return `${"█".repeat(filled)}${"░".repeat(10 - filled)} ${Math.floor(ratio * 100)}%`;
 }
 
-function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false) {
+// Filtros de 🏅 Logros: por categoría, solo los trofeos de Plex (los de cada serie, saga...) o una dificultad. La clave
+// va en los ids de los botones: sin "_".
+const CATEGORIAS = {
+    social: "💬 Social",
+    xp: "✨ XP y voz",
+    casino: "🎰 Casino",
+    cripto: "📈 Cripto",
+    tienda: "🛒 Tienda",
+    plex: "🍿 Plex",
+};
+const FILTROS_LOGROS = {
+    todos: { label: "🏅 Todos los logros", cumple: () => true },
+    ...Object.fromEntries(
+        Object.entries(CATEGORIAS).map(([c, label]) => [`cat-${c}`, { label, categoria: c, cumple: (a) => a.category === c }]),
+    ),
+    trofeos: { label: "🏆 Solo trofeos de Plex", plex: true, cumple: (a) => Boolean(a.trofeo) },
+    ...Object.fromEntries(
+        Object.keys(plexIdiomas.DIFICULTADES).map((d) => [
+            `dif-${d}`,
+            { label: `🍿 Plex: ${plexIdiomas.textoDificultad(d)}`, plex: true, cumple: (a) => a.dificultad === d },
+        ]),
+    ),
+};
+
+/** El filtro al final de los ids ("_cat-plex"); sin filtro ("todos"), los ids de siempre. */
+const sufijoFiltro = (filtro) => (filtro && filtro !== "todos" ? `_${filtro}` : "");
+
+/** Menú del filtro: las categorías que tiene y, si tiene logros de Plex, los trofeos y las dificultades. */
+function menuFiltroLogros(ownerId, targetId, filtro, includeHidden, todos) {
+    const categorias = new Set(todos.map((a) => a.category));
+    const opciones = Object.entries(FILTROS_LOGROS)
+        .filter(([k, f]) => k === filtro || k === "todos" || (f.categoria ? categorias.has(f.categoria) : f.plex && categorias.has("plex")))
+        .map(([value, f]) => ({ label: f.label, value, default: value === filtro }));
+    return new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId(`perfil_logrosfiltro_${ownerId}_${targetId}_${includeHidden ? 1 : 0}`)
+            .setPlaceholder("Qué logros ver")
+            .addOptions(opciones),
+    );
+}
+
+function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false, filtro = "todos") {
     const userId = targetId;
     const propio = ownerId === targetId;
-    // Quien oculta sus logros de Plex (lo que ve) no los enseña en su perfil a los demás.
+    if (!FILTROS_LOGROS[filtro]) filtro = "todos";
+    // Quien oculta sus logros de Plex (lo que ve) no los enseña en su perfil a los demás; a quien no tiene Plex
+    // vinculado solo le salen los de Plex que ya tenga.
     const plexOculto = plexTrofeos.oculto(guildId, userId);
-    const opciones = !propio && plexOculto ? { excluirCategorias: ["plex"] } : {};
-    const list = achievements.listUserAchievements(guildId, userId, { ...opciones, includeHidden });
+    const opciones = plexTrofeos.opcionesPerfil(guildId, userId, propio);
+    const todos = achievements.listUserAchievements(guildId, userId, { ...opciones, includeHidden });
+    const list = todos.filter(FILTROS_LOGROS[filtro].cumple);
     const summary = achievements.getSummary(guildId, userId, opciones);
     const rarezas = list.some((a) => a.category === "plex") ? plexTrofeos.rarezas(guildId) : new Map();
+    const pctImportacion = achievements.porcentajeImportacion(guildId);
 
     const pageSize = 6;
     const maxPage = Math.max(0, Math.ceil(list.length / pageSize) - 1);
@@ -160,13 +212,18 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
                   const p = Math.min(a.progress, a.target);
                   const rareza = a.category === "plex" && a.completed ? ` · 🏆 ${plexTrofeos.textoRareza(rarezas.get(a.id))}` : "";
                   const dificultad = a.dificultad ? ` · ${plexIdiomas.textoDificultad(a.dificultad)}` : "";
-                  return `${status} **${a.name}** (${a.category}${dificultad})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}\n`;
+                  // Desbloqueado con lo antiguo (la primera importación de Plex): da menos monedas.
+                  const importado =
+                      a.claimable && a.importado && pctImportacion < 100 ? ` · 📼 de la importación (${pctImportacion} %)` : "";
+                  return `${status} **${a.name}** (${a.category}${dificultad})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}${importado}\n`;
               })
               .join("\n")
-        : "No hay logros en esta vista.";
+        : filtro === "todos"
+          ? "No hay logros en esta vista."
+          : "No hay logros con este filtro.";
 
     const embed = new EmbedBuilder()
-        .setTitle(propio ? "🏅 Tus logros" : "🏅 Logros")
+        .setTitle(`${propio ? "🏅 Tus logros" : "🏅 Logros"}${filtro === "todos" ? "" : ` · ${FILTROS_LOGROS[filtro].label}`}`)
         .setDescription(desc)
         .addFields(
             { name: "Completados", value: `${summary.completed}/${summary.total} (${summary.completionPct}%)`, inline: true },
@@ -175,10 +232,8 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
         )
         .setColor(0xf1c40f)
         .setTimestamp();
-    // Los de Plex completados, por dificultad (si tiene alguno).
-    const plexHechos = achievements
-        .listUserAchievements(guildId, userId, { ...opciones, includeHidden: true })
-        .filter((a) => a.category === "plex" && a.completed && a.dificultad);
+    // Los de Plex completados, por dificultad (si tiene alguno; los completados se ven aunque sean secretos).
+    const plexHechos = todos.filter((a) => a.category === "plex" && a.completed && a.dificultad);
     if (plexHechos.length) {
         embed.addFields({
             name: "🍿 Plex por dificultad",
@@ -189,26 +244,27 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
         });
     }
 
+    // perfil_logros_{o}_{t}_{página}_{secretos}[_{filtro}]
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage - 1}_${includeHidden ? 1 : 0}`)
+            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage - 1}_${includeHidden ? 1 : 0}${sufijoFiltro(filtro)}`)
             .setLabel("◀")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(safePage <= 0),
         new ButtonBuilder()
-            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage + 1}_${includeHidden ? 1 : 0}`)
+            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage + 1}_${includeHidden ? 1 : 0}${sufijoFiltro(filtro)}`)
             .setLabel("▶")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(safePage >= maxPage),
         new ButtonBuilder()
-            .setCustomId(`perfil_logros_${ownerId}_${targetId}_0_${includeHidden ? 0 : 1}`)
+            .setCustomId(`perfil_logros_${ownerId}_${targetId}_0_${includeHidden ? 0 : 1}${sufijoFiltro(filtro)}`)
             .setLabel(includeHidden ? "🙈 Ocultar secretos" : "👁️ Ver secretos")
             .setStyle(ButtonStyle.Secondary),
     );
     if (propio && summary.claimable > 0) {
         row.addComponents(
             new ButtonBuilder()
-                .setCustomId(`perfil_reclamartodo_${ownerId}_${targetId}`)
+                .setCustomId(`perfil_reclamartodo_${ownerId}_${targetId}${sufijoFiltro(filtro)}`)
                 .setLabel("🎁 Reclamar todo")
                 .setStyle(ButtonStyle.Success),
         );
@@ -224,24 +280,26 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
     }
 
     const components = [row];
-    const menu = propio ? menuReclamar(guildId, ownerId, targetId) : null;
+    const menu = propio ? menuReclamar(guildId, ownerId, targetId, filtro) : null;
     if (menu) components.push(menu);
+    components.push(menuFiltroLogros(ownerId, targetId, filtro, includeHidden, todos));
     components.push(filaPestanasPerfil(ownerId, targetId, "logros"));
     return { content: "", embeds: [embed], components };
 }
 
-function menuReclamar(guildId, ownerId, targetId) {
+function menuReclamar(guildId, ownerId, targetId, filtro = "todos") {
     const userId = targetId;
     const pendientes = achievements.listUserAchievements(guildId, userId, { includeHidden: true }).filter((a) => a.claimable);
     if (!pendientes.length) return null;
+    const conImportacion = achievements.porcentajeImportacion(guildId) < 100;
     return new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
-            .setCustomId(`perfil_reclamar_${ownerId}_${targetId}`)
+            .setCustomId(`perfil_reclamar_${ownerId}_${targetId}${sufijoFiltro(filtro)}`)
             .setPlaceholder(`🎁 Reclamar un logro (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})`)
             .addOptions(
                 pendientes.slice(0, 25).map((a) => ({
                     label: a.name.slice(0, 100),
-                    description: `+${achievements.rewardCoinsFor(a, guildId).toLocaleString("es")} 🪙`,
+                    description: `+${achievements.rewardCoinsFor(a, guildId).toLocaleString("es")} 🪙${a.importado && conImportacion ? " (📼 de la importación)" : ""}`,
                     value: a.id,
                     emoji: a.emoji || undefined,
                 })),
@@ -249,9 +307,10 @@ function menuReclamar(guildId, ownerId, targetId) {
     );
 }
 
-/** 👤 Perfil: la ficha de nivel con el dinero, y el botón de las recompensas de nivel. */
+/** 👤 Perfil: la ficha de nivel con el dinero, y los botones de las recompensas de nivel y de 🍿 Plex. */
 async function buildPerfil(guild, ownerId, targetId) {
-    const embed = await buildProfileEmbed(guild, targetId);
+    const propio = ownerId === targetId;
+    const embed = await buildProfileEmbed(guild, targetId, plexTrofeos.opcionesPerfil(guild.id, targetId, propio));
     const c = dinero.cuenta(targetId);
     embed.addFields({
         name: "💰 Dinero",
@@ -264,7 +323,104 @@ async function buildPerfil(guild, ownerId, targetId) {
             .setLabel("🎭 Recompensas de nivel")
             .setStyle(ButtonStyle.Secondary),
     );
+    // 🍿 Plex: a quien tiene la cuenta vinculada (y, en el perfil de otro, si no la ha ocultado).
+    if (plexLinks.getLinkByDiscordId(guild.id, targetId) && (propio || !plexTrofeos.oculto(guild.id, targetId))) {
+        extra.addComponents(
+            new ButtonBuilder().setCustomId(`perfil_plex_${ownerId}_${targetId}`).setLabel("🍿 Plex").setStyle(ButtonStyle.Secondary),
+        );
+    }
     return { content: "", embeds: [embed], components: [extra, filaPestanasPerfil(ownerId, targetId, "perfil")] };
+}
+
+/** "🇬🇧 Inglés **55 %** (📝 VOSE 40 % · 🎧 sin subtítulos 10 %)": una línea por idioma del audio. */
+function lineasIdiomas({ total, pendientes, lista }) {
+    const SUBS = { es: "subtítulos en castellano", en: "subtítulos en inglés", no: "sin subtítulos" };
+    const lineas = lista.map((x) => {
+        let detalle = "";
+        if (x.audio === "en") {
+            const partes = [];
+            if (x.subs.es) partes.push(`📝 VOSE ${x.subs.es} %`);
+            if (x.subs.no) partes.push(`🎧 sin subtítulos ${x.subs.no} %`);
+            detalle = partes.length ? ` (${partes.join(" · ")})` : "";
+        } else if (x.audio === "ja") {
+            const partes = ["es", "en", "no"].filter((s) => x.subs[s]).map((s) => `${SUBS[s]} ${x.subs[s]} %`);
+            detalle = partes.length ? ` (${partes.join(" · ")})` : "";
+        }
+        return `${x.emoji} ${x.nombre} **${x.pct} %**${detalle}`;
+    });
+    if (!total) lineas.push("Todavía sin datos de idioma.");
+    if (pendientes) lineas.push(`⏳ ${pendientes.toLocaleString("es")} reproducciones por revisar (se revisan poco a poco)`);
+    return lineas.join("\n");
+}
+
+/** "Lo que te falta poco": series a medias y logros de Plex casi conseguidos. */
+function lineasCasi(r) {
+    const lineas = r.aMedias.map((s) => {
+        const modo = s.modo ? plexIdiomas.MODOS[s.modo] : null;
+        const version = modo ? ` ${modo.emoji} ${modo.texto}` : "";
+        return `${s.anime ? "🎌" : "📺"} ${plexResumen.textoFalta(s.faltan, ["episodio", "episodios"])} para terminar *${s.titulo}*${version} (${s.vistos}/${s.total})`;
+    });
+    for (const a of r.casi) {
+        const progreso = Math.floor(a.progreso);
+        lineas.push(
+            `${a.emoji || "🏅"} ${plexResumen.textoFalta(a.objetivo - progreso, a.unidad)} para **${a.nombre}** (${progreso}/${a.objetivo})`,
+        );
+    }
+    return lineas.length ? lineas.join("\n") : "Nada a medias ahora mismo.";
+}
+
+const recortar = (texto) => (texto.length > 1024 ? `${texto.slice(0, 1021)}…` : texto);
+
+/** 🍿 Plex: horas, series terminadas, idiomas, 🎰 Gordos y lo que le falta poco. Se entra desde 👤 Perfil. */
+function buildPlex(guild, ownerId, targetId) {
+    const propio = ownerId === targetId;
+    const embed = new EmbedBuilder()
+        .setTitle(propio ? "🍿 Tu Plex" : "🍿 Plex")
+        .setColor(0xe5a00d)
+        .setTimestamp();
+    const filas = [];
+    const r = !propio && plexTrofeos.oculto(guild.id, targetId) ? "oculto" : plexResumen.resumen(guild.id, targetId);
+    if (r === "oculto") {
+        embed.setDescription(`<@${targetId}> ha ocultado sus logros de Plex. 🙈`);
+    } else if (!r) {
+        embed.setDescription(
+            `${propio ? "No tienes" : `<@${targetId}> no tiene`} la cuenta de Plex vinculada. La vincula un admin en /paneladmin → Plex.`,
+        );
+    } else {
+        const s = r.stats;
+        const rol = r.siguienteRol ? ` · el rol <@&${r.siguienteRol.roleId}> a los ${r.siguienteRol.umbral}` : "";
+        embed.setDescription(`<@${targetId}> · cuenta de Plex **${r.plexUsername || "?"}**`).addFields(
+            {
+                name: "⏱️ Visto",
+                value: `**${s.horas.toLocaleString("es")} h** · ${s.peliculas.toLocaleString("es")} películas · ${s.episodios.toLocaleString("es")} episodios de ${s.series.toLocaleString("es")} series`,
+                inline: false,
+            },
+            {
+                name: "📺 Series terminadas",
+                value: `**${r.terminadas}**${r.animeTerminadas ? ` (🎌 ${r.animeTerminadas} de anime)` : ""}`,
+                inline: true,
+            },
+            { name: "🏅 Logros de Plex", value: `**${r.logros.completados}**/${r.logros.total}`, inline: true },
+            { name: "🎰 Gordos del Plex", value: `**${r.gordos}**${rol}`, inline: true },
+            {
+                name: "🔥 Récords",
+                value: `${s.maratonHoras} h en un día · ${s.atracon} episodios de una serie en un día · ${s.noches} noches de madrugada`,
+                inline: false,
+            },
+            { name: "🗣️ Idiomas", value: recortar(lineasIdiomas(r.idiomas)), inline: false },
+            { name: "🎯 Te falta poco", value: recortar(lineasCasi(r)), inline: false },
+        );
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`perfil_logros_${ownerId}_${targetId}_0_0_cat-plex`)
+                    .setLabel("🏅 Logros de Plex")
+                    .setStyle(ButtonStyle.Secondary),
+            ),
+        );
+    }
+    filas.push(filaPestanasPerfil(ownerId, targetId, "perfil"));
+    return { content: "", embeds: [embed], components: filas };
 }
 
 function buildRecompensas(guild, ownerId, targetId) {
@@ -277,7 +433,27 @@ const RANKINGS = {
     casino: "🎰 Casino",
     logros: "🏅 Logros",
     ttcl: "💎 TTCL",
+    plex: "🍿 Plex",
 };
+
+/** 🍿 Rankings de Plex: más logros, más 🎰 Gordos, más políglota y más horas (este mes y de siempre). */
+function embedRankingPlex(guildId) {
+    const embed = new EmbedBuilder().setTitle("🍿 Rankings de Plex").setColor(0xe5a00d);
+    const r = plexRankings.rankings(guildId);
+    if (!r) return embed.setDescription("Nadie tiene la cuenta de Plex vinculada todavía.");
+    const lista = (l, formato) =>
+        l.map((x, i) => `${MEDALLAS[i]} <@${x.discordUserId}> — **${formato(x.n)}**`).join("\n") || "Nadie todavía.";
+    const numero = (n) => n.toLocaleString("es");
+    return embed
+        .addFields(
+            { name: "🏆 Más logros de Plex", value: lista(r.logros, numero), inline: true },
+            { name: "🎰 Más Gordos del Plex", value: lista(r.gordos, numero), inline: true },
+            { name: "🗣️ Más políglota", value: lista(r.poliglota, (n) => `${numero(n)} de idioma`), inline: true },
+            { name: `⏱️ Más horas en ${r.mes}`, value: lista(r.horasMes, duracion), inline: true },
+            { name: "⏱️ Más horas de siempre", value: lista(r.horasSiempre, duracion), inline: true },
+        )
+        .setFooter({ text: "Solo quien tiene Plex vinculado. Quien oculta sus logros de Plex no sale en los de logros." });
+}
 
 /** 🏆 Rankings: uno a la vez, elegido en el menú (el de nivel, con páginas). */
 async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0) {
@@ -303,6 +479,8 @@ async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0)
             .setColor(0xf39c12);
     } else if (tipo === "ttcl") {
         embed = (await require("./cripto").buildTopHolders(guild.id)).embeds[0];
+    } else if (tipo === "plex") {
+        embed = embedRankingPlex(guild.id);
     } else {
         embed = await buildTopEmbed(guild, page);
         paginas = { anterior: page > 0, siguiente: xp.getTop(guild.id, 10, (page + 1) * 10).length > 0 };
@@ -332,4 +510,4 @@ async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0)
     return { content: "", embeds: [embed], components };
 }
 
-module.exports = { buildPerfil, buildRecompensas, buildLogros, buildRankings, buildProfileEmbed, RANKINGS };
+module.exports = { buildPerfil, buildRecompensas, buildLogros, buildRankings, buildProfileEmbed, buildPlex, RANKINGS, FILTROS_LOGROS };

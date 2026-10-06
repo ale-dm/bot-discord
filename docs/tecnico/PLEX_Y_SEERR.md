@@ -149,6 +149,7 @@ Diseñadas para que sea fácil añadir más sin tocar el resto (mismo patrón
 | `consultar_ranking_plex` | Ranking de quién más ha visto Plex en el server (todo el mundo, no solo vinculados) en un periodo | `periodo` |
 | `consultar_bibliotecas_plex` | Nº de items por biblioteca (pelis, series, anime, música...) | — |
 | `consultar_patron_visionado` | Qué día de la semana y a qué hora se ve más Plex en el server | `periodo` |
+| `consultar_trofeos_plex` | Logros y trofeos de Plex del bot: los de alguien (con rareza y dificultad), quién tiene el de una serie, saga o director (`plexTrofeos.buscar`), o quién tiene más (`plexRankings`). Respeta a quien oculta los suyos | `persona`, `titulo` (los dos opcionales) |
 
 Todas de solo lectura — coherente con el mismo criterio que ya se aplicó a
 las herramientas de nivel/saldo/logros (primero demostrar que funcionan
@@ -333,7 +334,7 @@ en ningún caso, solo detrás de un comando/botón explícito de compra y uso.
   deliberada de no disparar una descarga real ni notificar a otra persona
   sin avisar antes.
 
-## 6) Logros y trofeos de Plex (2026-10-02 / 2026-10-03)
+## 6) Logros y trofeos de Plex (2026-10-02 / 2026-10-06)
 
 Qué se consigue y con qué recompensa está en
 [FUNCIONALIDADES.md](../FUNCIONALIDADES.md#5-logros); aquí, cómo funciona.
@@ -359,11 +360,15 @@ vinculados, `sincronizarYCalcular(guild, { boton })`:
    vinculados que falte, lo más reciente primero. 1.500 por vez (5.000 con el
    botón); solo lee la BD de Tautulli.
 4. **Logros** (`plexHistorial.actualizarLogros`): estadísticas de la fase 1,
-   y `plexTrofeos.eventosDe` (contadores de anime, series terminadas e
-   idiomas, trofeos automáticos y de admin). Se aplican con
-   `achievementsSystem.applyEvents` (una transacción por persona) y, después
-   de calcular a todos, se anuncia lo nuevo de cada uno en un mensaje (salvo
-   quien lo ha ocultado, `plex_preferencias`).
+   y `plexTrofeos.eventosDe` (contadores de anime, series terminadas, idiomas
+   y sociales, trofeos automáticos y de admin —los que tienen fechas, con
+   `datosUsuario(..., rango)`—, y los nombres de Gemini que faltaban con
+   `renombrar`). Se aplican con `achievementsSystem.applyEvents` (una
+   transacción por persona; con `importado` si esa persona está en su
+   primera importación, `plexImportacion`) y, después de calcular a todos,
+   se anuncia lo nuevo de cada uno en un mensaje (salvo quien lo ha ocultado,
+   `plex_preferencias`) y se dan los roles de Gordos (`plexGordos.repartir`,
+   solo con el servidor de Discord, no con su id).
 
 Con la categoría `plex` o los logros desactivados no se piden fichas ni
 idiomas, ni se crean trofeos.
@@ -399,6 +404,40 @@ idiomas, ni se crean trofeos.
   fijo de Plex y en `plex_trofeos.dificultad`; los trofeos guardados sin
   ella la toman de su tipo.
 - **Rareza**: % de los vinculados que lo tienen.
+- **Primera importación** (`plexImportacion`, tabla `plex_importacion`,
+  migración 018): por vinculado, `inicio` (su primer cálculo) y `fin`. Termina
+  después de un cálculo en el que ya no quedaban fichas del servidor
+  (`plexFichas.estado().pendientes`, con la biblioteca repasada) ni idiomas
+  suyos por revisar, o a los 7 días. Lo desbloqueado mientras tanto queda con
+  `achievements_progress.importado = 1`, y `rewardCoinsFor` lo multiplica por
+  `plex.importacion_pct` al reclamarlo (el % de ese momento: el admin puede
+  decidir después de desplegar, antes de que se reclame). `plexLinks.setLink`
+  con otra cuenta de Tautulli borra su fila: es otra importación.
+- **Nombres de Gemini que faltan** (F-PX-14): `renombrar` pide, después de
+  crear los nuevos, hasta 40 de los que tienen `nombre_ia = 0` (de los tipos
+  con nombre de Gemini, también los de idioma), sin los que se acaban de
+  pedir en esa sincronización (si Gemini acaba de fallar con ellos, se
+  prueba en la siguiente). Usa la descripción del trofeo como pista.
+- **Trofeos con fecha** (F-PX-11): `desde:`/`hasta:` en la condición
+  (`parsearCondicion` las quita y las devuelve aparte). `rangoDe` las pasa a
+  unix con la medianoche de Madrid (busca el desfase, +1 o +2, que da las
+  00:00 ese día; así va bien con el cambio de hora). Pasado `hasta`, el
+  logro lleva `visibleHasta` y `listUserAchievements` solo lo enseña a quien
+  lo completó.
+- **Sociales** (F-PX-12, `plexTrofeos.sociales`): con todas las
+  reproducciones vistas del servidor (también de quien no está vinculado,
+  para "primero del servidor") y `alta`/`altas` de las fichas (`added_at` de
+  `get_metadata` y de cada episodio en `get_children_metadata`, migración
+  018). Película compartida: misma `clavePelicula` el mismo día de Madrid
+  entre dos vinculados. Sin spoilers: `0 ≤ inicio − alta ≤ 24 h`. Primero: la
+  reproducción con menor `inicio` de lo que tenga `alta` y se viera en su
+  primera semana. Sin `alta` no cuenta.
+- **Roles de Gordos** (F-PX-13): `plex.rol_gordos_1/5/10`; `plexGordos.contar`
+  cuenta los logros de Plex completados de dificultad `gordo` (fijos y
+  trofeos). Solo se dan; a quien oculta lo suyo, no.
+- **Quien no tiene Plex vinculado**: `plexTrofeos.opcionesPerfil` le quita
+  los pendientes de la categoría `plex` (`ocultarPendientes`) en su perfil,
+  su resumen y para el Duende.
 
 ### 6.3 Ranking semanal
 
@@ -411,9 +450,31 @@ está apuntada en `plex.ranking_ultima_semana`: `plexHistorial.sincronizar`
 de Madrid, y el mensaje (mención y aviso solo al primero,
 `allowedMentions`). Una llamada en curso a la vez (cron y arranque).
 
-### 6.4 Pruebas
+### 6.4 Perfil, rankings y diagnóstico (2026-10-06)
 
-`tests/plexHistorial`, `plexFichas`, `plexIdiomas`, `plexTrofeos*`, `plexRankingSemanal` y
+- **🍿 Plex en `/perfil`** (`paneles/perfil.buildPlex`, datos en
+  `systems/plexResumen.js`): `estadisticas`, `datosUsuario` (series a medias
+  con `porModo` para decir la versión), el reparto de `audio`/`subs` y los
+  logros de Plex más avanzados. Es un botón de 👤 Perfil, no una pestaña: la
+  fila de pestañas ya tiene los cinco botones que admite Discord.
+- **Filtro de 🏅 Logros**: la clave del filtro va al final de los ids
+  (`perfil_logros_{o}_{t}_{página}_{secretos}_{filtro}`, sin "_"); sin filtro
+  los ids son los de antes. El menú es `perfil_logrosfiltro_{o}_{t}_{secretos}`.
+- **🍿 Rankings** (`systems/plexRankings.js`): cuentas sobre
+  `achievements_progress` (logros, Gordos y de idioma: evento
+  `plex_idioma_*` o trofeo de tipo `idioma`) y sumas de `segundos` (el mes,
+  desde el día 1 en Madrid).
+- **Diagnóstico** (`systems/plexDiagnostico.js`): `idiomasGuardados` y
+  `noReconocidos` para Panel admin → 🔍 Idiomas, y `comprobar` para
+  `scripts/plex-check.js`. El script lee la configuración de la BD de verdad
+  en solo lectura y, como el resto del bot abre su BD (y le aplicaría las
+  migraciones) al cargarse, pone antes `DB_PATH=:memory:`.
+
+### 6.5 Pruebas
+
+`tests/plexHistorial`, `plexFichas`, `plexIdiomas`, `plexTrofeos*`, `plexRankingSemanal`, `plexImportacion`,
+`plexPerfil`, `plexGordos`, `plexSociales`, `plexDuendeTrofeos`, `plexDiagnostico` (el script de verdad, en otro
+proceso, contra un Tautulli de mentira por HTTP) y
 `plexTautulliHttp` (el cliente real contra un Tautulli de mentira por HTTP,
 con las respuestas con la forma de Tautulli, y el flujo entero sin mocks).
 `plexTrofeosCarga`: 12 vinculados, 3.000 películas, 300 series y ~30.000

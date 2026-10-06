@@ -50,6 +50,7 @@ function responder(q) {
                     genres: ["Ciencia ficción", "Acción"],
                     directors: ["Christopher Nolan"],
                     collections: [],
+                    added_at: "1780000000",
                 });
             if (q.rating_key === "900")
                 return ok({
@@ -72,8 +73,8 @@ function responder(q) {
                     { media_type: "season", rating_key: "902", media_index: "2", title: "Temporada 2" },
                 ],
                 "901|season": [
-                    { media_type: "episode", rating_key: "9011", media_index: "1" },
-                    { media_type: "episode", rating_key: "9012", media_index: "2" },
+                    { media_type: "episode", rating_key: "9011", media_index: "1", added_at: "1780000500" },
+                    { media_type: "episode", rating_key: "9012", media_index: "2", added_at: "1780000600" },
                 ],
                 "902|season": [{ media_type: "episode", rating_key: "9021", media_index: "1" }],
             };
@@ -240,7 +241,10 @@ describe("de punta a punta", () => {
             section_id: "2",
             biblioteca: "Anime",
             temporadas: { 1: [1, 2], 2: [1] },
+            // Cuándo llegó cada episodio (para los trofeos sociales); el de la temporada 2 no lo dice.
+            altas: { "1:1": 1780000500, "1:2": 1780000600 },
         });
+        expect(plexFichas.cargar(G).peliculas.find((p) => p.rating_key === "101").alta).toBe(1780000000);
     });
 
     test("trofeos: Frieren entera y sus temporadas (anime), todas las de Nolan, y los contadores de anime", () => {

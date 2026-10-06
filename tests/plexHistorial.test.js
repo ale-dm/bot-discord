@@ -184,14 +184,19 @@ describe("estadísticas y logros", () => {
     });
 });
 
-test("hay 80 logros fijos de Plex (17 de la fase 1, 12 de anime y series terminadas y 51 por idioma), todos con su evento y dificultad", () => {
+test("hay 87 logros fijos de Plex (17 de la fase 1, 12 de anime y series terminadas, 51 por idioma y 7 sociales), todos con su evento y dificultad", () => {
     const plex = achievements.CATALOG.filter((a) => a.category === "plex");
-    expect(plex).toHaveLength(80);
-    const { EVENTOS_FICHAS } = require("../src/systems/plexTrofeos");
+    expect(plex).toHaveLength(87);
+    const { EVENTOS_FICHAS, EVENTOS_SOCIALES } = require("../src/systems/plexTrofeos");
     const plexIdiomas = require("../src/systems/plexIdiomas");
     const eventosIdioma = plexIdiomas.LOGROS.map(([, , modo, tipo]) => plexIdiomas.evento(tipo, modo));
     expect(new Set(plex.map((a) => a.event))).toEqual(
-        new Set([...Object.values(plexHistorial.EVENTOS), ...Object.values(EVENTOS_FICHAS), ...eventosIdioma]),
+        new Set([
+            ...Object.values(plexHistorial.EVENTOS),
+            ...Object.values(EVENTOS_FICHAS),
+            ...Object.values(EVENTOS_SOCIALES),
+            ...eventosIdioma,
+        ]),
     );
     expect(plex.every((a) => ["facil", "normal", "gordo"].includes(a.dificultad))).toBe(true);
     // Los ids, únicos en todo el catálogo; y los logros que no son de Plex siguen sin dificultad.

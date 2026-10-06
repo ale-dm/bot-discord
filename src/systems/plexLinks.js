@@ -29,6 +29,11 @@ function getLinkByPlexUsername(guildId, plexUsername) {
 }
 
 function setLink(guildId, discordUserId, tautulliUserId, plexUsername) {
+    // Con otra cuenta de Plex, lo que ha visto en ella es una importación nueva (systems/plexImportacion).
+    const antes = getLinkByDiscordId(guildId, discordUserId);
+    if (antes && antes.tautulliUserId !== String(tautulliUserId)) {
+        db.prepare("DELETE FROM plex_importacion WHERE guildId = ? AND userId = ?").run(guildId, discordUserId);
+    }
     db.prepare(
         `
         INSERT INTO plex_links (guildId, discordUserId, tautulliUserId, plexUsername, linkedAt)

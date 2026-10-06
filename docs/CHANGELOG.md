@@ -15,6 +15,58 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
   con ella; una personalidad suficientemente agresiva podía seguir ignorándolo. Ahora vive en el `systemInstruction`
   real de la llamada a Gemini (`services/duende/gemini.js`), que no cambia con la personalidad activa.
 
+## 2026-10-06 (🍿 Lo pendiente de la gamificación de Plex)
+
+Rama `feature/elduendejavier`. Migración **018**. Todo lo que quedaba en [FEATURES](planificacion/FEATURES.md) de los
+logros y trofeos de Plex, menos los trofeos por país (F-PX-02d: Tautulli no da el país). Detalle en
+[FUNCIONALIDADES](FUNCIONALIDADES.md#5-logros).
+
+- **F-PX-08 · Proteger la economía en la primera importación** (`systems/plexImportacion.js`): lo que se desbloquea
+  mientras se le calcula a alguien lo antiguo da el **50 %** de las monedas (`plex.importacion_pct`, de 0 a 100, en
+  Panel admin → Plex → 🏆 Trofeos → 🪙 % de la importación; vale al reclamar). La importación de cada vinculado empieza
+  con su primer cálculo y acaba cuando no quedan fichas ni idiomas por revisar, como mucho a los 7 días; vincularse con
+  otra cuenta de Plex empieza otra. Cada logro guarda si salió en la importación (`achievements_progress.importado`) y
+  se ve en 🏅 Logros, en el menú de reclamar y al reclamarlo ("📼 de la importación").
+- **F-PX-06 · `npm run plex:check`** (`scripts/plex-check.js` y `systems/plexDiagnostico.js`): comprueba contra el
+  Tautulli de verdad, sin tocar la BD, cada supuesto de [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md#3-lo-que-hay-que-comprobar-con-datos-reales):
+  bibliotecas y anime, paginación, idiomas (y los nombres que no se reconocen), la ficha de una serie con sus fechas de
+  llegada y las horas contra las de Tautulli. Coge la configuración de la BD (solo lectura) o del `.env`.
+- **F-PX-07 · 🔍 Idiomas** en Panel admin → Plex → 🏆 Trofeos: cuántas reproducciones hay de cada audio y subtítulo y
+  qué nombres no se reconocen (pregunta a Tautulli por los "otro").
+- **F-PX-02e · Filtro en 🏅 Logros**: un menú para ver una categoría, solo los trofeos de Plex o una dificultad (se
+  mantiene al pasar página, ver secretos y reclamar). **A quien no tiene Plex vinculado ya no le salen los 87 fijos de
+  Plex** (ni cuentan en su total, en el perfil ni para el Duende), salvo los que ya tenga.
+- **F-PX-09 · 🍿 Plex en `/perfil`** (botón en 👤 Perfil y `/perfil seccion:🍿 Plex`; no cabe una sexta pestaña en la
+  fila): horas, series terminadas, logros, 🎰 Gordos, récords, reparto de idiomas ("🇬🇧 Inglés 55 % (📝 VOSE 40 %)") y
+  🎯 Te falta poco: series a medias con su versión ("3 episodios para terminar *Dark* 📝 en VOSE") y los logros de Plex
+  más avanzados. `systems/plexResumen.js`.
+- **F-PX-10 · 🍿 Plex en 🏆 Rankings**: más logros de Plex, más 🎰 Gordos, más políglota (logros de idioma) y más horas
+  (este mes y de siempre). `systems/plexRankings.js`. Quien oculta sus logros no sale en los de logros.
+- **F-PX-02f · El Duende conoce los trofeos**: herramienta `consultar_trofeos_plex` (con las de Plex): los de alguien,
+  quién tiene el de una serie, saga o director ("¿quién ha terminado Breaking Bad?") o quién tiene más. Respeta a quien
+  los oculta.
+- **F-PX-11 · Trofeos con fecha**: las condiciones de admin aceptan `desde:AAAA-MM-DD` y `hasta:AAAA-MM-DD` (días en
+  hora de Madrid) y solo cuenta lo visto entre ellas, para eventos de temporada (`genero:Terror 5 desde:2026-10-01
+  hasta:2026-10-31`). Pasado el plazo, solo lo ve quien lo consiguió (`visibleHasta` en el catálogo).
+- **F-PX-12 · Trofeos sociales**: 7 logros fijos nuevos (87 de Plex, 123 en total): 🎬 Cine compartido (la misma
+  película que otro vinculado el mismo día), Sin spoilers (en las 24 h desde que llega a Plex) y Primero del servidor
+  (el primero en ver un estreno, en su primera semana). Las fichas guardan ahora cuándo llegó cada película y cada
+  episodio (`added_at`: `plex_fichas.alta` y `altas`).
+- **F-PX-13 · Roles por Gordos del Plex**: un rol a 1, 5 y 10 🎰 (Panel admin → Plex → 🏆 Trofeos → 🎰 Roles de Gordos;
+  `plex.rol_gordos_1`, `_5`, `_10`), que se da tras cada cálculo de los logros de Plex. Solo se dan, como los de nivel;
+  a quien oculta sus logros, no.
+- **F-PX-14 · Nombres de Gemini para los de idioma**: los trofeos de serie en un idioma llevan nombre de Gemini (que
+  juegue con el idioma), y los que se quedaron con el nombre por defecto (Gemini falló o se pasó del tope de 150) se
+  vuelven a pedir en las siguientes sincronizaciones, hasta 40 cada vez. Antes, si Gemini fallaba, no se volvía a
+  intentar.
+- `/ayuda` (Niveles) cuenta todo lo nuevo.
+- Tests: 586 (de 503). Nuevos: `plexImportacion`, `plexPerfil` (filtro, 🍿 Plex y ranking, validando lo que se manda a
+  Discord), `plexGordos`, `plexTrofeosFechas` (con el cambio de hora), `plexSociales`, `plexDuendeTrofeos` y
+  `plexDiagnostico` (contra un Tautulli de mentira por HTTP, con el script ejecutado en otro proceso y comprobando que
+  no toca la BD); `tests/ayudaPlex.js` con las ayudas comunes. Cambiados: los que comprueban la recompensa de cada
+  trofeo ponen la importación al 100 %; el de Gemini que fallaba ahora comprueba que se vuelve a pedir (F-PX-14); el
+  recuento de logros fijos de Plex (87); el Tautulli de mentira por HTTP manda `added_at`.
+
 ## 2026-10-03 (📣 Ranking semanal de Plex)
 
 Rama `feature/elduendejavier`. Migración **017**.

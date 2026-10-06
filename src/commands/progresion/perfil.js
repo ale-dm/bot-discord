@@ -1,5 +1,6 @@
 // /perfil [usuario] [seccion]: todo lo tuyo (o de otra persona, que también se ve entero) en pestañas:
-// 👤 Perfil · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. Sustituye a /nivel, /logros y /banco.
+// 👤 Perfil · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings (y 🍿 Plex, desde 👤 Perfil: una fila de botones no
+// admite una sexta pestaña). Sustituye a /nivel, /logros y /banco.
 // Las acciones (ingresar, sacar, transferir, reclamar logros) solo salen en tu propio perfil. Los ids llevan
 // quién mira (owner, posición [2]) y de quién es el perfil (target). Las pantallas están en src/paneles.
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
@@ -14,7 +15,7 @@ async function nombreDe(interaction, userId) {
     return member?.user?.username || (await interaction.client?.users?.fetch?.(userId).catch(() => null))?.username || userId;
 }
 
-// La pantalla de una pestaña. `extra`: página y secretos (logros), o tipo y página (rankings).
+// La pantalla de una pestaña. `extra`: página, secretos y filtro (logros), o tipo y página (rankings).
 async function pantalla(interaction, seccion, ownerId, targetId, extra = {}) {
     const guild = interaction.guild;
     switch (seccion) {
@@ -28,11 +29,13 @@ async function pantalla(interaction, seccion, ownerId, targetId, extra = {}) {
         case "juegos":
             return require("../../paneles/casino").buildHome(ownerId);
         case "logros":
-            return perfil.buildLogros(guild.id, ownerId, targetId, extra.page || 0, Boolean(extra.secretos));
+            return perfil.buildLogros(guild.id, ownerId, targetId, extra.page || 0, Boolean(extra.secretos), extra.filtro);
         case "rankings":
             return perfil.buildRankings(guild, ownerId, targetId, extra.tipo || "nivel", extra.page || 0);
         case "recompensas":
             return perfil.buildRecompensas(guild, ownerId, targetId);
+        case "plex":
+            return perfil.buildPlex(guild, ownerId, targetId);
         default:
             return perfil.buildPerfil(guild, ownerId, targetId);
     }
@@ -60,7 +63,12 @@ function traducirAntiguo(id, userId) {
 module.exports = {
     componentHandlers: [
         { types: ["button"], prefixes: ["perfil_", "nivel_", "logros_"], method: "handleButton", acl: "perfil" },
-        { types: ["stringSelect"], prefixes: ["perfil_ranksel_", "perfil_reclamar_", "logros_"], method: "handleSelect", acl: "perfil" },
+        {
+            types: ["stringSelect"],
+            prefixes: ["perfil_ranksel_", "perfil_reclamar_", "perfil_logrosfiltro_", "logros_"],
+            method: "handleSelect",
+            acl: "perfil",
+        },
     ],
     data: new SlashCommandBuilder()
         .setName("perfil")
@@ -75,6 +83,7 @@ module.exports = {
                     { name: "💰 Economía", value: "eco" },
                     { name: "🏅 Logros", value: "logros" },
                     { name: "🏆 Rankings", value: "rankings" },
+                    { name: "🍿 Plex", value: "plex" },
                 )
                 .setRequired(false),
         ),
@@ -127,16 +136,21 @@ module.exports = {
             });
             return;
         }
+        // perfil_reclamartodo_{o}_{t}_{filtro}: el filtro se mantiene (los mensajes de antes no lo llevan).
         if (accion === "reclamartodo") {
             const r = achievements.claimAll(interaction.guildId, userId);
-            const payload = perfil.buildLogros(interaction.guildId, userId, userId);
+            const payload = perfil.buildLogros(interaction.guildId, userId, userId, 0, false, parts[4]);
             await interaction.update({ ...payload, content: r.ok ? `✅ Reclamaste ${r.count} logros por ${r.reward} 🪙.` : `❌ ${r.msg}` });
             return;
         }
-        // perfil_logros_{o}_{t}_{página}_{secretos} · perfil_rank_{o}_{t}_{tipo}_{página}
+        // perfil_logros_{o}_{t}_{página}_{secretos}[_{filtro}] · perfil_rank_{o}_{t}_{tipo}_{página} · perfil_plex_{o}_{t}
         const extra =
             accion === "logros"
-                ? { page: Math.max(0, parseInt(parts[4], 10) || 0), secretos: parts[5] === "1" }
+                ? {
+                      page: Math.max(0, parseInt(parts[4], 10) || 0),
+                      secretos: parts[5] === "1",
+                      filtro: parts[6] && parts[6] !== "tab" ? parts[6] : "todos",
+                  }
                 : accion === "rank"
                   ? { tipo: parts[4], page: Math.max(0, parseInt(parts[5], 10) || 0) }
                   : {};
@@ -157,12 +171,26 @@ module.exports = {
             await interaction.update(await pantalla(interaction, "rankings", userId, parts[3], { tipo: interaction.values[0] }));
             return;
         }
-        // Reclamar un logro (perfil_reclamar_{o}_{t}, o logros_reclamar de mensajes antiguos): solo el tuyo.
+        // perfil_logrosfiltro_{o}_{t}_{secretos}: qué logros ver (vuelve a la página 1).
+        if (id.startsWith("perfil_logrosfiltro_")) {
+            await interaction.update(
+                await pantalla(interaction, "logros", userId, parts[3], {
+                    page: 0,
+                    secretos: parts[4] === "1",
+                    filtro: interaction.values[0],
+                }),
+            );
+            return;
+        }
+        // Reclamar un logro (perfil_reclamar_{o}_{t}_{filtro}, o logros_reclamar de mensajes antiguos): solo el tuyo.
         const r = achievements.claimAchievement(interaction.guildId, userId, interaction.values[0]);
-        const payload = perfil.buildLogros(interaction.guildId, userId, userId);
+        const filtro = id.startsWith("perfil_reclamar_") ? parts[4] : undefined;
+        const payload = perfil.buildLogros(interaction.guildId, userId, userId, 0, false, filtro);
+        const pct = achievements.porcentajeImportacion(interaction.guildId);
+        const deImportacion = r.importado && pct < 100 ? ` (📼 de la importación de Plex: el ${pct} % de las monedas)` : "";
         await interaction.update({
             ...payload,
-            content: r.ok ? `✅ Reclamaste **${r.achievement.name}** y ganaste **${r.reward} 🪙**.` : `❌ ${r.msg}`,
+            content: r.ok ? `✅ Reclamaste **${r.achievement.name}** y ganaste **${r.reward} 🪙**${deImportacion}.` : `❌ ${r.msg}`,
         });
     },
 };
