@@ -364,12 +364,12 @@ module.exports = {
             // se hable de alguien, se le da al modelo tanto el perfil de quien pregunta
             // como el de quien es el tema, para que pueda compararlos/relacionarlos en
             // la misma respuesta en vez de describir solo al otro de forma aislada.
-            // Instrucción universal, independiente de la personalidad activa: las
+            // El recordatorio de "usa las herramientas siempre" ya no va aquí: las
             // personalidades personalizadas (masiko, javier, sanchez...) sustituyen del
-            // todo `instruccionDefault` y ninguna menciona que hay herramientas
-            // disponibles — sin esto, una personalidad centrada en insultar puede
-            // "olvidarse" de mirar el dato real y limitarse a soltar un insulto genérico.
-            instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si tienes herramientas disponibles que te den datos reales para responder (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad — puedes insultar, bromear o quejarte igualmente con el resultado, pero no te niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
+            // todo `instruccionDefault`, y mezclado en este texto competía con ellas en
+            // igualdad de condiciones. Ahora vive en el systemInstruction real de Gemini
+            // (gemini.js), que no se puede pisar cambiando de personalidad.
+            instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
 
             // Inicializa historial si no existe
             if (!conversationHistory[channelId]) conversationHistory[channelId] = [];
