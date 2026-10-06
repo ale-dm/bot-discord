@@ -1,5 +1,6 @@
-// Mensajes espontáneos del Duende (de vez en cuando, sin que nadie le hable, para animar un
-// server parado): los "ganchos" que miran datos reales, y cuándo se decide mandar uno o no.
+// Mensajes espontáneos del Duende (de vez en cuando, sin que nadie le hable, dirigidos a alguien
+// que conoce, para animar un server parado): el gancho que elige a esa persona, y cuándo se
+// decide mandar un mensaje o no.
 process.env.GOOGLE_API_KEY = "clave-de-prueba";
 
 const mockRespuestas = [];
@@ -12,84 +13,56 @@ jest.mock("../src/services/geminiClient", () => ({
 }));
 
 const db = require("../src/core/db");
-const dinero = require("../src/systems/dinero");
 const guildSettings = require("../src/systems/guildSettings");
 const espontaneo = require("../src/systems/duende/espontaneo");
 
 const G = "guild-espontaneo";
 const texto = (t) => ({ text: t, functionCalls: undefined, candidates: [{ finishReason: "STOP" }] });
 
-function limpiarDatos() {
-    db.prepare("DELETE FROM tienda").run();
-    db.prepare("DELETE FROM objeto").run();
-    db.prepare("DELETE FROM inventario").run();
-    db.prepare("DELETE FROM apuestas_partidos").run();
-    db.prepare("DELETE FROM apuestas_usuario").run();
-    db.prepare("DELETE FROM banco").run();
-}
-
 beforeEach(() => {
     mockRespuestas.length = 0;
-    limpiarDatos();
+    db.prepare("DELETE FROM duende_perfiles").run();
 });
 
-describe("ganchos (qué hay real para comentar)", () => {
-    test("tiendaSinVender: nada si no hay objetos a la venta sin comprar", () => {
+describe("personaAlAzar (el único gancho)", () => {
+    test("nada si no hay ningún perfil", () => {
         expect(espontaneo.GANCHOS[0]()).toBeNull();
     });
 
-    test("tiendaSinVender: detecta un objeto a la venta que nadie ha comprado nunca", () => {
-        const obj = db
-            .prepare("INSERT INTO objeto (nombre, descripcion, tipo) VALUES ('Capa', 'Mola', 'coleccionable')")
-            .run().lastInsertRowid;
-        db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, 300, NULL)").run(obj);
-        expect(espontaneo.GANCHOS[0]()).toMatch(/Capa.*300/s);
-    });
-
-    test("tiendaSinVender: nada si ese objeto ya lo tiene alguien", () => {
-        const obj = db
-            .prepare("INSERT INTO objeto (nombre, descripcion, tipo) VALUES ('Capa', 'Mola', 'coleccionable')")
-            .run().lastInsertRowid;
-        db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, 300, NULL)").run(obj);
-        db.prepare("INSERT INTO inventario (userId, itemId, fecha) VALUES ('u1', ?, ?)").run(obj, new Date().toISOString());
+    test("nada si el único perfil no tiene Discord ID (viene de un JSON antiguo sin vincular)", () => {
+        db.prepare("INSERT INTO duende_perfiles (username, nombre, descripcion, notas) VALUES ('viejo', 'Viejo', 'algo', '[]')").run();
         expect(espontaneo.GANCHOS[0]()).toBeNull();
     });
 
-    test("apuestaConPocaGente: nada si no hay partidos próximos", () => {
-        expect(espontaneo.GANCHOS[1]()).toBeNull();
+    test("nada si el único perfil con Discord ID no tiene ni descripción ni notas", () => {
+        db.prepare("INSERT INTO duende_perfiles (discord_id, nombre, notas) VALUES ('u1', 'Fulano', '[]')").run();
+        expect(espontaneo.GANCHOS[0]()).toBeNull();
     });
 
-    test("apuestaConPocaGente: detecta un partido próximo con 0 o 1 apostantes", () => {
+    test("elige a quien tiene Discord ID y descripción o notas, con su texto de perfil", () => {
         db.prepare(
-            "INSERT INTO apuestas_partidos (match_id, home_team, away_team, start_time, deporte) VALUES ('m1', 'Betis', 'Sevilla', ?, 'laliga')",
-        ).run(new Date(Date.now() + 3600_000).toISOString());
-        expect(espontaneo.GANCHOS[1]()).toMatch(/Betis-Sevilla/);
-    });
-
-    test("apuestaConPocaGente: nada si ya han apostado varios", () => {
-        db.prepare(
-            "INSERT INTO apuestas_partidos (match_id, home_team, away_team, start_time, deporte) VALUES ('m1', 'Betis', 'Sevilla', ?, 'laliga')",
-        ).run(new Date(Date.now() + 3600_000).toISOString());
-        db.prepare("INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota) VALUES ('a', 'm1', 'home', 100, 2)").run();
-        db.prepare("INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota) VALUES ('b', 'm1', 'away', 100, 2)").run();
-        expect(espontaneo.GANCHOS[1]()).toBeNull();
-    });
-
-    test("rankingDinero: menciona a quien más dinero tiene", () => {
-        dinero.cuenta("rico"); // crea la cuenta con el inicial
-        db.prepare("UPDATE banco SET enMano = 50000 WHERE userId = 'rico'").run();
-        expect(espontaneo.GANCHOS[2]()).toMatch(/<@rico>/);
+            "INSERT INTO duende_perfiles (discord_id, nombre, descripcion, notas) VALUES ('u1', 'Fulano', 'Es muy del Barça', '[]')",
+        ).run();
+        const gancho = espontaneo.GANCHOS[0]();
+        expect(gancho).toEqual({ texto: "Es muy del Barça", discordId: "u1" });
     });
 });
 
-test("elegirGancho: null si ningún gancho aplica", () => {
+test("elegirGancho: null si no hay nadie a quien dirigirse", () => {
     expect(espontaneo.elegirGancho()).toBeNull();
 });
 
-test("elegirGancho: devuelve el único que aplica", () => {
-    const obj = db.prepare("INSERT INTO objeto (nombre, descripcion, tipo) VALUES ('Capa', 'Mola', 'coleccionable')").run().lastInsertRowid;
-    db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, 300, NULL)").run(obj);
-    expect(espontaneo.elegirGancho()).toMatch(/Capa/);
+test("generarMensaje: usa lo que sabe de la persona y la personalidad del canal, y no pide menciones a Gemini", async () => {
+    let promptVisto = "";
+    mockRespuestas.push((params) => {
+        promptVisto = params.contents[0].parts.map((p) => p.text).join("\n");
+        return texto("¡Eh, tú! ¿Sigues sin perder contra el Madrid?");
+    });
+    const msg = await espontaneo.generarMensaje("canal-1", { texto: "Es muy del Barça", discordId: "u1" });
+    expect(msg).toBe("¡Eh, tú! ¿Sigues sin perder contra el Madrid?");
+    expect(promptVisto).toMatch(/Es muy del Barça/);
+    expect(promptVisto).toMatch(/segunda persona/);
+    expect(promptVisto).toMatch(/No pongas\s+menciones ni arrobas/);
 });
 
 describe("canalEnCalma", () => {
@@ -114,18 +87,6 @@ describe("canalEnCalma", () => {
         const roto = { id: "c1", messages: { fetch: async () => Promise.reject(new Error("sin permiso")) } };
         expect(await espontaneo.canalEnCalma(roto)).toBe(false);
     });
-});
-
-test("generarMensaje: le pasa a Gemini el dato real y usa la personalidad del canal", async () => {
-    let promptVisto = "";
-    mockRespuestas.push((params) => {
-        promptVisto = params.contents[0].parts.map((p) => p.text).join("\n");
-        return texto("Vaya tela, nadie compra nada por aquí.");
-    });
-    const msg = await espontaneo.generarMensaje("canal-1", "Nadie ha comprado la Capa.");
-    expect(msg).toBe("Vaya tela, nadie compra nada por aquí.");
-    expect(promptVisto).toMatch(/Nadie ha comprado la Capa\./);
-    expect(promptVisto).toMatch(/sin que nadie te haya hablado/);
 });
 
 describe("revisarGuild (toda la decisión junta)", () => {
@@ -166,7 +127,7 @@ describe("revisarGuild (toda la decisión junta)", () => {
     });
 
     test("no hace nada si no toca por probabilidad", async () => {
-        jest.spyOn(Math, "random").mockReturnValue(0.999); // por encima de cualquier PROB razonable
+        jest.spyOn(Math, "random").mockReturnValue(0.999);
         const send = jest.fn();
         await espontaneo.revisarGuild(null, guild({ send }));
         expect(send).not.toHaveBeenCalled();
@@ -187,16 +148,23 @@ describe("revisarGuild (toda la decisión junta)", () => {
         Math.random.mockRestore();
     });
 
-    test("manda el mensaje cuando hay un gancho, toca por probabilidad y el canal está en calma", async () => {
+    test("no hace nada si no hay nadie a quien dirigirse", async () => {
         jest.spyOn(Math, "random").mockReturnValue(0);
-        mockRespuestas.push(texto("¡Que alguien compre algo, leñe!"));
-        const obj = db
-            .prepare("INSERT INTO objeto (nombre, descripcion, tipo) VALUES ('Capa', 'Mola', 'coleccionable')")
-            .run().lastInsertRowid;
-        db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, 300, NULL)").run(obj);
         const send = jest.fn();
         await espontaneo.revisarGuild(null, guild({ send }));
-        expect(send).toHaveBeenCalledWith("¡Que alguien compre algo, leñe!");
+        expect(send).not.toHaveBeenCalled();
+        Math.random.mockRestore();
+    });
+
+    test("manda el mensaje mencionando a la persona cuando todo encaja", async () => {
+        jest.spyOn(Math, "random").mockReturnValue(0);
+        db.prepare(
+            "INSERT INTO duende_perfiles (discord_id, nombre, descripcion, notas) VALUES ('u1', 'Fulano', 'Es muy del Barça', '[]')",
+        ).run();
+        mockRespuestas.push(texto("¡Eh, Fulano! ¿Dónde te has metido?"));
+        const send = jest.fn();
+        await espontaneo.revisarGuild(null, guild({ send }));
+        expect(send).toHaveBeenCalledWith("<@u1> ¡Eh, Fulano! ¿Dónde te has metido?");
         Math.random.mockRestore();
     });
 });
