@@ -18,6 +18,54 @@ feature/x ──┐
 feature/y ──┘
 ```
 
+## Flujo del día a día
+
+**Nombre de la rama**: `feature/<nº issue>-algo-corto` o `fix/<nº issue>-algo-corto`, p. ej. `feature/12-liga-pronosticos`
+para el issue #12. Así se ve de un vistazo a qué idea corresponde sin abrir GitHub.
+
+**Antes de empezar algo nuevo** — asígnate el issue en GitHub (o muévelo a "En progreso" en el Project board) para
+que el otro no empiece lo mismo, y parte siempre de `developer` al día:
+
+```
+git checkout developer
+git pull origin developer
+git checkout -b feature/12-liga-pronosticos
+```
+
+**Mientras trabajas**: commits normales, los que necesites. Push cuando quieras (no hace falta esperar a terminar):
+
+```
+git push -u origin feature/12-liga-pronosticos
+```
+
+**Al terminar**: abre el PR contra `developer` (no contra `main`), con "Closes #12" en la descripción. Espera a que
+el check `test` esté verde y a que el otro lo revise.
+
+**Al mergear**: en `feature → developer` usa **Squash and merge** (el botón del PR en GitHub) — así `developer` queda
+con un commit limpio por feature, en vez de todos los commits intermedios ("wip", "arreglo typo"...). Después, borra
+la rama (GitHub lo ofrece en el mismo sitio) y actualiza tu local:
+
+```
+git checkout developer
+git pull origin developer
+git branch -d feature/12-liga-pronosticos
+```
+
+**De `developer` a `main`**: cuando `developer` lleve un rato estable (varias features ya probadas en Discord, no
+cada commit), PR de `developer` → `main`. Aquí usa **Merge commit** normal, no squash — así se ve qué features
+concretas entraron juntas en ese despliegue, útil si hay que averiguar cuál rompió algo. Tras mergear, actualiza el
+NAS (`git pull` en `main` + reiniciar el proceso del bot).
+
+**Si los dos tocáis cosas relacionadas y hay conflicto**: resuélvelo en tu propia rama antes de abrir el PR, trayendo
+`developer` a tu rama:
+
+```
+git fetch origin
+git merge origin/developer
+# resolver conflictos, git add, git commit
+git push
+```
+
 ## Pull requests
 
 - Siempre por PR, aunque sea un cambio pequeño — así el otro ve qué ha cambiado y por qué, y los tests corren solos.
