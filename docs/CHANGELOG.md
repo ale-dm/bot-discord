@@ -2,6 +2,23 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-06 (📢 Mensajes espontáneos del Duende)
+
+Pedido porque el server estaba "un poco muerto": que el Duende anime a la gente a hacer cosas sin que nadie le hable.
+
+- De vez en cuando (probabilidad baja cada hora, de 11:00 a 23:00, `DUENDE_ESPONTANEO_PROB`), si el canal elegido
+  lleva un rato sin mensajes de verdad (`DUENDE_ESPONTANEO_QUIET_MS`, 2h por defecto — no interrumpe una
+  conversación activa), el Duende comenta algo **real** del server para picar a la gente: un objeto de la tienda
+  que nadie ha comprado nunca, un partido próximo con casi nadie apostado, o quién va primero en dinero ahora mismo.
+  Si no hay nada real que decir, no dice nada — nunca un mensaje genérico de relleno.
+- Se activa o desactiva y se elige el canal en **Config Global → Duende → 💬 Mensajes solos** (`guild_settings`,
+  no hace falta tocar el `.env`).
+- `systems/duende/espontaneo.js`: la lista de "ganchos" es fácil de ampliar (cada uno mira algo distinto y
+  devuelve `null` si no aplica ahora); el texto final lo escribe Gemini con la personalidad del canal, igual que el
+  resto del Duende.
+- Tests: 619 (de 600). Nuevos: `duendeEspontaneo` (cada gancho por separado, cuándo se considera un canal "en
+  calma", y la decisión completa con probabilidad/canal/calma simulados).
+
 ## 2026-10-06 (🎙️ Conversación de voz en directo)
 
 [F-DU-07](https://github.com/ale-dm/bot-discord/issues/18).

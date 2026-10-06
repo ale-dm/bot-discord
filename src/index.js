@@ -186,6 +186,14 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Ranking semanal de Plex (arranque)", () => require("./systems/plexRankingSemanal").enviarSiToca(client));
+    // Mensajes espontáneos del Duende para animar un server parado: de 11:00 a 23:00, con una
+    // probabilidad baja cada vez (DUENDE_ESPONTANEO_PROB) y solo si el canal lleva un rato sin
+    // mensajes de verdad. Se puede desactivar o elegir el canal en Config Global → Duende.
+    cron.schedule(
+        "0 11-23 * * *",
+        () => runJob("Mensajes espontáneos del Duende", () => require("./systems/duende/espontaneo").revisarTodos(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
     // Recordatorio por DM antes de los partidos a los que se ha apostado.
     cron.schedule(
         "*/5 * * * *",
