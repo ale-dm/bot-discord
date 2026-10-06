@@ -48,7 +48,6 @@ versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex).
 
 | ID | Idea | Esfuerzo | Detalle |
 |---|---|---|---|
-| F-DU-01 | **"¿Qué me he perdido?"** | S | `/resumen [horas]`: el Duende resume el canal con su personalidad (ya guarda historial por canal). |
 | F-DU-02 | **Personalidad según la hora o el canal** | S | Más borde de madrugada, más formal en ciertos canales. |
 | F-DU-03 | **El Duende participa en la economía** | S | Herramientas para que apueste contigo, preste monedas o te rete a piedra-papel-tijera desde el chat (los retos ya existen: le faltaría poder lanzar uno). |
 | F-DU-04 | **Recuerdos automáticos** | M | Detecta cosas memorables de la conversación y propone guardarlas como nota; un admin las aprueba con un botón. |
@@ -82,14 +81,6 @@ versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex).
 | F-EC-03 | **Clasificación semanal con premios** | S | Cada lunes, premio automático al más rico, al más activo y al mejor apostador (con F-AP-03). |
 | F-EC-05 | **Pase de batalla** | L | Diseñado en [diseno/pase-de-batalla-s1.md](diseno/pase-de-batalla-s1.md). |
 | F-EC-06 | **Impuestos, robos y dinero negro** | M | Sobre el efectivo y el banco del [plan de paneles](diseno/reorganizacion-paneles.md#4-plan-de-ejecución) (parte 5): el banco es seguro y el efectivo se puede perder. Robar efectivo a otro, impuestos sobre ingresos o saldo, dinero negro que no se puede ingresar sin "blanquearlo". Por diseñar. |
-
-## Comunidad
-
-| ID | Idea | Esfuerzo | Detalle |
-|---|---|---|---|
-| F-CO-01 | **Cumpleaños** | S | `/cumple fecha`, felicitación del Duende y regalo de monedas. |
-| F-CO-02 | **Recordatorios** | S | `/recuerdame "texto" en 2h`, o pidiéndoselo al Duende en el chat. |
-| F-CO-03 | **Encuestas** | S | `/encuesta` con botones y resultado al cerrar. |
 
 ## Administración
 
