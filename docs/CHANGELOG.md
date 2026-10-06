@@ -8,16 +8,18 @@ Pedido porque el server estaba "un poco muerto": que el Duende anime a la gente 
 
 - De vez en cuando (probabilidad baja cada hora, de 11:00 a 23:00, `DUENDE_ESPONTANEO_PROB`), si el canal elegido
   lleva un rato sin mensajes de verdad (`DUENDE_ESPONTANEO_QUIET_MS`, 2h por defecto — no interrumpe una
-  conversación activa), el Duende comenta algo **real** del server para picar a la gente: un objeto de la tienda
-  que nadie ha comprado nunca, un partido próximo con casi nadie apostado, o quién va primero en dinero ahora mismo.
-  Si no hay nada real que decir, no dice nada — nunca un mensaje genérico de relleno.
+  conversación activa), el Duende se dirige a alguien **al azar de quien tenga perfil** (🧠 Perfiles, con
+  descripción o notas de `/duende recuerda`): le menciona y le suelta algo basado en lo que sabe de él, en su
+  estilo, para picarle y que conteste. Si no hay nadie con perfil al que dirigirse, no dice nada — nunca un mensaje
+  genérico de relleno. (Primera versión: pensada para tirar de datos del server —tienda, apuestas, ranking de
+  dinero—, pero mencionar a quien más dinero tiene no convenció y se cambió por esto antes de llegar a `main`.)
 - Se activa o desactiva y se elige el canal en **Config Global → Duende → 💬 Mensajes solos** (`guild_settings`,
   no hace falta tocar el `.env`).
-- `systems/duende/espontaneo.js`: la lista de "ganchos" es fácil de ampliar (cada uno mira algo distinto y
-  devuelve `null` si no aplica ahora); el texto final lo escribe Gemini con la personalidad del canal, igual que el
-  resto del Duende.
-- Tests: 619 (de 600). Nuevos: `duendeEspontaneo` (cada gancho por separado, cuándo se considera un canal "en
-  calma", y la decisión completa con probabilidad/canal/calma simulados).
+- `systems/duende/espontaneo.js`: la lista de "ganchos" es fácil de ampliar más adelante (cada uno devuelve
+  `{ texto, discordId? }` o `null` si no aplica); la mención la añade el código, no Gemini (para no depender de que
+  copie bien un ID), y el texto lo escribe con la personalidad del canal, igual que el resto del Duende.
+- Tests: 616 (de 600). Nuevos: `duendeEspontaneo` (el gancho con y sin perfiles válidos, cuándo se considera un
+  canal "en calma", y la decisión completa con probabilidad/canal/calma simulados).
 
 ## 2026-10-06 (🎙️ Conversación de voz en directo)
 

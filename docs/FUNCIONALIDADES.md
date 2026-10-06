@@ -89,11 +89,11 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   (no las menciones), sin enlaces, emojis del servidor ni formato, y como mucho 200 caracteres. En una charla de voz
   (`/escuchar`), si no puede hablar (el TTS falla, no hay conexión...), contesta por texto en el canal ("🗣️ …").
 - Si Gemini bloquea la respuesta por contenido, reintenta con un tono neutro manteniendo las herramientas.
-- **Mensajes espontáneos** (Config Global → Duende → 💬 Mensajes solos): de vez en cuando, sin que nadie le hable,
-  comenta en el canal elegido algo real del server (un objeto de la tienda que nadie compra, un partido con pocas
-  apuestas, quién va primero en dinero...) para animar a la gente a usar el bot. Solo si ese canal lleva un rato sin
-  mensajes de verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00.
-  Si no hay nada real que comentar, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
+- **Mensajes espontáneos** (Config Global → Duende → 💬 Mensajes solos): de vez en cuando, sin que nadie le hable, se
+  dirige en el canal elegido a alguien al azar de quien tenga perfil (🧠 Perfiles, con descripción o notas de
+  `/duende recuerda`), mencionándole, para picarle y que conteste. Solo si ese canal lleva un rato sin mensajes de
+  verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00. Si no hay
+  nadie con perfil al que dirigirse, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
 
 ### Herramientas (datos reales)
 

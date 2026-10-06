@@ -1,11 +1,10 @@
-// Mensajes espontáneos del Duende: de vez en cuando, sin que nadie le hable, comenta algo real
-// del server para animar a la gente a usarlo (apostar, comprar en la tienda...). Pedido porque
+// Mensajes espontáneos del Duende: de vez en cuando, sin que nadie le hable, se dirige a
+// alguien que conoce (perfiles de /duende recuerda) para picarle y que conteste. Pedido porque
 // el server estaba "un poco muerto". Solo cuando el canal lleva un rato sin mensajes de verdad:
 // la idea es levantar un server parado, no interrumpir una conversación que ya está viva.
-const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
-const dinero = require("../dinero");
 const perfiles = require("./perfiles");
+const { buildPersonProfileText } = require("./personas");
 const { generarConGemini } = require("../../services/duende/gemini");
 const { createLogger } = require("../../core/logger");
 
@@ -14,66 +13,39 @@ const log = createLogger("Duende").child("Espontaneo");
 const PROB = Number(process.env.DUENDE_ESPONTANEO_PROB || 0.15);
 const QUIET_MS = Number(process.env.DUENDE_ESPONTANEO_QUIET_MS || 2 * 60 * 60 * 1000);
 
-// Cada gancho mira algo real y devuelve una frase factual (en qué se basa el Duende), o null si
-// no aplica ahora. No duplican las herramientas del Duende (services/duende/herramientas.js):
-// esas miran a UNA persona que pregunta; estas miran al server entero para encontrar algo que
-// comentar sin que nadie haya preguntado nada.
+// Cada gancho devuelve { texto, discordId? } con algo real para que el Duende hable, o null si
+// no aplica ahora. discordId es opcional: si está, se menciona a esa persona (la mención la
+// pone revisarGuild, no Gemini, para no depender de que el modelo copie bien un ID).
 const GANCHOS = [
-    function tiendaSinVender() {
-        const fila = db
-            .prepare(
-                `SELECT o.nombre, t.precio FROM tienda t
-                 JOIN objeto o ON o.id = t.objetoId
-                 WHERE (t.stock IS NULL OR t.stock > 0)
-                   AND NOT EXISTS (SELECT 1 FROM inventario i WHERE i.itemId = o.id)
-                 ORDER BY t.id ASC LIMIT 1`,
-            )
-            .get();
-        if (!fila) return null;
-        return `Nadie ha comprado nunca "${fila.nombre}" de la tienda (${fila.precio} monedas), aunque sigue a la venta.`;
-    },
-    function apuestaConPocaGente() {
-        const fila = db
-            .prepare(
-                `SELECT p.home_team, p.away_team, COUNT(DISTINCT u.user_id) AS apostantes
-                 FROM apuestas_partidos p
-                 LEFT JOIN apuestas_usuario u ON u.match_id = p.match_id
-                 WHERE p.start_time > datetime('now') AND p.start_time < datetime('now', '+2 days')
-                 GROUP BY p.id
-                 HAVING apostantes <= 1
-                 ORDER BY p.start_time ASC LIMIT 1`,
-            )
-            .get();
-        if (!fila) return null;
-        return `Casi nadie ha apostado todavía al ${fila.home_team}-${fila.away_team}, que empieza en menos de 2 días.`;
-    },
-    function rankingDinero() {
-        const [top] = dinero.masRicos(1);
-        if (!top || !top.total) return null;
-        return `<@${top.userId}> es quien más dinero tiene acumulado del server ahora mismo (${top.total.toLocaleString("es")} monedas entre efectivo y banco).`;
+    function personaAlAzar() {
+        const candidatos = perfiles.listarPerfiles().filter((p) => p.discordId && (p.description || p.notas.length));
+        if (!candidatos.length) return null;
+        const p = candidatos[Math.floor(Math.random() * candidatos.length)];
+        return { texto: buildPersonProfileText(p), discordId: p.discordId };
     },
 ];
 
-/** @returns {string|null} un hecho real al azar entre los que aplican ahora, o null si no hay ninguno */
+/** @returns {{texto: string, discordId?: string}|null} un gancho al azar entre los que aplican ahora, o null si no hay ninguno */
 function elegirGancho() {
     const aplican = GANCHOS.map((g) => g()).filter(Boolean);
     if (!aplican.length) return null;
     return aplican[Math.floor(Math.random() * aplican.length)];
 }
 
-/** Convierte el hecho elegido en un mensaje corto con la personalidad del canal. */
-async function generarMensaje(channelId, hecho) {
+/** Convierte el gancho elegido en un mensaje corto con la personalidad del canal. Sin la mención: la añade revisarGuild. */
+async function generarMensaje(channelId, gancho) {
     const persona = perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(channelId));
     const base = persona ? persona.systemInstructions : perfiles.instruccionDefault;
     const parts = [
         {
             text:
-                `${base} Vas a soltar un mensaje tú solo, sin que nadie te haya hablado, en un server de Discord ` +
-                "un poco parado últimamente. El objetivo es animar a la gente a usar el bot (apostar, comprar en " +
-                "la tienda, etc.), nunca sonar a aviso de sistema ni a anuncio. Usa este dato real para pincharles, " +
-                "en tu estilo, 1-2 frases, sin inventarte nada que no esté en el dato.",
+                `${base} Vas a dirigirte tú solo a una persona concreta, sin que te haya hablado, en un server de ` +
+                "Discord un poco parado últimamente. El objetivo es picarla para que conteste o haga algo (no sonar " +
+                "a aviso de sistema ni a mensaje genérico). Habla en segunda persona, directamente a ella, en tu " +
+                "estilo, 1-2 frases, usando solo lo que sabes de ella aquí abajo — no inventes nada más. No pongas " +
+                "menciones ni arrobas: quien envía el mensaje ya se encarga de avisarla.",
         },
-        { text: `Dato: ${hecho}` },
+        { text: `Lo que sabes de ella: ${gancho.texto}` },
     ];
     return generarConGemini(parts, { maxTokens: 200 });
 }
@@ -100,13 +72,14 @@ async function revisarGuild(client, guild) {
     if (!channel || !channel.isTextBased()) return;
     if (!(await canalEnCalma(channel))) return;
 
-    const hecho = elegirGancho();
-    if (!hecho) return; // nada interesante que decir: mejor callado que un mensaje soso
+    const gancho = elegirGancho();
+    if (!gancho) return; // nadie con perfil al que dirigirse: mejor callado que un mensaje soso
 
     try {
-        const texto = await generarMensaje(channel.id, hecho);
-        await channel.send(texto);
-        log.info(`Mensaje espontáneo en ${guild.name} (${channel.name}): ${hecho}`);
+        const texto = await generarMensaje(channel.id, gancho);
+        const mencion = gancho.discordId ? `<@${gancho.discordId}> ` : "";
+        await channel.send(`${mencion}${texto}`);
+        log.info(`Mensaje espontáneo en ${guild.name} (${channel.name}) dirigido a ${gancho.discordId || "?"}`);
     } catch (e) {
         log.warn(`No se pudo generar/enviar el mensaje espontáneo en ${guild.name}: ${e.message}`);
     }
