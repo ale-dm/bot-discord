@@ -1,6 +1,6 @@
 // Conversación por voz en directo con el Duende (Gemini Live API): audio bidireccional real,
 // no por turnos como /escuchar (Vosk + TTS por lotes, que sigue igual y sin tocar — esto es
-// una funcionalidad nueva y aparte, /conversar).
+// una funcionalidad nueva y aparte, /conversación).
 //
 // El coste por minuto es bajo (~$0,005/min entrada + $0,018/min salida), pero se cobra
 // mientras la conexión esté abierta, no solo cuando alguien habla — por eso hay un corte por
@@ -49,7 +49,7 @@ function hayConversacionActiva(guildId) {
 }
 
 // Mismas herramientas que el chat de texto (services/duende/gemini.js), con la misma regla de
-// qué Plex/Seerr se permite según el canal de TEXTO desde donde se pide /conversar (el de voz
+// qué Plex/Seerr se permite según el canal de TEXTO desde donde se pide /conversación (el de voz
 // no tiene lista de permitidos propia).
 function construirDeclaracionesHerramientas(guildId, channelId) {
     const hasChannelCtx = guildId && channelId;
@@ -137,7 +137,7 @@ function pararConversacion(guildId, motivo) {
 async function empezarConversacion(interaction, { onTerminada } = {}) {
     const guildId = interaction.guildId;
     if (sesiones.has(guildId)) {
-        return { ok: false, error: "Ya hay una conversación en directo en este servidor. Usa `/conversar` otra vez para terminarla." };
+        return { ok: false, error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
     }
 
     const voiceChannel = interaction.member?.voice?.channel;
@@ -232,7 +232,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         });
         sesion.liveSession = liveSession;
 
-        // Entrada: todo lo que diga quien ha pedido /conversar mientras dure la llamada (no
+        // Entrada: todo lo que diga quien ha pedido /conversación mientras dure la llamada (no
         // una sola intervención como /escuchar: EndBehaviorType.Manual no corta sola).
         const receiver = connection.receiver;
         const opusStream = receiver.subscribe(interaction.user.id, { end: { behavior: EndBehaviorType.Manual } });
