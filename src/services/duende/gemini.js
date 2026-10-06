@@ -40,8 +40,14 @@ async function generarConGemini(parts, options = {}) {
     if (!prompt) throw new Error("Prompt vacío para Gemini");
     if (!GEMINI_API_KEY) throw new Error("Falta GOOGLE_API_KEY en variables de entorno");
 
+    // La parte de "usa las herramientas siempre" vive aquí, en el systemInstruction real
+    // de Gemini, no mezclada dentro del texto de personalidad (ver duende.js): así una
+    // personalidad nueva que no la mencione no puede hacer que el modelo se la salte.
+    const toolReminder = options.toolContext
+        ? " Si tienes herramientas disponibles que te den datos reales para responder (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad — puedes insultar, bromear o quejarte igualmente con el resultado, pero no te niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede."
+        : "";
     const baseConfig = {
-        systemInstruction: "Responde siempre de forma breve y concisa, máximo 1-2 frases. No te extiendas.",
+        systemInstruction: `Responde siempre de forma breve y concisa, máximo 1-2 frases. No te extiendas.${toolReminder}`,
         maxOutputTokens: Number(options.maxTokens || DUENDE_MAX_TOKENS),
         temperature: Number(options.temperature ?? process.env.DUENDE_TEMPERATURE ?? 0.7),
         safetySettings: [

@@ -65,6 +65,7 @@ function buildPlexHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_plex_link").setLabel("➕ Vincular").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_plex_unlink").setLabel("🗑️ Quitar").setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId("paneladmin_plex_test").setLabel("🔌 Test conexión").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_resync").setLabel("🔄 Resincronizar IDs").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_plex_trofeos").setLabel("🏆 Trofeos").setStyle(ButtonStyle.Primary),
     );
     const row2 = new ActionRowBuilder().addComponents(
@@ -485,6 +486,29 @@ async function handlePlexButton(interaction) {
         return true;
     }
 
+    if (id === "paneladmin_plex_resync") {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        let users;
+        try {
+            users = await tautulliClient.getUsers(guildId);
+        } catch (e) {
+            await interaction.editReply(`❌ No se pudo consultar Tautulli: ${e.message}`);
+            return true;
+        }
+        const { total, actualizados, noEncontrados } = plexLinks.relinkAll(guildId, users);
+        adminAudit.logAdminAction({
+            guildId,
+            actorId: interaction.user.id,
+            action: "plex.relink_all",
+            details: { actualizados, noEncontrados },
+        });
+        const lineas = [`🔄 Revisados ${total} vínculos contra Tautulli (${users.length} usuarios).`];
+        lineas.push(actualizados.length ? `✅ Actualizados: ${actualizados.join(", ")}` : "✅ Nada que actualizar, todo seguía correcto.");
+        if (noEncontrados.length) lineas.push(`⚠️ No encontrados en Tautulli (revísalos a mano): ${noEncontrados.join(", ")}`);
+        await interaction.editReply(lineas.join("\n"));
+        return true;
+    }
+
     if (id === "paneladmin_plex_novedades_channel") {
         const row = new ActionRowBuilder().addComponents(
             new ChannelSelectMenuBuilder()
@@ -721,7 +745,13 @@ async function handlePlexModal(interaction) {
         return true;
     }
 
-    const match = users.find((u) => String(u.username || "").toLowerCase() === query.toLowerCase());
+    // Fallback a friendly_name: las cuentas "Managed/Home" de Plex (sin cuenta plex.tv
+    // propia) pueden no tener username, o tenerlo distinto al nombre que usa la gente.
+    const match = users.find(
+        (u) =>
+            String(u.username || "").toLowerCase() === query.toLowerCase() ||
+            String(u.friendly_name || "").toLowerCase() === query.toLowerCase(),
+    );
     if (!match) {
         await interaction.reply({
             content: `❌ No encuentro a "${query}" en Tautulli. Usa el nombre exacto de usuario de Plex.`,
@@ -730,14 +760,15 @@ async function handlePlexModal(interaction) {
         return true;
     }
 
-    plexLinks.setLink(guildId, discordUserId, match.user_id, match.username);
+    const nombreVinculo = match.username || match.friendly_name;
+    plexLinks.setLink(guildId, discordUserId, match.user_id, nombreVinculo);
     adminAudit.logAdminAction({
         guildId,
         actorId: interaction.user.id,
         action: "plex.link",
-        details: { discordUserId, tautulliUserId: match.user_id, plexUsername: match.username },
+        details: { discordUserId, tautulliUserId: match.user_id, plexUsername: nombreVinculo },
     });
-    await interaction.reply({ content: `✅ <@${discordUserId}> vinculado a **${match.username}**.`, flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: `✅ <@${discordUserId}> vinculado a **${nombreVinculo}**.`, flags: MessageFlags.Ephemeral });
     return true;
 }
 

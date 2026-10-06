@@ -364,12 +364,12 @@ module.exports = {
             // se hable de alguien, se le da al modelo tanto el perfil de quien pregunta
             // como el de quien es el tema, para que pueda compararlos/relacionarlos en
             // la misma respuesta en vez de describir solo al otro de forma aislada.
-            // Instrucción universal, independiente de la personalidad activa: las
+            // El recordatorio de "usa las herramientas siempre" ya no va aquí: las
             // personalidades personalizadas (masiko, javier, sanchez...) sustituyen del
-            // todo `instruccionDefault` y ninguna menciona que hay herramientas
-            // disponibles — sin esto, una personalidad centrada en insultar puede
-            // "olvidarse" de mirar el dato real y limitarse a soltar un insulto genérico.
-            instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si tienes herramientas disponibles que te den datos reales para responder (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad — puedes insultar, bromear o quejarte igualmente con el resultado, pero no te niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
+            // todo `instruccionDefault`, y mezclado en este texto competía con ellas en
+            // igualdad de condiciones. Ahora vive en el systemInstruction real de Gemini
+            // (gemini.js), que no se puede pisar cambiando de personalidad.
+            instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
 
             // Inicializa historial si no existe
             if (!conversationHistory[channelId]) conversationHistory[channelId] = [];
@@ -390,13 +390,23 @@ module.exports = {
                 .filter((p) => !speakerProfile || p.key !== speakerProfile.key)
                 .slice(0, 3);
 
+            // Con pocas notas se dan todas (perfiles.notasRelevantes no llama a Gemini); con
+            // muchas, solo las más relacionadas con lo que se acaba de decir en vez de
+            // siempre las últimas MAX_NOTAS — así no se pierden notas antiguas que sí vienen
+            // a cuento ahora. Si falla la llamada a Gemini, cae a las últimas como antes.
+            const conNotasRelevantes = async (p) => p && { ...p, notas: await perfiles.notasRelevantes(p, userInput) };
+            const [speakerConNotas, ...mentionedConNotas] = await Promise.all([
+                conNotasRelevantes(speakerProfile),
+                ...mentionedProfiles.map(conNotasRelevantes),
+            ]);
+
             const perfilesDestacados = [];
-            if (speakerProfile) {
+            if (speakerConNotas) {
                 perfilesDestacados.push(
-                    `${speakerProfile.name} (quien te habla ahora): ${truncateText(buildPersonProfileText(speakerProfile), perfiles.MAX_PERFIL_PROMPT)}`,
+                    `${speakerConNotas.name} (quien te habla ahora): ${truncateText(buildPersonProfileText(speakerConNotas), perfiles.MAX_PERFIL_PROMPT)}`,
                 );
             }
-            for (const p of mentionedProfiles) {
+            for (const p of mentionedConNotas) {
                 perfilesDestacados.push(
                     `${p.name} (mencionado en el mensaje): ${truncateText(buildPersonProfileText(p), perfiles.MAX_PERFIL_PROMPT)}`,
                 );
