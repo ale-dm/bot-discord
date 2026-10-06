@@ -52,6 +52,8 @@ versiones del anime) y dificultad en todos (fácil, normal y Gordo del Plex).
 | F-DU-03 | **El Duende participa en la economía** | S | Herramientas para que apueste contigo, preste monedas o te rete a piedra-papel-tijera desde el chat (los retos ya existen: le faltaría poder lanzar uno). |
 | F-DU-04 | **Recuerdos automáticos** | M | Detecta cosas memorables de la conversación y propone guardarlas como nota; un admin las aprueba con un botón. |
 | F-DU-05 | **Conversación de voz continua** | M | Modo "tertulia": escucha a todos los del canal, no solo a una persona. |
+| F-DU-06 | **Memoria semántica con embeddings** | S | Guardar un vector (Gemini embeddings, $0,15/M tokens de entrada, salida gratis) junto a cada nota del Duende y buscar por similitud en vez de notas fijas. Con el volumen de este server no hace falta una base de datos vectorial: comparar a pelo en SQLite basta. |
+| F-DU-07 | **Conversación de voz en tiempo real (Gemini Live API)** | L | Sustituye el pipeline por lotes de `/escuchar` (Vosk + TTS) por audio bidireccional real (~$0,005/min de entrada + $0,018/min de salida). El coste por uso es bajo, pero hay que recablear las herramientas del Duende al protocolo de la sesión en vivo (distinto del de `generateContent`) y poner un timeout de inactividad, porque se cobra mientras la conexión esté abierta, no solo cuando alguien habla. |
 
 ## Plex y Seerr
 
