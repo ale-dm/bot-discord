@@ -8,7 +8,7 @@ const log = createLogger("VozEnVivo");
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("conversar")
+        .setName("conversación")
         .setDescription("Empieza (o termina) una conversación de voz en directo con el Duende."),
     async run(client, interaction) {
         if (!interaction.guildId) {
@@ -17,7 +17,7 @@ module.exports = {
         }
 
         if (liveVoz.hayConversacionActiva(interaction.guildId)) {
-            liveVoz.pararConversacion(interaction.guildId, "pedido con /conversar");
+            liveVoz.pararConversacion(interaction.guildId, "pedido con /conversación");
             await interaction.reply("🔴 Conversación en directo terminada.");
             return;
         }
@@ -36,7 +36,7 @@ module.exports = {
         }
         log.info(`Conversación en directo empezada en ${r.voiceChannel.name} (pedida por ${interaction.user.tag})`);
         await interaction.editReply(
-            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. Habla cuando quieras; usa \`/conversar\` otra vez para terminarla.`,
+            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. Habla cuando quieras; usa \`/conversación\` otra vez para terminarla.`,
         );
     },
 };

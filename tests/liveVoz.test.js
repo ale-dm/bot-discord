@@ -1,4 +1,4 @@
-// Conversación de voz en directo (/conversar, Gemini Live API): las herramientas que puede
+// Conversación de voz en directo (/conversación, Gemini Live API): las herramientas que puede
 // usar, el límite de una conversación a la vez por servidor, y los dos cortes de coste
 // obligatorios (inactividad y tope de duración) — todo sin tocar audio ni sockets reales.
 process.env.GOOGLE_API_KEY = "clave-de-prueba";
@@ -98,12 +98,12 @@ test("parar limpia la conexión, la sesión de Gemini y avisa con el motivo", as
     await liveVoz.empezarConversacion(i, { onTerminada });
     expect(liveVoz.hayConversacionActiva(G)).toBe(true);
 
-    const ok = liveVoz.pararConversacion(G, "pedido con /conversar");
+    const ok = liveVoz.pararConversacion(G, "pedido con /conversación");
     expect(ok).toBe(true);
     expect(liveVoz.hayConversacionActiva(G)).toBe(false);
     expect(mockLiveSession.close).toHaveBeenCalled();
     expect(mockConnectionActual.destroy).toHaveBeenCalled();
-    expect(onTerminada).toHaveBeenCalledWith("pedido con /conversar");
+    expect(onTerminada).toHaveBeenCalledWith("pedido con /conversación");
 });
 
 test("se corta sola tras el tiempo de inactividad configurado", async () => {
