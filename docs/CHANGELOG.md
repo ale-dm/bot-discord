@@ -2,6 +2,19 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-06 (🎬 Resync de Plex y herramientas que sobreviven al cambio de personalidad)
+
+- **🔄 Resincronizar IDs en `/paneladmin` → 🎬 Plex**: el `tautulliUserId` guardado en `plex_links` es interno de cada
+  instalación de Tautulli; al reinstalarla (p. ej. al mover Plex/Tautulli a otro servidor) se reparte desde cero y los
+  vínculos antiguos quedaban apuntando a otra persona o a nadie, sin ningún error visible — solo devolvían historial
+  vacío o ajeno. El botón nuevo re-busca cada `plexUsername` guardado contra la lista actual de Tautulli (por
+  `username` o `friendly_name`, para las cuentas Managed/Home) y actualiza el ID si ha cambiado (`plexLinks.relinkAll`).
+  Al vincular a mano también se admite ya `friendly_name` como alternativa al username exacto.
+- **El Duende dejaba de usar las herramientas (Plex, saldo...) con ciertas personalidades**: el recordatorio de "usa
+  las herramientas siempre" iba mezclado dentro del texto de la personalidad, compitiendo en igualdad de condiciones
+  con ella; una personalidad suficientemente agresiva podía seguir ignorándolo. Ahora vive en el `systemInstruction`
+  real de la llamada a Gemini (`services/duende/gemini.js`), que no cambia con la personalidad activa.
+
 ## 2026-10-03 (📣 Ranking semanal de Plex)
 
 Rama `feature/elduendejavier`. Migración **017**.
