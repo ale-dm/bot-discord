@@ -75,9 +75,10 @@ const G = "guild-live";
 
 function interaccionEnVoz() {
     mockConnectionActual = mockConnection();
+    const membersCache = new Map([["u-live", { user: { id: "u-live", username: "ale" }, displayName: "ale" }]]);
     return {
         guildId: G,
-        guild: { id: G, name: "Server", members: { me: {} } },
+        guild: { id: G, name: "Server", members: { me: {}, cache: membersCache } },
         channelId: "canal-texto",
         user: { id: "u-live", username: "ale" },
         member: {
@@ -199,11 +200,28 @@ test("el audio del usuario se manda por el campo 'audio', no el genérico 'media
     });
 });
 
-test("si habla otra persona del canal, no se suscribe a su audio", async () => {
+test("cualquiera del canal puede hablarle, no solo quien pidió /conversación", async () => {
     const i = interaccionEnVoz();
     await liveVoz.empezarConversacion(i);
     mockConnectionActual.receiver.speaking.emit("start", "otro-usuario-cualquiera");
-    expect(mockConnectionActual.receiver.subscribe).not.toHaveBeenCalled();
+    expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledWith("otro-usuario-cualquiera", expect.anything());
+});
+
+test("mientras alguien tiene el turno abierto, se ignora a quien más intente hablar (no se mezclan dos personas en un turno)", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id); // abre el turno u-live
+    mockLiveSession.sendRealtimeInput.mockClear();
+
+    mockConnectionActual.receiver.speaking.emit("start", "otro-usuario-cualquiera");
+
+    expect(mockConnectionActual.receiver.subscribe).not.toHaveBeenCalledWith("otro-usuario-cualquiera", expect.anything());
+    expect(mockLiveSession.sendRealtimeInput).not.toHaveBeenCalledWith({ activityStart: {} });
+
+    // Al terminar u-live, el turno queda libre para la siguiente persona que hable.
+    mockConnectionActual.receiver.speaking.emit("end", i.user.id);
+    mockConnectionActual.receiver.speaking.emit("start", "otro-usuario-cualquiera");
+    expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledWith("otro-usuario-cualquiera", expect.anything());
 });
 
 test("desactiva la detección automática de actividad de Gemini: Discord no manda audio durante los silencios", async () => {
@@ -292,21 +310,22 @@ test("las instrucciones de sistema recuerdan usar las herramientas sea cual sea 
     expect(instrucciones).toMatch(/conversación de voz en directo/);
 });
 
-test("las instrucciones de sistema incluyen a quien habla cuando se le pasa, y dicen cómo preguntar por otra persona", () => {
-    const conHablante = liveVoz.construirInstruccionesSistema("canal-texto", { nombre: "Ale", perfilTexto: "le gusta el fútbol" });
-    expect(conHablante).toMatch(/Ale/);
-    expect(conHablante).toMatch(/le gusta el fútbol/);
-    expect(conHablante).toMatch(/consultar_perfil_persona/);
-
-    const sinHablante = liveVoz.construirInstruccionesSistema("canal-texto");
-    expect(sinHablante).toMatch(/consultar_perfil_persona/);
+test("las instrucciones de sistema avisan de que puede hablar más de una persona y dicen cómo preguntar por otra", () => {
+    const instrucciones = liveVoz.construirInstruccionesSistema("canal-texto");
+    expect(instrucciones).toMatch(/más de una persona/);
+    expect(instrucciones).toMatch(/consultar_perfil_persona/);
 });
 
-test("al conectar, las instrucciones de sistema incluyen el nombre de quien pide la conversación", async () => {
+test("al empezar a hablar alguien, se le identifica a Gemini antes de su turno (como el chat de texto)", async () => {
     const i = interaccionEnVoz();
     await liveVoz.empezarConversacion(i);
-    const { config } = mockConnect.mock.calls.at(-1)[0];
-    expect(config.systemInstruction).toMatch(new RegExp(i.user.username, "i"));
+    mockLiveSession.sendClientContent.mockClear();
+
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+
+    expect(mockLiveSession.sendClientContent).toHaveBeenCalledWith(
+        expect.objectContaining({ turns: expect.stringContaining("ale"), turnComplete: false }),
+    );
 });
 
 test("si Gemini pide colgar_llamada, termina la conversación y responde ok", async () => {

@@ -78,29 +78,21 @@ function construirDeclaracionesHerramientas(guildId, channelId) {
 
 // A diferencia del chat de texto (duende.js), la sesión de Gemini Live solo acepta un
 // systemInstruction fijo al conectar, no uno distinto por mensaje: se construye una vez aquí.
-// `hablante` ({nombre, perfilTexto}) es quien ha pedido /conversación — a diferencia del chat de
-// texto (que resuelve el perfil de quien habla y de cualquier persona mencionada en cada mensaje
-// con detectMentionedPersons), aquí solo se puede dar el de quien habla, de una vez, al conectar;
-// para preguntar por cualquier otra persona está la herramienta consultar_perfil_persona.
-function construirInstruccionesSistema(channelId, hablante) {
+// En la llamada puede hablar más de una persona (no solo quien pidió /conversación) — antes de
+// cada turno se avisa de quién habla ahora mismo (ver empezarConversacion), así que aquí solo se
+// deja la instrucción general de qué hacer con eso.
+function construirInstruccionesSistema(channelId) {
     const persona = perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(channelId));
     const base = persona ? persona.systemInstructions : perfiles.instruccionDefault;
-    const piezas = [
+    return (
         `${base} Esto es una conversación de voz en directo, no texto escrito: responde corto y de forma natural, ` +
-            "como hablarías en persona, sin markdown ni listas. Si tienes herramientas disponibles que te den datos " +
-            "reales (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad; no te " +
-            "niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede.",
-    ];
-    if (hablante?.nombre) {
-        piezas.push(
-            `Quien te habla en esta llamada se llama ${hablante.nombre}` +
-                (hablante.perfilTexto ? `. Esto es lo que sabes de ${hablante.nombre}: ${hablante.perfilTexto}` : "") +
-                " (si pregunta quién es, ya lo sabes). Para cualquier otra persona, usa consultar_perfil_persona.",
-        );
-    } else {
-        piezas.push("Si te preguntan quién es alguien (incluida la persona que te habla), usa consultar_perfil_persona.");
-    }
-    return piezas.join(" ");
+        "como hablarías en persona, sin markdown ni listas. Si tienes herramientas disponibles que te den datos " +
+        "reales (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad; no te " +
+        "niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede. En la llamada puede " +
+        "hablar más de una persona: antes de cada turno te diré quién es quien va a hablar y lo que sepas de " +
+        "ella, para que sepas a quién te diriges sin tener que preguntarlo; usa consultar_perfil_persona para " +
+        "cualquier otra persona de la que se hable."
+    );
 }
 
 /** Ejecuta las llamadas a herramientas que pide Gemini Live y le manda el resultado. Exportada para poder probarla sin un socket real. */
@@ -131,10 +123,12 @@ function limpiarSesion(sesion) {
     } catch (e) {
         log.debug(`Error quitando el listener de voz: ${e.message}`);
     }
-    try {
-        sesion.opusStream?.destroy();
-    } catch (e) {
-        log.debug(`Error cerrando la entrada de audio: ${e.message}`);
+    for (const opusStream of sesion.suscripciones?.values() || []) {
+        try {
+            opusStream.destroy();
+        } catch (e) {
+            log.debug(`Error cerrando la entrada de audio: ${e.message}`);
+        }
     }
     try {
         sesion.ffmpeg?.destroy();
@@ -186,16 +180,22 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
     const channelId = interaction.channelId;
     const toolContext = { guildId, userId: interaction.user.id, guild: interaction.guild, channelId };
     const declaraciones = construirDeclaracionesHerramientas(guildId, channelId);
-    const perfilHablante = perfiles.perfilDe(interaction.user);
-    const systemInstruction = construirInstruccionesSistema(channelId, {
-        nombre: perfilHablante?.name || interaction.user.username,
-        perfilTexto: perfilHablante ? buildPersonProfileText(perfilHablante) : null,
-    });
+    const systemInstruction = construirInstruccionesSistema(channelId);
 
     // sesion.permitirAudioSalida empieza en true para que el saludo inicial siempre se oiga;
     // con soloSiLeLlaman, onSpeakingStart lo pone en false hasta que la transcripción de ese
-    // turno contenga PALABRA_LLAMADA (ver más abajo).
-    const sesion = { ultimaActividad: Date.now(), onTerminada, soloSiLeLlaman, permitirAudioSalida: true, turnoTranscripcion: "" };
+    // turno contenga PALABRA_LLAMADA (ver más abajo). hablanteActivo: userId de quien tiene el
+    // turno abierto ahora mismo (null = nadie); mientras esté puesto, se ignora a cualquier otra
+    // persona que empiece a hablar — por turnos, sin mezclar a dos personas en el mismo turno.
+    const sesion = {
+        ultimaActividad: Date.now(),
+        onTerminada,
+        soloSiLeLlaman,
+        permitirAudioSalida: true,
+        turnoTranscripcion: "",
+        hablanteActivo: null,
+        suscripciones: new Map(),
+    };
     sesiones.set(guildId, sesion);
 
     try {
@@ -353,48 +353,70 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
             log.warn(`Error pidiendo el saludo inicial: ${e.message}`);
         }
 
-        // Entrada: todo lo que diga quien ha pedido /conversación mientras dure la llamada. Se
-        // suscribe reactivamente al primer "empieza a hablar" (igual que services/stt.js), no
-        // al conectar: suscribirse antes de que Discord asocie el audio a este usuario no
-        // captura nada (visto en producción: la sesión se abría pero nunca recibía tu voz).
-        // EndBehaviorType.Manual no corta sola, así que una sola suscripción vale para toda la
-        // llamada, aunque haya silencios entre frases.
+        // Entrada: cualquiera del canal puede hablarle, no solo quien pidió /conversación. Cada
+        // persona se suscribe reactivamente al primer "empieza a hablar" (igual que
+        // services/stt.js), no al conectar: suscribirse antes de que Discord asocie el audio a
+        // ese usuario no captura nada (visto en producción: la sesión se abría pero nunca
+        // recibía audio). EndBehaviorType.Manual no corta sola, así que una sola suscripción por
+        // persona vale para toda la llamada, aunque haya silencios entre frases.
         const receiver = connection.receiver;
-        const targetUserId = interaction.user.id;
-        let suscrito = false;
-        // Con la detección automática desactivada, Gemini corta la sesión con "Precondition
-        // check failed" si le llega audio FUERA de un activityStart/activityEnd — y eso pasa de
-        // verdad: el "end" de Discord y el último trozo de audio decodificado no llegan
-        // perfectamente a la vez (el decoder de Opus puede soltar algún trozo con el stream ya
-        // "parado"). Esta bandera corta ese audio sobrante en vez de mandarlo de todos modos.
-        let hablando = false;
+
+        // Quién es, para decírselo a Gemini antes de su turno (igual que el chat de texto, que
+        // resuelve el perfil de quien habla con cada mensaje) — mismo sistema de perfiles/apodos
+        // que usa consultar_perfil_persona.
+        function identificarHablante(userId) {
+            const member = interaction.guild.members.cache.get(userId);
+            const perfil = perfiles.perfilDe(member ? member.user : { id: userId });
+            const nombre = perfil?.name || member?.displayName || member?.user?.username || "alguien";
+            return { nombre, perfilTexto: perfil ? buildPersonProfileText(perfil) : null };
+        }
+
+        // Cualquiera del canal puede hablarle, no solo quien pidió /conversación — pero de uno
+        // en uno: mientras sesion.hablanteActivo esté puesto, se ignora a quien más empiece a
+        // hablar (no hay forma de mezclar a dos personas en el mismo turno de Gemini).
         const onSpeakingStart = (userId) => {
-            if (userId !== targetUserId) return;
+            if (sesion.hablanteActivo) return;
+            sesion.hablanteActivo = userId;
             // Nuevo turno: hasta que no se oiga la palabra de llamada (si el modo la exige), se
             // ignora la respuesta. El saludo inicial ya se reprodujo con permitirAudioSalida en
-            // true desde el principio, así que esto solo afecta a partir de que el usuario habla.
+            // true desde el principio, así que esto solo afecta a partir de que alguien habla.
             sesion.turnoTranscripcion = "";
             sesion.avisoIgnoradoEsteTurno = false;
             sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
-            // Esto es lo que le dice a Gemini que empieza el turno del usuario — se manda cada
-            // vez que habla, no solo la primera.
-            hablando = true;
+
+            const { nombre, perfilTexto } = identificarHablante(userId);
+            try {
+                // turnComplete: false para que esto no dispare una respuesta por sí solo — solo
+                // deja constancia de quién habla antes de que llegue su audio de verdad. Mezclar
+                // sendClientContent con audio en tiempo real dentro del mismo turno no está 100%
+                // garantizado por la Live API, pero es la única forma de decirle quién habla.
+                liveSession.sendClientContent({
+                    turns: `(Quien va a hablar ahora es ${nombre}${perfilTexto ? `. Esto es lo que sabes de ${nombre}: ${perfilTexto}` : ""}.)`,
+                    turnComplete: false,
+                });
+            } catch (e) {
+                log.warn(`Error identificando a ${userId} ante Gemini: ${e.message}`);
+            }
+            // Esto es lo que le dice a Gemini que empieza el turno — se manda cada vez que
+            // alguien habla, no solo la primera.
             try {
                 liveSession.sendRealtimeInput({ activityStart: {} });
             } catch (e) {
                 log.warn(`Error avisando a Gemini de que ${userId} ha empezado a hablar: ${e.message}`);
             }
-            if (suscrito) return;
-            suscrito = true;
-            log.info(`${userId} ha empezado a hablar: suscribiendo captura de audio.`);
+
+            if (sesion.suscripciones.has(userId)) return;
+            log.info(`${userId} (${nombre}) ha empezado a hablar: suscribiendo captura de audio.`);
             const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
             opusStream.on("error", (e) => log.warn(`Error leyendo el audio entrante (opus) de ${userId}: ${e.message}`));
-            sesion.opusStream = opusStream;
+            sesion.suscripciones.set(userId, opusStream);
             const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
             pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
             pcmStream.on("data", (chunk) => {
                 marcarActividad();
-                if (!hablando) return; // trozo sobrante fuera del activityStart/activityEnd: se descarta, no se manda
+                // Trozo sobrante fuera de su activityStart/activityEnd (del decoder, con el
+                // stream ya "parado"), o de alguien que no tiene el turno: no se manda.
+                if (sesion.hablanteActivo !== userId) return;
                 sesion.chunksAudioEntrada = (sesion.chunksAudioEntrada || 0) + 1;
                 if (sesion.chunksAudioEntrada === 1) {
                     log.info(`Primer trozo de audio de ${userId} capturado (${chunk.length} bytes) — mandándolo a Gemini.`);
@@ -415,8 +437,8 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         // fiable como señal de fin de turno que esperar a que Gemini la adivine de un audio con
         // huecos (sin paquetes durante los silencios, no hay "silencio" que analizar).
         const onSpeakingEnd = (userId) => {
-            if (userId !== targetUserId) return;
-            hablando = false;
+            if (sesion.hablanteActivo !== userId) return;
+            sesion.hablanteActivo = null;
             try {
                 liveSession.sendRealtimeInput({ activityEnd: {} });
             } catch (e) {
