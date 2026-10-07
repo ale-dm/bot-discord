@@ -3,11 +3,19 @@
 // systems/apuestas.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const jugadas = require("../systems/apuestas/misJugadas");
+const { marcadorDe } = require("../systems/apuestas/marcador");
 const { filaPestanas } = require("./pestanasJuegos");
 
 const EMOJI_JUEGO = { blackjack: "🃏", tragaperras: "🎰", slots: "🎰", ruleta: "🎡", adivinar: "🔮", ppt: "✂️" };
 const fecha = (iso) => new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-const eleccionTexto = (a) => (a.eleccion === "home" ? a.home_team : a.eleccion === "draw" ? "Empate" : a.away_team);
+const eleccionTexto = (a) =>
+    marcadorDe(a.eleccion)
+        ? `Marcador exacto ${marcadorDe(a.eleccion)}`
+        : a.eleccion === "home"
+          ? a.home_team
+          : a.eleccion === "draw"
+            ? "Empate"
+            : a.away_team;
 const signo = (n) => `${n >= 0 ? "+" : ""}${n.toLocaleString("es")}`;
 // Discord corta los campos en 1.024 caracteres.
 const campo = (texto) => (texto.length > 1024 ? `${texto.slice(0, 1020)}…` : texto);

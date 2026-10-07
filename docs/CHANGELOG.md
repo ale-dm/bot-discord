@@ -2,6 +2,24 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎯 Apuesta al marcador exacto (F-AP-10, #7))
+
+En `/juegos` → ⚽ Apuestas, el detalle de cada partido tiene un cuarto botón, **🎯 Marcador exacto (×8)**: un formulario
+con los goles de cada equipo (0 a 20) y la cantidad. Si el partido acaba con ese marcador, se cobra **×8 lo apostado**.
+
+- **Premio fijo, no bote**: el issue dejaba elegir entre un premio fijo (p. ej. ×8) o un bote repartido como la
+  quiniela. Se ha hecho el fijo porque no depende de cuánta gente apueste (con un bote, quien acierta solo se lleva lo
+  suyo) y encaja con la liquidación de cada hora. `PREMIO` en `src/systems/apuestas/marcador.js`.
+- Se guarda como una apuesta a partido más (`apuestas_usuario`, elección `exacto_2-1` y cuota 8), sin tabla nueva:
+  así la liquidación, 📋 Mis jugadas, 📊 Stats, el recordatorio por DM, los resultados en el canal y la herramienta de
+  apuestas del Duende la tratan como cualquier otra. Solo cambia cómo se acierta (`marcador.acierta`) y cómo se
+  enseña ("Marcador exacto 2-1").
+- Se puede apostar a varios marcadores distintos del mismo partido, pero no dos veces al mismo (como con 1/X/2).
+- El marcador se compara con los goles de cada equipo buscados por nombre, como el resultado: si la API los da en otro
+  orden, se paga igual bien.
+- Tests nuevos en `tests/marcadorExacto.test.js` (botón y formulario, goles válidos, marcador repetido, liquidación
+  con la API simulada y Mis jugadas).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`

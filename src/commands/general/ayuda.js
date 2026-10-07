@@ -95,7 +95,7 @@ const SECCIONES = {
             ["juegos", "jugadas", "Mis jugadas", "📋"],
         ],
         texto: [
-            "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas.",
+            "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas. También al **🎯 marcador exacto**: si lo aciertas, ×8 lo apostado.",
             "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
             "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve.",
             "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego, con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto.",
