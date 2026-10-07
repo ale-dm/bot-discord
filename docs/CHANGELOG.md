@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (↩️ Cancelar una apuesta (F-AP-05, #4))
+
+En `/juegos` → 📋 Mis jugadas → ⏳ En juego hay un menú nuevo, **↩️ Cancelar una apuesta**, con tus apuestas a partidos
+que aún no han empezado. Al elegir una sale cuánto se devuelve y la comisión, con ↩️ Sí, cancélala y ◀ No, volver.
+
+- Se devuelve al 💵 efectivo lo apostado menos un **10 % de comisión** (redondeando hacia arriba, mínimo 1 🪙), que
+  desaparece. `COMISION_PCT` en `src/systems/apuestas/cancelar.js`.
+- Solo mientras el partido no haya empezado: se vuelve a comprobar al confirmar (un mensaje antiguo no sirve). La
+  apuesta se borra y la devolución se hace en la misma transacción, así que un doble clic no la devuelve dos veces.
+- La apuesta borrada no cuenta en 📊 Stats ni en los rankings; en 📜 Movimientos quedan la apuesta y la devolución
+  ("Apuesta cancelada: … (comisión de N)", tipo Apuestas). Después se puede volver a apostar a ese partido.
+- Solo la puede cancelar quien la hizo (los botones de Mis jugadas ya eran solo de quien los abrió).
+- Tests nuevos en `tests/cancelarApuesta.test.js` (apostar con el formulario de verdad, cancelar desde el panel, el
+  doble clic, un partido ya empezado y otra persona intentándolo).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
