@@ -9,7 +9,17 @@ const log = createLogger("VozEnVivo");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("conversación")
-        .setDescription("Empieza (o termina) una conversación de voz en directo con el Duende."),
+        .setDescription("Empieza (o termina) una conversación de voz en directo con el Duende.")
+        .addStringOption((option) =>
+            option
+                .setName("modo")
+                .setDescription("Por defecto solo contesta si dices 'Duende' al hablar. Solo se usa al empezar la llamada.")
+                .setRequired(false)
+                .addChoices(
+                    { name: "Solo si le llamas por su nombre (por defecto)", value: "mencion" },
+                    { name: "Siempre responde", value: "siempre" },
+                ),
+        ),
     async run(client, interaction) {
         if (!interaction.guildId) {
             await interaction.reply({ content: "Esto solo funciona en un servidor.", flags: MessageFlags.Ephemeral });
@@ -23,7 +33,9 @@ module.exports = {
         }
 
         await interaction.deferReply();
+        const soloSiLeLlaman = interaction.options.getString("modo") !== "siempre";
         const r = await liveVoz.empezarConversacion(interaction, {
+            soloSiLeLlaman,
             onTerminada: (motivo) => {
                 interaction.channel
                     ?.send(`🔴 Conversación en directo terminada${motivo ? ` (${motivo})` : ""}.`)
@@ -35,8 +47,9 @@ module.exports = {
             return;
         }
         log.info(`Conversación en directo empezada en ${r.voiceChannel.name} (pedida por ${interaction.user.tag})`);
+        const comoContesta = soloSiLeLlaman ? "Solo te contestará si dices «Duende» al hablar." : "Te contestará a todo lo que digas.";
         await interaction.editReply(
-            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. Habla cuando quieras; usa \`/conversación\` otra vez para terminarla.`,
+            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. ${comoContesta} Dile que cuelgue o usa \`/conversación\` otra vez para terminarla.`,
         );
     },
 };
