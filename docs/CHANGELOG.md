@@ -2,6 +2,29 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🐛 `/conversación` seguía muda: dos bugs más, en `prism-media`/ffmpeg)
+
+El arreglo anterior (suscripción reactiva a la voz de entrada) no era suficiente: ni siquiera el
+saludo inicial, que no depende de capturar audio de nadie, se oía — la salida estaba rota, no solo
+la entrada. Leyendo el código fuente de `prism-media` (`FFmpeg.js`) salieron dos bugs reales, de
+cómo se usa esa librería, no de Discord:
+
+- **`pipe:1` duplicado**: `prism.FFmpeg.create()` ya añade `pipe:1` solo al final de los
+  argumentos; el código también lo ponía, así que el comando de ffmpeg salía con `... pipe:1
+  pipe:1` y probablemente fallaba al arrancar. Se quita el que ponía este código (el de entrada,
+  `pipe:0`, sí hace falta: es nuestro).
+- **`ffmpeg.stdin.write(...)` no existe**: la clase `FFmpeg` de `prism-media` es un `Duplex` que
+  copia `write`/`end` directamente en la instancia (del stdin interno del proceso), no los deja
+  bajo `.stdin`. Esa línea lanzaba un `TypeError` cada vez que llegaba audio de Gemini —
+  silenciado porque estaba dentro de un `try/catch` sin relanzar, así que nunca se vio en el log
+  como lo que era. Ahora es `ffmpeg.write(...)`.
+- Añadidos `ffmpeg.on("error", ...)` y `player.on("error", ...)` para que un fallo de ffmpeg o del
+  reproductor de audio salga en el log en vez de quedarse callado.
+- Tests: `liveVoz` comprobaba la forma antigua (incorrecta) de la API de `prism-media`, así que no
+  pilló ninguno de los dos bugs — el mock de `FFmpeg` ahora tiene la forma real
+  (`write`/`end`/`on`/`destroy`, sin `.stdin`), con dos tests nuevos: que los argumentos no llevan
+  `pipe:1` duplicado, y que el audio de Gemini se escribe con `ffmpeg.write(...)` de verdad.
+
 ## 2026-10-07 (🐛 Dos bugs vistos en producción: `/trabajar` cortado y `/conversación` muda)
 
 Los dos, con el primer despliegue real de ayer.
