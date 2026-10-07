@@ -199,6 +199,10 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**⚽ Ranking de apostadores (F-AP-03, #2)**
+- [ ] `/perfil` → 🏆 Rankings → ⚽ Apostadores: salen quienes tienen al menos 5 apuestas resueltas, y el beneficio de
+      cada uno cuadra con el "Apuestas" de su `/juegos` → 📊 Stats.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el
