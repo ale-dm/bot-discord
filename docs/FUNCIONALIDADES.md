@@ -750,7 +750,7 @@ Duende siguen en `/duende set | add | remove`.
 
 | Variable | Por defecto | Qué controla |
 |---|---|---|
-| `DUENDE_LIVE_MODEL` | `gemini-live-2.5-flash-preview` | Modelo de audio bidireccional en tiempo real (no confundir con `GEMINI_TTS_MODEL`, que es por lotes) |
+| `DUENDE_LIVE_MODEL` | `gemini-3.8-live` | Modelo de audio bidireccional en tiempo real (no confundir con `GEMINI_TTS_MODEL`, que es por lotes) |
 | `DUENDE_LIVE_VOICE` | `DUENDE_TTS_VOICE` o `Charon` | Voz de `/conversación` |
 | `DUENDE_LIVE_IDLE_DISCONNECT_MS` | 300000 (5 min) | Corta la conversación tras este tiempo sin que nadie hable — se cobra mientras la conexión esté abierta, no solo al hablar |
 | `DUENDE_LIVE_MAX_DURATION_MS` | 1800000 (30 min) | Tope duro de duración, haya actividad o no |

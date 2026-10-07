@@ -2,7 +2,20 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
-## 2026-10-07 (🎯 Encontrado el motivo real de `/conversación` muda: el modelo pide v1alpha, no v1beta)
+## 2026-10-07 (🎯 El motivo real: el nombre del modelo estaba obsoleto, no la versión de la API)
+
+El cambio a `v1alpha` de la entrada anterior era un diagnóstico equivocado: en producción, el
+mismo error salió igual en `v1alpha` ("models/gemini-live-2.5-flash-preview is not found for API
+version v1alpha, or is not supported for bidiGenerateContent"). Si fallaba en las dos versiones,
+el problema nunca fue la versión — era el nombre del modelo, que ya no existe. `gemini-3.8-live`
+es el modelo de voz en directo actual (el mismo cambio de generación que ya se ve en
+`gemini-3.8-flash-tts`, que SÍ funciona para `/tts`), y según la documentación usa `v1beta` normal.
+
+- `DUENDE_LIVE_MODEL` por defecto: `gemini-live-2.5-flash-preview` → `gemini-3.8-live`.
+- Revertido `getGenAILive()`/`v1alpha` de la entrada anterior: `liveVoz.js` vuelve a usar
+  `getGenAI()` (v1beta), igual que el resto del bot.
+
+## 2026-10-07 (🎯 Encontrado el motivo real de `/conversación` muda: el modelo pide v1alpha, no v1beta — DESCARTADO, ver entrada de arriba)
 
 Con los logs de la ronda anterior, el primer intento en producción lo dejó clarísimo:
 
