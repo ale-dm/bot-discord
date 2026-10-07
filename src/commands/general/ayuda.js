@@ -51,7 +51,7 @@ const SECCIONES = {
             "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
             "`/perfil [usuario] [seccion]` — todo lo tuyo (o de otra persona) en pestañas: 👤 Perfil (nivel, progreso, rango, racha y recompensas de nivel) · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. Con Plex vinculado, 👤 Perfil → 🍿 Plex: tus horas, en qué idiomas lo ves y lo que te falta poco.",
             `**Logros**: ${CATALOG.length}, con recompensa en monedas; en 🏅 Logros se ven (también los secretos), se filtran por categoría o dificultad y se reclaman uno a uno o todos. Los de 🍿 Plex (horas vistas, películas, series, anime, maratones...) cuentan lo que ves si tienes la cuenta de Plex vinculada; además hay **trofeos** por terminar cada temporada, serie o saga, por géneros, directores y décadas, y los que crean los admins (algunos con fechas, como eventos), con lo raros que son; **por idioma**: en inglés, VOSE o castellano, y el anime doblado o en japonés con subtítulos; y **sociales**: la misma película que otro el mismo día, verlo en cuanto llega a Plex o ser el primero en ver un estreno. Cada uno tiene dificultad: 🟢 Fácil, 🟡 Normal o 🎰 Gordo del Plex (con rol al llegar a 1, 5 y 10, si los admins lo ponen). Lo que sale al importar tu historial da menos monedas. Con 🍿 Ocultar mis logros de Plex no se anuncian ni los ven los demás.`,
-            "**Rankings**: nivel, riqueza, casino, logros, TTCL y 🍿 Plex (logros, Gordos, políglota y horas), en una pantalla con un menú.",
+            "**Rankings**: nivel, riqueza, casino, logros, TTCL, 🍿 Plex (logros, Gordos, políglota y horas) y ⚽ apostadores (beneficio, acierto y racha), en una pantalla con un menú.",
         ],
     },
     economia: {
@@ -98,7 +98,7 @@ const SECCIONES = {
             "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas.",
             "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
             "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve.",
-            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego, con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto. Una apuesta a un partido que aún no ha empezado se puede ↩️ cancelar, con un 10 % de comisión.",
+            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego (cuánto, lo que podrías cobrar y tu beneficio del mes), con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto. Una apuesta a un partido que aún no ha empezado se puede ↩️ cancelar, con un 10 % de comisión.",
             "Se pagan solas cada hora cuando acaban los partidos, y te aviso por DM si ganas.",
         ],
     },

@@ -57,11 +57,26 @@ function filaVistas(userId, vista, deporteQuiniela = "laliga") {
     ];
 }
 
+/** 💼 Tu cartera (F-AP-04): lo que tienes en juego, lo que puedes cobrar de los partidos y el beneficio del mes. */
+function textoCartera(c) {
+    const partes = [];
+    if (c.partidos) partes.push(`${c.partidos} ${c.partidos === 1 ? "partido" : "partidos"}`);
+    if (c.quinielas) partes.push(`${c.quinielas} ${c.quinielas === 1 ? "quiniela" : "quinielas"}`);
+    return (
+        `💰 En juego: **${c.enJuego.toLocaleString("es")}** 🪙${partes.length ? ` (${partes.join(" y ")})` : ""}\n` +
+        (c.partidos
+            ? `🏆 Posible premio: **${c.posiblePremio.toLocaleString("es")}** 🪙 si aciertas tus partidos${c.quinielas ? " (sin la quiniela, que depende del bote)" : ""}\n`
+            : "") +
+        `📅 Beneficio de ${c.mes}: ${c.resueltasMes ? `**${signo(c.beneficioMes)}** 🪙 en ${c.resueltasMes} ${c.resueltasMes === 1 ? "apuesta resuelta" : "apuestas resueltas"}` : "nada resuelto todavía"}`
+    );
+}
+
 function vistaActivas(userId, embed) {
     const partidos = jugadas.partidosDe(userId, { pendientes: true });
     const quinielas = jugadas.quinielasDe(userId, { abiertas: true });
     const casino = jugadas.ultimasCasino(userId, 5);
     embed.setTitle("⏳ Lo que tienes en juego");
+    embed.setDescription(textoCartera(jugadas.cartera(userId)));
     embed.addFields({
         name: `⚽ Partidos (${partidos.length})`,
         value: campo(partidos.map(textoPartidoPendiente).join("\n\n") || "Ninguna apuesta pendiente."),
