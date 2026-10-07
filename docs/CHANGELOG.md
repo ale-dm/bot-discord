@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (💼 `/trabajar`)
+
+[F-EC-07](https://github.com/ale-dm/bot-discord/issues/48), idea nueva (no venía del backlog original).
+
+- **`/trabajar`**: ingreso con cooldown corto (30 min, `TRABAJAR_COOLDOWN_SEC`), distinto de la 🎁 recompensa
+  diaria (esa es gratis una vez al día; esto exige estar activo). Da 20-50 monedas al azar
+  (`TRABAJAR_BASE_MIN`/`MAX`) + 2 por nivel (`TRABAJAR_BONUS_NIVEL`), con un 12 % de las veces
+  (`TRABAJAR_PROB_FALLO`) de no dar nada.
+- El texto de "en qué has trabajado" lo escribe el Duende con Gemini **cada vez** (con su personalidad del
+  canal y el perfil de quien lo use, si tiene), no una frase fija de una lista.
+- Cooldown por persona con `guildSettings.checkAndConsumeLimit` (ya existía, sin usar en ningún sitio hasta
+  ahora — pensado justo para esto: cooldown + cupo diario opcional por `scope`).
+- Nuevo tipo de movimiento 💼 Trabajo en Movimientos (`dinero.js`).
+- Tests: 621 (de 616). Nuevos: `trabajar` (da dinero con el bonus de nivel correcto, no da nada cuando sale
+  mal, cooldown por persona, y que no rompe si falla la llamada a Gemini).
+
 ## 2026-10-06 (📢 Mensajes espontáneos del Duende)
 
 Pedido porque el server estaba "un poco muerto": que el Duende anime a la gente a hacer cosas sin que nadie le hable.
