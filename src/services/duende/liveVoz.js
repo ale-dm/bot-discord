@@ -162,7 +162,7 @@ function pararConversacion(guildId, motivo) {
  * Empieza una conversación de voz en directo en el canal de quien invoca.
  * @returns {Promise<{ok: true, voiceChannel: object} | {ok: false, error: string}>}
  */
-async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true } = {}) {
+async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true, soloEscuchaA = null } = {}) {
     const guildId = interaction.guildId;
     if (sesiones.has(guildId)) {
         return { ok: false, error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
@@ -187,10 +187,14 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
     // turno contenga PALABRA_LLAMADA (ver más abajo). hablanteActivo: userId de quien tiene el
     // turno abierto ahora mismo (null = nadie); mientras esté puesto, se ignora a cualquier otra
     // persona que empiece a hablar — por turnos, sin mezclar a dos personas en el mismo turno.
+    // soloEscuchaA: con mucha gente en el canal, escuchar a cualquiera se vuelve un caos (todos
+    // interrumpiéndose); con esto puesto, solo esa persona puede abrir turno, el resto se ignora
+    // igual que antes de soportar varias personas.
     const sesion = {
         ultimaActividad: Date.now(),
         onTerminada,
         soloSiLeLlaman,
+        soloEscuchaA,
         permitirAudioSalida: true,
         turnoTranscripcion: "",
         hablanteActivo: null,
@@ -375,6 +379,7 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         // en uno: mientras sesion.hablanteActivo esté puesto, se ignora a quien más empiece a
         // hablar (no hay forma de mezclar a dos personas en el mismo turno de Gemini).
         const onSpeakingStart = (userId) => {
+            if (sesion.soloEscuchaA && userId !== sesion.soloEscuchaA) return;
             if (sesion.hablanteActivo) return;
             sesion.hablanteActivo = userId;
             // Nuevo turno: hasta que no se oiga la palabra de llamada (si el modo la exige), se
