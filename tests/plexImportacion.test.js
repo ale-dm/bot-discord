@@ -257,7 +257,7 @@ test("la migración 018 añade la tabla y las columnas sin tocar lo que había",
     bd.prepare(
         "INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt) VALUES ('g', 'u', 'plex_pelis_1', 1, 5)",
     ).run();
-    expect(runMigrations(bd)).toBe(3); // 018 (este test) + 019 (notas/embeddings) + 020 (impuestos), ajenas a Plex
+    expect(runMigrations(bd)).toBe(4); // 018 (este test) + 019 (notas/embeddings) + 020 (impuestos) + 021 (robar), ajenas a Plex
     expect(bd.prepare("SELECT importado, completedAt FROM achievements_progress").get()).toEqual({ importado: 0, completedAt: 5 });
     const columnas = (t) =>
         bd

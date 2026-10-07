@@ -2,6 +2,31 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
+
+Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
+para quitarle efectivo a alguien, con un cooldown **global** de 2 horas por ladrón (a diferencia de
+`/trabajar`, que es por servidor — aquí no tenía sentido: el dinero ya es global).
+
+- La víctima necesita al menos 150 de efectivo para que merezca la pena robarle (si no llega, ni se
+  gasta el intento ni el cooldown). 65 % de probabilidad de éxito.
+- **Éxito**: roba del efectivo de la víctima (nunca del banco) entre 50-150 + 2 por nivel del ladrón,
+  sin pasar de lo que tenga. Sin aviso a la víctima en el momento — solo se nota en su saldo o sus
+  Movimientos.
+- **Fallo**: multa de 30-80 del propio efectivo del ladrón (o lo que tenga, si es menos).
+- Lo robado se guarda como **🥷 dinero negro** (columna nueva en `banco`), aparte del efectivo normal:
+  se puede gastar igual en tienda/casino/apuestas (`dinero.cobrarCombinado`: tira primero del negro y
+  completa con el efectivo normal si no llega — así el negro se va gastando en vez de quedarse siempre
+  acumulado), pero no se puede meter en el banco ni cuenta como patrimonio hasta blanquearse (negocios
+  de blanqueo, F-EC-06d, todavía sin hacer).
+- `/perfil` → 💰 Economía muestra el dinero negro como un tercer número, siempre visible (0 si no se ha
+  robado nunca). Panel admin → 🏦 Banco: modificar saldo y resetear usuario ya tienen en cuenta el
+  dinero negro.
+- Tests nuevos (`tests/robar.test.js`): éxito y fallo, tope al efectivo real de la víctima, tope a la
+  multa si el ladrón no tiene para pagarla, cooldown global (no por servidor) y por ladrón (no afecta a
+  otros), y que no gastar el intento cuando la víctima no llega al mínimo. Más tests del saldo combinado
+  en `tests/dinero.test.js` (negro primero, luego efectivo, todo o nada, fuera del total/ranking).
+
 ## 2026-10-07 (🏛️ Motor de impuestos configurable (F-EC-06a): primera pieza de la economía de robos/blanqueo)
 
 Primera entrega del backlog de economía (#37): un motor de impuestos genérico y configurable por servidor,

@@ -159,6 +159,7 @@ test("quedan 14 comandos, sin los de admin sueltos", () => {
             "paneladmin",
             "perfil",
             "ping",
+            "robar",
             "tienda",
             "trabajar",
             "tts",

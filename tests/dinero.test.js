@@ -4,6 +4,7 @@ const db = require("../src/core/db");
 const { crearBaraja, handValue, esBlackjack } = require("../src/systems/blackjack");
 const xp = require("../src/systems/xpSystem");
 const { cobrarCompra } = require("../src/systems/tienda");
+const dinero = require("../src/systems/dinero");
 
 const c = (value) => ({ value, suit: "♠️", display: String(value) });
 
@@ -112,5 +113,43 @@ describe("tienda: cobro de una compra", () => {
     test("stock ilimitado (null) no se agota", () => {
         expect(cobrarCompra("tarde", G, item({ stock: null }))).toBe(true);
         expect(saldo("tarde")).toBe(700);
+    });
+});
+
+describe("dinero negro (F-EC-06b): se gasta como el efectivo, pero se tira de él primero", () => {
+    test("saldoGastable suma efectivo y negro", () => {
+        dinero.pagar("gastable1", 500);
+        dinero.pagarNegro("gastable1", 200);
+        expect(dinero.saldoGastable("gastable1")).toBe(dinero.INICIAL + 500 + 200);
+    });
+
+    test("cobrarCombinado tira primero del dinero negro", () => {
+        dinero.pagar("combinado1", 0); // asegura la cuenta: efectivo = INICIAL
+        dinero.pagarNegro("combinado1", 100);
+        expect(dinero.cobrarCombinado("combinado1", 60)).toBe(true);
+        expect(dinero.negro("combinado1")).toBe(40);
+        expect(dinero.efectivo("combinado1")).toBe(dinero.INICIAL); // no ha tocado el efectivo normal
+    });
+
+    test("si el negro no llega, completa con el efectivo normal", () => {
+        dinero.pagar("combinado2", 0);
+        dinero.pagarNegro("combinado2", 30);
+        expect(dinero.cobrarCombinado("combinado2", 100)).toBe(true);
+        expect(dinero.negro("combinado2")).toBe(0);
+        expect(dinero.efectivo("combinado2")).toBe(dinero.INICIAL - 70); // los 70 que faltaban
+    });
+
+    test("si ni sumando los dos llega, no cobra nada (todo o nada)", () => {
+        dinero.pagar("combinado3", 0);
+        dinero.pagarNegro("combinado3", 10);
+        expect(dinero.cobrarCombinado("combinado3", dinero.INICIAL + 11)).toBe(false);
+        expect(dinero.negro("combinado3")).toBe(10);
+        expect(dinero.efectivo("combinado3")).toBe(dinero.INICIAL);
+    });
+
+    test("el dinero negro no cuenta en el total ni en los más ricos", () => {
+        dinero.pagar("negrofuera", 0);
+        dinero.pagarNegro("negrofuera", 5000);
+        expect(dinero.cuenta("negrofuera").total).toBe(dinero.INICIAL);
     });
 });

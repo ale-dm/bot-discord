@@ -277,19 +277,17 @@ function descontarApuesta(userId, cantidad, guildId = null) {
         }
     }
 
-    transaccionSegura(userId, (userBanco) => {
-        const validacion = validarApuesta(cantidad, userBanco.saldo, guildId);
-        if (!validacion.valida) {
-            resultado.mensaje = validacion.mensaje;
+    transaccionSegura(userId, () => {
+        // Se cobra con saldoGastable (efectivo + dinero negro, F-EC-06b): la validación de
+        // arriba ya lo comprobó, pero puede haber cambiado entre medias (otra apuesta a la vez).
+        if (!dinero.cobrarCombinado(userId, cantidad)) {
+            resultado.mensaje = "❌ No te llega el efectivo para esa apuesta. Saca dinero del banco (💵 Sacar).";
             return false;
         }
 
-        const nuevoSaldo = userBanco.saldo - cantidad;
-        db.prepare("UPDATE banco SET enMano = ? WHERE userId = ?").run(nuevoSaldo, userId);
-
-        resultado.saldoRestante = nuevoSaldo;
+        resultado.saldoRestante = dinero.saldoGastable(userId);
         resultado.exito = true;
-        log.info(`Apuesta descontada: ${userId} - Cantidad: ${cantidad} - Saldo restante: ${nuevoSaldo}`);
+        log.info(`Apuesta descontada: ${userId} - Cantidad: ${cantidad} - Saldo restante: ${resultado.saldoRestante}`);
         return true;
     });
 
@@ -316,16 +314,14 @@ function descontarExtra(userId, cantidad, guildId = null) {
         resultado.mensaje = "❌ La cantidad debe ser mayor que cero.";
         return resultado;
     }
-    transaccionSegura(userId, (userBanco) => {
-        if (userBanco.saldo < cantidad) {
+    transaccionSegura(userId, () => {
+        if (!dinero.cobrarCombinado(userId, cantidad)) {
             resultado.mensaje = "❌ No te llega el efectivo para eso. Saca dinero del banco (💵 Sacar).";
             return false;
         }
-        const nuevoSaldo = userBanco.saldo - cantidad;
-        db.prepare("UPDATE banco SET enMano = ? WHERE userId = ?").run(nuevoSaldo, userId);
-        resultado.saldoRestante = nuevoSaldo;
+        resultado.saldoRestante = dinero.saldoGastable(userId);
         resultado.exito = true;
-        log.info(`Apuesta extra descontada: ${userId} - Cantidad: ${cantidad} - Saldo restante: ${nuevoSaldo}`);
+        log.info(`Apuesta extra descontada: ${userId} - Cantidad: ${cantidad} - Saldo restante: ${resultado.saldoRestante}`);
         return true;
     });
     if (resultado.exito) {
@@ -336,13 +332,14 @@ function descontarExtra(userId, cantidad, guildId = null) {
 }
 
 /**
- * El 💵 efectivo de alguien (con lo que se juega). Si no tenía cuenta, se le crea.
+ * Con lo que alguien puede jugar: efectivo + dinero negro (F-EC-06b, se gasta igual). Si no tenía
+ * cuenta, se le crea.
  * @param {string} userId - ID del usuario
  * @returns {number}
  */
 function obtenerSaldo(userId) {
     try {
-        return dinero.efectivo(userId);
+        return dinero.saldoGastable(userId);
     } catch (error) {
         log.error(`Error obteniendo saldo para ${userId}:`, error);
         return 0;

@@ -317,8 +317,8 @@ module.exports = {
         const userId = interaction.user.id;
         // Quien aún no tiene cuenta empieza con el saldo inicial (como en el casino); antes le salía
         // "saldo insuficiente" hasta que usara otro comando que le creara la cuenta.
-        // Se apuesta con el 💵 efectivo (systems/dinero).
-        if (dinero.efectivo(userId) < cantidad) {
+        // Se apuesta con el 💵 efectivo + 🥷 dinero negro (systems/dinero, F-EC-06b: se gasta igual).
+        if (dinero.saldoGastable(userId) < cantidad) {
             const errorEmbed = new EmbedBuilder()
                 .setColor(0xe74c3c)
                 .setTitle("❌ No te llega el efectivo")
@@ -386,7 +386,7 @@ module.exports = {
         // Descontar saldo y registrar la apuesta, todo o nada (antes eran dos escrituras sueltas:
         // si fallaba la segunda, se cobraba una apuesta que no existía).
         const cobrada = db.transaction(() => {
-            if (!dinero.cobrar(userId, cantidad)) return false;
+            if (!dinero.cobrarCombinado(userId, cantidad)) return false;
             db.prepare(
                 `
                 INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota)

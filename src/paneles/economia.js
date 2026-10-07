@@ -72,12 +72,15 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
         .setDescription(
             (aviso ? `${aviso}\n\n` : "") +
                 "💵 El **efectivo** es lo que se gasta: casino, apuestas, tienda, cripto y transferencias. " +
-                "🏦 El **banco** es el sitio seguro: ahí no se gasta, hay que sacarlo antes.",
+                "🏦 El **banco** es el sitio seguro: ahí no se gasta, hay que sacarlo antes. " +
+                "🥷 El **dinero negro** es lo robado con `/robar`: se gasta igual en tienda/casino/apuestas, " +
+                "pero no se puede meter en el banco ni cuenta como patrimonio hasta blanquearse.",
         )
         .addFields(
             { name: "💵 Efectivo", value: `**${fmt(c.efectivo)}** 🪙`, inline: true },
             { name: "🏦 Banco", value: `**${fmt(c.banco)}** 🪙`, inline: true },
             { name: "💰 Total", value: `**${fmt(c.total)}** 🪙`, inline: true },
+            { name: "🥷 Dinero negro", value: `**${fmt(c.negro)}** 🪙`, inline: true },
             { name: "📈 Ganado en casino", value: `+${fmt(ganado)}`, inline: true },
             { name: "📉 Perdido en casino", value: `-${fmt(perdido)}`, inline: true },
             { name: "🎒 Objetos", value: fmt(objetos), inline: true },
