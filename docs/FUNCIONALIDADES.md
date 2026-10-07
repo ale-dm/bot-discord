@@ -494,6 +494,21 @@ Motor de impuestos configurable por servidor, sin ningún % fijo en el código. 
 - Si un servidor no tiene ninguna regla todavía, se le crea sola una por defecto (5 % sobre ingresos, al bote) la
   primera vez que hace falta calcular un impuesto o se abre el panel — para no empezar sin impuestos por descuido.
 
+### 🏆 Clasificación semanal con premios (F-EC-03)
+
+Cada **lunes a las 10:00** (hora de Madrid) se publica en el canal de la clasificación y se paga un premio al 💵 efectivo
+(500 🪙 por defecto, tipo 🏆 Premios en Movimientos, con el impuesto de ingresos del servidor) a:
+
+- 💰 **El más rico**: más efectivo + banco en ese momento (el dinero es global, como 🏆 Rankings → Riqueza).
+- 💬 **El más activo**: más XP ganada en el servidor desde la clasificación anterior (la primera, desde que se instaló).
+- ⚽ **El mejor apostador**: más beneficio en las apuestas resueltas la semana anterior, de lunes a domingo (partidos por
+  el día del partido, quinielas por el día en que se cerraron), solo si ganó algo.
+
+Se menciona a los premiados (solo a ellos les llega el aviso), y una misma persona puede llevarse más de un premio. Si
+una categoría no tiene a nadie (nadie ha ganado XP o nadie ha ganado apostando), no se da. Se configura en `/paneladmin`
+→ ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio y quién ganaría si fuera
+ahora.
+
 ---
 
 ## 8. Casino
@@ -665,7 +680,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
-| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
+| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏆 Semanal**: canal y premio de la [clasificación semanal](#-clasificación-semanal-con-premios-f-ec-03), y quién ganaría si fuera ahora · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, crear y borrar trofeos de admin (también con fechas), 🪙 % de la importación (y cuántos vinculados están importando), 🎰 Roles de Gordos y 🔍 Idiomas (diagnóstico) |
 | 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |
@@ -710,7 +725,7 @@ Duende siguen en `/duende set | add | remove`.
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
 | 17:00 (Madrid) | Aviso de "racha en peligro" por DM |
-| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal (comprobado cada hora de los lunes y al arrancar; una vez por semana) |
+| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal y 🏆 clasificación semanal con premios (comprobados cada hora de los lunes y al arrancar; una vez por semana) |
 
 ---
 

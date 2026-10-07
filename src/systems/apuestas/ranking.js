@@ -1,5 +1,6 @@
 // Ranking de apostadores (F-AP-03): beneficio, % de acierto y mejor racha de cada uno, con lo que ya se guarda de cada
-// apuesta (su premio: 0 si se perdió). Lo enseña /perfil → 🏆 Rankings → ⚽ Apostadores.
+// apuesta (su premio: 0 si se perdió). Lo enseña /perfil → 🏆 Rankings → ⚽ Apostadores; el de una semana
+// (beneficioEntre), la clasificación semanal con premios (F-EC-03).
 //
 // El beneficio es el mismo que el de 📊 Stats (partidos y quinielas ya resueltos, ver misJugadas.estadisticas); el
 // acierto y la racha, solo de las apuestas a partidos (una quiniela no se gana o se pierde entera).
@@ -59,4 +60,46 @@ function ranking({ limite = 10, minimo = MIN_RESUELTAS } = {}) {
         .slice(0, limite);
 }
 
-module.exports = { MIN_RESUELTAS, mejorRacha, cifras, ranking };
+const formatoDia = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" });
+const diaDe = (fecha) => formatoDia.format(new Date(fecha));
+
+/**
+ * El beneficio de cada uno en lo resuelto entre dos días (AAAA-MM-DD, hora de Madrid, ambos incluidos): partidos por el día
+ * del partido y quinielas por el día en que se cerraron (las devueltas cuentan como recuperadas). De más a menos; solo
+ * quien tiene algo resuelto esos días. Lo usa la clasificación semanal (F-EC-03) para el mejor apostador.
+ * @returns {{ userId: string, beneficio: number, resueltas: number }[]}
+ */
+function beneficioEntre(desde, hasta) {
+    // Un día de margen en SQL (las fechas son texto ISO en UTC) y el día exacto, en hora de Madrid.
+    const margenDesde = new Date(Date.parse(`${desde}T00:00:00Z`) - 86400 * 1000).toISOString();
+    const margenHasta = new Date(Date.parse(`${hasta}T00:00:00Z`) + 2 * 86400 * 1000).toISOString();
+    const enRango = (f) => diaDe(f.fecha) >= desde && diaDe(f.fecha) <= hasta;
+    const partidos = db
+        .prepare(
+            `SELECT a.user_id, a.cantidad, a.premio, p.start_time AS fecha FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
+             WHERE p.estado = 'finalizado' AND a.premio IS NOT NULL AND p.start_time >= ? AND p.start_time < ?`,
+        )
+        .all(margenDesde, margenHasta)
+        .filter(enRango);
+    const quinielas = db
+        .prepare(
+            `SELECT qa.user_id, qa.cantidad, qa.premio, q.cerrada_en AS fecha,
+                (q.estado = 'caducada' OR NOT EXISTS (SELECT 1 FROM quiniela_apuestas x WHERE x.quiniela_id = q.id AND x.premio > 0)) AS devuelta
+             FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id
+             WHERE q.estado != 'abierta' AND q.cerrada_en >= ? AND q.cerrada_en < ?`,
+        )
+        .all(margenDesde, margenHasta)
+        .filter(enRango);
+    const porUsuario = new Map();
+    const sumar = (userId, beneficio) => {
+        const u = porUsuario.get(userId) || { userId, beneficio: 0, resueltas: 0 };
+        u.beneficio += beneficio;
+        u.resueltas++;
+        porUsuario.set(userId, u);
+    };
+    for (const a of partidos) sumar(a.user_id, a.premio - a.cantidad);
+    for (const q of quinielas) sumar(q.user_id, (q.devuelta ? q.cantidad : q.premio) - q.cantidad);
+    return [...porUsuario.values()].sort((a, b) => b.beneficio - a.beneficio || b.resueltas - a.resueltas);
+}
+
+module.exports = { MIN_RESUELTAS, mejorRacha, cifras, ranking, beneficioEntre };
