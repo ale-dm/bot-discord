@@ -24,6 +24,27 @@ con los goles de cada equipo (0 a 20) y la cantidad. Si el partido acaba con ese
 - Tests nuevos en `tests/marcadorExacto.test.js` (botón y formulario, goles válidos, marcador repetido, liquidación
   con la API simulada y Mis jugadas).
 
+## 2026-10-07 (🚦 Límites por jugador en las apuestas (F-AP-09, #6))
+
+Dos límites nuevos en `/paneladmin` → ⚽ Apuestas → 🚦 Límites (con su línea en el resumen del panel). Los dos vienen a 0
+(sin límite), como el cupo diario del casino y de la tienda, así que nada cambia hasta que un admin los ponga.
+
+- **Tope diario**: lo que cada uno puede apostar en un día (hora de Madrid), sumando partidos y quiniela. Sale del
+  historial (lo apostado se apunta en negativo con tipo `apuestas`), así que no hace falta guardar la fecha de cada
+  apuesta; lo cobrado o devuelto no resta.
+- **Máximo por partido**: lo que cada uno puede tener apostado a un mismo partido, sumando sus apuestas a distintos
+  resultados.
+- El sistema de límites del casino (`checkAndConsumeLimit`) cuenta **partidas**, no monedas, así que no servía tal
+  cual: se reutiliza la forma de configurarlo (ajustes por servidor `apuestas.tope_diario` y `apuestas.max_partido`,
+  formulario del panel con "0 sin límite" y auditoría), y la cuenta va en `src/systems/apuestas/limites.js`.
+- Se comprueba justo antes de cobrar, sin esperas por medio: dos formularios enviados a la vez no pueden pasarse del
+  límite entre los dos. Si se pasa, no se cobra nada y el mensaje dice cuánto queda ("como mucho puedes apostar **30**
+  🪙 más hasta mañana").
+- Las apuestas son globales pero los límites son por servidor: vale el del servidor donde se envía el formulario.
+- Tests nuevos en `tests/limitesApuestas.test.js` (los dos límites con los formularios de verdad de partidos y
+  quiniela, el día en hora de Madrid y el panel). Al escribirlos salió que las etiquetas del formulario se pasaban
+  de los 45 caracteres que admite Discord; se acortaron antes de llegar a producción.
+
 ## 2026-10-07 (↩️ Cancelar una apuesta (F-AP-05, #4))
 
 En `/juegos` → 📋 Mis jugadas → ⏳ En juego hay un menú nuevo, **↩️ Cancelar una apuesta**, con tus apuestas a partidos

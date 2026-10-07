@@ -204,6 +204,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Apostar a un marcador y verlo en 📋 Mis jugadas ("Marcador exacto 2-1 · … @8"); cuando se liquide, que pague ×8 si
       se acertó (y que el resto de apuestas a ese partido se paguen como siempre).
 
+**🚦 Límites de apuestas (F-AP-09, #6)**
+- [ ] `/paneladmin` → ⚽ Apuestas → 🚦 Límites: poner un tope diario y un máximo por partido; salen en la línea 🚦 del panel.
+- [ ] Apostar a un partido más del máximo (en una o en dos apuestas a distintos resultados): no deja y dice cuánto queda.
+- [ ] Apostar en partidos y en la quiniela hasta el tope diario: la siguiente no deja hasta el día siguiente.
+
 **↩️ Cancelar una apuesta (F-AP-05, #4)**
 - [ ] Apostar 100 a un partido que aún no ha empezado; en 📋 Mis jugadas → ↩️ Cancelar una apuesta, elegirla: dice que
       devuelve 90. Confirmar: llegan 90 al efectivo y en 📜 Movimientos sale "Apuesta cancelada: … (comisión de 10)".
