@@ -13,11 +13,15 @@ const mockConnection = () => ({
     destroy: jest.fn(),
     on: jest.fn(),
 });
+let mockPcmStreamListeners;
 const mockOpusStream = () => {
     const listeners = {};
     return {
         on: jest.fn((ev, cb) => (listeners[ev] = cb)),
-        pipe: jest.fn(() => ({ on: jest.fn((ev, cb) => (listeners[ev] = cb)) })),
+        pipe: jest.fn(() => {
+            mockPcmStreamListeners = {};
+            return { on: jest.fn((ev, cb) => (mockPcmStreamListeners[ev] = cb)) };
+        }),
         destroy: jest.fn(),
     };
 };
@@ -205,6 +209,19 @@ test("avisa a Gemini del inicio y fin del turno con las señales de 'hablando' d
 
     mockConnectionActual.receiver.speaking.emit("end", i.user.id);
     expect(mockLiveSession.sendRealtimeInput).toHaveBeenCalledWith({ activityEnd: {} });
+});
+
+test("descarta el audio que llega después del activityEnd (Gemini corta la sesión si se le escapa alguno)", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    mockConnectionActual.receiver.speaking.emit("end", i.user.id);
+    mockLiveSession.sendRealtimeInput.mockClear();
+
+    // Un trozo "atrasado" del decoder de Opus, llegado con el stream ya "parado" según Discord.
+    mockPcmStreamListeners.data(Buffer.from("audio-atrasado"));
+
+    expect(mockLiveSession.sendRealtimeInput).not.toHaveBeenCalledWith(expect.objectContaining({ media: expect.anything() }));
 });
 
 test("el aviso de inicio/fin de turno se manda cada vez que habla, no solo la primera (a diferencia de la suscripción de audio)", async () => {
