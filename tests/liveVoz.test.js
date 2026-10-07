@@ -280,15 +280,81 @@ test("una herramienta desconocida no rompe la respuesta", async () => {
     expect(functionResponses[0].response).toEqual({ error: "Herramienta desconocida." });
 });
 
-test("las declaraciones de herramientas incluyen las básicas siempre", () => {
+test("las declaraciones de herramientas incluyen las básicas siempre, y colgar_llamada (solo tiene sentido en la llamada)", () => {
     const declaraciones = liveVoz.construirDeclaracionesHerramientas(G, "canal-texto");
     expect(declaraciones.some((d) => d.name === "consultar_saldo")).toBe(true);
+    expect(declaraciones.some((d) => d.name === "colgar_llamada")).toBe(true);
 });
 
 test("las instrucciones de sistema recuerdan usar las herramientas sea cual sea la personalidad", () => {
     const instrucciones = liveVoz.construirInstruccionesSistema("canal-texto");
     expect(instrucciones).toMatch(/úsalas siempre/);
     expect(instrucciones).toMatch(/conversación de voz en directo/);
+});
+
+test("las instrucciones de sistema incluyen a quien habla cuando se le pasa, y dicen cómo preguntar por otra persona", () => {
+    const conHablante = liveVoz.construirInstruccionesSistema("canal-texto", { nombre: "Ale", perfilTexto: "le gusta el fútbol" });
+    expect(conHablante).toMatch(/Ale/);
+    expect(conHablante).toMatch(/le gusta el fútbol/);
+    expect(conHablante).toMatch(/consultar_perfil_persona/);
+
+    const sinHablante = liveVoz.construirInstruccionesSistema("canal-texto");
+    expect(sinHablante).toMatch(/consultar_perfil_persona/);
+});
+
+test("al conectar, las instrucciones de sistema incluyen el nombre de quien pide la conversación", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    const { config } = mockConnect.mock.calls.at(-1)[0];
+    expect(config.systemInstruction).toMatch(new RegExp(i.user.username, "i"));
+});
+
+test("si Gemini pide colgar_llamada, termina la conversación y responde ok", async () => {
+    const i = interaccionEnVoz();
+    const onTerminada = jest.fn();
+    await liveVoz.empezarConversacion(i, { onTerminada });
+    expect(liveVoz.hayConversacionActiva(G)).toBe(true);
+
+    mockLiveCallbacks.onmessage({ toolCall: { functionCalls: [{ id: "call-x", name: "colgar_llamada", args: {} }] } });
+
+    expect(liveVoz.hayConversacionActiva(G)).toBe(false);
+    expect(onTerminada).toHaveBeenCalledWith("pedido por voz");
+    expect(mockLiveSession.sendToolResponse).toHaveBeenCalledWith({
+        functionResponses: [{ id: "call-x", name: "colgar_llamada", response: { ok: true } }],
+    });
+});
+
+test("modo 'solo si le llaman' (por defecto): sin decir la palabra de llamada, se ignora la respuesta de Gemini", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    mockLiveCallbacks.onmessage({ serverContent: { inputTranscription: { text: "qué tiempo hace hoy" } } });
+
+    mockLiveCallbacks.onmessage({ data: Buffer.from("respuesta-ignorada").toString("base64") });
+
+    expect(mockFFmpegActual.write).not.toHaveBeenCalledWith(Buffer.from("respuesta-ignorada"));
+});
+
+test("modo 'solo si le llaman': en cuanto dice 'duende' en el turno, deja pasar la respuesta", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    mockLiveCallbacks.onmessage({ serverContent: { inputTranscription: { text: "oye duende, qué tiempo hace" } } });
+
+    mockLiveCallbacks.onmessage({ data: Buffer.from("respuesta-permitida").toString("base64") });
+
+    expect(mockFFmpegActual.write).toHaveBeenCalledWith(Buffer.from("respuesta-permitida"));
+});
+
+test("modo 'siempre' (soloSiLeLlaman: false): contesta aunque no se diga 'duende'", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i, { soloSiLeLlaman: false });
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    mockLiveCallbacks.onmessage({ serverContent: { inputTranscription: { text: "qué tal" } } });
+
+    mockLiveCallbacks.onmessage({ data: Buffer.from("respuesta").toString("base64") });
+
+    expect(mockFFmpegActual.write).toHaveBeenCalledWith(Buffer.from("respuesta"));
 });
 
 test("DUENDE_TOOL_EXECUTORS sigue teniendo consultar_saldo (si cambia de nombre, este test avisa)", () => {

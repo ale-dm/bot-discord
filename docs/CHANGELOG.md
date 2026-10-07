@@ -2,6 +2,35 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🗣️ `/conversación` ya funciona de verdad: reconoce a la gente, modo "solo si le llaman" y colgar por voz)
+
+Con `/conversación` funcionando de extremo a extremo, tres mejoras pedidas tras probarlo en real:
+
+- **No reconocía a nadie**: a diferencia del chat de texto (`duende.js`, que inyecta el perfil de
+  quien habla y de cualquier persona mencionada en cada mensaje), la llamada de voz nunca mandaba
+  ningún perfil — el `systemInstruction` se fija una sola vez al conectar. Ahora sí lleva el
+  perfil de quien pide la conversación (resuelve "quién soy"), y se añade una herramienta nueva,
+  `consultar_perfil_persona`, para que Gemini pueda consultar la de cualquier otra persona por
+  nombre — mismo mecanismo que ya usa para Plex/saldo/ranking.
+- **Modo "solo si le llaman"**: por defecto (`/conversación modo: mención`, o sin indicar nada),
+  el Duende sigue escuchando todo pero solo contesta si dices "Duende" en la frase — pensado para
+  que ruido de fondo o un clic que Discord confunda con que estás hablando no le haga interrumpir
+  o repetirse. `modo: siempre` vuelve al comportamiento de antes (contesta a todo). Se implementa
+  con la transcripción de entrada que ya se recibía (antes solo se logueaba): en cuanto el turno
+  actual contiene "duende", se deja pasar la respuesta; si no, se descarta sin reproducirla (se
+  sigue pagando esa llamada a Gemini, pero no se oye).
+- **Colgar por voz**: herramienta nueva `colgar_llamada` (solo tiene sentido en la llamada, no
+  en el chat de texto) — si le pides que se vaya o cuelgue, termina la conversación igual que
+  `/conversación` otra vez.
+- Tests nuevos: `consultar_perfil_persona` (por nombre y con "yo"), las instrucciones de sistema
+  incluyen a quien habla, `colgar_llamada` termina la conversación, y los tres casos del modo
+  mención (sin decir "duende" se ignora, diciéndolo se deja pasar, `modo: siempre` contesta a
+  todo).
+
+Pendiente, para otra ronda: el propio "ruido confundido con que hablas" (Discord marca "hablando"
+con cualquier sonido que pase su sensibilidad, no solo voz real) — el modo mención amortigua el
+síntoma (ya no interrumpe/repite tan molesto), pero la causa de fondo seguiría sin optimizar.
+
 ## 2026-10-07 (🎯 `Precondition check failed` seguía saliendo: campo equivocado para el audio)
 
 La bandera `hablando` de la entrada anterior no lo arregló — en producción, el mismo corte volvió
