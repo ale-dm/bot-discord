@@ -11,10 +11,12 @@ const mockConnection = () => ({
     receiver: { subscribe: jest.fn(() => mockOpusStream()), speaking: new EventEmitter() },
     subscribe: jest.fn(),
     destroy: jest.fn(),
+    on: jest.fn(),
 });
 const mockOpusStream = () => {
     const listeners = {};
     return {
+        on: jest.fn((ev, cb) => (listeners[ev] = cb)),
         pipe: jest.fn(() => ({ on: jest.fn((ev, cb) => (listeners[ev] = cb)) })),
         destroy: jest.fn(),
     };

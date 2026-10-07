@@ -172,6 +172,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                     /* ya estaba muerta */
                 }
             }
+            log.info(`Uniéndose al canal de voz ${voiceChannel.name} (${guildId})...`);
             connection = joinVoiceChannel({
                 channelId: voiceChannel.id,
                 guildId,
@@ -179,22 +180,34 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                 selfDeaf: false,
             });
             await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+            log.info(`Conexión de voz lista en ${voiceChannel.name}.`);
         }
+        connection.on("stateChange", (oldS, newS) => log.debug(`Voz: estado de conexión ${oldS.status} -> ${newS.status}`));
+        connection.on("error", (e) => log.warn(`Error en la conexión de voz: ${e.message}`));
         sesion.connection = connection;
 
         // Salida: un ffmpeg para toda la llamada, del PCM 24kHz mono que manda Gemini al
         // 48kHz estéreo que espera @discordjs/voice en crudo (StreamType.Raw). prism-media
         // añade "pipe:1" él solo al final de args (ver su FFmpeg.create): ponerlo aquí también
         // lo duplicaba y rompía el comando.
-        const ffmpeg = new prism.FFmpeg({
-            args: ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2"],
-        });
+        const ffmpegArgs = ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2"];
+        log.debug(`Lanzando ffmpeg para la salida de voz en directo: ${ffmpegArgs.join(" ")}`);
+        const ffmpeg = new prism.FFmpeg({ args: ffmpegArgs });
         ffmpeg.on("error", (e) => log.warn(`Error en ffmpeg (salida de voz en directo): ${e.message}`));
+        let bytesSalidaFfmpeg = 0;
+        ffmpeg.on("data", (chunk) => {
+            bytesSalidaFfmpeg += chunk.length;
+            if (bytesSalidaFfmpeg === chunk.length) {
+                log.info(`ffmpeg ha generado los primeros ${chunk.length} bytes de audio (ya convertidos a 48kHz estéreo).`);
+            }
+        });
         sesion.ffmpeg = ffmpeg;
         const player = createAudioPlayer();
         player.on("error", (e) => log.warn(`Error en el reproductor de voz en directo: ${e.message}`));
+        player.on("stateChange", (oldS, newS) => log.info(`Reproductor de voz en directo: ${oldS.status} -> ${newS.status}`));
         const resource = createAudioResource(ffmpeg, { inputType: StreamType.Raw, inlineVolume: true });
-        connection.subscribe(player);
+        const subscription = connection.subscribe(player);
+        log.debug(`connection.subscribe(player) -> ${subscription ? "ok" : "undefined (¿la conexión no estaba lista?)"}`);
         player.play(resource);
 
         const marcarActividad = () => {
@@ -216,16 +229,22 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                 onopen: () => log.info(`Conversación en directo abierta en ${voiceChannel.name} (${interaction.guild.name})`),
                 onmessage: (message) => {
                     marcarActividad();
+                    log.debug(`Mensaje de Gemini Live: ${Object.keys(message).join(", ") || "(vacío)"}`);
                     if (message.toolCall) {
                         responderLlamadasHerramientas(liveSession, message.toolCall, toolContext).catch((e) =>
                             log.warn(`Error respondiendo herramientas en voz en directo: ${e.message}`),
                         );
                     }
                     if (message.data) {
+                        sesion.chunksAudioSalida = (sesion.chunksAudioSalida || 0) + 1;
+                        const buf = Buffer.from(message.data, "base64");
+                        if (sesion.chunksAudioSalida === 1) {
+                            log.info(`Primer trozo de audio de Gemini recibido (${buf.length} bytes) — pasándolo a ffmpeg.`);
+                        }
                         try {
                             // La clase FFmpeg de prism-media pone write/end directamente en la
                             // instancia (copiados del stdin interno): no existe .stdin.
-                            ffmpeg.write(Buffer.from(message.data, "base64"));
+                            ffmpeg.write(buf);
                         } catch (e) {
                             log.warn(`Error pasando el audio de Gemini a ffmpeg: ${e.message}`);
                         }
@@ -237,11 +256,15 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                         log.debug(`Usuario (voz en directo): ${message.serverContent.inputTranscription.text}`);
                     }
                 },
-                onerror: (e) => log.warn(`Error en la conversación en directo: ${e?.message || e}`),
-                onclose: () => log.debug(`Conversación en directo cerrada (socket) en el servidor ${guildId}`),
+                onerror: (e) => log.warn(`Error en la conversación en directo: ${e?.message || JSON.stringify(e)}`),
+                onclose: (e) =>
+                    log.warn(
+                        `Conversación en directo cerrada (socket) en el servidor ${guildId}${e ? `: ${e.reason || e.code || JSON.stringify(e)}` : ""}`,
+                    ),
             },
         });
         sesion.liveSession = liveSession;
+        log.info(`Sesión de Gemini Live conectada (modelo ${LIVE_MODEL}, voz ${LIVE_VOICE}).`);
 
         // Saludo inicial: además de quedar más natural, confirma que la salida de audio
         // funciona nada más conectar, sin esperar a que alguien hable primero.
@@ -266,11 +289,18 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         const onSpeakingStart = (userId) => {
             if (userId !== targetUserId || suscrito) return;
             suscrito = true;
+            log.info(`${userId} ha empezado a hablar: suscribiendo captura de audio.`);
             const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
+            opusStream.on("error", (e) => log.warn(`Error leyendo el audio entrante (opus) de ${userId}: ${e.message}`));
             sesion.opusStream = opusStream;
             const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
+            pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
             pcmStream.on("data", (chunk) => {
                 marcarActividad();
+                sesion.chunksAudioEntrada = (sesion.chunksAudioEntrada || 0) + 1;
+                if (sesion.chunksAudioEntrada === 1) {
+                    log.info(`Primer trozo de audio de ${userId} capturado (${chunk.length} bytes) — mandándolo a Gemini.`);
+                }
                 try {
                     liveSession.sendRealtimeInput({ media: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
                 } catch (e) {
@@ -295,7 +325,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
     } catch (err) {
         sesiones.delete(guildId);
         limpiarSesion(sesion);
-        log.warn(`No se pudo empezar la conversación en directo: ${err.message}`);
+        log.warn(`No se pudo empezar la conversación en directo: ${err.stack || err.message}`);
         return { ok: false, error: "No se pudo conectar. Inténtalo otra vez en un momento." };
     }
 }
