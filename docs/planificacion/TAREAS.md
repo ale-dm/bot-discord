@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🕐 Tono del Duende (F-DU-02, #13)**
+- [ ] Config Global → 🤖 Duende → 🕐 Tono: poner un canal formal y hablarle allí: contesta sin tacos.
+- [ ] Activar la madrugada con una franja que incluya la hora actual (p. ej. de la hora de ahora a una más) y hablarle:
+      más borde. Dejarlo después como se quiera (00 a 07 por defecto).
+
 **⭐ Partido destacado del día (F-AP-07, #5)**
 - [ ] Con canal de resultados puesto, un día con partidos: a las 10:00 (o al arrancar si es más tarde) sale el ⭐ en el
       canal, con un partido de hoy (`Partido destacado del … en …` en el log). Pulsar un resultado abre el formulario.

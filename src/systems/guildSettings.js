@@ -10,6 +10,10 @@ const DEFAULT_FLAT = {
     "duende.allowed_channel_id": "",
     "duende.espontaneo_enabled": 1,
     "duende.espontaneo_channel_id": "",
+    "duende.madrugada_activa": false,
+    "duende.madrugada_desde": 0,
+    "duende.madrugada_hasta": 7,
+    "duende.canales_formales": "",
 
     "cripto.ttcl_base_price": 100,
     "cripto.ttcl_volatility": 40,
@@ -85,6 +89,10 @@ const KEY_TYPES = {
     "duende.allowed_channel_id": "string",
     "duende.espontaneo_enabled": "number",
     "duende.espontaneo_channel_id": "string",
+    "duende.madrugada_activa": "boolean",
+    "duende.madrugada_desde": "number",
+    "duende.madrugada_hasta": "number",
+    "duende.canales_formales": "string",
 
     "cripto.ttcl_base_price": "number",
     "cripto.ttcl_volatility": "number",
@@ -176,6 +184,10 @@ function flattenToNested(flat) {
             allowed_channel_id: flat["duende.allowed_channel_id"],
             espontaneo_enabled: !!flat["duende.espontaneo_enabled"],
             espontaneo_channel_id: flat["duende.espontaneo_channel_id"],
+            madrugada_activa: flat["duende.madrugada_activa"],
+            madrugada_desde: flat["duende.madrugada_desde"],
+            madrugada_hasta: flat["duende.madrugada_hasta"],
+            canales_formales: flat["duende.canales_formales"],
         },
         cripto: {
             ttcl_base_price: flat["cripto.ttcl_base_price"],
