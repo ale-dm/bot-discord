@@ -16,10 +16,11 @@ const {
     EndBehaviorType,
 } = require("@discordjs/voice");
 const prism = require("prism-media");
-const { Modality } = require("@google/genai");
+const { Modality, Type: SchemaType } = require("@google/genai");
 const { getGenAI } = require("../geminiClient");
 const { createLogger } = require("../../core/logger");
 const perfiles = require("../../systems/duende/perfiles");
+const { buildPersonProfileText } = require("../../systems/duende/personas");
 const tautulliClient = require("../tautulliClient");
 const seerrClient = require("../seerrClient");
 const {
@@ -40,6 +41,8 @@ const IDLE_DISCONNECT_MS = Number(process.env.DUENDE_LIVE_IDLE_DISCONNECT_MS || 
 // Tope duro, pase lo que pase, por si algo falla y la sesión se queda colgada sin más.
 const MAX_DURATION_MS = Number(process.env.DUENDE_LIVE_MAX_DURATION_MS || 30 * 60 * 1000);
 const IDLE_CHECK_INTERVAL_MS = 15_000;
+// Palabra para que el Duende conteste en modo "solo si le llaman" (ver empezarConversacion).
+const PALABRA_LLAMADA = /\bduende\b/i;
 
 // guildId -> sesión en curso. Una conversación en directo a la vez por servidor.
 const sesiones = new Map();
@@ -48,15 +51,26 @@ function hayConversacionActiva(guildId) {
     return sesiones.has(guildId);
 }
 
+// Solo tiene sentido en una llamada de voz, no en el chat de texto: no va en herramientas.js.
+const DUENDE_LIVE_TOOL_DECLARATIONS = [
+    {
+        name: "colgar_llamada",
+        description:
+            "Cuelga y sale de esta llamada de voz en directo. Llámala solo cuando te lo pidan explícitamente (p. ej. 'vete', 'cuelga', 'desconéctate', 'adiós, puedes irte').",
+        parameters: { type: SchemaType.OBJECT, properties: {} },
+    },
+];
+
 // Mismas herramientas que el chat de texto (services/duende/gemini.js), con la misma regla de
 // qué Plex/Seerr se permite según el canal de TEXTO desde donde se pide /conversación (el de voz
-// no tiene lista de permitidos propia).
+// no tiene lista de permitidos propia), más las propias de la llamada (colgar).
 function construirDeclaracionesHerramientas(guildId, channelId) {
     const hasChannelCtx = guildId && channelId;
     const plexAllowed = hasChannelCtx && tautulliClient.isChannelAllowed(guildId, channelId);
     const seerrAllowed = hasChannelCtx && seerrClient.isChannelAllowed(guildId, channelId);
     return [
         ...DUENDE_CORE_TOOL_DECLARATIONS,
+        ...DUENDE_LIVE_TOOL_DECLARATIONS,
         ...(plexAllowed ? DUENDE_PLEX_TOOL_DECLARATIONS : []),
         ...(seerrAllowed ? DUENDE_SEERR_TOOL_DECLARATIONS : []),
     ];
@@ -64,15 +78,29 @@ function construirDeclaracionesHerramientas(guildId, channelId) {
 
 // A diferencia del chat de texto (duende.js), la sesión de Gemini Live solo acepta un
 // systemInstruction fijo al conectar, no uno distinto por mensaje: se construye una vez aquí.
-function construirInstruccionesSistema(channelId) {
+// `hablante` ({nombre, perfilTexto}) es quien ha pedido /conversación — a diferencia del chat de
+// texto (que resuelve el perfil de quien habla y de cualquier persona mencionada en cada mensaje
+// con detectMentionedPersons), aquí solo se puede dar el de quien habla, de una vez, al conectar;
+// para preguntar por cualquier otra persona está la herramienta consultar_perfil_persona.
+function construirInstruccionesSistema(channelId, hablante) {
     const persona = perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(channelId));
     const base = persona ? persona.systemInstructions : perfiles.instruccionDefault;
-    return (
+    const piezas = [
         `${base} Esto es una conversación de voz en directo, no texto escrito: responde corto y de forma natural, ` +
-        "como hablarías en persona, sin markdown ni listas. Si tienes herramientas disponibles que te den datos " +
-        "reales (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad; no te " +
-        "niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede."
-    );
+            "como hablarías en persona, sin markdown ni listas. Si tienes herramientas disponibles que te den datos " +
+            "reales (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad; no te " +
+            "niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede.",
+    ];
+    if (hablante?.nombre) {
+        piezas.push(
+            `Quien te habla en esta llamada se llama ${hablante.nombre}` +
+                (hablante.perfilTexto ? `. Esto es lo que sabes de ${hablante.nombre}: ${hablante.perfilTexto}` : "") +
+                " (si pregunta quién es, ya lo sabes). Para cualquier otra persona, usa consultar_perfil_persona.",
+        );
+    } else {
+        piezas.push("Si te preguntan quién es alguien (incluida la persona que te habla), usa consultar_perfil_persona.");
+    }
+    return piezas.join(" ");
 }
 
 /** Ejecuta las llamadas a herramientas que pide Gemini Live y le manda el resultado. Exportada para poder probarla sin un socket real. */
@@ -140,7 +168,7 @@ function pararConversacion(guildId, motivo) {
  * Empieza una conversación de voz en directo en el canal de quien invoca.
  * @returns {Promise<{ok: true, voiceChannel: object} | {ok: false, error: string}>}
  */
-async function empezarConversacion(interaction, { onTerminada } = {}) {
+async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true } = {}) {
     const guildId = interaction.guildId;
     if (sesiones.has(guildId)) {
         return { ok: false, error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
@@ -158,9 +186,16 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
     const channelId = interaction.channelId;
     const toolContext = { guildId, userId: interaction.user.id, guild: interaction.guild, channelId };
     const declaraciones = construirDeclaracionesHerramientas(guildId, channelId);
-    const systemInstruction = construirInstruccionesSistema(channelId);
+    const perfilHablante = perfiles.perfilDe(interaction.user);
+    const systemInstruction = construirInstruccionesSistema(channelId, {
+        nombre: perfilHablante?.name || interaction.user.username,
+        perfilTexto: perfilHablante ? buildPersonProfileText(perfilHablante) : null,
+    });
 
-    const sesion = { ultimaActividad: Date.now(), onTerminada };
+    // sesion.permitirAudioSalida empieza en true para que el saludo inicial siempre se oiga;
+    // con soloSiLeLlaman, onSpeakingStart lo pone en false hasta que la transcripción de ese
+    // turno contenga PALABRA_LLAMADA (ver más abajo).
+    const sesion = { ultimaActividad: Date.now(), onTerminada, soloSiLeLlaman, permitirAudioSalida: true, turnoTranscripcion: "" };
     sesiones.set(guildId, sesion);
 
     try {
@@ -244,13 +279,34 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                     marcarActividad();
                     log.debug(`Mensaje de Gemini Live: ${Object.keys(message).join(", ") || "(vacío)"}`);
                     if (message.toolCall) {
-                        responderLlamadasHerramientas(liveSession, message.toolCall, toolContext).catch((e) =>
-                            log.warn(`Error respondiendo herramientas en voz en directo: ${e.message}`),
-                        );
+                        const llamadas = message.toolCall.functionCalls || [];
+                        const colgar = llamadas.find((fc) => fc.name === "colgar_llamada");
+                        if (colgar) {
+                            liveSession.sendToolResponse({
+                                functionResponses: [{ id: colgar.id, name: colgar.name, response: { ok: true } }],
+                            });
+                            log.info(`Colgando la llamada en el servidor ${guildId}: pedido por voz.`);
+                            pararConversacion(guildId, "pedido por voz");
+                        }
+                        const resto = llamadas.filter((fc) => fc.name !== "colgar_llamada");
+                        if (resto.length) {
+                            responderLlamadasHerramientas(liveSession, { ...message.toolCall, functionCalls: resto }, toolContext).catch(
+                                (e) => log.warn(`Error respondiendo herramientas en voz en directo: ${e.message}`),
+                            );
+                        }
                     }
                     if (message.data) {
-                        sesion.chunksAudioSalida = (sesion.chunksAudioSalida || 0) + 1;
                         const buf = Buffer.from(message.data, "base64");
+                        if (!sesion.permitirAudioSalida) {
+                            if (!sesion.avisoIgnoradoEsteTurno) {
+                                sesion.avisoIgnoradoEsteTurno = true;
+                                log.debug(
+                                    `Se ignora la respuesta de Gemini: no le han dicho "duende" en este turno (modo solo si le llaman).`,
+                                );
+                            }
+                            return;
+                        }
+                        sesion.chunksAudioSalida = (sesion.chunksAudioSalida || 0) + 1;
                         if (sesion.chunksAudioSalida === 1) {
                             log.info(`Primer trozo de audio de Gemini recibido (${buf.length} bytes) — pasándolo a ffmpeg.`);
                         }
@@ -266,7 +322,14 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                         log.debug(`Duende (voz en directo): ${message.serverContent.outputTranscription.text}`);
                     }
                     if (message.serverContent?.inputTranscription?.text) {
-                        log.debug(`Usuario (voz en directo): ${message.serverContent.inputTranscription.text}`);
+                        const texto = message.serverContent.inputTranscription.text;
+                        log.debug(`Usuario (voz en directo): ${texto}`);
+                        sesion.turnoTranscripcion += texto;
+                        // En cuanto se oye la palabra de llamada en este turno, se deja pasar la
+                        // respuesta — no hace falta esperar a que acabe de hablar para decidirlo.
+                        if (sesion.soloSiLeLlaman && PALABRA_LLAMADA.test(sesion.turnoTranscripcion)) {
+                            sesion.permitirAudioSalida = true;
+                        }
                     }
                 },
                 onerror: (e) => log.warn(`Error en la conversación en directo: ${e?.message || JSON.stringify(e)}`),
@@ -307,6 +370,12 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         let hablando = false;
         const onSpeakingStart = (userId) => {
             if (userId !== targetUserId) return;
+            // Nuevo turno: hasta que no se oiga la palabra de llamada (si el modo la exige), se
+            // ignora la respuesta. El saludo inicial ya se reprodujo con permitirAudioSalida en
+            // true desde el principio, así que esto solo afecta a partir de que el usuario habla.
+            sesion.turnoTranscripcion = "";
+            sesion.avisoIgnoradoEsteTurno = false;
+            sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
             // Esto es lo que le dice a Gemini que empieza el turno del usuario — se manda cada
             // vez que habla, no solo la primera.
             hablando = true;

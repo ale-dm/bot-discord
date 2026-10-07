@@ -6,7 +6,8 @@ const achievementsSystem = require("../../systems/achievementsSystem");
 const plexLinks = require("../../systems/plexLinks");
 const tautulliClient = require("../tautulliClient");
 const seerrClient = require("../seerrClient");
-const { resolveNameToDiscordId } = require("../../systems/duende/personas");
+const { resolveNameToDiscordId, buildPersonProfileText } = require("../../systems/duende/personas");
+const perfiles = require("../../systems/duende/perfiles");
 const { getTtclPrecio } = require("../../systems/cripto/mercado");
 
 // ─── Herramientas del Duende (function calling) ────────────────────────────
@@ -356,6 +357,21 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
             "Consulta si el usuario que te está hablando ahora mismo puede cobrar hoy la recompensa diaria (🎁 Diario, en /perfil → Economía) y cuánto le daría según su racha. Solo consulta: cobrarla la tiene que hacer él con el botón.",
         parameters: { type: SchemaType.OBJECT, properties: {} },
     },
+    {
+        name: "consultar_perfil_persona",
+        description:
+            "Consulta qué sabes de una persona del servidor por su nombre o apodo: su descripción y las notas que tengas sobre ella. Úsala cuando te pregunten quién es alguien, o te hablen de alguien y no la ubiques de memoria — incluida la persona que te está hablando ahora, si pregunta por sí misma.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona: {
+                    type: SchemaType.STRING,
+                    description: "Nombre o apodo de la persona, tal cual se ha usado en la conversación (o 'yo' si pregunta por sí misma)",
+                },
+            },
+            required: ["persona"],
+        },
+    },
 ];
 
 const DUENDE_TOOL_EXECUTORS = {
@@ -472,6 +488,22 @@ const DUENDE_TOOL_EXECUTORS = {
             veces_cobrada: e.veces,
             donde: "/perfil → 💰 Economía → 🎁 Diario",
         };
+    },
+    consultar_perfil_persona(args, ctx) {
+        if (!ctx.guild) return { error: "Solo disponible en servidores." };
+        const nombre = String(args?.persona || "").trim();
+        if (!nombre) return { error: "Falta el nombre de la persona." };
+
+        const esQuienHabla = /^(yo|y[oó]\s*mism[oa]|m[ií])$/i.test(nombre);
+        const discordId = esQuienHabla ? ctx.userId : resolveNameToDiscordId(nombre, ctx.guild);
+        if (!discordId) return { encontrado: false, nota: `No identifico a "${nombre}" entre los miembros del server.` };
+
+        const perfil = perfiles.perfilPorDiscordId(discordId);
+        const info = perfil ? buildPersonProfileText(perfil) : "";
+        if (!info) return { encontrado: false, nota: "No tengo ninguna nota ni descripción guardada de esa persona." };
+
+        const member = ctx.guild.members.cache.get(discordId);
+        return { encontrado: true, nombre: member?.displayName || perfil?.name || nombre, info };
     },
 
     async consultar_actividad_plex(args, ctx) {

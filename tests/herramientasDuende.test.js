@@ -42,6 +42,7 @@ test("están declaradas para Gemini junto a las básicas", () => {
         "consultar_mis_apuestas",
         "consultar_partidas_casino",
         "consultar_recompensa_diaria",
+        "consultar_perfil_persona",
     ]) {
         expect(nombres).toContain(n);
         expect(typeof h[n]).toBe("function");
@@ -83,4 +84,40 @@ test("la recompensa diaria solo se consulta, no se cobra", () => {
     expect(r).toMatchObject({ activa: true, puede_cobrar_hoy: true, cantidad: 100 });
     expect(h.consultar_recompensa_diaria({}, ctx).puede_cobrar_hoy).toBe(true);
     expect(db.prepare("SELECT COUNT(*) AS n FROM recompensa_diaria").get().n).toBe(0);
+});
+
+function guildConMiembros(miembros) {
+    const cache = new Map(miembros.map((m) => [m.id, m]));
+    cache.find = (fn) => [...cache.values()].find(fn);
+    return { id: "g-perfil", members: { cache } };
+}
+
+test("consultar_perfil_persona encuentra a alguien conocido por su nombre", () => {
+    db.prepare(
+        "INSERT INTO duende_perfiles (discord_id, username, nombre, descripcion) VALUES ('555', 'coneyo', 'Coneyo', 'Es el gracioso del grupo')",
+    ).run();
+    const guild = guildConMiembros([{ id: "555", user: { id: "555", username: "coneyo" }, displayName: "Coneyo" }]);
+
+    expect(h.consultar_perfil_persona({ persona: "Coneyo" }, { ...ctx, guild })).toMatchObject({
+        encontrado: true,
+        nombre: "Coneyo",
+        info: "Es el gracioso del grupo",
+    });
+});
+
+test("consultar_perfil_persona con 'yo' consulta el perfil de quien habla", () => {
+    db.prepare(
+        "INSERT INTO duende_perfiles (discord_id, username, nombre, descripcion) VALUES ('habla', 'habla', 'Habla', 'Habla mucho')",
+    ).run();
+    const guild = guildConMiembros([{ id: "habla", user: { id: "habla", username: "habla" }, displayName: "Habla" }]);
+
+    expect(h.consultar_perfil_persona({ persona: "yo" }, { ...ctx, guild })).toMatchObject({ encontrado: true, info: "Habla mucho" });
+});
+
+test("consultar_perfil_persona no inventa a alguien que no identifica", () => {
+    const guild = guildConMiembros([]);
+    expect(h.consultar_perfil_persona({ persona: "nadie_de_este_server" }, { ...ctx, guild })).toEqual({
+        encontrado: false,
+        nota: expect.stringContaining("No identifico"),
+    });
 });
