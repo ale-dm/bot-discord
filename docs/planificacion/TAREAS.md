@@ -199,6 +199,65 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🛡️ Objetos antirrobo (F-EC-06c, #79)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 023_objetos_antirrobo`; en la tienda salen el Candado y la Trampa para ladrones.
+      Decidir si los precios (150 y 100) valen o cambiarlos en 🛒 Catálogo.
+- [ ] Con dos cuentas: una compra el candado y la trampa y la otra le hace `/robar` — el mensaje lo dice y se le gastan
+      del inventario como toca.
+
+**🤖 Cambio automático de modelo de Gemini (F-AD-03, #39)**
+- [ ] Revisar `GEMINI_FALLBACK_MODELS` en el stack (por defecto `gemini-2.5-flash,gemini-2.5-pro`): que sean modelos que existan.
+- [ ] Poner en Config Global → 🤖 Duende un modelo que no exista y reiniciar: en el log `Modelo de Gemini cambiado solo de …
+      a …`, llega la alerta "🤖 He cambiado el modelo de Gemini" y el panel ya enseña el nuevo.
+
+**📊 Resumen semanal para admins (F-AD-02, #38)**
+- [ ] `/paneladmin` → 🩺 Sistema → 🔔 Alertas → 📊 Resumen semanal: los errores y comandos cuadran con los logs.
+- [ ] El lunes a las 09:00 llega por DM a quien recibe las alertas (en el log, `Resumen semanal enviado a N/N admins`).
+
+**🎉 Eventos temporales (F-EC-02, #34)**
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎉 Eventos: activar la happy hour con las horas de ahora mismo; en `/perfil` sale
+      "⚡ Happy hour" y un mensaje da el doble de XP (mirarlo en el log de XP o en la barra).
+- [ ] Activar el fin de semana del casino un sábado o domingo: 🎰 Casino lo dice arriba y una victoria paga más.
+
+**🕐 Tono del Duende (F-DU-02, #13)**
+- [ ] Config Global → 🤖 Duende → 🕐 Tono: poner un canal formal y hablarle allí: contesta sin tacos.
+- [ ] Activar la madrugada con una franja que incluya la hora actual (p. ej. de la hora de ahora a una más) y hablarle:
+      más borde. Dejarlo después como se quiera (00 a 07 por defecto).
+
+**⭐ Partido destacado del día (F-AP-07, #5)**
+- [ ] Con canal de resultados puesto, un día con partidos: a las 10:00 (o al arrancar si es más tarde) sale el ⭐ en el
+      canal, con un partido de hoy (`Partido destacado del … en …` en el log). Pulsar un resultado abre el formulario.
+- [ ] `/paneladmin` → ⚽ Apuestas → ⭐ Quitar el destacado: al día siguiente no sale.
+
+**🎯 Marcador exacto (F-AP-10, #7)**
+- [ ] `/juegos` → ⚽ Apuestas → un partido → 🎯 Marcador exacto: el formulario pide los goles de cada equipo y la cantidad.
+- [ ] Apostar a un marcador y verlo en 📋 Mis jugadas ("Marcador exacto 2-1 · … @8"); cuando se liquide, que pague ×8 si
+      se acertó (y que el resto de apuestas a ese partido se paguen como siempre).
+
+**🚦 Límites de apuestas (F-AP-09, #6)**
+- [ ] `/paneladmin` → ⚽ Apuestas → 🚦 Límites: poner un tope diario y un máximo por partido; salen en la línea 🚦 del panel.
+- [ ] Apostar a un partido más del máximo (en una o en dos apuestas a distintos resultados): no deja y dice cuánto queda.
+- [ ] Apostar en partidos y en la quiniela hasta el tope diario: la siguiente no deja hasta el día siguiente.
+
+**↩️ Cancelar una apuesta (F-AP-05, #4)**
+- [ ] Apostar 100 a un partido que aún no ha empezado; en 📋 Mis jugadas → ↩️ Cancelar una apuesta, elegirla: dice que
+      devuelve 90. Confirmar: llegan 90 al efectivo y en 📜 Movimientos sale "Apuesta cancelada: … (comisión de 10)".
+- [ ] Con un mensaje de Mis jugadas abierto desde antes de que empiece un partido, intentar cancelarla ya empezado: no deja.
+
+**💼 Cartera de apuestas (F-AP-04, #3)**
+- [ ] `/juegos` → 📋 Mis jugadas: arriba, lo que tienes en juego, el posible premio y el beneficio del mes, y que cuadren
+      con las apuestas de debajo y con 📋 Resueltas.
+
+**⚽ Ranking de apostadores (F-AP-03, #2)**
+- [ ] `/perfil` → 🏆 Rankings → ⚽ Apostadores: salen quienes tienen al menos 5 apuestas resueltas, y el beneficio de
+      cada uno cuadra con el "Apuestas" de su `/juegos` → 📊 Stats.
+
+**🏆 Clasificación semanal (F-EC-03, #35)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 022_clasificacion_semanal`.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🏆 Semanal: elegir el canal y el premio; "Si fuera ahora" tiene sentido.
+- [ ] El lunes a las 10:00: el mensaje en el canal, con aviso solo a los premiados, y en sus 📜 Movimientos el premio
+      (🏆 Premios) y su impuesto.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

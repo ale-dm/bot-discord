@@ -17,6 +17,7 @@ const {
 } = require("../../systems/duende/config");
 const { conversationHistory, saveHistory } = require("../../systems/duende/memoria");
 const perfiles = require("../../systems/duende/perfiles");
+const { ajusteDeTono } = require("../../systems/duende/tono");
 const { instruccionDefault } = perfiles;
 const { mentionizeKnownNames, buildPersonProfileText, detectMentionedPersons } = require("../../systems/duende/personas");
 const { generarConGemini, buildPromptFromParts, isGeminiProhibitedContentError } = require("../../services/duende/gemini");
@@ -370,6 +371,9 @@ module.exports = {
             // igualdad de condiciones. Ahora vive en el systemInstruction real de Gemini
             // (gemini.js), que no se puede pisar cambiando de personalidad.
             instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
+            // 🌙 Más borde de madrugada y 👔 más formal en ciertos canales (F-DU-02), encima de la personalidad que toque.
+            const tono = ajusteDeTono(interaction.guildId, channelId);
+            if (tono) instrucciones = `${instrucciones} ${tono}`;
 
             // Inicializa historial si no existe
             if (!conversationHistory[channelId]) conversationHistory[channelId] = [];

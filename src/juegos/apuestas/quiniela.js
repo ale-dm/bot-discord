@@ -11,6 +11,7 @@ const {
 } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
+const limites = require("../../systems/apuestas/limites");
 const { logInfo, logError } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { minimoAciertosQuiniela } = require("../../systems/apuestas/liquidacion");
@@ -537,6 +538,14 @@ module.exports = {
         const yaApostado = db.prepare(`SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?`).get(quinielaId, userId);
         if (yaApostado) {
             await interaction.reply({ content: "⚠️ Ya has apostado esta quiniela.", flags: MessageFlags.Ephemeral });
+            return;
+        }
+
+        // 🚦 Tope diario del servidor (F-AP-09), que suma partidos y quiniela. Justo antes de cobrar, sin await por medio.
+        const limite = limites.comprobar(interaction.guildId, userId, cantidad);
+        if (limite) {
+            logInfo(`[Quiniela] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
+            await interaction.reply({ content: `🚦 ${limite}`, flags: MessageFlags.Ephemeral });
             return;
         }
 

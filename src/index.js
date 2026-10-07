@@ -186,6 +186,19 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Ranking semanal de Plex (arranque)", () => require("./systems/plexRankingSemanal").enviarSiToca(client));
+    // 🏆 Clasificación semanal con premios (el más rico, el más activo y el mejor apostador): igual, los lunes desde las 10:00.
+    cron.schedule(
+        "0 * * * 1",
+        () => runJob("Clasificación semanal", () => require("./systems/clasificacionSemanal").publicarSiToca(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
+    runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 📊 Resumen semanal por DM a quien recibe las alertas: los lunes desde las 09:00 (igual: cada hora y al arrancar).
+    cron.schedule("0 * * * 1", () => runJob("Resumen semanal para admins", () => require("./systems/resumenAdmin").enviarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Resumen semanal para admins (arranque)", () => require("./systems/resumenAdmin").enviarSiToca(client));
     // Mensajes espontáneos del Duende para animar un server parado: de 11:00 a 23:00, con una
     // probabilidad baja cada vez (DUENDE_ESPONTANEO_PROB) y solo si el canal lleva un rato sin
     // mensajes de verdad. Se puede desactivar o elegir el canal en Config Global → Duende.
@@ -194,6 +207,14 @@ client.once("clientReady", async () => {
         () => runJob("Mensajes espontáneos del Duende", () => require("./systems/duende/espontaneo").revisarTodos(client)),
         { timezone: "Europe/Madrid", noOverlap: true },
     );
+    // ⭐ Partido destacado del día en el canal de resultados: desde las 10:00 (cada hora por si el bot estaba caído; solo
+    // una vez al día), y al arrancar por si no se ha publicado. Sin gastar créditos de la Odds API.
+    cron.schedule(
+        "0 10-20 * * *",
+        () => runJob("Partido destacado del día", () => require("./systems/apuestas/destacado").publicarSiToca(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
+    runJob("Partido destacado del día (arranque)", () => require("./systems/apuestas/destacado").publicarSiToca(client));
     // Recordatorio por DM antes de los partidos a los que se ha apostado.
     cron.schedule(
         "*/5 * * * *",
@@ -240,23 +261,11 @@ client.once("clientReady", async () => {
         5 * 60 * 1000,
     );
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
-    // inventado en el chat (una llamada a Gemini por modelo distinto).
+    // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia
+    // solo por uno que funcione (GEMINI_FALLBACK_MODELS) y se avisa a los admins.
     runJob("Comprobación del modelo de Gemini", async () => {
         if (!process.env.GOOGLE_API_KEY) return;
-        const { comprobarModelo, modeloDe } = require("./services/duende/gemini");
-        for (const modelo of new Set([...client.guilds.cache.keys()].map(modeloDe))) {
-            const r = await comprobarModelo(modelo);
-            if (r.ok) {
-                log.info(`Modelo de Gemini ${modelo}: funciona y usa herramientas (${r.ms} ms)`);
-                continue;
-            }
-            log.warn(`Modelo de Gemini ${modelo}: ${r.motivo}`);
-            await alertas.alertar({
-                clave: `gemini-modelo:${modelo}`,
-                titulo: "🤖 El modelo de Gemini no funciona bien",
-                detalle: `${r.motivo}\n\nCámbialo en /paneladmin → ⚙️ Config Global → 🤖 Duende → ✏️ Editar IA.`,
-            });
-        }
+        await require("./systems/duende/modeloGemini").comprobarAlArrancar([...client.guilds.cache.keys()]);
     });
     // Backfill roles para usuarios que subieron nivel antes de tener las recompensas configuradas
     for (const guild of client.guilds.cache.values()) {

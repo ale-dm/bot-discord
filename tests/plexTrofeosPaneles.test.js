@@ -323,7 +323,8 @@ describe("/perfil → 🏅 Logros", () => {
         // Los demás ven su perfil sin Plex, también en el resumen.
         const ajeno = perfilPanel.buildLogros(G, "disc-2", "disc-1", 0, true);
         expect(ajeno.embeds[0].data.description).not.toMatch(/\(plex/);
-        expect(ajeno.embeds[0].data.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
+        const ajenoPlex = perfilPanel.buildLogros(G, "disc-2", "disc-1", 0, true, "cat-plex");
+        expect(ajenoPlex.embeds[0].data.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
         const total = achievements.getSummary(G, "disc-1").total;
         expect(ajeno.embeds[0].data.fields[0].value).not.toMatch(new RegExp(`/${total} `));
         await pulsar(0);

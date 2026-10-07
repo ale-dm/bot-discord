@@ -182,7 +182,7 @@ const HERRAMIENTA_PRUEBA = {
 /**
  * Prueba un modelo como lo usa el Duende (herramientas en modo automático): pasó que un modelo retirado daba 404 y que
  * otro (flash-lite) no llamaba a las herramientas y el Duende se inventaba los datos.
- * @returns {Promise<{ ok: boolean, modelo: string, existe: boolean, usaHerramientas: boolean, ms: number, motivo?: string }>}
+ * @returns {Promise<{ ok: boolean, modelo: string, existe: boolean, usaHerramientas: boolean, ms: number, motivo?: string, error?: boolean }>}
  */
 async function comprobarModelo(modelo = GEMINI_MODEL) {
     const t0 = Date.now();
@@ -221,6 +221,8 @@ async function comprobarModelo(modelo = GEMINI_MODEL) {
             modelo,
             existe: !noExiste,
             usaHerramientas: false,
+            // Un error que no dice nada del modelo (cuota, timeout, red): no es motivo para cambiarlo (F-AD-03).
+            error: !noExiste,
             ms: Date.now() - t0,
             motivo: noExiste
                 ? `El modelo ${modelo} no existe o ya no está disponible.`

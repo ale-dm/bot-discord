@@ -7,6 +7,9 @@ const ctx = { guildId: G, userId: "habla", channelId: "c1" };
 const ahora = Date.now();
 
 beforeAll(() => {
+    // Desde un catálogo vacío: la migración 023 pone a la venta el candado y la trampa (F-EC-06c).
+    db.prepare("DELETE FROM tienda").run();
+    db.prepare("DELETE FROM objeto").run();
     const espada = db
         .prepare("INSERT INTO objeto (nombre, descripcion, tipo, rareza) VALUES ('Espada', 'Corta', 'coleccionable', 'épico')")
         .run().lastInsertRowid;
