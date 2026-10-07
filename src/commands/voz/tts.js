@@ -73,7 +73,7 @@ module.exports = {
         .addStringOption((option) =>
             option
                 .setName("voz")
-                .setDescription("Voz a utilizar (por defecto: Puck). El idioma se detecta solo a partir del texto.")
+                .setDescription("Voz a utilizar (por defecto: Charon). El idioma se detecta solo a partir del texto.")
                 .setRequired(false)
                 .addChoices(
                     { name: "Puck — Animada", value: "Puck" },

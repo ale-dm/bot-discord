@@ -28,7 +28,7 @@ const GEMINI_TTS_TOTAL_TIMEOUT_MS = Number(process.env.GEMINI_TTS_TOTAL_TIMEOUT_
 // Intentos con el mismo modelo cuando responde sin audio (los modelos de TTS lo hacen a veces y al repetir funciona).
 const INTENTOS_POR_MODELO = 2;
 const GEMINI_TTS_SAMPLE_RATE = 24000;
-const GEMINI_TTS_VOICE = process.env.DUENDE_TTS_VOICE || "Puck";
+const GEMINI_TTS_VOICE = process.env.DUENDE_TTS_VOICE || "Charon";
 
 let modeloQueFunciona = null;
 
