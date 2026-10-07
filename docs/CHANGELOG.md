@@ -18,6 +18,43 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
   `tests/carteraApuestas.test.js` (lo máximo por partido, el cambio de mes en hora de Madrid, lo reembolsado y el
   panel con y sin apuestas).
 
+## 2026-10-07 (🏆 Clasificación semanal con premios (F-EC-03, #35))
+
+Cada lunes a las 10:00 (hora de Madrid) se publica en el canal de la clasificación y se paga el mismo premio (500 🪙 por
+defecto) a 💰 el más rico, 💬 el más activo y ⚽ el mejor apostador de la semana, con mención solo a los premiados.
+
+- **El más rico**: más efectivo + banco en ese momento (`dinero.masRicos`, el mismo de 🏆 Rankings → Riqueza).
+- **El más activo**: más XP ganada en el servidor desde la clasificación anterior. No había forma de saber la XP de una
+  semana, así que la migración **022** crea `clasificacion_xp`, con la XP de cada uno al publicar (se rellena ya al
+  migrar, para que la primera semana cuente desde el despliegue).
+- **El mejor apostador**: más beneficio en lo resuelto de lunes a domingo, con lo del ranking de apostadores (F-AP-03,
+  `apuestas/ranking.beneficioEntre`); solo si ganó algo.
+- El premio va al efectivo con `pagarConImpuesto` (tipo nuevo **🏆 Premios** en Movimientos), así que paga el impuesto de
+  ingresos del servidor como cualquier otro ingreso. Primero se publica y después se paga: si el canal falla, no se paga
+  nada y se reintenta a la hora siguiente.
+- Cron cada hora de los lunes y al arrancar, una vez por semana y servidor (`clasificacion.ultima_semana`), como el
+  ranking semanal de Plex.
+- **Sin canal no se publica ni se paga nada** (viene sin canal: no empieza a crear dinero hasta que un admin lo decida).
+  `/paneladmin` → ⚙️ Config Global → 🏆 Semanal: canal, premio y quién ganaría si fuera ahora.
+- Código en `src/systems/clasificacionSemanal.js` y `src/adminPanel/clasificacion.js`. Tests nuevos en
+  `tests/clasificacionSemanal.test.js` (quién gana, la semana en hora de Madrid, el mensaje, los premios con impuesto,
+  una vez por semana, el canal que falla, la migración y el panel).
+
+## 2026-10-07 (⚽ Ranking de apostadores (F-AP-03, #2))
+
+`/perfil` → 🏆 Rankings tiene una opción más en el menú, **⚽ Apostadores**: los 10 que más han ganado apostando, con
+su % de acierto y su mejor racha de partidos ganados seguidos. Todo sale de lo que ya se guardaba de cada apuesta (el
+premio, 0 si se perdió); no hay tabla nueva.
+
+- **Beneficio**: el mismo que el de 📊 Stats (`misJugadas.estadisticas`): partidos ya resueltos y quinielas cerradas o
+  caducadas (una quiniela devuelta cuenta como recuperada). Lo que está en juego no cuenta.
+- **Acierto y racha**: solo de las apuestas a partidos (una quiniela no se gana o se pierde entera). La racha va por
+  la fecha del partido, no por el orden en que se apostó; las reembolsadas por falta de resultado no la cortan.
+- Para salir hacen falta **5 apuestas resueltas** (como el mínimo de 5 partidas del ranking del casino). A igualdad
+  de beneficio, va antes quien tiene más acierto.
+- Código: `src/systems/apuestas/ranking.js` (`ranking`, `cifras`, `mejorRacha`) y `embedRankingApuestas` en
+  `src/paneles/perfil.js`. Tests nuevos en `tests/rankingApostadores.test.js`.
+
 ## 2026-10-07 (🏅 Logros: lo de Plex, agrupado dentro del filtro 🍿 Plex)
 
 El menú del filtro de `/perfil` → 🏅 Logros tenía mezclados con las categorías los cuatro filtros de Plex (🏆 Solo

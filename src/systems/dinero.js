@@ -33,6 +33,7 @@ const TIPOS = {
     admin: "🛠️ Admin",
     impuesto: "🏛️ Impuesto",
     robo: "🥷 Robos",
+    premio: "🏆 Premios",
     otro: "📦 Otros",
 };
 
