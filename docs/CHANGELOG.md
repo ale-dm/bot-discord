@@ -20,6 +20,214 @@ herramientas). Ahora, en esos dos casos, **se cambia solo** por uno que funcione
   `tests/modeloGeminiAutomatico.test.js` (404, sin herramientas, error de paso, ninguno de respaldo, sin modelo en el
   panel, cada modelo probado una sola vez y la auditoría).
 
+## 2026-10-07 (📊 Resumen semanal para admins (F-AD-02, #38))
+
+Cada lunes a las 09:00 (hora de Madrid) llega por DM a quien recibe las alertas (`systems/alertas`: los IDs del panel o,
+si no hay, el dueño del servidor) un resumen de los últimos 7 días, con lo que ya estaba en los logs y en 🩺 Sistema:
+
+- ❌ **Errores**: los de `logs/error-log*.txt` de la semana (también los rotados), agrupados como las alertas (el mismo
+  error con otros números es uno), los 5 más repetidos.
+- ⌨️ **Comandos más usados**: las líneas `[Comando] /…` de `logs/app-log*.txt` de la semana, solo los que terminaron
+  bien (sin los denegados por ACL ni los que fallaron).
+- 🤖 **Gemini**: los contadores de 🩺 Sistema, restando los del resumen anterior. Viven en memoria, así que si el bot
+  se reinició durante la semana cuentan desde el arranque, y el resumen lo dice.
+- ⚽ **Odds API**: los créditos que quedaban en la última respuesta.
+- Los logs rotan por tamaño (5 ficheros de 5 MB): si ya se han borrado rotados y no queda nada anterior a la semana, el
+  resumen avisa de que puede faltar el principio.
+- Cron cada hora de los lunes y al arrancar, una vez por semana (`resumen_admin_semana` en la tabla `config`, sin
+  migración nueva). Con las alertas desactivadas no se manda.
+- `/paneladmin` → 🩺 Sistema → 🔔 Alertas → **📊 Resumen semanal**: vista previa, solo a quien lo pulsa (no cuenta como
+  enviado).
+- Código en `src/systems/resumenAdmin.js`. Tests nuevos en `tests/resumenAdmin.test.js` (con ficheros de log de verdad
+  en una carpeta temporal: errores agrupados, comandos, logs rotados, Gemini desde el arranque y desde el anterior, el
+  DM una vez por semana y la vista previa).
+
+## 2026-10-07 (🎉 Eventos temporales: happy hour de XP y fin de semana del casino (F-EC-02, #34))
+
+Dos eventos que suben solos, durante un rato, los multiplicadores que ya había. Vienen **desactivados**: se activan y
+ajustan en `/paneladmin` → ⚙️ Config Global → 🎉 Eventos (pantalla nueva, con si están en marcha ahora).
+
+- **⚡ Happy hour de XP**: cada día, de una hora a otra (hora de Madrid; 20:00–22:00 por defecto, y puede pasar la
+  medianoche, p. ej. 22–2), la XP se multiplica (×2 por defecto, de 1 a 5). Va encima del multiplicador global de XP y
+  antes del bonus de racha (`xp/progreso.addXp`), así que sirve para mensajes y voz. Mientras dura, `/perfil` → 👤
+  Perfil lo dice debajo de la barra de XP.
+- **🎰 Fin de semana del casino**: sábado y domingo (hora de Madrid) el premio neto de cada victoria de blackjack,
+  tragaperras, ruleta y adivinar sube (al 150 % por defecto, de 100 a 300), encima del RTP de cada juego
+  (`casinoTransactions.applyRtp`, el mismo sitio donde se aplica el RTP: el mensaje de la partida y lo cobrado
+  coinciden). Nunca toca la probabilidad ni la apuesta devuelta en un empate. Mientras dura, la pantalla de 🎰 Casino
+  lo dice arriba (`buildHome` recibe ahora el servidor).
+- Ajustes nuevos por servidor `eventos.*` en `guildSettings`; la lógica, en `src/systems/eventos.js`. Tests nuevos en
+  `tests/eventosTemporales.test.js` (horas y fines de semana en hora de Madrid, la XP que se gana con `addXp`, los
+  premios con `applyRtp` junto al RTP, el aviso en el casino y el panel).
+
+## 2026-10-07 (🕐 Tono del Duende según la hora o el canal (F-DU-02, #13))
+
+El Duende puede cambiar de tono según la hora y el canal, **encima de la personalidad** que toque (no la sustituye:
+cambiar la personalidad entera de un canal ya se hacía con `/duende set`). Viene desactivado; se configura en
+`/paneladmin` → ⚙️ Config Global → 🤖 Duende → **🕐 Tono** (botón nuevo, en una segunda fila: la primera ya tenía cinco).
+
+- 🌙 **Más borde de madrugada**: de una hora a otra (hora de Madrid; de 00:00 a 07:00 por defecto, y puede pasar la
+  medianoche, p. ej. 23 a 5) recibe la instrucción de estar más borde, seco y gruñón, con la hora de ese momento.
+- 👔 **Más formal en ciertos canales**: en los canales de la lista (IDs separados por comas; vale también pegar la
+  mención `<#…>`), más formal y educado, sin tacos ni insultos, aunque mantenga la ironía.
+- Se suman: un canal formal de madrugada recibe las dos. Se aplica a las respuestas del chat (`duende.js`, junto al
+  resto de instrucciones); los mensajes espontáneos ya solo salen de 11:00 a 23:00.
+- La pantalla de 🤖 Duende enseña cómo está (horas y canales). Ajustes nuevos `duende.madrugada_*` y
+  `duende.canales_formales`; la lógica, en `src/systems/duende/tono.js`.
+- Tests nuevos en `tests/tonoDuende.test.js` (horas en Madrid, canales formales, las dos a la vez, lo que llega de verdad
+  a Gemini con `/duende` y el panel con su validación).
+
+## 2026-10-07 (⭐ Partido destacado del día (F-AP-07, #5))
+
+Cada día, desde las 10:00 (hora de Madrid), se publica en el canal de resultados de las apuestas el **partido grande de
+la jornada**: el partido, la competición, la hora, las tres cuotas y los botones 🏠/🤝/🚩 para apostar sin pasar por
+`/juegos` (los mismos de siempre: abren el formulario, y si el partido ya ha empezado no deja apostar).
+
+- **Qué partido**: de los de hoy (Madrid) que aún no han empezado y tienen cuotas, el que más apuestas tiene ya; a
+  igualdad, el más igualado (cuotas de local y visitante más parecidas, que suele ser un partido entre dos buenos
+  equipos), y si no, el primero. El issue no decía cómo elegirlo; esto es lo más sencillo que no depende de una lista
+  de equipos a mano.
+- **Sin gastar créditos** de la Odds API (el issue lo pedía: "usa la caché"): sale de los partidos ya guardados en
+  `apuestas_partidos`, que se rellenan cada vez que alguien mira las cuotas. Un día sin partidos guardados no se
+  publica nada.
+- Cron cada hora de 10 a 20 y al arrancar, una vez al día por servidor (`apuestas.destacado_dia`), como el ranking
+  semanal de Plex: si el bot estaba caído a las 10, sale en cuanto vuelve.
+- `/paneladmin` → ⚽ Apuestas: la línea ⭐ en 📢 Avisos y el botón para publicarlo o no (`apuestas.destacado`, activado
+  por defecto; sin canal de resultados no se publica).
+- **🎯 Marcador exacto (#7)**: el mensaje lleva también su botón, el mismo que en `/juegos` (abre su formulario).
+- Código en `src/systems/apuestas/destacado.js`. Tests nuevos en `tests/partidoDestacado.test.js` (cuál se elige, el
+  mensaje y su botón, una vez al día, la hora de Madrid, sin peticiones a ninguna API y el panel).
+
+## 2026-10-07 (🎯 Apuesta al marcador exacto (F-AP-10, #7))
+
+En `/juegos` → ⚽ Apuestas, el detalle de cada partido tiene un cuarto botón, **🎯 Marcador exacto (×8)**: un formulario
+con los goles de cada equipo (0 a 20) y la cantidad. Si el partido acaba con ese marcador, se cobra **×8 lo apostado**.
+
+- **Premio fijo, no bote**: el issue dejaba elegir entre un premio fijo (p. ej. ×8) o un bote repartido como la
+  quiniela. Se ha hecho el fijo porque no depende de cuánta gente apueste (con un bote, quien acierta solo se lleva lo
+  suyo) y encaja con la liquidación de cada hora. `PREMIO` en `src/systems/apuestas/marcador.js`.
+- Se guarda como una apuesta a partido más (`apuestas_usuario`, elección `exacto_2-1` y cuota 8), sin tabla nueva:
+  así la liquidación, 📋 Mis jugadas, 📊 Stats, el recordatorio por DM, los resultados en el canal y la herramienta de
+  apuestas del Duende la tratan como cualquier otra. Solo cambia cómo se acierta (`marcador.acierta`) y cómo se
+  enseña ("Marcador exacto 2-1").
+- Se puede apostar a varios marcadores distintos del mismo partido, pero no dos veces al mismo (como con 1/X/2).
+- El marcador se compara con los goles de cada equipo buscados por nombre, como el resultado: si la API los da en otro
+  orden, se paga igual bien.
+- **💼 Cartera (#3)**: el 🏆 posible premio de cada partido ya no es solo la apuesta de más premio. Un marcador exacto
+  se cobra a la vez que el resultado que implica (el 2-1 y "gana el local"), así que cada marcador apostado es un
+  escenario más y cuenta el mejor (`maximoDelPartido` en `src/systems/apuestas/misJugadas.js`, con su test en
+  `tests/carteraApuestas.test.js`).
+- Tests nuevos en `tests/marcadorExacto.test.js` (botón y formulario, goles válidos, marcador repetido, liquidación
+  con la API simulada y Mis jugadas).
+
+## 2026-10-07 (🚦 Límites por jugador en las apuestas (F-AP-09, #6))
+
+Dos límites nuevos en `/paneladmin` → ⚽ Apuestas → 🚦 Límites (con su línea en el resumen del panel). Los dos vienen a 0
+(sin límite), como el cupo diario del casino y de la tienda, así que nada cambia hasta que un admin los ponga.
+
+- **Tope diario**: lo que cada uno puede apostar en un día (hora de Madrid), sumando partidos y quiniela. Sale del
+  historial (lo apostado se apunta en negativo con tipo `apuestas`), así que no hace falta guardar la fecha de cada
+  apuesta; lo cobrado o devuelto no resta.
+- **Máximo por partido**: lo que cada uno puede tener apostado a un mismo partido, sumando sus apuestas a distintos
+  resultados.
+- El sistema de límites del casino (`checkAndConsumeLimit`) cuenta **partidas**, no monedas, así que no servía tal
+  cual: se reutiliza la forma de configurarlo (ajustes por servidor `apuestas.tope_diario` y `apuestas.max_partido`,
+  formulario del panel con "0 sin límite" y auditoría), y la cuenta va en `src/systems/apuestas/limites.js`.
+- Se comprueba justo antes de cobrar, sin esperas por medio: dos formularios enviados a la vez no pueden pasarse del
+  límite entre los dos. Si se pasa, no se cobra nada y el mensaje dice cuánto queda ("como mucho puedes apostar **30**
+  🪙 más hasta mañana").
+- Las apuestas son globales pero los límites son por servidor: vale el del servidor donde se envía el formulario.
+- Tests nuevos en `tests/limitesApuestas.test.js` (los dos límites con los formularios de verdad de partidos y
+  quiniela, el día en hora de Madrid y el panel). Al escribirlos salió que las etiquetas del formulario se pasaban
+  de los 45 caracteres que admite Discord; se acortaron antes de llegar a producción.
+
+## 2026-10-07 (↩️ Cancelar una apuesta (F-AP-05, #4))
+
+En `/juegos` → 📋 Mis jugadas → ⏳ En juego hay un menú nuevo, **↩️ Cancelar una apuesta**, con tus apuestas a partidos
+que aún no han empezado. Al elegir una sale cuánto se devuelve y la comisión, con ↩️ Sí, cancélala y ◀ No, volver.
+
+- Se devuelve al 💵 efectivo lo apostado menos un **10 % de comisión** (redondeando hacia arriba, mínimo 1 🪙), que
+  desaparece. `COMISION_PCT` en `src/systems/apuestas/cancelar.js`.
+- Solo mientras el partido no haya empezado: se vuelve a comprobar al confirmar (un mensaje antiguo no sirve). La
+  apuesta se borra y la devolución se hace en la misma transacción, así que un doble clic no la devuelve dos veces.
+- La apuesta borrada no cuenta en 📊 Stats ni en los rankings; en 📜 Movimientos quedan la apuesta y la devolución
+  ("Apuesta cancelada: … (comisión de N)", tipo Apuestas). Después se puede volver a apostar a ese partido.
+- Solo la puede cancelar quien la hizo (los botones de Mis jugadas ya eran solo de quien los abrió).
+- Tests nuevos en `tests/cancelarApuesta.test.js` (apostar con el formulario de verdad, cancelar desde el panel, el
+  doble clic, un partido ya empezado y otra persona intentándolo).
+
+## 2026-10-07 (💼 Cartera de apuestas en 📋 Mis jugadas (F-AP-04, #3))
+
+`/juegos` → 📋 Mis jugadas → ⏳ En juego (lo que antes era `/misapuestas`) empieza con un resumen de tu cartera:
+
+- 💰 **En juego**: todo lo apostado que aún no se ha resuelto (partidos y quinielas), con cuántos partidos y quinielas
+  son. Antes solo se veía apuesta a apuesta, y la lista de partidos se corta en 10.
+- 🏆 **Posible premio**: lo máximo que puedes cobrar de tus partidos pendientes. En un mismo partido solo puede acertar
+  una de tus apuestas (p. ej. a local y a empate), así que de cada partido cuenta la de más premio. La quiniela no suma:
+  su premio depende del bote y de cuántos acierten.
+- 📅 **Beneficio del mes**: lo cobrado menos lo apostado en lo resuelto este mes, en hora de Madrid (los partidos por el
+  día del partido; las quinielas, por el día en que se cerraron). Lo reembolsado por falta de resultado, y las quinielas
+  devueltas, cuentan como recuperadas (ni ganan ni pierden).
+- Sin tabla nueva: sale de `apuestas_usuario` y `quiniela_apuestas` (`misJugadas.cartera`). Tests nuevos en
+  `tests/carteraApuestas.test.js` (lo máximo por partido, el cambio de mes en hora de Madrid, lo reembolsado y el
+  panel con y sin apuestas).
+
+## 2026-10-07 (🏆 Clasificación semanal con premios (F-EC-03, #35))
+
+Cada lunes a las 10:00 (hora de Madrid) se publica en el canal de la clasificación y se paga el mismo premio (500 🪙 por
+defecto) a 💰 el más rico, 💬 el más activo y ⚽ el mejor apostador de la semana, con mención solo a los premiados.
+
+- **El más rico**: más efectivo + banco en ese momento (`dinero.masRicos`, el mismo de 🏆 Rankings → Riqueza).
+- **El más activo**: más XP ganada en el servidor desde la clasificación anterior. No había forma de saber la XP de una
+  semana, así que la migración **022** crea `clasificacion_xp`, con la XP de cada uno al publicar (se rellena ya al
+  migrar, para que la primera semana cuente desde el despliegue).
+- **El mejor apostador**: más beneficio en lo resuelto de lunes a domingo, con lo del ranking de apostadores (F-AP-03,
+  `apuestas/ranking.beneficioEntre`); solo si ganó algo.
+- El premio va al efectivo con `pagarConImpuesto` (tipo nuevo **🏆 Premios** en Movimientos), así que paga el impuesto de
+  ingresos del servidor como cualquier otro ingreso. Primero se publica y después se paga: si el canal falla, no se paga
+  nada y se reintenta a la hora siguiente.
+- Cron cada hora de los lunes y al arrancar, una vez por semana y servidor (`clasificacion.ultima_semana`), como el
+  ranking semanal de Plex.
+- **Sin canal no se publica ni se paga nada** (viene sin canal: no empieza a crear dinero hasta que un admin lo decida).
+  `/paneladmin` → ⚙️ Config Global → 🏆 Semanal: canal, premio y quién ganaría si fuera ahora.
+- Código en `src/systems/clasificacionSemanal.js` y `src/adminPanel/clasificacion.js`. Tests nuevos en
+  `tests/clasificacionSemanal.test.js` (quién gana, la semana en hora de Madrid, el mensaje, los premios con impuesto,
+  una vez por semana, el canal que falla, la migración y el panel).
+
+## 2026-10-07 (⚽ Ranking de apostadores (F-AP-03, #2))
+
+`/perfil` → 🏆 Rankings tiene una opción más en el menú, **⚽ Apostadores**: los 10 que más han ganado apostando, con
+su % de acierto y su mejor racha de partidos ganados seguidos. Todo sale de lo que ya se guardaba de cada apuesta (el
+premio, 0 si se perdió); no hay tabla nueva.
+
+- **Beneficio**: el mismo que el de 📊 Stats (`misJugadas.estadisticas`): partidos ya resueltos y quinielas cerradas o
+  caducadas (una quiniela devuelta cuenta como recuperada). Lo que está en juego no cuenta.
+- **Acierto y racha**: solo de las apuestas a partidos (una quiniela no se gana o se pierde entera). La racha va por
+  la fecha del partido, no por el orden en que se apostó; las reembolsadas por falta de resultado no la cortan.
+- Para salir hacen falta **5 apuestas resueltas** (como el mínimo de 5 partidas del ranking del casino). A igualdad
+  de beneficio, va antes quien tiene más acierto.
+- Código: `src/systems/apuestas/ranking.js` (`ranking`, `cifras`, `mejorRacha`) y `embedRankingApuestas` en
+  `src/paneles/perfil.js`. Tests nuevos en `tests/rankingApostadores.test.js`.
+
+## 2026-10-07 (🏅 Logros: lo de Plex, agrupado dentro del filtro 🍿 Plex)
+
+El menú del filtro de `/perfil` → 🏅 Logros tenía mezclados con las categorías los cuatro filtros de Plex (🏆 Solo
+trofeos de Plex y las tres dificultades). Ahora ese menú solo tiene las categorías, y al elegir 🍿 Plex sale debajo
+otro menú con todo lo de Plex: 🍿 Todos los de Plex, 🏆 Solo trofeos, 🟢 Fácil, 🟡 Normal y 🎰 Gordo del Plex. Con un
+filtro de dentro puesto, arriba sigue marcado 🍿 Plex; al elegir otra categoría, el de Plex desaparece.
+
+- Las claves de los filtros no cambian (`cat-plex`, `trofeos`, `dif-…`): los botones y menús de los mensajes de antes
+  siguen funcionando. El menú de dentro lleva `_plex` al final del id (`perfil_logrosfiltro_{o}_{t}_{secretos}_plex`),
+  que se ignora al leerlo.
+- Con todo (reclamar y los dos menús), la pantalla llega a las 5 filas que admite Discord.
+- El recuadro **🍿 Plex por dificultad** sale solo dentro de 🍿 Plex (en todos sus filtros) y dice, de cada dificultad,
+  cuántos tienes de los que hay (`🟢 Fácil: **3**/26 · 🟡 Normal: **1**/33 · 🎰 Gordo del Plex: **0**/25`), para ver
+  cuánto falta. Antes salía en cualquier filtro y solo contaba los conseguidos. Como en Completados, los secretos solo
+  cuentan si los tienes, y los trofeos de cada serie, saga... también (no se ven hasta conseguirlos).
+- Tests en `tests/plexPerfil.test.js`: las opciones de cada menú, que el de Plex solo sale dentro de 🍿 Plex, y que
+  elegir desde él filtra igual y lo conservan los botones (páginas y secretos). En `tests/plexIdiomas.test.js`, el
+  recuadro por dificultad: solo dentro de 🍿 Plex, con lo que hay, y el mismo con los secretos a la vista o sin ellos.
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`

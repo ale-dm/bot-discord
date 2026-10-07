@@ -14,6 +14,7 @@ const casinoTx = require("../systems/casinoTransactions");
 const { filaPestanas } = require("./pestanasJuegos");
 const { botonSacar, lineaDinero } = require("./economia");
 const dinero = require("../systems/dinero");
+const eventos = require("../systems/eventos");
 
 const EMOJI = {
     blackjack: "🃏",
@@ -117,7 +118,8 @@ function filaVolverRuleta(label) {
 }
 
 // ─── Pantallas ───────────────────────────────────────────────────────────────
-function buildHome(userId) {
+/** `guildId`: para avisar si hay un 🎉 fin de semana del casino en marcha (F-EC-02). */
+function buildHome(userId, guildId = null) {
     const stats = getUserStats(userId);
     const fav = getFavoriteGame(userId);
     const last = getLastGames(userId, 5);
@@ -128,6 +130,8 @@ function buildHome(userId) {
     const roiSign = parseFloat(roi) >= 0 ? "+" : "";
 
     const parts = [];
+    const evento = eventos.lineaCasino(guildId);
+    if (evento) parts.push(evento, "");
     parts.push(lineaDinero(userId));
 
     if (stats.total > 0) {

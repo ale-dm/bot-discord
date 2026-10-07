@@ -34,6 +34,7 @@ const {
     handlePerfilesStringSelect,
 } = require("../../adminPanel/perfilesDuende");
 const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPanel/impuestos");
+const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 
 module.exports = {
     componentHandlers: [
@@ -60,6 +61,7 @@ module.exports = {
                 "paneladmin_plex_ranking_canal_select",
                 "paneladmin_seerr_channel_add_select",
                 "paneladmin_apu_canal_select",
+                "paneladmin_semanal_canal_select",
             ],
             method: "handleChannelSelect",
         },
@@ -110,6 +112,7 @@ module.exports = {
             if (await handleCatalogoButton(interaction)) return;
             if (await handleSistemaButton(interaction)) return;
             if (await handleImpuestosButton(interaction)) return;
+            if (await handleClasificacionButton(interaction)) return;
         } catch (err) {
             log.error(`handleButton falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -137,6 +140,7 @@ module.exports = {
             if (await handleApuestasModal(interaction)) return;
             if (await handleSistemaModal(interaction)) return;
             if (await handleImpuestosModal(interaction)) return;
+            if (await handleClasificacionModal(interaction)) return;
         } catch (err) {
             log.error(`handleModal falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -195,6 +199,7 @@ module.exports = {
             if (await handlePlexChannelSelect(interaction)) return;
             if (await handleSeerrChannelSelect(interaction)) return;
             if (await handleApuestasChannelSelect(interaction)) return;
+            if (await handleClasificacionChannelSelect(interaction)) return;
         } catch (err) {
             log.error(`handleChannelSelect falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
