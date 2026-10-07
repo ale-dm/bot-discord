@@ -2,6 +2,28 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎯 Encontrado el motivo real de `/conversación` muda: el modelo pide v1alpha, no v1beta)
+
+Con los logs de la ronda anterior, el primer intento en producción lo dejó clarísimo:
+
+```
+WARN [Duende:VozEnVivo] Conversación en directo cerrada (socket): models/gemini-live-2.5-flash-preview
+is not found for API version v1beta, or is not supported for bidiGenerateContent.
+```
+
+La conexión de voz y el `AudioPlayer` estaban bien (se ve `idle -> buffering`); el problema era que
+el cliente de Gemini (`getGenAI()`, compartido con el resto del bot) usa `v1beta` por defecto, y la
+Live API con este modelo solo está disponible en `v1alpha` para la API de desarrollador (no Vertex).
+
+- Nuevo `getGenAILive()` en `geminiClient.js`: un cliente aparte, cacheado igual que `getGenAI()`,
+  pero con `httpOptions: { apiVersion: "v1alpha" }`. Solo lo usa `liveVoz.js` — el resto del bot
+  (chat, `/trabajar`, embeddings...) sigue en `v1beta` sin tocar, que es donde ya funciona bien.
+- Tests nuevos (`tests/geminiClient.test.js`): que `getGenAI()` no fuerza versión, que
+  `getGenAILive()` sí pide `v1alpha`, y que cachea el cliente igual que el otro.
+
+Con esto debería sonar de verdad. Si no, los logs de la ronda anterior (conexión, ffmpeg,
+`AudioPlayer`, captura de entrada) deberían decir exactamente dónde se corta esta vez.
+
 ## 2026-10-07 (🔊 `/conversación` sigue sin sonar: logs de verdad en todo el camino del audio, y voz por defecto Charon)
 
 Los dos fixes anteriores de `/conversación` (suscripción reactiva + bugs de `prism-media`) no
