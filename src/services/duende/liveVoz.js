@@ -183,12 +183,16 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         sesion.connection = connection;
 
         // Salida: un ffmpeg para toda la llamada, del PCM 24kHz mono que manda Gemini al
-        // 48kHz estéreo que espera @discordjs/voice en crudo (StreamType.Raw).
+        // 48kHz estéreo que espera @discordjs/voice en crudo (StreamType.Raw). prism-media
+        // añade "pipe:1" él solo al final de args (ver su FFmpeg.create): ponerlo aquí también
+        // lo duplicaba y rompía el comando.
         const ffmpeg = new prism.FFmpeg({
-            args: ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1"],
+            args: ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2"],
         });
+        ffmpeg.on("error", (e) => log.warn(`Error en ffmpeg (salida de voz en directo): ${e.message}`));
         sesion.ffmpeg = ffmpeg;
         const player = createAudioPlayer();
+        player.on("error", (e) => log.warn(`Error en el reproductor de voz en directo: ${e.message}`));
         const resource = createAudioResource(ffmpeg, { inputType: StreamType.Raw, inlineVolume: true });
         connection.subscribe(player);
         player.play(resource);
@@ -219,7 +223,9 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                     }
                     if (message.data) {
                         try {
-                            ffmpeg.stdin.write(Buffer.from(message.data, "base64"));
+                            // La clase FFmpeg de prism-media pone write/end directamente en la
+                            // instancia (copiados del stdin interno): no existe .stdin.
+                            ffmpeg.write(Buffer.from(message.data, "base64"));
                         } catch (e) {
                             log.warn(`Error pasando el audio de Gemini a ffmpeg: ${e.message}`);
                         }

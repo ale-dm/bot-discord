@@ -23,15 +23,22 @@ let mockConnectionActual;
 jest.mock("@discordjs/voice", () => ({
     joinVoiceChannel: jest.fn(() => mockConnectionActual),
     getVoiceConnection: jest.fn(() => null),
-    createAudioPlayer: jest.fn(() => ({ play: jest.fn() })),
+    createAudioPlayer: jest.fn(() => ({ play: jest.fn(), on: jest.fn() })),
     createAudioResource: jest.fn(() => ({})),
     entersState: jest.fn(async () => {}),
     VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected", Destroyed: "destroyed" },
     StreamType: { Raw: "raw" },
     EndBehaviorType: { Manual: "manual" },
 }));
+const mockFFmpeg = () => ({ write: jest.fn(), end: jest.fn(), on: jest.fn(), destroy: jest.fn() });
+let mockFFmpegActual;
+let mockFFmpegArgs;
 jest.mock("prism-media", () => ({
-    FFmpeg: jest.fn(() => ({ stdin: { write: jest.fn() }, destroy: jest.fn() })),
+    FFmpeg: jest.fn((opts) => {
+        mockFFmpegArgs = opts.args;
+        mockFFmpegActual = mockFFmpeg();
+        return mockFFmpegActual;
+    }),
     opus: { Decoder: jest.fn() },
 }));
 
@@ -41,7 +48,11 @@ const mockLiveSession = {
     sendToolResponse: jest.fn(),
     sendClientContent: jest.fn(),
 };
-const mockConnect = jest.fn(async () => mockLiveSession);
+let mockLiveCallbacks;
+const mockConnect = jest.fn(async (opts) => {
+    mockLiveCallbacks = opts.callbacks;
+    return mockLiveSession;
+});
 jest.mock("../src/services/geminiClient", () => ({
     ...jest.requireActual("../src/services/geminiClient"),
     getGenAI: () => ({ live: { connect: mockConnect } }),
@@ -129,6 +140,18 @@ test("se corta sola al llegar al tope de duración, aunque haya actividad", asyn
         if (!liveVoz.hayConversacionActiva(G)) break;
     }
     expect(liveVoz.hayConversacionActiva(G)).toBe(false);
+});
+
+test("los argumentos de ffmpeg no duplican pipe:1 (prism-media ya lo añade solo)", async () => {
+    await liveVoz.empezarConversacion(interaccionEnVoz());
+    expect(mockFFmpegArgs).not.toContain("pipe:1");
+    expect(mockFFmpegArgs).toContain("pipe:0"); // la entrada sí la pone este código
+});
+
+test("el audio que manda Gemini se escribe en ffmpeg directamente (sin .stdin, que no existe)", async () => {
+    await liveVoz.empezarConversacion(interaccionEnVoz());
+    mockLiveCallbacks.onmessage({ data: Buffer.from("audio-falso").toString("base64") });
+    expect(mockFFmpegActual.write).toHaveBeenCalledWith(Buffer.from("audio-falso"));
 });
 
 test("al conectar, pide un saludo inicial para confirmar que la salida de audio funciona", async () => {
