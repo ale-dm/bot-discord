@@ -203,6 +203,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] `/perfil` → 🏆 Rankings → ⚽ Apostadores: salen quienes tienen al menos 5 apuestas resueltas, y el beneficio de
       cada uno cuadra con el "Apuestas" de su `/juegos` → 📊 Stats.
 
+**🏆 Clasificación semanal (F-EC-03, #35)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 022_clasificacion_semanal`.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🏆 Semanal: elegir el canal y el premio; "Si fuera ahora" tiene sentido.
+- [ ] El lunes a las 10:00: el mensaje en el canal, con aviso solo a los premiados, y en sus 📜 Movimientos el premio
+      (🏆 Premios) y su impuesto.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el
