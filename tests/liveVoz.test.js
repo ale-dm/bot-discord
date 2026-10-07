@@ -5,9 +5,10 @@ process.env.GOOGLE_API_KEY = "clave-de-prueba";
 process.env.DUENDE_LIVE_IDLE_DISCONNECT_MS = "1000";
 process.env.DUENDE_LIVE_MAX_DURATION_MS = "5000";
 
+const { EventEmitter } = require("events");
 const mockConnection = () => ({
     joinConfig: { channelId: "canal-voz" },
-    receiver: { subscribe: jest.fn(() => mockOpusStream()) },
+    receiver: { subscribe: jest.fn(() => mockOpusStream()), speaking: new EventEmitter() },
     subscribe: jest.fn(),
     destroy: jest.fn(),
 });
@@ -34,7 +35,12 @@ jest.mock("prism-media", () => ({
     opus: { Decoder: jest.fn() },
 }));
 
-const mockLiveSession = { close: jest.fn(), sendRealtimeInput: jest.fn(), sendToolResponse: jest.fn() };
+const mockLiveSession = {
+    close: jest.fn(),
+    sendRealtimeInput: jest.fn(),
+    sendToolResponse: jest.fn(),
+    sendClientContent: jest.fn(),
+};
 const mockConnect = jest.fn(async () => mockLiveSession);
 jest.mock("../src/services/geminiClient", () => ({
     ...jest.requireActual("../src/services/geminiClient"),
@@ -68,6 +74,7 @@ function interaccionEnVoz() {
 beforeEach(() => {
     jest.useFakeTimers();
     mockConnect.mockClear();
+    mockLiveSession.sendClientContent.mockClear();
 });
 
 afterEach(() => {
@@ -122,6 +129,35 @@ test("se corta sola al llegar al tope de duración, aunque haya actividad", asyn
         if (!liveVoz.hayConversacionActiva(G)) break;
     }
     expect(liveVoz.hayConversacionActiva(G)).toBe(false);
+});
+
+test("al conectar, pide un saludo inicial para confirmar que la salida de audio funciona", async () => {
+    await liveVoz.empezarConversacion(interaccionEnVoz());
+    expect(mockLiveSession.sendClientContent).toHaveBeenCalledWith(expect.objectContaining({ turnComplete: true }));
+});
+
+test("no se suscribe al audio del usuario hasta que empieza a hablar (no al conectar)", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    expect(mockConnectionActual.receiver.subscribe).not.toHaveBeenCalled();
+
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledWith(i.user.id, expect.anything());
+});
+
+test("si habla otra persona del canal, no se suscribe a su audio", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", "otro-usuario-cualquiera");
+    expect(mockConnectionActual.receiver.subscribe).not.toHaveBeenCalled();
+});
+
+test("si la persona habla varias veces, solo se suscribe una vez", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledTimes(1);
 });
 
 test("las herramientas que pide Gemini se ejecutan con las de siempre y se responden", async () => {

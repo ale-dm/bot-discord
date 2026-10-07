@@ -47,7 +47,9 @@ async function generarMensaje(channelId, gancho) {
         },
         { text: `Lo que sabes de ella: ${gancho.texto}` },
     ];
-    return generarConGemini(parts, { maxTokens: 200 });
+    // thinkingBudget: 0 — igual que en trabajo.js: una frase suelta no necesita "pensar", y si
+    // piensa se come el maxTokens antes de escribir nada visible.
+    return generarConGemini(parts, { maxTokens: 400, thinkingBudget: 0 });
 }
 
 /** @returns {Promise<boolean>} true si el canal lleva QUIET_MS sin un mensaje humano reciente */
