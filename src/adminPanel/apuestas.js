@@ -1,7 +1,8 @@
 // Panel admin → ⚽ Apuestas: lo que hay en juego (partidos con apuestas pendientes y quinielas abiertas), 💸 Liquidar
 // ahora (antes /pagarapuestas; normalmente lo hace solo el cron de cada hora), 🧾 Crear la quiniela de cada
-// competición (también está en la propia quiniela), el canal donde se publican los resultados, el recordatorio
-// por DM antes de cada partido y los 🚦 límites por jugador (tope diario y máximo por partido, F-AP-09).
+// competición (también está en la propia quiniela), el canal donde se publican los resultados (y el ⭐ partido destacado
+// del día), el recordatorio por DM antes de cada partido y los 🚦 límites por jugador (tope diario y máximo por partido,
+// F-AP-09).
 const {
     EmbedBuilder,
     ActionRowBuilder,
@@ -69,7 +70,14 @@ function buildApuestasHome(guildId) {
                 name: "📢 Avisos",
                 value:
                     `Resultados: ${cfg.canal_resultados ? `se publican en <#${cfg.canal_resultados}>` : "no se publican (solo DM a quien cobra)"}\n` +
-                    `Recordatorio por DM: ${cfg.recordatorio ? `**${cfg.recordatorio_min} min** antes del partido` : "desactivado"}`,
+                    `Recordatorio por DM: ${cfg.recordatorio ? `**${cfg.recordatorio_min} min** antes del partido` : "desactivado"}\n` +
+                    `⭐ Partido destacado del día: ${
+                        !cfg.destacado
+                            ? "desactivado"
+                            : cfg.canal_resultados
+                              ? `cada día desde las 10:00 en <#${cfg.canal_resultados}>`
+                              : "activo, pero hace falta el canal de resultados"
+                    }`,
             },
         )
         .setColor(0x2ecc71)
@@ -96,6 +104,10 @@ function buildApuestasHome(guildId) {
             .setDisabled(!cfg.canal_resultados),
         new ButtonBuilder().setCustomId("paneladmin_apu_recordatorio").setLabel("⏰ Recordatorio").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_apu_limites").setLabel("🚦 Límites").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_apu_destacado")
+            .setLabel(cfg.destacado ? "⭐ Quitar el destacado" : "⭐ Publicar el destacado")
+            .setStyle(ButtonStyle.Secondary),
     );
     return { content: "", embeds: [embed], components: [acciones, crear, avisos] };
 }
@@ -147,6 +159,19 @@ async function handleApuestasButton(interaction) {
                 { id: "partido", label: "Máximo por partido en 🪙 (0 = sin límite)", value: String(cfg.max_partido) },
             ]),
         );
+        return true;
+    }
+    // ⭐ Partido destacado del día (F-AP-07): activar o desactivar.
+    if (id === "paneladmin_apu_destacado") {
+        const activo = !guildSettings.getSettings(interaction.guildId).apuestas.destacado;
+        guildSettings.setSetting(interaction.guildId, "apuestas.destacado", activo);
+        adminAudit.logAdminAction({
+            guildId: interaction.guildId,
+            actorId: interaction.user.id,
+            action: "apuestas.destacado",
+            details: { activo },
+        });
+        await interaction.update(buildApuestasHome(interaction.guildId));
         return true;
     }
     if (id === "paneladmin_apu_liquidar") {

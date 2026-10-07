@@ -583,6 +583,13 @@ después de cada liquidación se publica ahí un resumen de lo cerrado: "⚽ **E
 1.240 🪙 en premios · 🏆 quiénes", y en las quinielas cuántos ganadores, con cuántos aciertos y cuánto se lleva cada
 uno (o que se devuelve lo apostado). Los nombres salen como mención, pero sin avisar a nadie.
 
+**⭐ Partido destacado del día**: cada día desde las 10:00 (hora de Madrid), en el mismo canal de resultados, el partido
+grande de la jornada con sus cuotas y los botones 🏠/🤝/🚩 y 🎯 Marcador exacto para apostar (abren el formulario de
+siempre; si el partido ya empezó, no deja). Es, de los de hoy que aún no han empezado, el que más apuestas tiene; a igualdad, el más igualado (las
+cuotas de local y visitante más parecidas). Sale de los partidos ya guardados, así que **no gasta créditos** de la Odds
+API; un día sin partidos no se publica nada. Se activa o quita en `/paneladmin` → ⚽ Apuestas → ⭐ (viene activado, pero
+sin canal de resultados no se publica).
+
 **⏰ Recordatorio**: 30 minutos antes de un partido al que has apostado te llega un DM con el partido, a qué apostaste
 y cuánto ganarías (uno solo con todos tus partidos de esa media hora, y una sola vez por apuesta). Se activa o
 desactiva y se cambian los minutos en `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio.
@@ -684,7 +691,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | Sección | Qué se puede hacer |
 |---|---|
 | 🏦 Banco | Modificar saldo (efectivo, banco o dinero negro) · resetear usuario (como nuevo: 1.000 en efectivo, sin dinero negro) · borrar historial · historial global · buscar usuario |
-| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) |
+| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) · ⭐ **Partido destacado** del día (publicarlo o no) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
@@ -733,6 +740,7 @@ Duende siguen en `/duende set | add | remove`.
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
 | 17:00 (Madrid) | Aviso de "racha en peligro" por DM |
+| Cada día, 10:00 (Madrid) | ⭐ Partido destacado del día en el canal de resultados de las apuestas (comprobado cada hora de 10 a 20 y al arrancar; una vez al día) |
 | Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal y 🏆 clasificación semanal con premios (comprobados cada hora de los lunes y al arrancar; una vez por semana) |
 
 ---

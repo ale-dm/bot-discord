@@ -2,6 +2,27 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (⭐ Partido destacado del día (F-AP-07, #5))
+
+Cada día, desde las 10:00 (hora de Madrid), se publica en el canal de resultados de las apuestas el **partido grande de
+la jornada**: el partido, la competición, la hora, las tres cuotas y los botones 🏠/🤝/🚩 para apostar sin pasar por
+`/juegos` (los mismos de siempre: abren el formulario, y si el partido ya ha empezado no deja apostar).
+
+- **Qué partido**: de los de hoy (Madrid) que aún no han empezado y tienen cuotas, el que más apuestas tiene ya; a
+  igualdad, el más igualado (cuotas de local y visitante más parecidas, que suele ser un partido entre dos buenos
+  equipos), y si no, el primero. El issue no decía cómo elegirlo; esto es lo más sencillo que no depende de una lista
+  de equipos a mano.
+- **Sin gastar créditos** de la Odds API (el issue lo pedía: "usa la caché"): sale de los partidos ya guardados en
+  `apuestas_partidos`, que se rellenan cada vez que alguien mira las cuotas. Un día sin partidos guardados no se
+  publica nada.
+- Cron cada hora de 10 a 20 y al arrancar, una vez al día por servidor (`apuestas.destacado_dia`), como el ranking
+  semanal de Plex: si el bot estaba caído a las 10, sale en cuanto vuelve.
+- `/paneladmin` → ⚽ Apuestas: la línea ⭐ en 📢 Avisos y el botón para publicarlo o no (`apuestas.destacado`, activado
+  por defecto; sin canal de resultados no se publica).
+- **🎯 Marcador exacto (#7)**: el mensaje lleva también su botón, el mismo que en `/juegos` (abre su formulario).
+- Código en `src/systems/apuestas/destacado.js`. Tests nuevos en `tests/partidoDestacado.test.js` (cuál se elige, el
+  mensaje y su botón, una vez al día, la hora de Madrid, sin peticiones a ninguna API y el panel).
+
 ## 2026-10-07 (🎯 Apuesta al marcador exacto (F-AP-10, #7))
 
 En `/juegos` → ⚽ Apuestas, el detalle de cada partido tiene un cuarto botón, **🎯 Marcador exacto (×8)**: un formulario

@@ -67,6 +67,8 @@ const DEFAULT_FLAT = {
     "apuestas.recordatorio_min": 30,
     "apuestas.tope_diario": 0,
     "apuestas.max_partido": 0,
+    "apuestas.destacado": true,
+    "apuestas.destacado_dia": "",
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
@@ -140,6 +142,8 @@ const KEY_TYPES = {
     "apuestas.recordatorio_min": "number",
     "apuestas.tope_diario": "number",
     "apuestas.max_partido": "number",
+    "apuestas.destacado": "boolean",
+    "apuestas.destacado_dia": "string",
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
@@ -237,6 +241,8 @@ function flattenToNested(flat) {
             recordatorio_min: flat["apuestas.recordatorio_min"],
             tope_diario: flat["apuestas.tope_diario"],
             max_partido: flat["apuestas.max_partido"],
+            destacado: flat["apuestas.destacado"],
+            destacado_dia: flat["apuestas.destacado_dia"],
         },
         alertas: {
             enabled: flat["alertas.enabled"],

@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**⭐ Partido destacado del día (F-AP-07, #5)**
+- [ ] Con canal de resultados puesto, un día con partidos: a las 10:00 (o al arrancar si es más tarde) sale el ⭐ en el
+      canal, con un partido de hoy (`Partido destacado del … en …` en el log). Pulsar un resultado abre el formulario.
+- [ ] `/paneladmin` → ⚽ Apuestas → ⭐ Quitar el destacado: al día siguiente no sale.
+
 **🎯 Marcador exacto (F-AP-10, #7)**
 - [ ] `/juegos` → ⚽ Apuestas → un partido → 🎯 Marcador exacto: el formulario pide los goles de cada equipo y la cantidad.
 - [ ] Apostar a un marcador y verlo en 📋 Mis jugadas ("Marcador exacto 2-1 · … @8"); cuando se liquide, que pague ×8 si
