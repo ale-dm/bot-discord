@@ -376,7 +376,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores |
 
 **🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
 admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
@@ -388,6 +388,10 @@ Con un botón a 🏅 Logros filtrado por Plex. La de quien oculta sus logros de 
 **🍿 Rankings de Plex**: los 5 primeros en logros de Plex, 🎰 Gordos del Plex, políglota (logros de idioma) y horas
 (este mes, desde el día 1 en hora de Madrid, y de siempre). Solo los vinculados; quien oculta sus logros de Plex no
 sale en los de logros.
+
+**⚽ Ranking de apostadores**: los 10 con más beneficio en apuestas (partidos y quinielas ya resueltos, como en 📊
+Stats), con su % de acierto y su mejor racha de partidos ganados seguidos (estos dos, solo de los partidos). Hacen
+falta 5 apuestas resueltas para salir; a igualdad de beneficio, va antes quien acierta más.
 
 **El perfil de otra persona se ve entero** (economía y movimientos incluidos), pero las acciones (ingresar, sacar,
 transferir, reclamar) solo salen en el tuyo, y todos los botones llevan a su perfil, no al tuyo. Los botones de un

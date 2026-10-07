@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (⚽ Ranking de apostadores (F-AP-03, #2))
+
+`/perfil` → 🏆 Rankings tiene una opción más en el menú, **⚽ Apostadores**: los 10 que más han ganado apostando, con
+su % de acierto y su mejor racha de partidos ganados seguidos. Todo sale de lo que ya se guardaba de cada apuesta (el
+premio, 0 si se perdió); no hay tabla nueva.
+
+- **Beneficio**: el mismo que el de 📊 Stats (`misJugadas.estadisticas`): partidos ya resueltos y quinielas cerradas o
+  caducadas (una quiniela devuelta cuenta como recuperada). Lo que está en juego no cuenta.
+- **Acierto y racha**: solo de las apuestas a partidos (una quiniela no se gana o se pierde entera). La racha va por
+  la fecha del partido, no por el orden en que se apostó; las reembolsadas por falta de resultado no la cortan.
+- Para salir hacen falta **5 apuestas resueltas** (como el mínimo de 5 partidas del ranking del casino). A igualdad
+  de beneficio, va antes quien tiene más acierto.
+- Código: `src/systems/apuestas/ranking.js` (`ranking`, `cifras`, `mejorRacha`) y `embedRankingApuestas` en
+  `src/paneles/perfil.js`. Tests nuevos en `tests/rankingApostadores.test.js`.
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`

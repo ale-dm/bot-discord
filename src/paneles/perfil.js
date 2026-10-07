@@ -10,6 +10,7 @@ const plexLinks = require("../systems/plexLinks");
 const plexTrofeos = require("../systems/plexTrofeos");
 const plexIdiomas = require("../systems/plexIdiomas");
 const plexRankings = require("../systems/plexRankings");
+const rankingApuestas = require("../systems/apuestas/ranking");
 const plexResumen = require("../systems/plexResumen");
 const { duracion } = require("../systems/plexRankingSemanal");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
@@ -434,7 +435,26 @@ const RANKINGS = {
     logros: "🏅 Logros",
     ttcl: "💎 TTCL",
     plex: "🍿 Plex",
+    apuestas: "⚽ Apostadores",
 };
+
+/** ⚽ Apostadores (F-AP-03): beneficio en apuestas, % de acierto en partidos y mejor racha de partidos ganados seguidos. */
+function embedRankingApuestas() {
+    const signo = (n) => `${n >= 0 ? "+" : ""}${n.toLocaleString("es")}`;
+    const lineas = rankingApuestas.ranking().map((c, i) => {
+        const acierto =
+            c.acierto === null ? "sin partidos" : `${c.acierto.toLocaleString("es", { maximumFractionDigits: 1 })} % de acierto`;
+        const racha = c.racha >= 2 ? ` · 🔥 ${c.racha} seguidas` : "";
+        return `${MEDALLAS[i] || `**${i + 1}.**`} <@${c.userId}> — **${signo(c.beneficio)}** 🪙 · ${acierto}${racha}`;
+    });
+    return new EmbedBuilder()
+        .setTitle("⚽ Ranking de apostadores")
+        .setDescription(lineas.join("\n") || `Nadie tiene todavía ${rankingApuestas.MIN_RESUELTAS} apuestas resueltas.`)
+        .setFooter({
+            text: `Beneficio de partidos y quinielas resueltos · acierto y racha, de los partidos · mín. ${rankingApuestas.MIN_RESUELTAS} apuestas resueltas`,
+        })
+        .setColor(0x3498db);
+}
 
 /** 🍿 Rankings de Plex: más logros, más 🎰 Gordos, más políglota y más horas (este mes y de siempre). */
 function embedRankingPlex(guildId) {
@@ -481,6 +501,8 @@ async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0)
         embed = (await require("./cripto").buildTopHolders(guild.id)).embeds[0];
     } else if (tipo === "plex") {
         embed = embedRankingPlex(guild.id);
+    } else if (tipo === "apuestas") {
+        embed = embedRankingApuestas();
     } else {
         embed = await buildTopEmbed(guild, page);
         paginas = { anterior: page > 0, siguiente: xp.getTop(guild.id, 10, (page + 1) * 10).length > 0 };
