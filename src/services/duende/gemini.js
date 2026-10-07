@@ -50,6 +50,12 @@ async function generarConGemini(parts, options = {}) {
         systemInstruction: `Responde siempre de forma breve y concisa, máximo 1-2 frases. No te extiendas.${toolReminder}`,
         maxOutputTokens: Number(options.maxTokens || DUENDE_MAX_TOKENS),
         temperature: Number(options.temperature ?? process.env.DUENDE_TEMPERATURE ?? 0.7),
+        // Por defecto Gemini 2.5 "piensa" antes de responder, y eso cuenta dentro de
+        // maxOutputTokens: con un maxTokens bajo (frases sueltas, no el chat principal) el
+        // pensamiento invisible puede comerse casi todo el presupuesto y cortar la respuesta
+        // de verdad a dos palabras (visto en producción con /trabajar). Quien no necesite
+        // razonar para una frase corta puede pasar thinkingBudget: 0 para desactivarlo.
+        ...(options.thinkingBudget != null ? { thinkingConfig: { thinkingBudget: options.thinkingBudget } } : {}),
         safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },

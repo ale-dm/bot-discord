@@ -98,6 +98,11 @@ function limpiarSesion(sesion) {
     clearInterval(sesion.idleCheckInterval);
     clearTimeout(sesion.maxDurationTimer);
     try {
+        if (sesion.receiver && sesion.onSpeakingStart) sesion.receiver.speaking.removeListener("start", sesion.onSpeakingStart);
+    } catch (e) {
+        log.debug(`Error quitando el listener de voz: ${e.message}`);
+    }
+    try {
         sesion.opusStream?.destroy();
     } catch (e) {
         log.debug(`Error cerrando la entrada de audio: ${e.message}`);
@@ -232,20 +237,44 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         });
         sesion.liveSession = liveSession;
 
-        // Entrada: todo lo que diga quien ha pedido /conversación mientras dure la llamada (no
-        // una sola intervención como /escuchar: EndBehaviorType.Manual no corta sola).
+        // Saludo inicial: además de quedar más natural, confirma que la salida de audio
+        // funciona nada más conectar, sin esperar a que alguien hable primero.
+        try {
+            liveSession.sendClientContent({
+                turns: "Acabas de entrar a una llamada de voz en directo. Saluda muy brevemente, en tu personalidad.",
+                turnComplete: true,
+            });
+        } catch (e) {
+            log.warn(`Error pidiendo el saludo inicial: ${e.message}`);
+        }
+
+        // Entrada: todo lo que diga quien ha pedido /conversación mientras dure la llamada. Se
+        // suscribe reactivamente al primer "empieza a hablar" (igual que services/stt.js), no
+        // al conectar: suscribirse antes de que Discord asocie el audio a este usuario no
+        // captura nada (visto en producción: la sesión se abría pero nunca recibía tu voz).
+        // EndBehaviorType.Manual no corta sola, así que una sola suscripción vale para toda la
+        // llamada, aunque haya silencios entre frases.
         const receiver = connection.receiver;
-        const opusStream = receiver.subscribe(interaction.user.id, { end: { behavior: EndBehaviorType.Manual } });
-        sesion.opusStream = opusStream;
-        const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
-        pcmStream.on("data", (chunk) => {
-            marcarActividad();
-            try {
-                liveSession.sendRealtimeInput({ media: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
-            } catch (e) {
-                log.warn(`Error enviando audio a Gemini Live: ${e.message}`);
-            }
-        });
+        const targetUserId = interaction.user.id;
+        let suscrito = false;
+        const onSpeakingStart = (userId) => {
+            if (userId !== targetUserId || suscrito) return;
+            suscrito = true;
+            const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
+            sesion.opusStream = opusStream;
+            const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
+            pcmStream.on("data", (chunk) => {
+                marcarActividad();
+                try {
+                    liveSession.sendRealtimeInput({ media: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
+                } catch (e) {
+                    log.warn(`Error enviando audio a Gemini Live: ${e.message}`);
+                }
+            });
+        };
+        receiver.speaking.on("start", onSpeakingStart);
+        sesion.receiver = receiver;
+        sesion.onSpeakingStart = onSpeakingStart;
 
         sesion.idleCheckInterval = setInterval(() => {
             if (Date.now() - sesion.ultimaActividad > IDLE_DISCONNECT_MS) {

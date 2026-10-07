@@ -38,7 +38,10 @@ async function generarTexto(channelId, user, { exito, cantidad }) {
         },
         ...(perfilTexto ? [{ text: `Lo que sabes de esta persona: ${perfilTexto}` }] : []),
     ];
-    return generarConGemini(parts, { maxTokens: 150 });
+    // thinkingBudget: 0 — una frase suelta no necesita que el modelo "piense" antes de
+    // responder, y si piensa se come el maxTokens antes de escribir nada visible (visto en
+    // producción: la respuesta salía cortada a una palabra).
+    return generarConGemini(parts, { maxTokens: 400, thinkingBudget: 0 });
 }
 
 /**
