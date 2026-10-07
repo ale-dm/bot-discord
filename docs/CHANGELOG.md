@@ -2,6 +2,26 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎯 `Precondition check failed` seguía saliendo: campo equivocado para el audio)
+
+La bandera `hablando` de la entrada anterior no lo arregló — en producción, el mismo corte volvió
+a salir unos segundos después de empezar a hablar. Esta vez, en vez de fiarme de un resumen de
+búsqueda (que decía que el problema era audio "colándose" entre `activityEnd` y el siguiente
+`activityStart` — al ir a la fuente original, ese hilo de Google no tenía ninguna solución
+confirmada), fui a la documentación oficial de la Live API y comparé su ejemplo de código con el
+nuestro.
+
+El ejemplo oficial manda el audio del usuario por el campo `audio: { data, mimeType }`.
+Nuestro código lo mandaba por `media: { data, mimeType }` — un campo genérico y más antiguo
+("Realtime input", pensado para varios tipos de datos) que el SDK traduce a `mediaChunks`, no al
+`audio` que la API espera para el audio en tiempo real de verdad. Con detección automática
+(como era al principio) el servidor es permisivo y lo acepta de todas formas; con la detección
+manual puesta, necesita el audio por el campo correcto para poder casarlo con los
+`activityStart`/`activityEnd` — y si no, corta la sesión con "Precondition check failed".
+
+- `sendRealtimeInput({ media: {...} })` → `sendRealtimeInput({ audio: {...} })`.
+- Test nuevo: el audio del usuario se manda por `audio`, no por `media`.
+
 ## 2026-10-07 (🎯 `/conversación` se cortaba sola justo al hablar: "Precondition check failed")
 
 Con el VAD manual (activityStart/activityEnd) puesto, el primer intento en producción se cortó a
