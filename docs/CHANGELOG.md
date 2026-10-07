@@ -23,6 +23,74 @@ Dos límites nuevos en `/paneladmin` → ⚽ Apuestas → 🚦 Límites (con su 
   quiniela, el día en hora de Madrid y el panel). Al escribirlos salió que las etiquetas del formulario se pasaban
   de los 45 caracteres que admite Discord; se acortaron antes de llegar a producción.
 
+## 2026-10-07 (↩️ Cancelar una apuesta (F-AP-05, #4))
+
+En `/juegos` → 📋 Mis jugadas → ⏳ En juego hay un menú nuevo, **↩️ Cancelar una apuesta**, con tus apuestas a partidos
+que aún no han empezado. Al elegir una sale cuánto se devuelve y la comisión, con ↩️ Sí, cancélala y ◀ No, volver.
+
+- Se devuelve al 💵 efectivo lo apostado menos un **10 % de comisión** (redondeando hacia arriba, mínimo 1 🪙), que
+  desaparece. `COMISION_PCT` en `src/systems/apuestas/cancelar.js`.
+- Solo mientras el partido no haya empezado: se vuelve a comprobar al confirmar (un mensaje antiguo no sirve). La
+  apuesta se borra y la devolución se hace en la misma transacción, así que un doble clic no la devuelve dos veces.
+- La apuesta borrada no cuenta en 📊 Stats ni en los rankings; en 📜 Movimientos quedan la apuesta y la devolución
+  ("Apuesta cancelada: … (comisión de N)", tipo Apuestas). Después se puede volver a apostar a ese partido.
+- Solo la puede cancelar quien la hizo (los botones de Mis jugadas ya eran solo de quien los abrió).
+- Tests nuevos en `tests/cancelarApuesta.test.js` (apostar con el formulario de verdad, cancelar desde el panel, el
+  doble clic, un partido ya empezado y otra persona intentándolo).
+
+## 2026-10-07 (💼 Cartera de apuestas en 📋 Mis jugadas (F-AP-04, #3))
+
+`/juegos` → 📋 Mis jugadas → ⏳ En juego (lo que antes era `/misapuestas`) empieza con un resumen de tu cartera:
+
+- 💰 **En juego**: todo lo apostado que aún no se ha resuelto (partidos y quinielas), con cuántos partidos y quinielas
+  son. Antes solo se veía apuesta a apuesta, y la lista de partidos se corta en 10.
+- 🏆 **Posible premio**: lo máximo que puedes cobrar de tus partidos pendientes. En un mismo partido solo puede acertar
+  una de tus apuestas (p. ej. a local y a empate), así que de cada partido cuenta la de más premio. La quiniela no suma:
+  su premio depende del bote y de cuántos acierten.
+- 📅 **Beneficio del mes**: lo cobrado menos lo apostado en lo resuelto este mes, en hora de Madrid (los partidos por el
+  día del partido; las quinielas, por el día en que se cerraron). Lo reembolsado por falta de resultado, y las quinielas
+  devueltas, cuentan como recuperadas (ni ganan ni pierden).
+- Sin tabla nueva: sale de `apuestas_usuario` y `quiniela_apuestas` (`misJugadas.cartera`). Tests nuevos en
+  `tests/carteraApuestas.test.js` (lo máximo por partido, el cambio de mes en hora de Madrid, lo reembolsado y el
+  panel con y sin apuestas).
+
+## 2026-10-07 (🏆 Clasificación semanal con premios (F-EC-03, #35))
+
+Cada lunes a las 10:00 (hora de Madrid) se publica en el canal de la clasificación y se paga el mismo premio (500 🪙 por
+defecto) a 💰 el más rico, 💬 el más activo y ⚽ el mejor apostador de la semana, con mención solo a los premiados.
+
+- **El más rico**: más efectivo + banco en ese momento (`dinero.masRicos`, el mismo de 🏆 Rankings → Riqueza).
+- **El más activo**: más XP ganada en el servidor desde la clasificación anterior. No había forma de saber la XP de una
+  semana, así que la migración **022** crea `clasificacion_xp`, con la XP de cada uno al publicar (se rellena ya al
+  migrar, para que la primera semana cuente desde el despliegue).
+- **El mejor apostador**: más beneficio en lo resuelto de lunes a domingo, con lo del ranking de apostadores (F-AP-03,
+  `apuestas/ranking.beneficioEntre`); solo si ganó algo.
+- El premio va al efectivo con `pagarConImpuesto` (tipo nuevo **🏆 Premios** en Movimientos), así que paga el impuesto de
+  ingresos del servidor como cualquier otro ingreso. Primero se publica y después se paga: si el canal falla, no se paga
+  nada y se reintenta a la hora siguiente.
+- Cron cada hora de los lunes y al arrancar, una vez por semana y servidor (`clasificacion.ultima_semana`), como el
+  ranking semanal de Plex.
+- **Sin canal no se publica ni se paga nada** (viene sin canal: no empieza a crear dinero hasta que un admin lo decida).
+  `/paneladmin` → ⚙️ Config Global → 🏆 Semanal: canal, premio y quién ganaría si fuera ahora.
+- Código en `src/systems/clasificacionSemanal.js` y `src/adminPanel/clasificacion.js`. Tests nuevos en
+  `tests/clasificacionSemanal.test.js` (quién gana, la semana en hora de Madrid, el mensaje, los premios con impuesto,
+  una vez por semana, el canal que falla, la migración y el panel).
+
+## 2026-10-07 (⚽ Ranking de apostadores (F-AP-03, #2))
+
+`/perfil` → 🏆 Rankings tiene una opción más en el menú, **⚽ Apostadores**: los 10 que más han ganado apostando, con
+su % de acierto y su mejor racha de partidos ganados seguidos. Todo sale de lo que ya se guardaba de cada apuesta (el
+premio, 0 si se perdió); no hay tabla nueva.
+
+- **Beneficio**: el mismo que el de 📊 Stats (`misJugadas.estadisticas`): partidos ya resueltos y quinielas cerradas o
+  caducadas (una quiniela devuelta cuenta como recuperada). Lo que está en juego no cuenta.
+- **Acierto y racha**: solo de las apuestas a partidos (una quiniela no se gana o se pierde entera). La racha va por
+  la fecha del partido, no por el orden en que se apostó; las reembolsadas por falta de resultado no la cortan.
+- Para salir hacen falta **5 apuestas resueltas** (como el mínimo de 5 partidas del ranking del casino). A igualdad
+  de beneficio, va antes quien tiene más acierto.
+- Código: `src/systems/apuestas/ranking.js` (`ranking`, `cifras`, `mejorRacha`) y `embedRankingApuestas` en
+  `src/paneles/perfil.js`. Tests nuevos en `tests/rankingApostadores.test.js`.
+
 ## 2026-10-07 (🏅 Logros: lo de Plex, agrupado dentro del filtro 🍿 Plex)
 
 El menú del filtro de `/perfil` → 🏅 Logros tenía mezclados con las categorías los cuatro filtros de Plex (🏆 Solo

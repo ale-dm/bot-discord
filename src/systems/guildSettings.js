@@ -70,6 +70,10 @@ const DEFAULT_FLAT = {
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
+
+    "clasificacion.canal": "",
+    "clasificacion.premio": 500,
+    "clasificacion.ultima_semana": "",
 };
 
 const KEY_TYPES = {
@@ -139,6 +143,10 @@ const KEY_TYPES = {
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
+
+    "clasificacion.canal": "string",
+    "clasificacion.premio": "number",
+    "clasificacion.ultima_semana": "string",
 };
 
 function parseValue(key, value) {
@@ -233,6 +241,11 @@ function flattenToNested(flat) {
         alertas: {
             enabled: flat["alertas.enabled"],
             admin_ids: flat["alertas.admin_ids"],
+        },
+        clasificacion: {
+            canal: flat["clasificacion.canal"],
+            premio: flat["clasificacion.premio"],
+            ultima_semana: flat["clasificacion.ultima_semana"],
         },
     };
 }

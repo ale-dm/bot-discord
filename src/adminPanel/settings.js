@@ -16,7 +16,9 @@ function buildConfigHome(guildId) {
     const acl = guildSettings.listCommandAcl(guildId);
     const embed = new EmbedBuilder()
         .setTitle("⚙️ Configuración Global")
-        .setDescription("Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria y acceso por comando.")
+        .setDescription(
+            "Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria, clasificación semanal y acceso por comando.",
+        )
         .addFields(
             {
                 name: "🤖 Duende IA",
@@ -56,6 +58,13 @@ function buildConfigHome(guildId) {
                 inline: true,
             },
             {
+                name: "🏆 Clasificación semanal",
+                value: cfg.clasificacion.canal
+                    ? `Lunes en <#${cfg.clasificacion.canal}>\nPremio: **${fmt(cfg.clasificacion.premio)}**`
+                    : "Sin canal (no se publica)",
+                inline: true,
+            },
+            {
                 name: "🏛️ Impuestos",
                 value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmt(impuestos.boteTotal(guildId))}**`,
                 inline: true,
@@ -76,6 +85,7 @@ function buildConfigHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_semanal_home").setLabel("🏆 Semanal").setStyle(ButtonStyle.Success),
     );
 
     return { embeds: [embed], components: [row1, row2, navRow()] };

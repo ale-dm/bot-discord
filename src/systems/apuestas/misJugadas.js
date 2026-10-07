@@ -105,4 +105,67 @@ function ultimasCasino(userId, n = 5) {
     return db.prepare("SELECT juego, resultado, apuesta FROM casino WHERE userId = ? ORDER BY fecha DESC LIMIT ?").all(userId, n);
 }
 
-module.exports = { SIGNO, partidosDe, detalleQuiniela, quinielasDe, quinielaDe, estadisticas, ultimasCasino };
+// El mes de una fecha en hora de Madrid ("2026-10"), y su nombre ("octubre").
+const ZONA = "Europe/Madrid";
+const formatoMes = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit" });
+const formatoNombreMes = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, month: "long" });
+const mesDe = (fecha) => formatoMes.format(new Date(fecha)).slice(0, 7);
+
+/**
+ * La cartera de apuestas (F-AP-04): lo que tiene en juego ahora, lo máximo que puede cobrar de sus partidos pendientes
+ * (en cada partido solo puede acertar una de sus apuestas, así que cuenta la de más premio) y el beneficio de lo resuelto
+ * este mes en hora de Madrid (partidos por el día del partido, quinielas por el día en que se cerraron). La quiniela no
+ * suma al posible premio: depende del bote y de cuántos acierten.
+ */
+function cartera(userId, ahora = Date.now()) {
+    const pendientes = db
+        .prepare(
+            `SELECT a.match_id, a.cantidad, a.cuota FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
+             WHERE a.user_id = ? AND p.estado = 'abierto'`,
+        )
+        .all(userId);
+    const premioPorPartido = new Map();
+    for (const a of pendientes) {
+        premioPorPartido.set(a.match_id, Math.max(premioPorPartido.get(a.match_id) || 0, Math.round(a.cantidad * a.cuota)));
+    }
+    const quinielas = db
+        .prepare(
+            `SELECT COUNT(*) AS n, COALESCE(SUM(qa.cantidad), 0) AS cantidad FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id
+             WHERE qa.user_id = ? AND q.estado = 'abierta'`,
+        )
+        .get(userId);
+
+    // Lo de este mes; con un margen de días para no perder nada por la diferencia horaria, luego se filtra por el mes en Madrid.
+    const mes = mesDe(ahora);
+    const desde = new Date(ahora - 32 * 86400 * 1000).toISOString();
+    const partidosMes = db
+        .prepare(
+            `SELECT a.cantidad, a.premio, p.start_time AS fecha FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
+             WHERE a.user_id = ? AND p.estado = 'finalizado' AND a.premio IS NOT NULL AND p.start_time >= ?`,
+        )
+        .all(userId, desde)
+        .filter((r) => mesDe(r.fecha) === mes);
+    const quinielasMes = db
+        .prepare(
+            `SELECT qa.cantidad, qa.premio, q.cerrada_en AS fecha, ${REEMBOLSADA} AS reembolsada
+             FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id
+             WHERE qa.user_id = ? AND q.estado != 'abierta' AND q.cerrada_en >= ?`,
+        )
+        .all(userId, desde)
+        .filter((r) => mesDe(r.fecha) === mes);
+    const beneficioMes =
+        partidosMes.reduce((s, r) => s + r.premio - r.cantidad, 0) +
+        quinielasMes.reduce((s, r) => s + (r.reembolsada ? r.cantidad : r.premio) - r.cantidad, 0);
+
+    return {
+        enJuego: pendientes.reduce((s, a) => s + a.cantidad, 0) + quinielas.cantidad,
+        partidos: premioPorPartido.size,
+        quinielas: quinielas.n,
+        posiblePremio: [...premioPorPartido.values()].reduce((s, n) => s + n, 0),
+        beneficioMes,
+        resueltasMes: partidosMes.length + quinielasMes.length,
+        mes: formatoNombreMes.format(new Date(ahora)),
+    };
+}
+
+module.exports = { SIGNO, partidosDe, detalleQuiniela, quinielasDe, quinielaDe, estadisticas, ultimasCasino, cartera };
