@@ -8,6 +8,8 @@ const DEFAULT_FLAT = {
     "duende.temperature": 0.7,
     "duende.history_limit": 20,
     "duende.allowed_channel_id": "",
+    "duende.espontaneo_enabled": 1,
+    "duende.espontaneo_channel_id": "",
 
     "cripto.ttcl_base_price": 100,
     "cripto.ttcl_volatility": 40,
@@ -73,6 +75,8 @@ const KEY_TYPES = {
     "duende.temperature": "number",
     "duende.history_limit": "number",
     "duende.allowed_channel_id": "string",
+    "duende.espontaneo_enabled": "number",
+    "duende.espontaneo_channel_id": "string",
 
     "cripto.ttcl_base_price": "number",
     "cripto.ttcl_volatility": "number",
@@ -154,6 +158,8 @@ function flattenToNested(flat) {
             temperature: flat["duende.temperature"],
             history_limit: flat["duende.history_limit"],
             allowed_channel_id: flat["duende.allowed_channel_id"],
+            espontaneo_enabled: !!flat["duende.espontaneo_enabled"],
+            espontaneo_channel_id: flat["duende.espontaneo_channel_id"],
         },
         cripto: {
             ttcl_base_price: flat["cripto.ttcl_base_price"],

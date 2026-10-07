@@ -2,6 +2,63 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (💼 `/trabajar`)
+
+[F-EC-07](https://github.com/ale-dm/bot-discord/issues/48), idea nueva (no venía del backlog original).
+
+- **`/trabajar`**: ingreso con cooldown corto (30 min, `TRABAJAR_COOLDOWN_SEC`), distinto de la 🎁 recompensa
+  diaria (esa es gratis una vez al día; esto exige estar activo). Da 20-50 monedas al azar
+  (`TRABAJAR_BASE_MIN`/`MAX`) + 2 por nivel (`TRABAJAR_BONUS_NIVEL`), con un 12 % de las veces
+  (`TRABAJAR_PROB_FALLO`) de no dar nada.
+- El texto de "en qué has trabajado" lo escribe el Duende con Gemini **cada vez** (con su personalidad del
+  canal y el perfil de quien lo use, si tiene), no una frase fija de una lista.
+- Cooldown por persona con `guildSettings.checkAndConsumeLimit` (ya existía, sin usar en ningún sitio hasta
+  ahora — pensado justo para esto: cooldown + cupo diario opcional por `scope`).
+- Nuevo tipo de movimiento 💼 Trabajo en Movimientos (`dinero.js`).
+- Tests: 621 (de 616). Nuevos: `trabajar` (da dinero con el bonus de nivel correcto, no da nada cuando sale
+  mal, cooldown por persona, y que no rompe si falla la llamada a Gemini).
+
+## 2026-10-06 (📢 Mensajes espontáneos del Duende)
+
+Pedido porque el server estaba "un poco muerto": que el Duende anime a la gente a hacer cosas sin que nadie le hable.
+
+- De vez en cuando (probabilidad baja cada hora, de 11:00 a 23:00, `DUENDE_ESPONTANEO_PROB`), si el canal elegido
+  lleva un rato sin mensajes de verdad (`DUENDE_ESPONTANEO_QUIET_MS`, 2h por defecto — no interrumpe una
+  conversación activa), el Duende se dirige a alguien **al azar de quien tenga perfil** (🧠 Perfiles, con
+  descripción o notas de `/duende recuerda`): le menciona y le suelta algo basado en lo que sabe de él, en su
+  estilo, para picarle y que conteste. Si no hay nadie con perfil al que dirigirse, no dice nada — nunca un mensaje
+  genérico de relleno. (Primera versión: pensada para tirar de datos del server —tienda, apuestas, ranking de
+  dinero—, pero mencionar a quien más dinero tiene no convenció y se cambió por esto antes de llegar a `main`.)
+- Se activa o desactiva y se elige el canal en **Config Global → Duende → 💬 Mensajes solos** (`guild_settings`,
+  no hace falta tocar el `.env`).
+- `systems/duende/espontaneo.js`: la lista de "ganchos" es fácil de ampliar más adelante (cada uno devuelve
+  `{ texto, discordId? }` o `null` si no aplica); la mención la añade el código, no Gemini (para no depender de que
+  copie bien un ID), y el texto lo escribe con la personalidad del canal, igual que el resto del Duende.
+- Tests: 616 (de 600). Nuevos: `duendeEspontaneo` (el gancho con y sin perfiles válidos, cuándo se considera un
+  canal "en calma", y la decisión completa con probabilidad/canal/calma simulados).
+
+## 2026-10-06 (🎙️ Conversación de voz en directo)
+
+[F-DU-07](https://github.com/ale-dm/bot-discord/issues/18).
+
+- **`/conversación`**: conversación de voz en directo con el Duende (Gemini Live API), audio
+  bidireccional real en vez de por turnos — no hace falta esperar a que termines de hablar.
+  **No sustituye a `/escuchar`** (Vosk + TTS por lotes, que sigue exactamente igual): es una
+  funcionalidad nueva y aparte, pedida explícitamente así.
+- Usa las mismas herramientas que el chat de texto (saldo, nivel, Plex, Seerr...) con el mismo
+  criterio de qué Plex/Seerr se permite según el canal de texto desde donde se invoca.
+- **Dos cortes de coste obligatorios**, no opcionales: se cobra mientras la conexión esté
+  abierta, no solo cuando se habla. `DUENDE_LIVE_IDLE_DISCONNECT_MS` (5 min por defecto) corta
+  tras ese tiempo sin que nadie hable; `DUENDE_LIVE_MAX_DURATION_MS` (30 min) es un tope duro
+  pase lo que pase. `/conversación` otra vez también la termina a mano.
+- Nuevo servicio `services/duende/liveVoz.js`: une el audio de Discord (Opus → PCM 16kHz) con
+  la sesión en directo de Gemini, y la respuesta (PCM 24kHz) con la salida de voz de Discord
+  (vía `ffmpeg`, ya en la imagen para Vosk). Sin tabla ni migración nueva.
+- Tests: 600 (de 590). Nuevos: `liveVoz` (una conversación a la vez por servidor, los dos
+  cortes de coste con temporizadores simulados, las herramientas se ejecutan y responden, una
+  desconocida no rompe nada) — todo con el audio y la conexión a Discord simulados: queda
+  pendiente de probar de verdad en Discord.
+
 ## 2026-10-06 (🧠 Memoria del Duende por similitud, no solo por fecha)
 
 [F-DU-06](https://github.com/ale-dm/bot-discord/issues/17). Migración **019**.

@@ -84,6 +84,15 @@ function buildDuendePanel(guildId) {
             { name: "Temperatura", value: String(d.temperature), inline: true },
             { name: "Historial", value: String(d.history_limit), inline: true },
             { name: "Canal permitido", value: d.allowed_channel_id ? `<#${d.allowed_channel_id}>` : "cualquiera", inline: true },
+            {
+                name: "💬 Mensajes solos",
+                value: d.espontaneo_enabled
+                    ? d.espontaneo_channel_id
+                        ? `Activos en <#${d.espontaneo_channel_id}>`
+                        : "Activos, pero sin canal elegido (no sale ninguno)"
+                    : "Desactivados",
+                inline: true,
+            },
         )
         .setColor(0x6c5ce7)
         .setTimestamp();
@@ -91,6 +100,7 @@ function buildDuendePanel(guildId) {
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_duende_edit").setLabel("✏️ Editar IA").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_cfg_duende_channel").setLabel("# Canal").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_duende_espontaneo").setLabel("💬 Mensajes solos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_apodos_home").setLabel("🏷️ Apodos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_perfiles_home").setLabel("🧠 Perfiles").setStyle(ButtonStyle.Secondary),
     );
@@ -307,6 +317,16 @@ async function handleSettingsButton(interaction) {
         return true;
     }
 
+    if (id === "paneladmin_cfg_duende_espontaneo") {
+        const d = guildSettings.getSettings(guildId).duende;
+        const modal = simpleModal("paneladmin_cfg_duende_espontaneo_modal", "Duende: mensajes solos", [
+            { id: "enabled", label: "Activos (1/0)", value: d.espontaneo_enabled ? "1" : "0" },
+            { id: "channel", label: "ID de canal (vacío = no sale ninguno)", required: false, value: d.espontaneo_channel_id || "" },
+        ]);
+        await interaction.showModal(modal);
+        return true;
+    }
+
     if (id === "paneladmin_cfg_cripto_market") {
         const c = guildSettings.getSettings(guildId).cripto;
         const modal = simpleModal("paneladmin_cfg_cripto_market_modal", "Cripto: TTCL + Fees", [
@@ -433,6 +453,22 @@ async function handleSettingsModal(interaction) {
             details: { channelId: channelId || null },
         });
         await interaction.reply({ content: "✅ Canal permitido de Duende actualizado.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+
+    if (id === "paneladmin_cfg_duende_espontaneo_modal") {
+        const channelId = interaction.fields.getTextInputValue("channel").trim();
+        guildSettings.setManySettings(guildId, {
+            "duende.espontaneo_enabled": interaction.fields.getTextInputValue("enabled").trim(),
+            "duende.espontaneo_channel_id": channelId,
+        });
+        adminAudit.logAdminAction({
+            guildId,
+            actorId: interaction.user.id,
+            action: "settings.duende.espontaneo",
+            details: { channelId: channelId || null },
+        });
+        await interaction.reply({ content: "✅ Mensajes espontáneos del Duende actualizados.", flags: MessageFlags.Ephemeral });
         return true;
     }
 

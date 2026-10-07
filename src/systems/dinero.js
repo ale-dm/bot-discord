@@ -25,6 +25,7 @@ const TIPOS = {
     transferencia: "💸 Transferencias",
     logro: "🏅 Logros",
     diario: "🎁 Diario",
+    trabajo: "💼 Trabajo",
     objeto: "🎒 Objetos",
     admin: "🛠️ Admin",
     otro: "📦 Otros",

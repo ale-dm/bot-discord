@@ -89,6 +89,11 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   (no las menciones), sin enlaces, emojis del servidor ni formato, y como mucho 200 caracteres. En una charla de voz
   (`/escuchar`), si no puede hablar (el TTS falla, no hay conexión...), contesta por texto en el canal ("🗣️ …").
 - Si Gemini bloquea la respuesta por contenido, reintenta con un tono neutro manteniendo las herramientas.
+- **Mensajes espontáneos** (Config Global → Duende → 💬 Mensajes solos): de vez en cuando, sin que nadie le hable, se
+  dirige en el canal elegido a alguien al azar de quien tenga perfil (🧠 Perfiles, con descripción o notas de
+  `/duende recuerda`), mencionándole, para picarle y que conteste. Solo si ese canal lleva un rato sin mensajes de
+  verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00. Si no hay
+  nadie con perfil al que dirigirse, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
 
 ### Herramientas (datos reales)
 
@@ -129,6 +134,7 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario. |
 | `/tts texto* [voz]` | El bot entra en tu canal de voz y lee el texto (Gemini TTS). Voces: Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina. El idioma se detecta solo. Los textos se ponen en cola por servidor. |
 | `/escuchar [usuario]` | El bot escucha a un usuario en el canal de voz, transcribe lo que dice (Vosk, local) y le responde **por voz** como el Duende, encadenando turnos mientras la conversación siga activa. |
+| `/conversación` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Vuelve a usar `/conversación` para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Funcionalidad aparte de `/escuchar`, que sigue igual. |
 | `/bola8 pregunta*` | Respuesta al azar de la bola 8 mágica. |
 
 ---
@@ -410,7 +416,7 @@ es único para todo el bot (no es por servidor).
 | 🏦 Ingresar | Pasa efectivo al banco (formulario con la cantidad; máx. 1.000.000 por operación) |
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
-| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, objetos, admin |
+| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, admin |
 | 🎁 Diario | La recompensa diaria (ver abajo). Cuando ya la has cobrado sale desactivado como "🎁 Mañana" |
 
 **🎁 Recompensa diaria**: una vez al día (el día cambia a las 00:00, hora de Madrid, como las rachas), unas monedas
@@ -418,6 +424,12 @@ al efectivo que crecen con tu **racha de XP** en el servidor: 100 + 20 por día 
 Panel admin → Config Global → 🎁 Diario, también se puede desactivar). El dinero es global, así que se cobra una vez
 al día aunque estés en varios servidores. Queda en Movimientos como 🎁 Diario. El Duende puede decirte si te toca
 cobrarla, pero no cobrarla por ti.
+
+**💼 `/trabajar`**: a diferencia del diario, se puede usar cada 30 min (`TRABAJAR_COOLDOWN_SEC`) — exige estar
+activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJAR_BASE_MIN`/`MAX`) más 2 por cada
+nivel que tengas (`TRABAJAR_BONUS_NIVEL`), y un 12 % de las veces (`TRABAJAR_PROB_FALLO`) no da nada. El Duende
+escribe con Gemini, cada vez, en qué has "trabajado" (con tu personalidad y tu perfil si tienes uno) — no es una
+frase fija de una lista. Queda en Movimientos como 💼 Trabajo.
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
@@ -720,6 +732,8 @@ Duende siguen en `/duende set | add | remove`.
 | `DUENDE_TEMPERATURE` | 0.7 | Creatividad (también en el panel) |
 | `DUENDE_PROMPT_MSG_MAX_CHARS` | 280 | Recorte de cada mensaje del historial |
 | `DUENDE_LOG_FULL_PROMPT` | 0 | `1` = guarda el prompt completo en el log |
+| `DUENDE_ESPONTANEO_PROB` | 0.15 | Probabilidad de mensaje espontáneo por hora (11:00-23:00); canal y activado en el panel |
+| `DUENDE_ESPONTANEO_QUIET_MS` | 7200000 (2h) | Tiempo sin mensajes de verdad en el canal para considerarlo "parado" |
 | `IMAGE_GEN_MODEL`, `IMAGE_GEN_TIMEOUT_MS`, `IMAGE_GEN_MAX_RETRIES`, `IMAGE_GEN_RETRY_BASE_MS`, `IMAGE_GEN_COOLDOWN_MS` | | `/imagen` e imágenes de `/ia` |
 | `IA_COOLDOWN_MS` | 15000 | Cooldown de `/ia` |
 
@@ -731,6 +745,15 @@ Duende siguen en `/duende set | add | remove`.
 | `LOCAL_STT_URL` | `http://127.0.0.1:5001/transcribe` | Servidor Vosk |
 | `VOSK_MODEL_PATH` | modelo español pequeño | Modelo |
 | `STT_LISTEN_TIMEOUT_MS`, `STT_ONLY_USER_ID`, `STT_FIXED_USER_ID` | | Ajustes de `/escuchar` (el detalle de STT sale con `LOG_LEVEL=debug`; `STT_VERBBOSE` ya no se usa) |
+
+### Voz en directo (Gemini Live, `/conversación`)
+
+| Variable | Por defecto | Qué controla |
+|---|---|---|
+| `DUENDE_LIVE_MODEL` | `gemini-live-2.5-flash-preview` | Modelo de audio bidireccional en tiempo real (no confundir con `GEMINI_TTS_MODEL`, que es por lotes) |
+| `DUENDE_LIVE_VOICE` | `DUENDE_TTS_VOICE` o `Puck` | Voz de `/conversación` |
+| `DUENDE_LIVE_IDLE_DISCONNECT_MS` | 300000 (5 min) | Corta la conversación tras este tiempo sin que nadie hable — se cobra mientras la conexión esté abierta, no solo al hablar |
+| `DUENDE_LIVE_MAX_DURATION_MS` | 1800000 (30 min) | Tope duro de duración, haya actividad o no |
 
 ### Otros
 
@@ -799,6 +822,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 |---|---|
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/conversación` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
@@ -810,4 +834,5 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/perfil` | [Perfil](#6-perfil) |
 | `/ping` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
+| `/trabajar` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |
