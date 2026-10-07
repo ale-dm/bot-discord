@@ -22,10 +22,14 @@ const mockOpusStream = () => {
     };
 };
 let mockConnectionActual;
+let mockAudioPlayerOpts;
 jest.mock("@discordjs/voice", () => ({
     joinVoiceChannel: jest.fn(() => mockConnectionActual),
     getVoiceConnection: jest.fn(() => null),
-    createAudioPlayer: jest.fn(() => ({ play: jest.fn(), on: jest.fn() })),
+    createAudioPlayer: jest.fn((opts) => {
+        mockAudioPlayerOpts = opts;
+        return { play: jest.fn(), on: jest.fn() };
+    }),
     createAudioResource: jest.fn(() => ({})),
     entersState: jest.fn(async () => {}),
     VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected", Destroyed: "destroyed" },
@@ -154,6 +158,14 @@ test("el audio que manda Gemini se escribe en ffmpeg directamente (sin .stdin, q
     await liveVoz.empezarConversacion(interaccionEnVoz());
     mockLiveCallbacks.onmessage({ data: Buffer.from("audio-falso").toString("base64") });
     expect(mockFFmpegActual.write).toHaveBeenCalledWith(Buffer.from("audio-falso"));
+});
+
+test("el reproductor no da la conversación por acabada por un hueco de audio entre turnos (maxMissedFrames)", async () => {
+    await liveVoz.empezarConversacion(interaccionEnVoz());
+    // Por defecto son 5 (100ms): letal en una conversación real, donde Gemini puede tardar
+    // segundos entre turnos sin mandar audio (visto en producción: hablaba el saludo y luego
+    // se quedaba muda para siempre, porque el reproductor destruía el stream de ffmpeg).
+    expect(mockAudioPlayerOpts).toMatchObject({ behaviors: { maxMissedFrames: Infinity } });
 });
 
 test("al conectar, pide un saludo inicial para confirmar que la salida de audio funciona", async () => {

@@ -202,7 +202,11 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
             }
         });
         sesion.ffmpeg = ffmpeg;
-        const player = createAudioPlayer();
+        // maxMissedFrames por defecto es 5 (100ms sin datos) y da la conversación por acabada,
+        // destruyendo el stream — letal aquí: entre turnos es normal que Gemini no mande audio
+        // durante segundos (esperando a que hables). El corte de verdad lo hacen los timers de
+        // inactividad/duración de más abajo, no el reproductor.
+        const player = createAudioPlayer({ behaviors: { maxMissedFrames: Infinity } });
         player.on("error", (e) => log.warn(`Error en el reproductor de voz en directo: ${e.message}`));
         player.on("stateChange", (oldS, newS) => log.info(`Reproductor de voz en directo: ${oldS.status} -> ${newS.status}`));
         const resource = createAudioResource(ffmpeg, { inputType: StreamType.Raw, inlineVolume: true });
