@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**↩️ Cancelar una apuesta (F-AP-05, #4)**
+- [ ] Apostar 100 a un partido que aún no ha empezado; en 📋 Mis jugadas → ↩️ Cancelar una apuesta, elegirla: dice que
+      devuelve 90. Confirmar: llegan 90 al efectivo y en 📜 Movimientos sale "Apuesta cancelada: … (comisión de 10)".
+- [ ] Con un mensaje de Mis jugadas abierto desde antes de que empiece un partido, intentar cancelarla ya empezado: no deja.
+
 **💼 Cartera de apuestas (F-AP-04, #3)**
 - [ ] `/juegos` → 📋 Mis jugadas: arriba, lo que tienes en juego, el posible premio y el beneficio del mes, y que cuadren
       con las apuestas de debajo y con 📋 Resueltas.

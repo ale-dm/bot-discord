@@ -1,8 +1,9 @@
 // Pestaña "📋 Mis jugadas" de /juegos: lo que tienes en juego y lo ya resuelto, con apuestas a partidos y
 // quinielas juntas. Las estadísticas de apuestas van en la pestaña 📊 Stats (paneles/juegos). Los datos, en
 // systems/apuestas.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const jugadas = require("../systems/apuestas/misJugadas");
+const cancelar = require("../systems/apuestas/cancelar");
 const { filaPestanas } = require("./pestanasJuegos");
 
 const EMOJI_JUEGO = { blackjack: "🃏", tragaperras: "🎰", slots: "🎰", ruleta: "🎡", adivinar: "🔮", ppt: "✂️" };
@@ -133,11 +134,58 @@ function camposStatsApuestas(userId) {
     return { campos, beneficio };
 }
 
-/** Mis jugadas: vista "activas" (en juego) o "historial" (resueltas). */
-function buildMisJugadas(userId, vista = "activas") {
+/** ↩️ Menú para cancelar una apuesta a un partido que aún no ha empezado (F-AP-05), o null si no hay ninguna. */
+function filaCancelar(userId) {
+    const lista = cancelar.cancelables(userId).slice(0, 25);
+    if (!lista.length) return null;
+    return new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId(`misapuestas_cancelarsel_${userId}`)
+            .setPlaceholder(`↩️ Cancelar una apuesta (comisión del ${cancelar.COMISION_PCT} %)`)
+            .addOptions(
+                lista.map((a) => ({
+                    label: `${a.home_team} vs ${a.away_team}`.slice(0, 100),
+                    description: `${eleccionTexto(a)} · ${a.cantidad} 🪙 → te devuelvo ${a.devolucion} 🪙`.slice(0, 100),
+                    value: String(a.id),
+                })),
+            ),
+    );
+}
+
+/** Mis jugadas: vista "activas" (en juego) o "historial" (resueltas). `content`: un aviso encima (p. ej. tras cancelar). */
+function buildMisJugadas(userId, vista = "activas", content = "") {
     const embed = new EmbedBuilder().setColor(0x3498db).setTimestamp();
     const deporte = vista === "historial" ? vistaResueltas(userId, embed) : vistaActivas(userId, embed);
-    return { embeds: [embed], components: filaVistas(userId, vista === "historial" ? "historial" : "activas", deporte) };
+    const components = filaVistas(userId, vista === "historial" ? "historial" : "activas", deporte);
+    const menuCancelar = vista === "historial" ? null : filaCancelar(userId);
+    // El menú, antes de las pestañas de /juegos (que siempre van en la última fila).
+    if (menuCancelar) components.splice(components.length - 1, 0, menuCancelar);
+    return { content, embeds: [embed], components };
+}
+
+/** ¿Seguro? Antes de cancelar una apuesta: qué se devuelve y cuánto se queda de comisión. */
+function buildConfirmarCancelar(userId, a) {
+    const unix = Math.floor(Date.parse(a.start_time) / 1000);
+    const embed = new EmbedBuilder()
+        .setTitle("↩️ ¿Cancelar esta apuesta?")
+        .setDescription(
+            `**${a.home_team}** vs **${a.away_team}** · empieza <t:${unix}:R>
+` +
+                `🎯 ${eleccionTexto(a)} · ${a.cantidad.toLocaleString("es")} 🪙 @${a.cuota}
+
+` +
+                `Te devuelvo **${a.devolucion.toLocaleString("es")}** 🪙 al efectivo: lo apostado menos **${a.comision.toLocaleString("es")}** 🪙 ` +
+                `de comisión (el ${cancelar.COMISION_PCT} %).`,
+        )
+        .setColor(0xe67e22);
+    const fila = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`misapuestas_cancelarok_${a.id}_${userId}`)
+            .setLabel("↩️ Sí, cancélala")
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId(`misapuestas_activas_${userId}`).setLabel("◀ No, volver").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: "", embeds: [embed], components: [fila] };
 }
 
 /** Botones para después de apostar: ver lo apostado o seguir. */
@@ -153,4 +201,4 @@ function filaTrasApostar(userId, { deporte = "laliga", quiniela = false } = {}) 
     );
 }
 
-module.exports = { buildMisJugadas, filaTrasApostar, lineaQuiniela, camposStatsApuestas };
+module.exports = { buildMisJugadas, buildConfirmarCancelar, filaTrasApostar, lineaQuiniela, camposStatsApuestas };

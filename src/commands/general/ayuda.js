@@ -98,7 +98,7 @@ const SECCIONES = {
             "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas.",
             "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
             "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve.",
-            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego (cuánto, lo que podrías cobrar y tu beneficio del mes), con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto.",
+            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego (cuánto, lo que podrías cobrar y tu beneficio del mes), con tus pronósticos de la quiniela y los aciertos que llevas, y lo ya resuelto. Una apuesta a un partido que aún no ha empezado se puede ↩️ cancelar, con un 10 % de comisión.",
             "Se pagan solas cada hora cuando acaban los partidos, y te aviso por DM si ganas.",
         ],
     },
