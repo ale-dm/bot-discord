@@ -52,7 +52,12 @@ async function handleImpuestosButton(interaction) {
         await interaction.showModal(
             simpleModal("paneladmin_impuestos_add_modal", "Añadir regla de impuesto", [
                 { id: "base", label: "Base: ingreso o compra", placeholder: "ingreso" },
-                { id: "tipo", label: "Tipo concreto (vacío = general; solo para ingreso)", placeholder: "casino", required: false },
+                {
+                    id: "tipo",
+                    label: "Tipo concreto (vacío = general)",
+                    placeholder: "casino — solo para ingreso",
+                    required: false,
+                },
                 { id: "porcentaje", label: "Porcentaje (0-100)", placeholder: "5" },
                 { id: "destino", label: "Destino: bote o sumidero", placeholder: "bote", value: "bote", required: false },
             ]),
