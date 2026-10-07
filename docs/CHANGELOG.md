@@ -2,6 +2,28 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (📊 Resumen semanal para admins (F-AD-02, #38))
+
+Cada lunes a las 09:00 (hora de Madrid) llega por DM a quien recibe las alertas (`systems/alertas`: los IDs del panel o,
+si no hay, el dueño del servidor) un resumen de los últimos 7 días, con lo que ya estaba en los logs y en 🩺 Sistema:
+
+- ❌ **Errores**: los de `logs/error-log*.txt` de la semana (también los rotados), agrupados como las alertas (el mismo
+  error con otros números es uno), los 5 más repetidos.
+- ⌨️ **Comandos más usados**: las líneas `[Comando] /…` de `logs/app-log*.txt` de la semana, solo los que terminaron
+  bien (sin los denegados por ACL ni los que fallaron).
+- 🤖 **Gemini**: los contadores de 🩺 Sistema, restando los del resumen anterior. Viven en memoria, así que si el bot
+  se reinició durante la semana cuentan desde el arranque, y el resumen lo dice.
+- ⚽ **Odds API**: los créditos que quedaban en la última respuesta.
+- Los logs rotan por tamaño (5 ficheros de 5 MB): si ya se han borrado rotados y no queda nada anterior a la semana, el
+  resumen avisa de que puede faltar el principio.
+- Cron cada hora de los lunes y al arrancar, una vez por semana (`resumen_admin_semana` en la tabla `config`, sin
+  migración nueva). Con las alertas desactivadas no se manda.
+- `/paneladmin` → 🩺 Sistema → 🔔 Alertas → **📊 Resumen semanal**: vista previa, solo a quien lo pulsa (no cuenta como
+  enviado).
+- Código en `src/systems/resumenAdmin.js`. Tests nuevos en `tests/resumenAdmin.test.js` (con ficheros de log de verdad
+  en una carpeta temporal: errores agrupados, comandos, logs rotados, Gemini desde el arranque y desde el anterior, el
+  DM una vez por semana y la vista previa).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
