@@ -10,10 +10,10 @@ process.env.TRABAJAR_PROB_FALLO = "0.12";
 const mockRespuestas = [];
 jest.mock("../src/services/geminiClient", () => ({
     ...jest.requireActual("../src/services/geminiClient"),
-    generateContentWithTimeout: jest.fn(async () => {
+    generateContentWithTimeout: jest.fn(async (params) => {
         const r = mockRespuestas.shift();
         if (r instanceof Error) throw r;
-        return r;
+        return typeof r === "function" ? r(params) : r;
     }),
 }));
 
@@ -82,6 +82,20 @@ test("el cooldown es por persona: a otra persona no le afecta", async () => {
     await trabajar(G, usuario("u4"), "canal-1");
     const otra = await trabajar(G, usuario("u5"), "canal-1");
     expect(otra.ok).toBe(true);
+});
+
+test("desactiva el 'pensamiento' de Gemini: una frase suelta no lo necesita y se come el maxTokens (visto en producción)", async () => {
+    jest.spyOn(Math, "random").mockReturnValueOnce(0.99).mockReturnValueOnce(0);
+    let configVista;
+    mockRespuestas.push((params) => {
+        configVista = params.config;
+        return texto("Turno cumplido.");
+    });
+
+    await trabajar(G, usuario("u7"), "canal-1");
+
+    expect(configVista.thinkingConfig).toEqual({ thinkingBudget: 0 });
+    expect(configVista.maxOutputTokens).toBeGreaterThanOrEqual(400);
 });
 
 test("si Gemini falla, cae a un texto por defecto sin romper", async () => {

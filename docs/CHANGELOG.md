@@ -2,6 +2,27 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🐛 Dos bugs vistos en producción: `/trabajar` cortado y `/conversación` muda)
+
+Los dos, con el primer despliegue real de ayer.
+
+- **`/trabajar` salía cortado a una palabra** ("Sraleo"): con `maxOutputTokens` bajo (150), el
+  "pensamiento" que Gemini 2.5 hace por defecto antes de responder se comía casi todo el
+  presupuesto, sin dejar casi nada para el texto de verdad (`finishReason: MAX_TOKENS`, ya se
+  avisaba en el log, pero no se actuaba). `generarConGemini` admite ya `thinkingBudget` en las
+  opciones; `/trabajar` y los mensajes espontáneos lo ponen a 0 (una frase suelta no necesita
+  razonar) y suben el `maxTokens` a 400 de colchón.
+- **`/conversación` no decía nada**: la entrada de audio se suscribía al conectar, antes de que
+  Discord hubiera asociado tu voz a ese canal — igual que si `services/stt.js` se suscribiera sin
+  esperar a `receiver.speaking.on("start", ...)`. Sin audio de entrada, Gemini no tenía nada a lo
+  que responder: la sesión se abría bien (sin ningún error en el log) y se quedaba en silencio
+  hasta que se cortaba a mano. Ahora se suscribe reactivamente, igual que STT. También se añade un
+  saludo inicial al conectar (`sendClientContent`), para que confirme la voz nada más entrar y no
+  solo cuando alguien habla.
+- Tests: 626 (de 621). Nuevos en `liveVoz` (el saludo inicial, que no se suscribe hasta que habla
+  el objetivo, que ignora a otras personas del canal, que no se suscribe dos veces) y en
+  `trabajar` (que `thinkingBudget: 0` llega de verdad a la llamada).
+
 ## 2026-10-07 (💼 `/trabajar`)
 
 [F-EC-07](https://github.com/ale-dm/bot-discord/issues/48), idea nueva (no venía del backlog original).
