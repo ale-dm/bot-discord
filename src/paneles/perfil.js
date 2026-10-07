@@ -143,8 +143,9 @@ function barraLogro(progress, target) {
     return `${"█".repeat(filled)}${"░".repeat(10 - filled)} ${Math.floor(ratio * 100)}%`;
 }
 
-// Filtros de 🏅 Logros: por categoría, solo los trofeos de Plex (los de cada serie, saga...) o una dificultad. La clave
-// va en los ids de los botones: sin "_".
+// Filtros de 🏅 Logros: por categoría y, dentro de 🍿 Plex, todos los de Plex, solo los trofeos (los de cada serie,
+// saga...) o una dificultad. La clave va en los ids de los botones: sin "_". Los de `plex` van en el menú de dentro de
+// 🍿 Plex, con su `opcion` como nombre.
 const CATEGORIAS = {
     social: "💬 Social",
     xp: "✨ XP y voz",
@@ -156,13 +157,26 @@ const CATEGORIAS = {
 const FILTROS_LOGROS = {
     todos: { label: "🏅 Todos los logros", cumple: () => true },
     ...Object.fromEntries(
-        Object.entries(CATEGORIAS).map(([c, label]) => [`cat-${c}`, { label, categoria: c, cumple: (a) => a.category === c }]),
+        Object.entries(CATEGORIAS).map(([c, label]) => [
+            `cat-${c}`,
+            {
+                label,
+                categoria: c,
+                cumple: (a) => a.category === c,
+                ...(c === "plex" ? { plex: true, opcion: "🍿 Todos los de Plex" } : {}),
+            },
+        ]),
     ),
-    trofeos: { label: "🏆 Solo trofeos de Plex", plex: true, cumple: (a) => Boolean(a.trofeo) },
+    trofeos: { label: "🏆 Solo trofeos de Plex", opcion: "🏆 Solo trofeos", plex: true, cumple: (a) => Boolean(a.trofeo) },
     ...Object.fromEntries(
         Object.keys(plexIdiomas.DIFICULTADES).map((d) => [
             `dif-${d}`,
-            { label: `🍿 Plex: ${plexIdiomas.textoDificultad(d)}`, plex: true, cumple: (a) => a.dificultad === d },
+            {
+                label: `🍿 Plex: ${plexIdiomas.textoDificultad(d)}`,
+                opcion: plexIdiomas.textoDificultad(d),
+                plex: true,
+                cumple: (a) => a.dificultad === d,
+            },
         ]),
     ),
 };
@@ -170,18 +184,45 @@ const FILTROS_LOGROS = {
 /** El filtro al final de los ids ("_cat-plex"); sin filtro ("todos"), los ids de siempre. */
 const sufijoFiltro = (filtro) => (filtro && filtro !== "todos" ? `_${filtro}` : "");
 
-/** Menú del filtro: las categorías que tiene y, si tiene logros de Plex, los trofeos y las dificultades. */
-function menuFiltroLogros(ownerId, targetId, filtro, includeHidden, todos) {
+/** Menús del filtro: las categorías que tiene y, con 🍿 Plex elegido, otro con lo de dentro (trofeos y dificultades). */
+function menusFiltroLogros(ownerId, targetId, filtro, includeHidden, todos) {
     const categorias = new Set(todos.map((a) => a.category));
+    const enPlex = Boolean(FILTROS_LOGROS[filtro].plex);
+    const categoria = enPlex ? "cat-plex" : filtro;
     const opciones = Object.entries(FILTROS_LOGROS)
-        .filter(([k, f]) => k === filtro || k === "todos" || (f.categoria ? categorias.has(f.categoria) : f.plex && categorias.has("plex")))
-        .map(([value, f]) => ({ label: f.label, value, default: value === filtro }));
-    return new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId(`perfil_logrosfiltro_${ownerId}_${targetId}_${includeHidden ? 1 : 0}`)
-            .setPlaceholder("Qué logros ver")
-            .addOptions(opciones),
-    );
+        .filter(([k, f]) => k === categoria || k === "todos" || categorias.has(f.categoria))
+        .map(([value, f]) => ({
+            label: f.label,
+            value,
+            default: value === categoria,
+            ...(value === "cat-plex" ? { description: "Dentro: los trofeos y cada dificultad" } : {}),
+        }));
+    const secretos = includeHidden ? 1 : 0;
+    const filas = [
+        new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId(`perfil_logrosfiltro_${ownerId}_${targetId}_${secretos}`)
+                .setPlaceholder("Qué logros ver")
+                .addOptions(opciones),
+        ),
+    ];
+    // El de dentro de 🍿 Plex lleva "_plex" al final: sobra al leer el id, pero sin él los dos serían iguales y Discord
+    // rechazaría el mensaje.
+    if (enPlex) {
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId(`perfil_logrosfiltro_${ownerId}_${targetId}_${secretos}_plex`)
+                    .setPlaceholder("Qué logros de Plex ver")
+                    .addOptions(
+                        Object.entries(FILTROS_LOGROS)
+                            .filter(([, f]) => f.plex)
+                            .map(([value, f]) => ({ label: f.opcion, value, default: value === filtro })),
+                    ),
+            ),
+        );
+    }
+    return filas;
 }
 
 function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false, filtro = "todos") {
@@ -282,7 +323,7 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
     const components = [row];
     const menu = propio ? menuReclamar(guildId, ownerId, targetId, filtro) : null;
     if (menu) components.push(menu);
-    components.push(menuFiltroLogros(ownerId, targetId, filtro, includeHidden, todos));
+    components.push(...menusFiltroLogros(ownerId, targetId, filtro, includeHidden, todos));
     components.push(filaPestanasPerfil(ownerId, targetId, "logros"));
     return { content: "", embeds: [embed], components };
 }

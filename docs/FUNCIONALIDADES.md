@@ -357,8 +357,9 @@ consigue: "🎉 @alguien desbloqueó logros: 🏅 …". El canal se elige en Con
 mismo que el de las subidas de nivel (`874776941000020018`, lo pone la migración 014). Sin canal, no se anuncia.
 
 Se ven y se reclaman en `/perfil` → 🏅 Logros (antes era `/logros`): lista con páginas y progreso, 👁️ Ver secretos,
-un menú para **filtrar** (una categoría, 🏆 solo los trofeos de Plex o una dificultad; las opciones de Plex solo salen a
-quien tiene logros de Plex), un menú 🎁 para reclamar uno y 🎁 Reclamar todo (se queda en el filtro). En el perfil de
+un menú para **filtrar** por categoría (🍿 Plex solo sale a quien tiene logros de Plex; con 🍿 Plex elegido, sale otro
+menú con todo lo de Plex: todos, 🏆 solo los trofeos o una dificultad), un menú 🎁 para reclamar uno y 🎁 Reclamar
+todo (se queda en el filtro). En el perfil de
 otra persona se ven sus logros, sin reclamar. **A quien no tiene Plex vinculado no le salen los logros de Plex que no
 tiene** (ni cuentan en su total de logros, en el perfil ni para el Duende); los que ya consiguió, sí. El ranking de
 logros está en 🏆 Rankings.

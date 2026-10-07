@@ -2,6 +2,20 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🏅 Logros: lo de Plex, agrupado dentro del filtro 🍿 Plex)
+
+El menú del filtro de `/perfil` → 🏅 Logros tenía mezclados con las categorías los cuatro filtros de Plex (🏆 Solo
+trofeos de Plex y las tres dificultades). Ahora ese menú solo tiene las categorías, y al elegir 🍿 Plex sale debajo
+otro menú con todo lo de Plex: 🍿 Todos los de Plex, 🏆 Solo trofeos, 🟢 Fácil, 🟡 Normal y 🎰 Gordo del Plex. Con un
+filtro de dentro puesto, arriba sigue marcado 🍿 Plex; al elegir otra categoría, el de Plex desaparece.
+
+- Las claves de los filtros no cambian (`cat-plex`, `trofeos`, `dif-…`): los botones y menús de los mensajes de antes
+  siguen funcionando. El menú de dentro lleva `_plex` al final del id (`perfil_logrosfiltro_{o}_{t}_{secretos}_plex`),
+  que se ignora al leerlo.
+- Con todo (reclamar y los dos menús), la pantalla llega a las 5 filas que admite Discord.
+- Tests en `tests/plexPerfil.test.js`: las opciones de cada menú, que el de Plex solo sale dentro de 🍿 Plex, y que
+  elegir desde él filtra igual y lo conservan los botones (páginas y secretos).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
