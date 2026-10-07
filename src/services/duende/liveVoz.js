@@ -299,10 +299,17 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         const receiver = connection.receiver;
         const targetUserId = interaction.user.id;
         let suscrito = false;
+        // Con la detección automática desactivada, Gemini corta la sesión con "Precondition
+        // check failed" si le llega audio FUERA de un activityStart/activityEnd — y eso pasa de
+        // verdad: el "end" de Discord y el último trozo de audio decodificado no llegan
+        // perfectamente a la vez (el decoder de Opus puede soltar algún trozo con el stream ya
+        // "parado"). Esta bandera corta ese audio sobrante en vez de mandarlo de todos modos.
+        let hablando = false;
         const onSpeakingStart = (userId) => {
             if (userId !== targetUserId) return;
-            // Con la detección automática desactivada (arriba), esto es lo que le dice a Gemini
-            // que empieza el turno del usuario — se manda cada vez que habla, no solo la primera.
+            // Esto es lo que le dice a Gemini que empieza el turno del usuario — se manda cada
+            // vez que habla, no solo la primera.
+            hablando = true;
             try {
                 liveSession.sendRealtimeInput({ activityStart: {} });
             } catch (e) {
@@ -318,6 +325,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
             pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
             pcmStream.on("data", (chunk) => {
                 marcarActividad();
+                if (!hablando) return; // trozo sobrante fuera del activityStart/activityEnd: se descarta, no se manda
                 sesion.chunksAudioEntrada = (sesion.chunksAudioEntrada || 0) + 1;
                 if (sesion.chunksAudioEntrada === 1) {
                     log.info(`Primer trozo de audio de ${userId} capturado (${chunk.length} bytes) — mandándolo a Gemini.`);
@@ -334,6 +342,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         // huecos (sin paquetes durante los silencios, no hay "silencio" que analizar).
         const onSpeakingEnd = (userId) => {
             if (userId !== targetUserId) return;
+            hablando = false;
             try {
                 liveSession.sendRealtimeInput({ activityEnd: {} });
             } catch (e) {
