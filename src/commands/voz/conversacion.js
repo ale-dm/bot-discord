@@ -19,6 +19,12 @@ module.exports = {
                     { name: "Solo si le llamas por su nombre (por defecto)", value: "mencion" },
                     { name: "Siempre responde", value: "siempre" },
                 ),
+        )
+        .addUserOption((option) =>
+            option
+                .setName("con")
+                .setDescription("Solo escuchará a esta persona (por defecto, a cualquiera del canal, por turnos).")
+                .setRequired(false),
         ),
     async run(client, interaction) {
         if (!interaction.guildId) {
@@ -34,8 +40,10 @@ module.exports = {
 
         await interaction.deferReply();
         const soloSiLeLlaman = interaction.options.getString("modo") !== "siempre";
+        const soloEscuchaA = interaction.options.getUser("con");
         const r = await liveVoz.empezarConversacion(interaction, {
             soloSiLeLlaman,
+            soloEscuchaA: soloEscuchaA?.id || null,
             onTerminada: (motivo) => {
                 interaction.channel
                     ?.send(`🔴 Conversación en directo terminada${motivo ? ` (${motivo})` : ""}.`)
@@ -48,8 +56,9 @@ module.exports = {
         }
         log.info(`Conversación en directo empezada en ${r.voiceChannel.name} (pedida por ${interaction.user.tag})`);
         const comoContesta = soloSiLeLlaman ? "Solo te contestará si dices «Duende» al hablar." : "Te contestará a todo lo que digas.";
+        const aQuien = soloEscuchaA ? ` Solo escuchará a **${soloEscuchaA.username}**.` : "";
         await interaction.editReply(
-            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. ${comoContesta} Dile que cuelgue o usa \`/conversación\` otra vez para terminarla.`,
+            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. ${comoContesta}${aQuien} Dile que cuelgue o usa \`/conversación\` otra vez para terminarla.`,
         );
     },
 };

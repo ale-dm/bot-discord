@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎚️ `/conversación con @persona`: volver a escuchar solo a una, cuando hay mucha gente)
+
+Escuchar a cualquiera del canal por turnos (de la entrada anterior) se vuelve un caos con mucha
+gente a la vez — todo el rato interrumpiéndose. Nuevo parámetro `con` en `/conversación`: si se
+indica a alguien, solo esa persona puede abrir turno, igual que el comportamiento original antes
+de soportar varias personas; sin indicarlo, sigue escuchando a cualquiera, por turnos.
+
+- `sesion.soloEscuchaA`: si está puesto, `onSpeakingStart` ignora a cualquiera que no sea esa
+  persona, antes incluso de mirar si hay un turno abierto.
+- Test nuevo: con `soloEscuchaA` puesto, ignora a cualquier otra persona y solo escucha a la
+  indicada.
+- De paso, la descripción del nuevo parámetro superaba el límite de 100 caracteres que impone
+  Discord en las opciones de un slash command — habría roto el registro del comando entero al
+  desplegarlo. Acortada antes de que llegara a producción.
+
 ## 2026-10-07 (👥 `/conversación` ya escucha a cualquiera del canal, no solo a quien la pidió)
 
 Confirmado en producción con dos personas a la vez: solo contestaba a quien había lanzado

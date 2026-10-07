@@ -207,6 +207,17 @@ test("cualquiera del canal puede hablarle, no solo quien pidió /conversación",
     expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledWith("otro-usuario-cualquiera", expect.anything());
 });
 
+test("con soloEscuchaA puesto, ignora a cualquiera que no sea esa persona (un caos con mucha gente, si no)", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i, { soloEscuchaA: i.user.id });
+
+    mockConnectionActual.receiver.speaking.emit("start", "otro-usuario-cualquiera");
+    expect(mockConnectionActual.receiver.subscribe).not.toHaveBeenCalledWith("otro-usuario-cualquiera", expect.anything());
+
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledWith(i.user.id, expect.anything());
+});
+
 test("mientras alguien tiene el turno abierto, se ignora a quien más intente hablar (no se mezclan dos personas en un turno)", async () => {
     const i = interaccionEnVoz();
     await liveVoz.empezarConversacion(i);
