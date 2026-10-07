@@ -199,6 +199,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🛡️ Objetos antirrobo (F-EC-06c, #79)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 023_objetos_antirrobo`; en la tienda salen el Candado y la Trampa para ladrones.
+      Decidir si los precios (150 y 100) valen o cambiarlos en 🛒 Catálogo.
+- [ ] Con dos cuentas: una compra el candado y la trampa y la otra le hace `/robar` — el mensaje lo dice y se le gastan
+      del inventario como toca.
+
 **🤖 Cambio automático de modelo de Gemini (F-AD-03, #39)**
 - [ ] Revisar `GEMINI_FALLBACK_MODELS` en el stack (por defecto `gemini-2.5-flash,gemini-2.5-pro`): que sean modelos que existan.
 - [ ] Poner en Config Global → 🤖 Duende un modelo que no exista y reiniciar: en el log `Modelo de Gemini cambiado solo de …

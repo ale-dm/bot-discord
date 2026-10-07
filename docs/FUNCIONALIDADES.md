@@ -455,6 +455,13 @@ robarle (si no llega, no se gasta el intento ni el cooldown). 65 % de probabilid
   no como efectivo normal. Sin aviso a la víctima en el momento — solo se nota mirando su saldo o sus
   Movimientos (queda como 🥷 Robos, igual que lo que gana el ladrón).
 - **Si sale mal**: el ladrón paga una multa de entre 30 y 80 de su propio efectivo (o lo que tenga, si es menos).
+- **🛡️ Objetos de protección** (F-EC-06c): antes de cada intento se mira el inventario de la víctima. Funcionan con
+  solo tenerlos (no se "usan"); si tiene varios del mismo tipo, se usa el más fuerte. Se compran en la tienda:
+  - 🔒 **Candado** (150 🪙, efecto `antirrobo:30`): le quita 30 puntos a la probabilidad de éxito (del 65 % al 35 %).
+    Se gasta con ese intento, salga bien o mal.
+  - 💣 **Trampa para ladrones** (100 🪙, efecto `trampa:3`): si el robo falla, la multa se multiplica por 3. Se gasta
+    solo cuando salta.
+  El ladrón se entera en el mensaje de `/robar` ("🔒 Ana tenía **Candado**…", "💣 ¡Ha saltado su **Trampa**…").
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
@@ -470,6 +477,8 @@ Los admins crean **objetos** en un catálogo y los ponen a la venta en la **tien
 Tipos de objeto:
 - **rol**: al comprarlo (o usarlo) te da un rol de Discord (por ID o por nombre igual al del objeto).
 - **consumible**: al usarlo aplica su efecto — `monedas:N` (te da N monedas) o `mensaje:texto`.
+- **coleccionable**: no se usa. Si tiene efecto `antirrobo:N` (1-100) o `trampa:N` (2-10), protege de `/robar` con
+  solo tenerlo (ver [Dinero](#dinero-efectivo-banco-y-dinero-negro)).
 - Cada objeto puede tener categoría, rareza, imagen y ser **único** (solo se puede comprar una vez).
 
 | Comando | Qué hace |

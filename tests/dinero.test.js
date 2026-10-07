@@ -85,6 +85,9 @@ describe("tienda: cobro de una compra", () => {
     const inventario = (u) => db.prepare("SELECT COUNT(*) c FROM inventario WHERE userId = ?").get(u).c;
 
     beforeAll(() => {
+        // Desde un catálogo vacío: la migración 023 pone a la venta el candado y la trampa (F-EC-06c).
+        db.prepare("DELETE FROM tienda").run();
+        db.prepare("DELETE FROM objeto").run();
         db.prepare("INSERT INTO objeto (id, nombre, descripcion) VALUES (1, 'Palote', 'un palo')").run();
         db.prepare("INSERT INTO tienda (id, objetoId, precio, stock) VALUES (1, 1, 300, 1)").run();
         db.prepare("INSERT INTO banco (userId, saldo, enMano) VALUES ('rico', 0, 1000), ('pobre', 0, 100), ('tarde', 0, 1000)").run();
