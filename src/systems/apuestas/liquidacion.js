@@ -5,6 +5,7 @@ const { EmbedBuilder } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../dinero");
 const retos = require("../retos");
+const marcadorExacto = require("./marcador");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -173,7 +174,9 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             const cierre = { apostantes: apuestas.length, ganadores: [], repartido: 0 };
             for (const ap of apuestas) {
                 resumen.total++;
-                if (ap.eleccion === resultado) {
+                // Las de marcador exacto (F-AP-10) aciertan con el marcador; las demás, con el resultado.
+                const gana = marcadorExacto.acierta(ap.eleccion, resultado, marcador);
+                if (gana) {
                     const premio = Math.round(ap.cantidad * ap.cuota);
                     dinero.pagar(ap.user_id, premio);
                     dinero.apuntar(ap.user_id, "apuestas", `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`, premio);
@@ -187,11 +190,11 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 } else {
                     resumen.fallidas++;
                     logInfo(
-                        `[PAGARAPUESTAS] Apuesta perdida: usuario ${ap.user_id} perdió ${ap.cantidad} monedas (apostó ${ap.eleccion}, ganó ${resultado})`,
+                        `[PAGARAPUESTAS] Apuesta perdida: usuario ${ap.user_id} perdió ${ap.cantidad} monedas (apostó ${ap.eleccion}, ganó ${resultado}, ${marcador})`,
                     );
                 }
                 db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(
-                    ap.eleccion === resultado ? Math.round(ap.cantidad * ap.cuota) : 0,
+                    gana ? Math.round(ap.cantidad * ap.cuota) : 0,
                     ap.id,
                 );
             }

@@ -171,7 +171,8 @@ module.exports = {
             await interaction.update(await pantalla(interaction, "rankings", userId, parts[3], { tipo: interaction.values[0] }));
             return;
         }
-        // perfil_logrosfiltro_{o}_{t}_{secretos}: qué logros ver (vuelve a la página 1).
+        // perfil_logrosfiltro_{o}_{t}_{secretos}[_plex]: qué logros ver (vuelve a la página 1). "_plex" es el menú de
+        // dentro de 🍿 Plex: sobra al leerlo.
         if (id.startsWith("perfil_logrosfiltro_")) {
             await interaction.update(
                 await pantalla(interaction, "logros", userId, parts[3], {

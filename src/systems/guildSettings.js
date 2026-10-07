@@ -10,6 +10,10 @@ const DEFAULT_FLAT = {
     "duende.allowed_channel_id": "",
     "duende.espontaneo_enabled": 1,
     "duende.espontaneo_channel_id": "",
+    "duende.madrugada_activa": false,
+    "duende.madrugada_desde": 0,
+    "duende.madrugada_hasta": 7,
+    "duende.canales_formales": "",
 
     "cripto.ttcl_base_price": 100,
     "cripto.ttcl_volatility": 40,
@@ -65,10 +69,17 @@ const DEFAULT_FLAT = {
     "apuestas.canal_resultados": "",
     "apuestas.recordatorio": true,
     "apuestas.recordatorio_min": 30,
+    "apuestas.tope_diario": 0,
+    "apuestas.max_partido": 0,
+    "apuestas.destacado": true,
+    "apuestas.destacado_dia": "",
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
 
+    "clasificacion.canal": "",
+    "clasificacion.premio": 500,
+    "clasificacion.ultima_semana": "",
     "eventos.xp_activo": false,
     "eventos.xp_mult": 2,
     "eventos.xp_desde": 20,
@@ -84,6 +95,10 @@ const KEY_TYPES = {
     "duende.allowed_channel_id": "string",
     "duende.espontaneo_enabled": "number",
     "duende.espontaneo_channel_id": "string",
+    "duende.madrugada_activa": "boolean",
+    "duende.madrugada_desde": "number",
+    "duende.madrugada_hasta": "number",
+    "duende.canales_formales": "string",
 
     "cripto.ttcl_base_price": "number",
     "cripto.ttcl_volatility": "number",
@@ -139,10 +154,17 @@ const KEY_TYPES = {
     "apuestas.canal_resultados": "string",
     "apuestas.recordatorio": "boolean",
     "apuestas.recordatorio_min": "number",
+    "apuestas.tope_diario": "number",
+    "apuestas.max_partido": "number",
+    "apuestas.destacado": "boolean",
+    "apuestas.destacado_dia": "string",
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
 
+    "clasificacion.canal": "string",
+    "clasificacion.premio": "number",
+    "clasificacion.ultima_semana": "string",
     "eventos.xp_activo": "boolean",
     "eventos.xp_mult": "number",
     "eventos.xp_desde": "number",
@@ -174,6 +196,10 @@ function flattenToNested(flat) {
             allowed_channel_id: flat["duende.allowed_channel_id"],
             espontaneo_enabled: !!flat["duende.espontaneo_enabled"],
             espontaneo_channel_id: flat["duende.espontaneo_channel_id"],
+            madrugada_activa: flat["duende.madrugada_activa"],
+            madrugada_desde: flat["duende.madrugada_desde"],
+            madrugada_hasta: flat["duende.madrugada_hasta"],
+            canales_formales: flat["duende.canales_formales"],
         },
         cripto: {
             ttcl_base_price: flat["cripto.ttcl_base_price"],
@@ -237,10 +263,19 @@ function flattenToNested(flat) {
             canal_resultados: flat["apuestas.canal_resultados"],
             recordatorio: flat["apuestas.recordatorio"],
             recordatorio_min: flat["apuestas.recordatorio_min"],
+            tope_diario: flat["apuestas.tope_diario"],
+            max_partido: flat["apuestas.max_partido"],
+            destacado: flat["apuestas.destacado"],
+            destacado_dia: flat["apuestas.destacado_dia"],
         },
         alertas: {
             enabled: flat["alertas.enabled"],
             admin_ids: flat["alertas.admin_ids"],
+        },
+        clasificacion: {
+            canal: flat["clasificacion.canal"],
+            premio: flat["clasificacion.premio"],
+            ultima_semana: flat["clasificacion.ultima_semana"],
         },
         eventos: {
             xp: {
