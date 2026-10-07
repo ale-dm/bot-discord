@@ -347,7 +347,8 @@ A quien oculta sus logros de Plex no se le dan. El bot necesita "Gestionar roles
 ### Dificultad de los logros de Plex
 
 Cada logro de Plex (fijo o trofeo) es 🟢 **Fácil**, 🟡 **Normal** o 🎰 **Gordo del Plex** (los más difíciles). Se ve
-en `/perfil` → 🏅 Logros (junto a la categoría, y un recuento de los tuyos por dificultad) y en el anuncio. Los
+en `/perfil` → 🏅 Logros (junto a la categoría y, dentro del filtro 🍿 Plex, cuántos tienes de los que hay de cada
+dificultad: "🟢 Fácil: **3**/26") y en el anuncio. Los
 trofeos automáticos: temporada 🟢; serie, serie en un idioma, saga y director 🟡, y 🎰 si son largos (100 episodios o
 más, 8 películas de saga, 10 de un director); género 🟢 con 10 películas y 🟡 con 25; década 🟡. Los de admin, la que
 elija el admin. Panel admin → Plex → 🏆 Trofeos cuenta los creados de cada dificultad.
@@ -357,8 +358,9 @@ consigue: "🎉 @alguien desbloqueó logros: 🏅 …". El canal se elige en Con
 mismo que el de las subidas de nivel (`874776941000020018`, lo pone la migración 014). Sin canal, no se anuncia.
 
 Se ven y se reclaman en `/perfil` → 🏅 Logros (antes era `/logros`): lista con páginas y progreso, 👁️ Ver secretos,
-un menú para **filtrar** (una categoría, 🏆 solo los trofeos de Plex o una dificultad; las opciones de Plex solo salen a
-quien tiene logros de Plex), un menú 🎁 para reclamar uno y 🎁 Reclamar todo (se queda en el filtro). En el perfil de
+un menú para **filtrar** por categoría (🍿 Plex solo sale a quien tiene logros de Plex; con 🍿 Plex elegido, sale otro
+menú con todo lo de Plex: todos, 🏆 solo los trofeos o una dificultad), un menú 🎁 para reclamar uno y 🎁 Reclamar
+todo (se queda en el filtro). En el perfil de
 otra persona se ven sus logros, sin reclamar. **A quien no tiene Plex vinculado no le salen los logros de Plex que no
 tiene** (ni cuentan en su total de logros, en el perfil ni para el Duende); los que ya consiguió, sí. El ranking de
 logros está en 🏆 Rankings.
@@ -376,7 +378,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores |
 
 **🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
 admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
@@ -388,6 +390,10 @@ Con un botón a 🏅 Logros filtrado por Plex. La de quien oculta sus logros de 
 **🍿 Rankings de Plex**: los 5 primeros en logros de Plex, 🎰 Gordos del Plex, políglota (logros de idioma) y horas
 (este mes, desde el día 1 en hora de Madrid, y de siempre). Solo los vinculados; quien oculta sus logros de Plex no
 sale en los de logros.
+
+**⚽ Ranking de apostadores**: los 10 con más beneficio en apuestas (partidos y quinielas ya resueltos, como en 📊
+Stats), con su % de acierto y su mejor racha de partidos ganados seguidos (estos dos, solo de los partidos). Hacen
+falta 5 apuestas resueltas para salir; a igualdad de beneficio, va antes quien acierta más.
 
 **El perfil de otra persona se ve entero** (economía y movimientos incluidos), pero las acciones (ingresar, sacar,
 transferir, reclamar) solo salen en el tuyo, y todos los botones llevan a su perfil, no al tuyo. Los botones de un
@@ -490,6 +496,21 @@ Motor de impuestos configurable por servidor, sin ningún % fijo en el código. 
 - Si un servidor no tiene ninguna regla todavía, se le crea sola una por defecto (5 % sobre ingresos, al bote) la
   primera vez que hace falta calcular un impuesto o se abre el panel — para no empezar sin impuestos por descuido.
 
+### 🏆 Clasificación semanal con premios (F-EC-03)
+
+Cada **lunes a las 10:00** (hora de Madrid) se publica en el canal de la clasificación y se paga un premio al 💵 efectivo
+(500 🪙 por defecto, tipo 🏆 Premios en Movimientos, con el impuesto de ingresos del servidor) a:
+
+- 💰 **El más rico**: más efectivo + banco en ese momento (el dinero es global, como 🏆 Rankings → Riqueza).
+- 💬 **El más activo**: más XP ganada en el servidor desde la clasificación anterior (la primera, desde que se instaló).
+- ⚽ **El mejor apostador**: más beneficio en las apuestas resueltas la semana anterior, de lunes a domingo (partidos por
+  el día del partido, quinielas por el día en que se cerraron), solo si ganó algo.
+
+Se menciona a los premiados (solo a ellos les llega el aviso), y una misma persona puede llevarse más de un premio. Si
+una categoría no tiene a nadie (nadie ha ganado XP o nadie ha ganado apostando), no se da. Se configura en `/paneladmin`
+→ ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio y quién ganaría si fuera
+ahora.
+
 ---
 
 ## 8. Casino
@@ -537,13 +558,19 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y
 
 | Pestaña | Qué hace |
 |---|---|
-| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre LaLiga, Premier y Champions) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
+| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre LaLiga, Premier y Champions) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000), o 🎯 **Marcador exacto**: pones los goles de cada equipo y, si aciertas, cobras **×8** lo apostado (premio fijo: la API no da cuota para el marcador; se puede apostar a varios marcadores distintos del mismo partido). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
 | 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
-| 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. |
+| 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (arriba, tu cartera: 💰 lo que tienes en juego, 🏆 lo máximo que puedes cobrar de tus partidos —en cada partido, el mejor resultado posible: solo uno de 1/X/2 puede salir, pero un 🎯 marcador exacto se cobra a la vez que el resultado que implica (el 2-1 y «gana el local»); la quiniela no suma porque depende del bote— y 📅 el beneficio de lo resuelto este mes, en hora de Madrid; debajo, cada apuesta, con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. En ⏳ En juego, el menú ↩️ **Cancelar una apuesta** devuelve al efectivo lo apostado a un partido que aún no ha empezado, menos un **10 % de comisión** (mínimo 1 🪙), después de confirmarlo; la apuesta desaparece (en Movimientos quedan la apuesta y la devolución). |
 | ⚔️ Retos | Apuestas contra otras personas (ver [Retos entre jugadores](#retos-entre-jugadores)). |
 | 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, retos, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
 
 Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
+
+**🚦 Límites por jugador** (`/paneladmin` → ⚽ Apuestas → 🚦 Límites; 0 = sin límite, como viene por defecto):
+**tope diario**, lo que cada uno puede apostar en un día (hora de Madrid) sumando partidos y quiniela, y **máximo por
+partido**, lo que cada uno puede tener apostado a un mismo partido sumando todas sus apuestas a él. Si una apuesta se
+pasa, no se cobra y el mensaje dice cuánto se puede apostar todavía. Lo apostado cuenta para el tope aunque luego se
+devuelva.
 
 **Liquidación** ⏱️ cada hora (minuto 15): cierra los partidos terminados (empezados hace más de 2 h),
 paga las apuestas ganadoras (apuesta × cuota) y liquida las quinielas completas: el 90 % del bote se reparte
@@ -557,8 +584,8 @@ después de cada liquidación se publica ahí un resumen de lo cerrado: "⚽ **E
 uno (o que se devuelve lo apostado). Los nombres salen como mención, pero sin avisar a nadie.
 
 **⭐ Partido destacado del día**: cada día desde las 10:00 (hora de Madrid), en el mismo canal de resultados, el partido
-grande de la jornada con sus cuotas y los botones 🏠/🤝/🚩 para apostar (abren el formulario de siempre; si el partido ya
-empezó, no deja). Es, de los de hoy que aún no han empezado, el que más apuestas tiene; a igualdad, el más igualado (las
+grande de la jornada con sus cuotas y los botones 🏠/🤝/🚩 y 🎯 Marcador exacto para apostar (abren el formulario de
+siempre; si el partido ya empezó, no deja). Es, de los de hoy que aún no han empezado, el que más apuestas tiene; a igualdad, el más igualado (las
 cuotas de local y visitante más parecidas). Sale de los partidos ya guardados, así que **no gasta créditos** de la Odds
 API; un día sin partidos no se publica nada. Se activa o quita en `/paneladmin` → ⚽ Apuestas → ⭐ (viene activado, pero
 sin canal de resultados no se publica).
@@ -664,11 +691,11 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | Sección | Qué se puede hacer |
 |---|---|
 | 🏦 Banco | Modificar saldo (efectivo, banco o dinero negro) · resetear usuario (como nuevo: 1.000 en efectivo, sin dinero negro) · borrar historial · historial global · buscar usuario |
-| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · ⭐ **Partido destacado** del día (publicarlo o no) |
+| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) · ⭐ **Partido destacado** del día (publicarlo o no) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
-| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
+| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏆 Semanal**: canal y premio de la [clasificación semanal](#-clasificación-semanal-con-premios-f-ec-03), y quién ganaría si fuera ahora · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, crear y borrar trofeos de admin (también con fechas), 🪙 % de la importación (y cuántos vinculados están importando), 🎰 Roles de Gordos y 🔍 Idiomas (diagnóstico) |
 | 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |
@@ -714,7 +741,7 @@ Duende siguen en `/duende set | add | remove`.
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
 | 17:00 (Madrid) | Aviso de "racha en peligro" por DM |
 | Cada día, 10:00 (Madrid) | ⭐ Partido destacado del día en el canal de resultados de las apuestas (comprobado cada hora de 10 a 20 y al arrancar; una vez al día) |
-| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal (comprobado cada hora de los lunes y al arrancar; una vez por semana) |
+| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal y 🏆 clasificación semanal con premios (comprobados cada hora de los lunes y al arrancar; una vez por semana) |
 
 ---
 

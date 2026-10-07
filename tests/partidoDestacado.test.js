@@ -61,7 +61,7 @@ test("el mensaje lleva las cuotas y los mismos botones de apostar que /juegos", 
     expect(embed.description).toMatch(/cuota `1.3`[\s\S]*cuota `5`[\s\S]*cuota `9`/);
     expect(embed.description).toMatch(/Ya hay \*\*2\*\* apuestas a este partido/);
     const botones = msg.components[0].toJSON().components.map((b) => b.custom_id);
-    expect(botones).toEqual(["apuesta_home_C", "apuesta_draw_C", "apuesta_away_C"]);
+    expect(botones).toEqual(["apuesta_home_C", "apuesta_draw_C", "apuesta_away_C", "apuesta_exacto_C"]);
 
     // Pulsar uno desde el canal abre el formulario de apostar de siempre.
     const i = { customId: "apuesta_home_C", user: { id: "ana" }, reply: jest.fn(), showModal: jest.fn(async () => {}) };

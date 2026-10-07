@@ -1,7 +1,8 @@
 // Panel admin → ⚽ Apuestas: lo que hay en juego (partidos con apuestas pendientes y quinielas abiertas), 💸 Liquidar
 // ahora (antes /pagarapuestas; normalmente lo hace solo el cron de cada hora), 🧾 Crear la quiniela de cada
 // competición (también está en la propia quiniela), el canal donde se publican los resultados (y el ⭐ partido destacado
-// del día) y el recordatorio por DM antes de cada partido.
+// del día), el recordatorio por DM antes de cada partido y los 🚦 límites por jugador (tope diario y máximo por partido,
+// F-AP-09).
 const {
     EmbedBuilder,
     ActionRowBuilder,
@@ -60,6 +61,12 @@ function buildApuestasHome(guildId) {
             },
             { name: "↩️ Caducados (7 días)", value: `${caducados} partidos sin resultado (reembolsados)` },
             {
+                name: "🚦 Límites por jugador",
+                value:
+                    `Tope diario (partidos y quiniela): ${cfg.tope_diario ? `**${cfg.tope_diario.toLocaleString("es")}** 🪙` : "sin límite"}
+` + `Máximo por partido: ${cfg.max_partido ? `**${cfg.max_partido.toLocaleString("es")}** 🪙` : "sin límite"}`,
+            },
+            {
                 name: "📢 Avisos",
                 value:
                     `Resultados: ${cfg.canal_resultados ? `se publican en <#${cfg.canal_resultados}>` : "no se publican (solo DM a quien cobra)"}\n` +
@@ -96,6 +103,7 @@ function buildApuestasHome(guildId) {
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(!cfg.canal_resultados),
         new ButtonBuilder().setCustomId("paneladmin_apu_recordatorio").setLabel("⏰ Recordatorio").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_apu_limites").setLabel("🚦 Límites").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
             .setCustomId("paneladmin_apu_destacado")
             .setLabel(cfg.destacado ? "⭐ Quitar el destacado" : "⭐ Publicar el destacado")
@@ -139,6 +147,16 @@ async function handleApuestasButton(interaction) {
             simpleModal("paneladmin_apu_recordatorio_modal", "Recordatorio antes del partido", [
                 { id: "activo", label: "Activo (1/0)", value: cfg.recordatorio ? "1" : "0" },
                 { id: "minutos", label: "Minutos antes del partido (5-1440)", value: String(cfg.recordatorio_min) },
+            ]),
+        );
+        return true;
+    }
+    if (id === "paneladmin_apu_limites") {
+        const cfg = guildSettings.getSettings(interaction.guildId).apuestas;
+        await interaction.showModal(
+            simpleModal("paneladmin_apu_limites_modal", "Límites de apuestas por jugador", [
+                { id: "tope", label: "Tope diario en 🪙 (0 = sin límite)", value: String(cfg.tope_diario) },
+                { id: "partido", label: "Máximo por partido en 🪙 (0 = sin límite)", value: String(cfg.max_partido) },
             ]),
         );
         return true;
@@ -213,7 +231,30 @@ async function handleApuestasChannelSelect(interaction) {
     return true;
 }
 
+async function handleLimitesModal(interaction) {
+    const tope = Number(interaction.fields.getTextInputValue("tope").trim());
+    const partido = Number(interaction.fields.getTextInputValue("partido").trim());
+    if (![tope, partido].every((n) => Number.isInteger(n) && n >= 0 && n <= 100_000_000)) {
+        await interaction.reply({
+            content: "❌ Los límites tienen que ser números enteros, de 0 (sin límite) en adelante.",
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    guildSettings.setManySettings(interaction.guildId, { "apuestas.tope_diario": tope, "apuestas.max_partido": partido });
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "apuestas.limites",
+        details: { tope, partido },
+    });
+    if (interaction.isFromMessage?.()) await interaction.update(buildApuestasHome(interaction.guildId));
+    else await interaction.reply({ content: "✅ Límites actualizados.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
 async function handleApuestasModal(interaction) {
+    if (interaction.customId === "paneladmin_apu_limites_modal") return handleLimitesModal(interaction);
     if (interaction.customId !== "paneladmin_apu_recordatorio_modal") return false;
     const activo = interaction.fields.getTextInputValue("activo").trim();
     const minutos = Number(interaction.fields.getTextInputValue("minutos").trim());

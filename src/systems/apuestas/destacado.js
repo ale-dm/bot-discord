@@ -10,6 +10,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
 const { DEPORTES } = require("../../services/oddsApi");
+const marcadorExacto = require("./marcador");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Apuestas");
@@ -84,6 +85,10 @@ function mensaje(partido) {
             .setCustomId(`apuesta_away_${partido.match_id}`)
             .setLabel(`🚩 ${partido.away_team}`.slice(0, 80))
             .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId(`apuesta_exacto_${partido.match_id}`)
+            .setLabel(`🎯 Marcador exacto (×${marcadorExacto.PREMIO})`)
+            .setStyle(ButtonStyle.Secondary),
     );
     return { embeds: [embed], components: [fila] };
 }
