@@ -783,9 +783,17 @@ function claimAchievement(guildId, userId, achievementId) {
     const tx = db.transaction(() => {
         if (reward > 0) {
             // Al 💵 efectivo (systems/dinero); crea la cuenta si no la tenía.
-            require("./dinero").pagar(userId, reward);
+            const dinero = require("./dinero");
+            dinero.pagar(userId, reward);
             try {
-                require("./dinero").apuntar(userId, "logro", `Recompensa logro: ${ach.name}`, reward);
+                dinero.apuntar(userId, "logro", `Recompensa logro: ${ach.name}`, reward);
+                const impuestos = require("./impuestos");
+                const resultado = impuestos.calcularImpuesto(guildId, "logro", reward);
+                if (resultado) {
+                    dinero.cobrar(userId, resultado.impuesto);
+                    dinero.apuntar(userId, "impuesto", `Impuesto sobre ${dinero.TIPOS.logro}`, -resultado.impuesto);
+                    if (resultado.destino === "bote") impuestos.sumarBote(guildId, resultado.impuesto);
+                }
             } catch (e) {
                 log.warn(`Recompensa de ${ach.id} pagada a ${userId} pero no se pudo apuntar en el historial:`, e.message);
             }

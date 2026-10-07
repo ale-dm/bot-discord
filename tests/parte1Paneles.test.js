@@ -74,9 +74,9 @@ describe("reclamar logros con un menú (E-07)", () => {
         const elegir = interaccion({ customId: "perfil_reclamar_logrero_logrero", values: [primero.id] });
         await perfil.handleSelect(null, elegir);
         expect(elegir.update.mock.calls[0][0].content).toMatch(/Reclamaste/);
-        expect(db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = 'logrero'").get().saldo).toBe(
-            achievements.rewardCoinsFor(primero, G),
-        );
+        const reward = achievements.rewardCoinsFor(primero, G);
+        const impuesto = Math.floor(reward * 0.05); // 5% de impuesto por defecto sobre los logros
+        expect(db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = 'logrero'").get().saldo).toBe(reward - impuesto);
         // Ya solo queda el segundo en el menú.
         const quedan = elegir.update.mock.calls[0][0].components[1].components[0].options.map((o) => o.data.value);
         expect(quedan).toEqual([segundo.id]);

@@ -1,7 +1,8 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal } = require("./common");
+const impuestos = require("../systems/impuestos");
+const { simpleModal, fmt } = require("./common");
 
 function navRow() {
     return new ActionRowBuilder().addComponents(
@@ -54,6 +55,11 @@ function buildConfigHome(guildId) {
                     : "Desactivado",
                 inline: true,
             },
+            {
+                name: "🏛️ Impuestos",
+                value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmt(impuestos.boteTotal(guildId))}**`,
+                inline: true,
+            },
         )
         .setColor(0x1abc9c)
         .setTimestamp();
@@ -69,6 +75,7 @@ function buildConfigHome(guildId) {
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
     );
 
     return { embeds: [embed], components: [row1, row2, navRow()] };

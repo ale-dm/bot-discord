@@ -60,8 +60,7 @@ async function aplicarEfecto(obj, userId, member, guild) {
         if (efecto.startsWith("monedas:")) {
             const cantidad = parseInt(efecto.split(":")[1]) || 0;
             // Al 💵 efectivo (systems/dinero; crea la cuenta si no la tenía).
-            dinero.pagar(userId, cantidad);
-            dinero.apuntar(userId, "objeto", `Efecto consumible: ${obj.nombre}`, cantidad);
+            dinero.pagarConImpuesto(userId, guild.id, "objeto", `Efecto consumible: ${obj.nombre}`, cantidad);
             return { ok: true, mensaje: `🪙 ¡Has recibido **${cantidad} monedas**!` };
         }
         if (efecto.startsWith("mensaje:")) {
