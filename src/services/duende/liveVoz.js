@@ -99,6 +99,7 @@ function limpiarSesion(sesion) {
     clearTimeout(sesion.maxDurationTimer);
     try {
         if (sesion.receiver && sesion.onSpeakingStart) sesion.receiver.speaking.removeListener("start", sesion.onSpeakingStart);
+        if (sesion.receiver && sesion.onSpeakingEnd) sesion.receiver.speaking.removeListener("end", sesion.onSpeakingEnd);
     } catch (e) {
         log.debug(`Error quitando el listener de voz: ${e.message}`);
     }
@@ -228,6 +229,14 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                 speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: LIVE_VOICE } } },
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
+                // Desactivamos la detección de actividad automática de Gemini (basada en
+                // silencios dentro del propio audio) y avisamos nosotros con activityStart/End:
+                // Discord no manda paquetes de audio durante los silencios (no hay "silencio
+                // codificado" que analizar), así que Gemini nunca veía el final del turno y se
+                // quedaba esperando audio para siempre tras la primera frase del usuario. El
+                // "speaking start/end" de Discord (basado en paquetes de verdad) es una señal
+                // de turno mucho más fiable que intentar que Gemini la adivine del audio.
+                realtimeInputConfig: { automaticActivityDetection: { disabled: true } },
             },
             callbacks: {
                 onopen: () => log.info(`Conversación en directo abierta en ${voiceChannel.name} (${interaction.guild.name})`),
@@ -291,7 +300,15 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
         const targetUserId = interaction.user.id;
         let suscrito = false;
         const onSpeakingStart = (userId) => {
-            if (userId !== targetUserId || suscrito) return;
+            if (userId !== targetUserId) return;
+            // Con la detección automática desactivada (arriba), esto es lo que le dice a Gemini
+            // que empieza el turno del usuario — se manda cada vez que habla, no solo la primera.
+            try {
+                liveSession.sendRealtimeInput({ activityStart: {} });
+            } catch (e) {
+                log.warn(`Error avisando a Gemini de que ${userId} ha empezado a hablar: ${e.message}`);
+            }
+            if (suscrito) return;
             suscrito = true;
             log.info(`${userId} ha empezado a hablar: suscribiendo captura de audio.`);
             const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
@@ -312,9 +329,22 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                 }
             });
         };
+        // El "end" de Discord llega ~100ms después del último paquete de voz real — mucho más
+        // fiable como señal de fin de turno que esperar a que Gemini la adivine de un audio con
+        // huecos (sin paquetes durante los silencios, no hay "silencio" que analizar).
+        const onSpeakingEnd = (userId) => {
+            if (userId !== targetUserId) return;
+            try {
+                liveSession.sendRealtimeInput({ activityEnd: {} });
+            } catch (e) {
+                log.warn(`Error avisando a Gemini de que ${userId} ha dejado de hablar: ${e.message}`);
+            }
+        };
         receiver.speaking.on("start", onSpeakingStart);
+        receiver.speaking.on("end", onSpeakingEnd);
         sesion.receiver = receiver;
         sesion.onSpeakingStart = onSpeakingStart;
+        sesion.onSpeakingEnd = onSpeakingEnd;
 
         sesion.idleCheckInterval = setInterval(() => {
             if (Date.now() - sesion.ultimaActividad > IDLE_DISCONNECT_MS) {
