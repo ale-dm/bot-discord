@@ -675,7 +675,10 @@ El bot avisa por mensaje privado a los admins cuando pasa algo que hay que mirar
 - **Odds API con menos de 50 créditos** este mes (`ODDS_CREDITOS_AVISO`), una vez al día.
 - **Gemini sin cuota** (el Duende, `/ia` y `/imagen` fallan hasta que se renueve).
 - **El modelo de Gemini no funciona** al arrancar: no existe, o responde pero no usa las herramientas (con él, el
-  Duende se inventaría los datos).
+  Duende se inventaría los datos). En esos dos casos el bot **se cambia solo** al primero que funcione de los de
+  respaldo (el de `GEMINI_MODEL` y los de `GEMINI_FALLBACK_MODELS`), lo pone como modelo del servidor en Config
+  Global → 🤖 Duende, lo apunta en la auditoría y el aviso dice a cuál ("🤖 He cambiado el modelo de Gemini"). Si el
+  fallo es de paso (cuota, timeout) o ninguno de respaldo funciona, solo avisa.
 
 Como mucho 10 alertas a la hora. Las de antes de conectar a Discord (errores al arrancar) se mandan al conectar.
 En `/paneladmin` → 🩺 Sistema → 🔔 Alertas: activarlas o no, a quién (IDs de Discord; sin nadie puesto, al dueño del
@@ -696,7 +699,7 @@ Duende siguen en `/duende set | add | remove`.
 
 | Cuándo | Qué |
 |---|---|
-| Al arrancar | Registra los slash commands · crea índices de BD · **devuelve lo apostado en partidas interrumpidas** · asigna roles de nivel que falten · prueba el modelo de Gemini (alerta si no funciona) · manda las alertas del arranque |
+| Al arrancar | Registra los slash commands · crea índices de BD · **devuelve lo apostado en partidas interrumpidas** · asigna roles de nivel que falten · prueba el modelo de Gemini (si no existe o no usa herramientas, se cambia solo por uno de respaldo que funcione; alerta en los dos casos) · manda las alertas del arranque |
 | Cada minuto | XP de voz |
 | Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) |
 | Cada 10 minutos | Registra el precio de $TTCL |
@@ -744,6 +747,7 @@ Duende siguen en `/duende set | add | remove`.
 | Variable | Por defecto | Qué controla |
 |---|---|---|
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Modelo del Duende y de `/ia` |
+| `GEMINI_FALLBACK_MODELS` | `gemini-2.5-flash,gemini-2.5-pro` | Modelos de respaldo del Duende: si al arrancar el del servidor no existe o no usa herramientas, se pasa solo al primero que funcione (antes se prueba el de `GEMINI_MODEL`) |
 | `GEMINI_TIMEOUT_MS` | 20000 | Timeout de cada llamada (cancela la petición) |
 | `DUENDE_MAX_TOKENS` / `DUENDE_MAX_TOKENS_FALLBACK` | 1024 / 512 | Longitud máxima de respuesta |
 | `DUENDE_HISTORY_LIMIT` | 20 | Mensajes de contexto por canal |

@@ -240,23 +240,11 @@ client.once("clientReady", async () => {
         5 * 60 * 1000,
     );
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
-    // inventado en el chat (una llamada a Gemini por modelo distinto).
+    // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia
+    // solo por uno que funcione (GEMINI_FALLBACK_MODELS) y se avisa a los admins.
     runJob("Comprobación del modelo de Gemini", async () => {
         if (!process.env.GOOGLE_API_KEY) return;
-        const { comprobarModelo, modeloDe } = require("./services/duende/gemini");
-        for (const modelo of new Set([...client.guilds.cache.keys()].map(modeloDe))) {
-            const r = await comprobarModelo(modelo);
-            if (r.ok) {
-                log.info(`Modelo de Gemini ${modelo}: funciona y usa herramientas (${r.ms} ms)`);
-                continue;
-            }
-            log.warn(`Modelo de Gemini ${modelo}: ${r.motivo}`);
-            await alertas.alertar({
-                clave: `gemini-modelo:${modelo}`,
-                titulo: "🤖 El modelo de Gemini no funciona bien",
-                detalle: `${r.motivo}\n\nCámbialo en /paneladmin → ⚙️ Config Global → 🤖 Duende → ✏️ Editar IA.`,
-            });
-        }
+        await require("./systems/duende/modeloGemini").comprobarAlArrancar([...client.guilds.cache.keys()]);
     });
     // Backfill roles para usuarios que subieron nivel antes de tener las recompensas configuradas
     for (const guild of client.guilds.cache.values()) {
