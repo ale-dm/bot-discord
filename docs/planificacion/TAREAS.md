@@ -199,6 +199,20 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🧙 El Duende en la economía (F-DU-03, #14)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 024_prestamos_duende`.
+- [ ] En el chat del Duende, "te reto a piedra, papel o tijera por 100": sale su respuesta y debajo la propuesta con
+      ✅ Acepto / ❌ No. Que otra persona no la pueda aceptar, que ❌ la cierre sin mover nada y que con ✅ se convierta en
+      el duelo y se resuelva al elegir (en Movimientos, "contra el Duende" y el impuesto si ganas).
+- [ ] "Te apuesto 100 a que gana …" con un partido de los próximos de ⚽ Apuestas: la propuesta dice bien el partido y
+      el resultado; al aceptar sale el reto, y al acabar el partido se paga (o no) y sale en el canal de resultados con
+      "🧙 el Duende".
+- [ ] "Préstame 200": al aceptar llegan las 200 y en `/perfil` → 💰 Economía sale lo que se debe (220) con 🧙 Devolver.
+      Devolverlo; y otro, dejarlo vencer (o adelantar `vence_en` en la BD) y ver el cobro, el DM y, si no llega, la deuda.
+- [ ] Por voz (`/escuchar` o `/conversación`) el Duende no ofrece retos ni préstamos.
+- [ ] Si `/juegos` tiene canales restringidos (ACL), los botones del duelo no funcionan fuera de ellos: comprobar que el
+      canal del Duende está permitido para `/juegos`.
+
 **🛡️ Objetos antirrobo (F-EC-06c, #79)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 023_objetos_antirrobo`; en la tienda salen el Candado y la Trampa para ladrones.
       Decidir si los precios (150 y 100) valen o cambiarlos en 🛒 Catálogo.

@@ -2,6 +2,38 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🧙 El Duende en la economía: retos, apuestas y préstamos desde el chat (F-DU-03, #14))
+
+El Duende ya puede jugarse monedas contigo desde el chat: retarte a 🪨 piedra, papel o tijera, apostar contigo a un
+partido y prestarte monedas. Decidido con Javier en la #14:
+
+- **Él solo propone.** Herramientas nuevas (`retar_piedra_papel_tijera`, `apostar_partido_con_duende` y
+  `ofrecer_prestamo`) que no mueven dinero: dejan una propuesta y, debajo de su respuesta, sale un mensaje con
+  **✅ Acepto / ❌ No**. El dinero solo se mueve cuando la persona pulsa ✅, así que se mantiene lo de "nunca dar/quitar
+  monedas directamente desde una respuesta de la IA". La propuesta solo la acepta a quien se la hizo, caduca a los 10
+  minutos y va entera en el id de los botones (sin tabla). Solo en el chat de texto: por voz no hay dónde pulsar, así
+  que ahí no se le ofrecen esas herramientas.
+- **Su dinero, como la banca del casino**: el Duende no tiene saldo. En los retos es un participante más
+  (`retos.DUENDE`) al que no se le cobra al entrar ni se le paga si gana: si pierde, su parte del premio se crea; si
+  gana, lo apostado desaparece. Lo ganado paga el impuesto del servidor como cualquier reto. **Tope: 1.000 🪙.**
+- **🪨 Piedra, papel o tijera**: al aceptar empieza ya en juego, con la jugada del Duende elegida al azar; se resuelve
+  en cuanto eliges (si empatáis, él vuelve a elegir). La propuesta pasa a ser el mensaje del reto, con sus botones de
+  siempre.
+- **⚽ Apuesta a un partido** ("te apuesto 200 a que gana el Betis"): busca el partido entre los próximos de ⚽
+  Apuestas por el nombre de los equipos (`retos.buscarPartido` y `eleccionPara`); vas con un resultado y el Duende con
+  lo contrario. Se resuelve en la liquidación de cada hora, como cualquier reto a un partido, y sale en el canal de
+  resultados con "🧙 el Duende" en vez de una mención.
+- **🧙 Préstamos** (`systems/prestamos.js`, migración **024** `prestamos_duende`): de 10 a 1.000 🪙, uno a la vez, con un
+  **10 %** de interés y **7 días** para devolverlo (antes, cuando quieras, con 🧙 Devolver en `/perfil` → 💰 Economía,
+  que ahora lo enseña). Al vencer, el cron (cada 5 min) **lo cobra solo**: del efectivo y, si no llega, del banco, y
+  avisa por DM. Lo que falte queda como **deuda**: se va cobrando de lo que ganes (lo que entra por
+  `dinero.pagarConImpuesto`, ya sin su impuesto) y, mientras dure, ni otro préstamo ni apuestas con el Duende. Tipo
+  nuevo **🧙 Préstamos** en Movimientos (y excluido de los impuestos: no es un ingreso).
+- `consultar_saldo` le dice al Duende también si le debes algo.
+- Tests nuevos en `tests/duendeEconomia.test.js` (los retos y su dinero, empates, límites y abandono, el partido con
+  la liquidación y su anuncio, préstamos de aceptar a deuda, las herramientas desde el chat con Gemini simulado y los
+  botones). El de la importación de Plex cuenta ahora 7 migraciones desde la 018.
+
 ## 2026-10-07 (🛡️ Objetos de protección contra robos (F-EC-06c, #79))
 
 Tercera pieza del backlog de economía (#37), encima de `/robar` (#78): dos objetos nuevos en la tienda que protegen de

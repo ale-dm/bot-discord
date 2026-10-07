@@ -8,6 +8,9 @@
 //   decide qué opción gana. El bote se reparte entre los que acertaron.
 // El bot no se queda nada: el ganador se lleva todo lo apostado. Los botones y mensajes están en
 // juegos/retos/retos.js y paneles/retos.js.
+// Contra el Duende (F-DU-03, #14): piedra-papel-tijera o un partido, que él propone desde el chat y empiezan cuando la
+// persona acepta (crearContraDuende). El Duende es un participante más (DUENDE) pero, como la banca del casino, sin
+// dinero: no se le cobra al entrar y no se le paga si gana, así que si pierde su parte del premio se crea.
 const db = require("../core/db");
 const dinero = require("./dinero");
 const bj = require("./blackjack");
@@ -28,6 +31,10 @@ const PORRA_DIAS = 30;
 const PORRA_MAX_OPCIONES = 5;
 const PORRA_MAX_LARGO_OPCION = 40;
 const MAX_RONDAS_PPT = 5;
+/** El Duende como participante de un reto (en vez de un id de Discord). */
+const DUENDE = "duende";
+/** Lo máximo que se juega contra el Duende (su parte la pone la banca). */
+const TOPE_DUENDE = 1000;
 
 const JUEGOS = {
     ppt: { emoji: "🪨", nombre: "Piedra, papel o tijera" },
@@ -73,13 +80,60 @@ function partidosParaRetar(limite = 25) {
         .all(new Date().toISOString(), limite);
 }
 
+/** Sin mayúsculas, tildes ni signos, para comparar nombres de equipos. */
+const normalizar = (texto) =>
+    String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+
+/**
+ * El próximo partido abierto que mejor encaja con un texto con uno o los dos equipos ("Betis", "betis - sevilla"): el
+ * que tiene más palabras del texto en sus equipos y, a igualdad, el más cercano. null si ninguno tiene ninguna.
+ */
+function buscarPartido(texto) {
+    const palabras = normalizar(texto)
+        .split(" ")
+        .filter((w) => w.length >= 3);
+    let mejor = null;
+    let aciertos = 0;
+    for (const p of partidosParaRetar(100)) {
+        const equipos = ` ${normalizar(p.home_team)} ${normalizar(p.away_team)} `;
+        const n = palabras.filter((w) => equipos.includes(` ${w}`)).length;
+        if (n > aciertos) [mejor, aciertos] = [p, n];
+    }
+    return mejor;
+}
+
+/**
+ * home/draw/away según el equipo que se dice que gana (o "empate") en un partido. Gana el equipo que más encaja ("Real
+ * Madrid" es el Madrid aunque el otro sea la Real Sociedad); null si no es ninguno o encajan igual.
+ */
+function eleccionPara(p, equipo) {
+    const e = normalizar(equipo);
+    if (!e) return null;
+    if (["empate", "empatan", "x", "draw"].includes(e)) return "draw";
+    const puntos = (nombre) => {
+        const n = normalizar(nombre);
+        if (n.includes(e) || e.includes(n)) return 100;
+        return e.split(" ").filter((w) => w.length >= 3 && ` ${n} `.includes(` ${w}`)).length;
+    };
+    const local = puntos(p.home_team);
+    const visitante = puntos(p.away_team);
+    if (local === visitante) return null;
+    return local > visitante ? "home" : "away";
+}
+
 /** "Betis vs Sevilla", "duelo de Dados" o 'porra "¿llegará Jorge tarde?"': para el historial y los DMs. */
 function descripcion(reto) {
+    const contraDuende = reto.creador === DUENDE || reto.rival === DUENDE ? " contra el Duende" : "";
     if (reto.tipo === "partido") {
         const p = partidoDe(reto.match_id);
-        return p ? `${p.home_team} vs ${p.away_team}` : "un partido";
+        return `${p ? `${p.home_team} vs ${p.away_team}` : "un partido"}${contraDuende}`;
     }
-    if (reto.tipo === "duelo") return `duelo de ${JUEGOS[reto.juego]?.nombre || reto.juego}`;
+    if (reto.tipo === "duelo") return `duelo de ${JUEGOS[reto.juego]?.nombre || reto.juego}${contraDuende}`;
     return `porra "${corto(reto.pregunta || "", 60)}"`;
 }
 
@@ -94,9 +148,10 @@ function validarCantidad(cantidad) {
     return null;
 }
 
-/** Cobra la entrada y apunta a alguien en el reto. Va dentro de una transacción. @returns {boolean} */
+/** Cobra la entrada y apunta a alguien en el reto (al Duende no se le cobra). Va dentro de una transacción. @returns {boolean} */
 function unir(reto, userId, opcion = null) {
-    if (!dinero.cobrar(userId, reto.cantidad)) return false;
+    const duende = String(userId) === DUENDE;
+    if (!duende && !dinero.cobrar(userId, reto.cantidad)) return false;
     db.prepare("INSERT INTO retos_participantes (reto_id, userId, opcion, cantidad, unido_en) VALUES (?, ?, ?, ?, ?)").run(
         reto.id,
         String(userId),
@@ -104,7 +159,7 @@ function unir(reto, userId, opcion = null) {
         reto.cantidad,
         Date.now(),
     );
-    dinero.apuntar(userId, "retos", `Reto: ${descripcion(reto)}`, -reto.cantidad);
+    if (!duende) dinero.apuntar(userId, "retos", `Reto: ${descripcion(reto)}`, -reto.cantidad);
     return true;
 }
 
@@ -129,7 +184,8 @@ function cerrar(retoId, premios, estado, resultado) {
         for (const p of reto.participantes) {
             const premio = premios[p.userId] || 0;
             db.prepare("UPDATE retos_participantes SET premio = ? WHERE reto_id = ? AND userId = ?").run(premio, retoId, p.userId);
-            if (premio <= 0) continue;
+            // Lo que gana el Duende no va a nadie: desaparece (como en el casino).
+            if (premio <= 0 || p.userId === DUENDE) continue;
             dinero.pagarConImpuesto(
                 p.userId,
                 reto.guildId,
@@ -296,6 +352,77 @@ function crearPorra({ creador, pregunta, opciones, cantidad, guildId = null, cha
     });
 }
 
+/** Una jugada de piedra-papel-tijera al azar (la del Duende). */
+const jugadaAlAzar = () => Object.keys(PPT)[Math.min(2, Math.floor(rng() * 3))];
+
+/**
+ * Por qué no se puede jugar `cantidad` contra el Duende (texto), o null si se puede. Con `matchId` y `eleccion`, a un
+ * partido; si no, a piedra-papel-tijera. Lo usan las herramientas del Duende antes de proponerlo y crearContraDuende.
+ */
+function motivoNoContraDuende(userId, cantidad, { matchId = null, eleccion = null } = {}) {
+    if (!Number.isInteger(cantidad) || cantidad < MIN || cantidad > TOPE_DUENDE) {
+        return `Contra el Duende se juega un número entero entre ${MIN} y ${TOPE_DUENDE.toLocaleString("es")} 🪙.`;
+    }
+    const prestamo = require("./prestamos").abierto(userId);
+    if (prestamo?.estado === "deuda") {
+        return `Debes **${prestamo.falta.toLocaleString("es")}** 🪙 al Duende de un préstamo vencido: hasta saldarlo no te juegas nada con él.`;
+    }
+    if (matchId) {
+        if (!ELECCIONES.includes(eleccion)) return "Elige un resultado.";
+        const p = partidoDe(matchId);
+        if (!p) return "No encuentro ese partido.";
+        if (p.estado !== "abierto" || !(p.start_time > new Date().toISOString())) return "Ese partido ya ha empezado.";
+    }
+    if (dinero.efectivo(userId) < cantidad) return SIN_EFECTIVO.replace(/^❌ /, "");
+    return null;
+}
+
+/**
+ * Un reto contra el Duende que la persona acaba de aceptar (F-DU-03): empieza ya en juego, con lo suyo cobrado y la
+ * parte del Duende puesta por la banca. Sin `matchId`, piedra-papel-tijera: el Duende reta y ya tiene su jugada
+ * elegida, así que se resuelve en cuanto la persona elige. Con `matchId`, la persona va con `eleccion` y el Duende con
+ * lo contrario; se resuelve con la liquidación, como cualquier reto a un partido.
+ * `messageId`: el mensaje de la propuesta, que pasa a ser el del reto. Con él, un doble clic no crea dos retos.
+ */
+function crearContraDuende({ userId, cantidad, matchId = null, eleccion = null, guildId = null, channelId = null, messageId = null }) {
+    const motivo = motivoNoContraDuende(userId, cantidad, { matchId, eleccion });
+    if (motivo) return error(`❌ ${motivo}`);
+    const partido = Boolean(matchId);
+    try {
+        const reto = db.transaction(() => {
+            if (messageId && db.prepare("SELECT 1 FROM retos WHERE messageId = ?").get(messageId)) return null;
+            const { reto: nuevo } = insertar({
+                tipo: partido ? "partido" : "duelo",
+                estado: "en_juego",
+                creador: partido ? userId : DUENDE,
+                rival: partido ? DUENDE : userId,
+                cantidad,
+                guildId,
+                channelId,
+                ...(partido ? { match_id: matchId, eleccion } : { juego: "ppt" }),
+                expira_en: null,
+            });
+            const entradas = partido
+                ? [
+                      [userId, "a_favor"],
+                      [DUENDE, "en_contra"],
+                  ]
+                : [
+                      [DUENDE, null],
+                      [userId, null],
+                  ];
+            for (const [id, opcion] of entradas) if (!unir(nuevo, id, opcion)) throw new SinEfectivo();
+            if (!partido) guardarDatos(nuevo.id, { ronda: 1, jugadas: { [DUENDE]: jugadaAlAzar() }, empates: [] });
+            if (messageId) guardarMensaje(nuevo.id, channelId, messageId);
+            return obtener(nuevo.id);
+        })();
+        return reto ? { ok: true, reto } : error("Esta propuesta ya está aceptada.");
+    } catch (e) {
+        if (e instanceof SinEfectivo) return error(SIN_EFECTIVO);
+        throw e;
+    }
+}
+
 /** El mensaje público donde está el reto, para poder editarlo cuando cambie. */
 function guardarMensaje(retoId, channelId, messageId) {
     db.prepare("UPDATE retos SET channelId = ?, messageId = ? WHERE id = ?").run(channelId, messageId, retoId);
@@ -408,6 +535,8 @@ function jugarPpt(retoId, userId, jugada) {
             return { ok: true, reto: r?.reto || obtener(reto.id) };
         }
         datos.jugadas = {};
+        // El Duende vuelve a elegir en cuanto empieza la ronda nueva.
+        if (esParticipante(reto, DUENDE)) datos.jugadas[DUENDE] = jugadaAlAzar();
         datos.ronda++;
         guardarDatos(reto.id, datos);
         return { ok: true, reto: obtener(reto.id), mensaje: `🤝 Empate a ${PPT[a].emoji}: otra ronda.` };
@@ -683,6 +812,13 @@ module.exports = {
     JUEGOS,
     PPT,
     FINALES,
+    ELECCIONES,
+    DUENDE,
+    TOPE_DUENDE,
+    buscarPartido,
+    eleccionPara,
+    motivoNoContraDuende,
+    crearContraDuende,
     obtener,
     partidoDe,
     partidosParaRetar,

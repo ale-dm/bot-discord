@@ -16,6 +16,9 @@ const { getTtclPrecio } = require("../../systems/cripto/mercado");
 // reciben viene siempre del contexto real de Discord (toolContext), nunca de
 // algo que el modelo extraiga o invente del texto — así no hay forma de que
 // alguien le pida a Duende el saldo o el nivel de otra persona y se lo dé.
+// Las de 🧙 economía (F-DU-03) tampoco mueven dinero: solo PROPONEN (un reto, una
+// apuesta o un préstamo) y la propuesta sale con botones debajo de la respuesta;
+// el dinero solo se mueve si quien habla pulsa ✅ (juegos/retos/duende).
 // ─── Herramientas de Plex/Tautulli ──────────────────────────────────────────
 // Aquí sí se consulta actividad de OTRA persona (a quien se refiera "persona" en
 // la pregunta), a diferencia de las herramientas de arriba que solo miran al que
@@ -374,7 +377,108 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
     },
 ];
 
+// 🧙 El Duende en la economía (F-DU-03): proponer un reto, una apuesta o un préstamo al que habla. Solo se ofrecen
+// donde la propuesta puede salir con botones (toolContext.propuestas: el chat de texto, no la voz).
+const DUENDE_ECONOMIA_TOOL_DECLARATIONS = [
+    {
+        name: "retar_piedra_papel_tijera",
+        description:
+            "Reta al usuario que te está hablando a piedra, papel o tijera por monedas (también si te reta él). No mueve dinero: debajo de tu respuesta sale un mensaje con botones y el duelo solo empieza si lo acepta. Tu jugada se elige al azar. De 10 a 1.000 monedas.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: { cantidad: { type: SchemaType.NUMBER, description: "Monedas que se juega cada uno (10 a 1.000)" } },
+            required: ["cantidad"],
+        },
+    },
+    {
+        name: "apostar_partido_con_duende",
+        description:
+            "Propón al usuario que te está hablando una apuesta 1 contra 1 contigo a un partido de fútbol de los de ⚽ Apuestas: él va con un resultado y tú con lo contrario (p. ej. 'te apuesto 200 a que gana el Betis'). No mueve dinero: debajo de tu respuesta sale un mensaje con botones y la apuesta solo empieza si la acepta. De 10 a 1.000 monedas.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                equipo: {
+                    type: SchemaType.STRING,
+                    description:
+                        "El equipo que el usuario dice que gana, con su nombre oficial (p. ej. 'Barcelona', no 'Barça'), o 'empate'",
+                },
+                partido: {
+                    type: SchemaType.STRING,
+                    description:
+                        "Los equipos del partido (p. ej. 'Betis Sevilla'), si hace falta para encontrarlo; obligatorio si apuesta al empate",
+                },
+                cantidad: { type: SchemaType.NUMBER, description: "Monedas que se juega cada uno (10 a 1.000)" },
+            },
+            required: ["equipo", "cantidad"],
+        },
+    },
+    {
+        name: "ofrecer_prestamo",
+        description:
+            "Ofrece al usuario que te está hablando un préstamo de monedas cuando te pida dinero: de 10 a 1.000, con un 10 % de interés, a devolver en 7 días. No mueve dinero: debajo de tu respuesta sale un mensaje con botones y el préstamo solo se hace si lo acepta. Uno a la vez.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: { cantidad: { type: SchemaType.NUMBER, description: "Monedas que le prestas (10 a 1.000)" } },
+            required: ["cantidad"],
+        },
+    },
+];
+
+/** Deja una propuesta del Duende para que salga con botones debajo de su respuesta (duende.js). */
+function proponer(ctx, propuesta) {
+    if (!Array.isArray(ctx.propuestas)) return { error: "Esto solo se puede proponer por el chat de texto, con botones." };
+    if (ctx.propuestas.length >= 3) return { error: "Ya has propuesto bastante en esta respuesta." };
+    ctx.propuestas.push({ ...propuesta, userId: ctx.userId });
+    return {
+        propuesta_enviada: true,
+        aviso: "Debajo de tu respuesta sale un mensaje con ✅ Acepto / ❌ No. Hasta que no lo acepte no se mueve dinero: no digas que ya está hecho.",
+    };
+}
+
+const cantidadDe = (args) => Math.floor(Number(args?.cantidad));
+const sinNegritas = (texto) => String(texto).replace(/\*\*/g, "");
+
 const DUENDE_TOOL_EXECUTORS = {
+    retar_piedra_papel_tijera(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const cantidad = cantidadDe(args);
+        const motivo = require("../../systems/retos").motivoNoContraDuende(ctx.userId, cantidad);
+        if (motivo) return { error: sinNegritas(motivo) };
+        return proponer(ctx, { tipo: "ppt", cantidad });
+    },
+    apostar_partido_con_duende(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const retos = require("../../systems/retos");
+        const cantidad = cantidadDe(args);
+        const partido = retos.buscarPartido(`${args?.partido || ""} ${args?.equipo || ""}`);
+        const proximos = () =>
+            retos
+                .partidosParaRetar(8)
+                .map(
+                    (p) =>
+                        `${p.home_team} vs ${p.away_team} (${new Date(p.start_time).toLocaleString("es-ES", { timeZone: "Europe/Madrid" })})`,
+                );
+        if (!partido) {
+            return { error: "No encuentro ese partido entre los próximos de ⚽ Apuestas.", proximos_partidos: proximos() };
+        }
+        const eleccion = retos.eleccionPara(partido, args?.equipo);
+        if (!eleccion) {
+            return {
+                error: `En ${partido.home_team} vs ${partido.away_team} no sé por cuál va: di uno de los dos equipos o 'empate'.`,
+                proximos_partidos: proximos(),
+            };
+        }
+        const motivo = retos.motivoNoContraDuende(ctx.userId, cantidad, { matchId: partido.match_id, eleccion });
+        if (motivo) return { error: sinNegritas(motivo) };
+        return proponer(ctx, { tipo: "partido", cantidad, matchId: partido.match_id, eleccion });
+    },
+    ofrecer_prestamo(args, ctx) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        const cantidad = cantidadDe(args);
+        const motivo = require("../../systems/prestamos").motivoNoPrestar(ctx.userId, cantidad);
+        if (motivo) return { error: sinNegritas(motivo) };
+        return proponer(ctx, { tipo: "prestamo", cantidad });
+    },
     consultar_nivel_y_racha(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const p = xpSystem.getProfile(ctx.guildId, ctx.userId);
@@ -390,7 +494,21 @@ const DUENDE_TOOL_EXECUTORS = {
     },
     consultar_saldo(args, ctx) {
         const c = require("../../systems/dinero").cuenta(ctx.userId);
-        return { efectivo: c.efectivo, banco: c.banco, total: c.total };
+        const p = require("../../systems/prestamos").abierto(ctx.userId);
+        return {
+            efectivo: c.efectivo,
+            banco: c.banco,
+            total: c.total,
+            ...(p
+                ? {
+                      prestamo_del_duende: {
+                          le_falta_devolver: p.falta,
+                          vence: new Date(p.vence_en).toLocaleString("es-ES", { timeZone: "Europe/Madrid" }),
+                          vencido_y_en_deuda: p.estado === "deuda",
+                      },
+                  }
+                : {}),
+        };
     },
     precio_ttcl(args, ctx) {
         return { precio_ttcl_en_coins: getTtclPrecio(ctx.guildId) };
@@ -818,5 +936,6 @@ module.exports = {
     DUENDE_CORE_TOOL_DECLARATIONS,
     DUENDE_PLEX_TOOL_DECLARATIONS,
     DUENDE_SEERR_TOOL_DECLARATIONS,
+    DUENDE_ECONOMIA_TOOL_DECLARATIONS,
     DUENDE_TOOL_EXECUTORS,
 };

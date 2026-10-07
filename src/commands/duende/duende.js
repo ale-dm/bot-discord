@@ -502,6 +502,9 @@ module.exports = {
                 userId: interaction.user.id,
                 guild: interaction.guild || null,
                 channelId,
+                // 🧙 Lo que el Duende proponga (un reto, una apuesta, un préstamo: F-DU-03) sale después con botones.
+                // Por voz (/escuchar) no hay dónde pulsarlos: ahí no se ofrecen esas herramientas.
+                ...(interaction?.silentTextReply ? {} : { propuestas: [] }),
             };
 
             let text = "No estoy disponible.";
@@ -608,6 +611,19 @@ module.exports = {
                             await interaction.channel.send(gifUrl);
                         } catch (gifErr2) {
                             log.warn("No se pudo enviar GIF por channel.send: " + (gifErr2 && gifErr2.message ? gifErr2.message : gifErr2));
+                        }
+                    }
+                }
+
+                // Las propuestas del Duende, cada una en su mensaje con ✅ Acepto / ❌ No (paneles/duendeEconomia).
+                if (sentOk && toolContext.propuestas?.length) {
+                    const { mensajePropuesta } = require("../../paneles/duendeEconomia");
+                    const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
+                    for (const propuesta of toolContext.propuestas) {
+                        try {
+                            await interaction.followUp({ ...mensajePropuesta(propuesta), flags });
+                        } catch (e) {
+                            log.warn(`No se pudo enviar la propuesta del Duende (${propuesta.tipo}): ${e.message}`);
                         }
                     }
                 }
