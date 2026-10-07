@@ -194,6 +194,14 @@ client.once("clientReady", async () => {
         () => runJob("Mensajes espontáneos del Duende", () => require("./systems/duende/espontaneo").revisarTodos(client)),
         { timezone: "Europe/Madrid", noOverlap: true },
     );
+    // ⭐ Partido destacado del día en el canal de resultados: desde las 10:00 (cada hora por si el bot estaba caído; solo
+    // una vez al día), y al arrancar por si no se ha publicado. Sin gastar créditos de la Odds API.
+    cron.schedule(
+        "0 10-20 * * *",
+        () => runJob("Partido destacado del día", () => require("./systems/apuestas/destacado").publicarSiToca(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
+    runJob("Partido destacado del día (arranque)", () => require("./systems/apuestas/destacado").publicarSiToca(client));
     // Recordatorio por DM antes de los partidos a los que se ha apostado.
     cron.schedule(
         "*/5 * * * *",

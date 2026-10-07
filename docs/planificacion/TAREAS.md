@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**⭐ Partido destacado del día (F-AP-07, #5)**
+- [ ] Con canal de resultados puesto, un día con partidos: a las 10:00 (o al arrancar si es más tarde) sale el ⭐ en el
+      canal, con un partido de hoy (`Partido destacado del … en …` en el log). Pulsar un resultado abre el formulario.
+- [ ] `/paneladmin` → ⚽ Apuestas → ⭐ Quitar el destacado: al día siguiente no sale.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el
