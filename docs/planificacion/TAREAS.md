@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🎯 Marcador exacto (F-AP-10, #7)**
+- [ ] `/juegos` → ⚽ Apuestas → un partido → 🎯 Marcador exacto: el formulario pide los goles de cada equipo y la cantidad.
+- [ ] Apostar a un marcador y verlo en 📋 Mis jugadas ("Marcador exacto 2-1 · … @8"); cuando se liquide, que pague ×8 si
+      se acertó (y que el resto de apuestas a ese partido se paguen como siempre).
+
 **🚦 Límites de apuestas (F-AP-09, #6)**
 - [ ] `/paneladmin` → ⚽ Apuestas → 🚦 Límites: poner un tope diario y un máximo por partido; salen en la línea 🚦 del panel.
 - [ ] Apostar a un partido más del máximo (en una o en dos apuestas a distintos resultados): no deja y dice cuánto queda.

@@ -94,3 +94,14 @@ describe("📋 Mis jugadas → ⏳ En juego enseña la cartera", () => {
         expect(embed.description).toBe("💰 En juego: **0** 🪙\n📅 Beneficio de octubre: nada resuelto todavía");
     });
 });
+
+test('con marcador exacto, el posible premio de un partido suma lo que puede ganar a la vez (el 2-1 y "gana el local")', () => {
+    const { maximoDelPartido } = jugadas;
+    const a = (eleccion, cantidad, cuota) => ({ eleccion, cantidad, cuota });
+    // Local 200, empate 150; 2-1 (gana el local) 800 y 1-1 (empate) 400. Lo mejor: el 2-1, con lo del local → 1.000.
+    expect(maximoDelPartido([a("home", 100, 2), a("draw", 50, 3), a("exacto_2-1", 100, 8), a("exacto_1-1", 50, 8)])).toBe(1000);
+    // Un marcador que no casa con el resultado apostado no se suma: 0-2 (gana el visitante) 400 frente a local 200.
+    expect(maximoDelPartido([a("home", 100, 2), a("exacto_0-2", 50, 8)])).toBe(400);
+    // Sin marcadores, como antes: solo uno de 1/X/2 puede salir.
+    expect(maximoDelPartido([a("home", 100, 2), a("draw", 50, 3.5)])).toBe(200);
+});

@@ -1,6 +1,7 @@
 // Lo que alguien tiene apostado: partidos sueltos, quinielas (con sus pronósticos y aciertos) y sus
 // estadísticas, más las últimas partidas del casino. Sin Discord: lo pintan paneles/misJugadas y la quiniela.
 const db = require("../../core/db");
+const { marcadorDe } = require("./marcador");
 
 const SIGNO = { home: "1", draw: "X", away: "2" };
 
@@ -112,22 +113,44 @@ const formatoNombreMes = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, mont
 const mesDe = (fecha) => formatoMes.format(new Date(fecha)).slice(0, 7);
 
 /**
+ * Lo máximo que se puede cobrar de las apuestas a un partido: el mejor de sus resultados posibles. Solo uno de 1/X/2
+ * puede salir, pero una apuesta al marcador exacto (F-AP-10) gana a la vez que la del resultado que implica (el 2-1 y
+ * "gana el local"), así que cada marcador apostado es un escenario más.
+ */
+function maximoDelPartido(apuestas) {
+    const premio = (a) => Math.round(a.cantidad * a.cuota);
+    const porResultado = { home: 0, draw: 0, away: 0 };
+    const porMarcador = new Map();
+    for (const a of apuestas) {
+        const m = marcadorDe(a.eleccion);
+        if (m) porMarcador.set(m, (porMarcador.get(m) || 0) + premio(a));
+        else if (a.eleccion in porResultado) porResultado[a.eleccion] += premio(a);
+    }
+    let mejor = Math.max(...Object.values(porResultado));
+    for (const [m, p] of porMarcador) {
+        const [local, visitante] = m.split("-").map(Number);
+        const resultado = local > visitante ? "home" : local < visitante ? "away" : "draw";
+        mejor = Math.max(mejor, p + porResultado[resultado]);
+    }
+    return mejor;
+}
+
+/**
  * La cartera de apuestas (F-AP-04): lo que tiene en juego ahora, lo máximo que puede cobrar de sus partidos pendientes
- * (en cada partido solo puede acertar una de sus apuestas, así que cuenta la de más premio) y el beneficio de lo resuelto
- * este mes en hora de Madrid (partidos por el día del partido, quinielas por el día en que se cerraron). La quiniela no
- * suma al posible premio: depende del bote y de cuántos acierten.
+ * (de cada partido, el mejor resultado posible: maximoDelPartido) y el beneficio de lo resuelto este mes en hora de
+ * Madrid (partidos por el día del partido, quinielas por el día en que se cerraron). La quiniela no suma al posible
+ * premio: depende del bote y de cuántos acierten.
  */
 function cartera(userId, ahora = Date.now()) {
     const pendientes = db
         .prepare(
-            `SELECT a.match_id, a.cantidad, a.cuota FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
+            `SELECT a.match_id, a.eleccion, a.cantidad, a.cuota FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
              WHERE a.user_id = ? AND p.estado = 'abierto'`,
         )
         .all(userId);
-    const premioPorPartido = new Map();
-    for (const a of pendientes) {
-        premioPorPartido.set(a.match_id, Math.max(premioPorPartido.get(a.match_id) || 0, Math.round(a.cantidad * a.cuota)));
-    }
+    const porPartido = new Map();
+    for (const a of pendientes) porPartido.set(a.match_id, [...(porPartido.get(a.match_id) || []), a]);
+    const premioPorPartido = new Map([...porPartido].map(([matchId, apuestas]) => [matchId, maximoDelPartido(apuestas)]));
     const quinielas = db
         .prepare(
             `SELECT COUNT(*) AS n, COALESCE(SUM(qa.cantidad), 0) AS cantidad FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id
@@ -168,4 +191,4 @@ function cartera(userId, ahora = Date.now()) {
     };
 }
 
-module.exports = { SIGNO, partidosDe, detalleQuiniela, quinielasDe, quinielaDe, estadisticas, ultimasCasino, cartera };
+module.exports = { SIGNO, partidosDe, detalleQuiniela, quinielasDe, quinielaDe, estadisticas, ultimasCasino, cartera, maximoDelPartido };
