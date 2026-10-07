@@ -2,6 +2,33 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (👥 `/conversación` ya escucha a cualquiera del canal, no solo a quien la pidió)
+
+Confirmado en producción con dos personas a la vez: solo contestaba a quien había lanzado
+`/conversación` — el resto del canal era invisible para el bot, ni se intentaba escuchar. Era así
+desde el principio (`if (userId !== targetUserId) return;`), no un fallo al azar.
+
+- Ahora cualquiera del canal puede hablarle. Por turnos: mientras alguien tiene el turno abierto
+  (`sesion.hablanteActivo`), se ignora a quien más empiece a hablar — no hay forma de mezclar a
+  dos personas en el mismo turno de Gemini (no hace diarización). En cuanto esa persona acaba, el
+  turno queda libre para la siguiente.
+- Antes de cada turno, se identifica a quien va a hablar — igual que el chat de texto, que
+  resuelve el perfil de quien escribe en cada mensaje: nombre y lo que se sepa de ella (mismo
+  sistema de perfiles/apodos), mandado con `sendClientContent({ turnComplete: false })` justo
+  antes del audio de verdad de esa persona. Sin esto, Gemini solo sabía identificar a quien
+  pidió la conversación (perfil fijado una única vez al conectar); ahora lo sabe de cualquiera,
+  en cada turno.
+- La suscripción al audio de cada persona (coste real: un stream de Discord por persona) se
+  sigue haciendo una sola vez por persona y dura toda la llamada, igual que antes.
+- Tests nuevos: cualquiera del canal puede hablarle, se ignora a una segunda persona mientras la
+  primera tiene el turno abierto (y se libera al acabar), y se identifica a quien habla ante
+  Gemini antes de su turno.
+
+Nota: mezclar `sendClientContent` (la identificación) con audio en tiempo real dentro del mismo
+turno no está 100% garantizado por la Live API ("no hay garantías" según su propia documentación)
+— es la única forma de decírselo, pero si en producción Gemini no reacciona bien a esto, habría
+que revisarlo.
+
 ## 2026-10-07 (🗣️ `/conversación` ya funciona de verdad: reconoce a la gente, modo "solo si le llaman" y colgar por voz)
 
 Con `/conversación` funcionando de extremo a extremo, tres mejoras pedidas tras probarlo en real:
