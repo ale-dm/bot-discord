@@ -458,21 +458,33 @@ describe("dificultad de los trofeos automáticos y en las pantallas", () => {
         expect(plexTrofeos.resumen(g).porDificultad).toEqual({ facil: 4, normal: 3, gordo: 0 });
     });
 
-    test("en el perfil: junto a la categoría y el recuento de los tuyos por dificultad", async () => {
+    test("en el perfil: junto a la categoría y, dentro de 🍿 Plex, cuántos tienes de cada dificultad", async () => {
         const g = nuevoGuild();
         plexLinks.setLink(g, "disc-1", "1", "uno");
         verPeli(g, 1, "x", "X", null, null);
         await calcular(g);
         const e = perfilPanel.buildLogros(g, "disc-1", "disc-1").embeds[0].data;
         expect(e.description).toMatch(/\*\*Se apagan las luces\*\* \(plex · 🟢 Fácil\)/);
-        expect(e.fields.find((f) => f.name === "🍿 Plex por dificultad").value).toBe(
-            "🟢 Fácil: **1** · 🟡 Normal: **0** · 🎰 Gordo del Plex: **0**",
-        );
+        // Fuera de 🍿 Plex (todos o una categoría que no es Plex), sin recuento.
+        expect(e.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
+        const casino = perfilPanel.buildLogros(g, "disc-1", "disc-1", 0, false, "cat-casino").embeds[0].data;
+        expect(casino.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
+        // Dentro: de cada dificultad, los que tiene de los que hay (los secretos sin conseguir no cuentan).
+        const hay = (d) => achievements.CATALOG.filter((a) => a.category === "plex" && a.dificultad === d && !a.hidden).length;
+        const recuento = `🟢 Fácil: **1**/${hay("facil")} · 🟡 Normal: **0**/${hay("normal")} · 🎰 Gordo del Plex: **0**/${hay("gordo")}`;
+        for (const filtro of ["cat-plex", "trofeos", "dif-facil", "dif-gordo"]) {
+            const p = perfilPanel.buildLogros(g, "disc-1", "disc-1", 0, false, filtro).embeds[0].data;
+            expect(p.fields.find((f) => f.name === "🍿 Plex por dificultad").value).toBe(recuento);
+        }
+        // Con los secretos a la vista, el recuento es el mismo.
+        const conSecretos = perfilPanel.buildLogros(g, "disc-1", "disc-1", 0, true, "cat-plex").embeds[0].data;
+        expect(conSecretos.fields.find((f) => f.name === "🍿 Plex por dificultad").value).toBe(recuento);
         // Los logros que no son de Plex, sin dificultad; y quien no tiene ninguno de Plex, sin recuento.
         await achievements.applyEvents(g, "disc-2", [{ event: "message_count", value: 1 }]);
         const otro = perfilPanel.buildLogros(g, "disc-2", "disc-2").embeds[0].data;
         expect(otro.description).toMatch(/\*\*Hola Mundo\*\* \(social\)/);
-        expect(otro.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
+        const otroPlex = perfilPanel.buildLogros(g, "disc-2", "disc-2", 0, false, "cat-plex").embeds[0].data;
+        expect(otroPlex.fields.some((f) => f.name === "🍿 Plex por dificultad")).toBe(false);
     });
 
     test("el anuncio lleva la dificultad; el Gordo del Plex, con 🎰", async () => {

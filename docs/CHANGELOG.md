@@ -17,6 +17,25 @@ que aún no han empezado. Al elegir una sale cuánto se devuelve y la comisión,
 - Tests nuevos en `tests/cancelarApuesta.test.js` (apostar con el formulario de verdad, cancelar desde el panel, el
   doble clic, un partido ya empezado y otra persona intentándolo).
 
+## 2026-10-07 (🏅 Logros: lo de Plex, agrupado dentro del filtro 🍿 Plex)
+
+El menú del filtro de `/perfil` → 🏅 Logros tenía mezclados con las categorías los cuatro filtros de Plex (🏆 Solo
+trofeos de Plex y las tres dificultades). Ahora ese menú solo tiene las categorías, y al elegir 🍿 Plex sale debajo
+otro menú con todo lo de Plex: 🍿 Todos los de Plex, 🏆 Solo trofeos, 🟢 Fácil, 🟡 Normal y 🎰 Gordo del Plex. Con un
+filtro de dentro puesto, arriba sigue marcado 🍿 Plex; al elegir otra categoría, el de Plex desaparece.
+
+- Las claves de los filtros no cambian (`cat-plex`, `trofeos`, `dif-…`): los botones y menús de los mensajes de antes
+  siguen funcionando. El menú de dentro lleva `_plex` al final del id (`perfil_logrosfiltro_{o}_{t}_{secretos}_plex`),
+  que se ignora al leerlo.
+- Con todo (reclamar y los dos menús), la pantalla llega a las 5 filas que admite Discord.
+- El recuadro **🍿 Plex por dificultad** sale solo dentro de 🍿 Plex (en todos sus filtros) y dice, de cada dificultad,
+  cuántos tienes de los que hay (`🟢 Fácil: **3**/26 · 🟡 Normal: **1**/33 · 🎰 Gordo del Plex: **0**/25`), para ver
+  cuánto falta. Antes salía en cualquier filtro y solo contaba los conseguidos. Como en Completados, los secretos solo
+  cuentan si los tienes, y los trofeos de cada serie, saga... también (no se ven hasta conseguirlos).
+- Tests en `tests/plexPerfil.test.js`: las opciones de cada menú, que el de Plex solo sale dentro de 🍿 Plex, y que
+  elegir desde él filtra igual y lo conservan los botones (páginas y secretos). En `tests/plexIdiomas.test.js`, el
+  recuadro por dificultad: solo dentro de 🍿 Plex, con lo que hay, y el mismo con los secretos a la vista o sin ellos.
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
