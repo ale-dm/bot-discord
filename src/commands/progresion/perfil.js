@@ -27,7 +27,7 @@ async function pantalla(interaction, seccion, ownerId, targetId, extra = {}) {
                 guildId: guild.id,
             });
         case "juegos":
-            return require("../../paneles/casino").buildHome(ownerId);
+            return require("../../paneles/casino").buildHome(ownerId, guild.id);
         case "logros":
             return perfil.buildLogros(guild.id, ownerId, targetId, extra.page || 0, Boolean(extra.secretos), extra.filtro);
         case "rankings":
@@ -171,7 +171,8 @@ module.exports = {
             await interaction.update(await pantalla(interaction, "rankings", userId, parts[3], { tipo: interaction.values[0] }));
             return;
         }
-        // perfil_logrosfiltro_{o}_{t}_{secretos}: qué logros ver (vuelve a la página 1).
+        // perfil_logrosfiltro_{o}_{t}_{secretos}[_plex]: qué logros ver (vuelve a la página 1). "_plex" es el menú de
+        // dentro de 🍿 Plex: sobra al leerlo.
         if (id.startsWith("perfil_logrosfiltro_")) {
             await interaction.update(
                 await pantalla(interaction, "logros", userId, parts[3], {

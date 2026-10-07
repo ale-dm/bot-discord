@@ -186,6 +186,13 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Ranking semanal de Plex (arranque)", () => require("./systems/plexRankingSemanal").enviarSiToca(client));
+    // 🏆 Clasificación semanal con premios (el más rico, el más activo y el mejor apostador): igual, los lunes desde las 10:00.
+    cron.schedule(
+        "0 * * * 1",
+        () => runJob("Clasificación semanal", () => require("./systems/clasificacionSemanal").publicarSiToca(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
+    runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
     // 📊 Resumen semanal por DM a quien recibe las alertas: los lunes desde las 09:00 (igual: cada hora y al arrancar).
     cron.schedule("0 * * * 1", () => runJob("Resumen semanal para admins", () => require("./systems/resumenAdmin").enviarSiToca(client)), {
         timezone: "Europe/Madrid",
@@ -200,6 +207,14 @@ client.once("clientReady", async () => {
         () => runJob("Mensajes espontáneos del Duende", () => require("./systems/duende/espontaneo").revisarTodos(client)),
         { timezone: "Europe/Madrid", noOverlap: true },
     );
+    // ⭐ Partido destacado del día en el canal de resultados: desde las 10:00 (cada hora por si el bot estaba caído; solo
+    // una vez al día), y al arrancar por si no se ha publicado. Sin gastar créditos de la Odds API.
+    cron.schedule(
+        "0 10-20 * * *",
+        () => runJob("Partido destacado del día", () => require("./systems/apuestas/destacado").publicarSiToca(client)),
+        { timezone: "Europe/Madrid", noOverlap: true },
+    );
+    runJob("Partido destacado del día (arranque)", () => require("./systems/apuestas/destacado").publicarSiToca(client));
     // Recordatorio por DM antes de los partidos a los que se ha apostado.
     cron.schedule(
         "*/5 * * * *",

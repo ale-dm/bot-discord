@@ -16,7 +16,9 @@ function buildConfigHome(guildId) {
     const acl = guildSettings.listCommandAcl(guildId);
     const embed = new EmbedBuilder()
         .setTitle("⚙️ Configuración Global")
-        .setDescription("Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria y acceso por comando.")
+        .setDescription(
+            "Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria, clasificación semanal, eventos temporales y acceso por comando.",
+        )
         .addFields(
             {
                 name: "🤖 Duende IA",
@@ -56,6 +58,24 @@ function buildConfigHome(guildId) {
                 inline: true,
             },
             {
+                name: "🏆 Clasificación semanal",
+                value: cfg.clasificacion.canal
+                    ? `Lunes en <#${cfg.clasificacion.canal}>\nPremio: **${fmt(cfg.clasificacion.premio)}**`
+                    : "Sin canal (no se publica)",
+                inline: true,
+            },
+            {
+                name: "🎉 Eventos",
+                value:
+                    [
+                        cfg.eventos.xp.activo && `⚡ XP ×${cfg.eventos.xp.mult}`,
+                        cfg.eventos.casino.activo && `🎰 ${cfg.eventos.casino.pct} %`,
+                    ]
+                        .filter(Boolean)
+                        .join("\n") || "Ninguno activo",
+                inline: true,
+            },
+            {
                 name: "🏛️ Impuestos",
                 value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmt(impuestos.boteTotal(guildId))}**`,
                 inline: true,
@@ -76,10 +96,14 @@ function buildConfigHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_semanal_home").setLabel("🏆 Semanal").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
     );
 
     return { embeds: [embed], components: [row1, row2, navRow()] };
 }
+
+const hora = (h) => `${String(h).padStart(2, "0")}:00`;
 
 function buildDuendePanel(guildId) {
     const d = guildSettings.getSettings(guildId).duende;
@@ -100,6 +124,22 @@ function buildDuendePanel(guildId) {
                     : "Desactivados",
                 inline: true,
             },
+            {
+                // F-DU-02: encima de la personalidad que toque (la de cada canal se pone con /duende set).
+                name: "🕐 Tono",
+                value:
+                    (d.madrugada_activa
+                        ? `🌙 Más borde de ${hora(d.madrugada_desde)} a ${hora(d.madrugada_hasta)}`
+                        : "🌙 De madrugada: igual que siempre") +
+                    "\n" +
+                    (guildSettings.parseCsvIds(d.canales_formales).length
+                        ? `👔 Más formal en ${guildSettings
+                              .parseCsvIds(d.canales_formales)
+                              .map((id) => `<#${id}>`)
+                              .join(", ")}`
+                        : "👔 Ningún canal formal"),
+                inline: false,
+            },
         )
         .setColor(0x6c5ce7)
         .setTimestamp();
@@ -111,8 +151,11 @@ function buildDuendePanel(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_apodos_home").setLabel("🏷️ Apodos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_perfiles_home").setLabel("🧠 Perfiles").setStyle(ButtonStyle.Secondary),
     );
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cfg_duende_tono").setLabel("🕐 Tono").setStyle(ButtonStyle.Secondary),
+    );
 
-    return { embeds: [embed], components: [row, navRow()] };
+    return { embeds: [embed], components: [row, row2, navRow()] };
 }
 
 function buildCriptoPanel(guildId) {
@@ -254,9 +297,72 @@ function buildDiarioPanel(guildId) {
     return { embeds: [embed], components: [row, navRow()] };
 }
 
+/** 🎉 Eventos temporales (F-EC-02): happy hour de XP y fin de semana del casino, y si están en marcha ahora. */
+function buildEventosPanel(guildId) {
+    const { xp, casino } = require("../systems/eventos").estado(guildId);
+    const hora = (h) => `${String(h).padStart(2, "0")}:00`;
+    const ahora = (e) => (e.enMarcha ? " · 🟢 **en marcha**" : "");
+    const embed = new EmbedBuilder()
+        .setTitle("🎉 Eventos temporales")
+        .setDescription(
+            "Durante un rato, los multiplicadores suben solos (hora de Madrid). La gente lo ve en /perfil (la happy hour) y en " +
+                "/juegos → 🎰 Casino (el fin de semana).",
+        )
+        .addFields(
+            {
+                name: "⚡ Happy hour de XP",
+                value: xp.activo
+                    ? `Cada día de ${hora(xp.desde)} a ${hora(xp.hasta)}: XP **×${fmt(xp.mult)}**${ahora(xp)}\n` +
+                      "Encima del multiplicador global y antes del bonus de racha."
+                    : "Desactivada",
+            },
+            {
+                name: "🎰 Fin de semana del casino",
+                value: casino.activo
+                    ? `Sábado y domingo: premio neto de cada victoria al **${fmt(casino.pct)} %**${ahora(casino)}\n` +
+                      "Encima del RTP de cada juego (blackjack, tragaperras, ruleta y adivinar)."
+                    : "Desactivado",
+            },
+        )
+        .setColor(0x9b59b6)
+        .setTimestamp();
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cfg_eventos_xp").setLabel("⚡ Happy hour").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_eventos_casino").setLabel("🎰 Fin de semana").setStyle(ButtonStyle.Primary),
+    );
+    return { embeds: [embed], components: [row, navRow()] };
+}
+
 async function handleSettingsButton(interaction) {
     const id = interaction.customId;
     const guildId = interaction.guildId;
+
+    if (id === "paneladmin_cfg_eventos") {
+        await interaction.update(buildEventosPanel(guildId));
+        return true;
+    }
+    if (id === "paneladmin_cfg_eventos_xp") {
+        const { xp } = guildSettings.getSettings(guildId).eventos;
+        await interaction.showModal(
+            simpleModal("paneladmin_cfg_eventos_xp_modal", "Happy hour de XP", [
+                { id: "activo", label: "Activa (1/0)", value: xp.activo ? "1" : "0" },
+                { id: "mult", label: "Multiplicador de XP (1 a 5, p. ej. 2)", value: String(xp.mult) },
+                { id: "desde", label: "Desde la hora (0-23, Madrid)", value: String(xp.desde) },
+                { id: "hasta", label: "Hasta la hora (0-23, Madrid)", value: String(xp.hasta) },
+            ]),
+        );
+        return true;
+    }
+    if (id === "paneladmin_cfg_eventos_casino") {
+        const { casino } = guildSettings.getSettings(guildId).eventos;
+        await interaction.showModal(
+            simpleModal("paneladmin_cfg_eventos_casino_modal", "Fin de semana del casino", [
+                { id: "activo", label: "Activo (1/0)", value: casino.activo ? "1" : "0" },
+                { id: "pct", label: "Premios en % (100 a 300, p. ej. 150)", value: String(casino.pct) },
+            ]),
+        );
+        return true;
+    }
 
     if (id === "paneladmin_cfg_home") {
         await interaction.update(buildConfigHome(guildId));
@@ -321,6 +427,25 @@ async function handleSettingsButton(interaction) {
             { id: "channel", label: "ID de canal (vacío = cualquiera)", required: false, value: d.allowed_channel_id || "" },
         ]);
         await interaction.showModal(modal);
+        return true;
+    }
+
+    if (id === "paneladmin_cfg_duende_tono") {
+        const d = guildSettings.getSettings(guildId).duende;
+        await interaction.showModal(
+            simpleModal("paneladmin_cfg_duende_tono_modal", "Tono del Duende", [
+                { id: "activa", label: "Más borde de madrugada (1/0)", value: d.madrugada_activa ? "1" : "0" },
+                { id: "desde", label: "Madrugada desde la hora (0-23, Madrid)", value: String(d.madrugada_desde) },
+                { id: "hasta", label: "Madrugada hasta la hora (0-23, Madrid)", value: String(d.madrugada_hasta) },
+                {
+                    id: "formales",
+                    label: "Canales formales (IDs separados por comas)",
+                    required: false,
+                    placeholder: "Vacío = ninguno",
+                    value: d.canales_formales || "",
+                },
+            ]),
+        );
         return true;
     }
 
@@ -479,6 +604,39 @@ async function handleSettingsModal(interaction) {
         return true;
     }
 
+    if (id === "paneladmin_cfg_duende_tono_modal") {
+        const campo = (c) => interaction.fields.getTextInputValue(c).trim();
+        const desde = Number(campo("desde"));
+        const hasta = Number(campo("hasta"));
+        const formales = guildSettings.parseCsvIds(campo("formales").replace(/[<#>]/g, ""));
+        if (![desde, hasta].every((h) => Number.isInteger(h) && h >= 0 && h <= 23) || desde === hasta) {
+            await interaction.reply({
+                content: "❌ Las horas de la madrugada son números enteros de 0 a 23 (y distintos entre sí).",
+                flags: MessageFlags.Ephemeral,
+            });
+            return true;
+        }
+        const malos = formales.filter((c) => !/^\d{17,20}$/.test(c));
+        if (malos.length) {
+            await interaction.reply({
+                content: `❌ Esto no son IDs de canal: ${malos.join(", ").slice(0, 200)}. (Clic derecho en el canal → Copiar ID del canal.)`,
+                flags: MessageFlags.Ephemeral,
+            });
+            return true;
+        }
+        const valores = {
+            "duende.madrugada_activa": campo("activa"),
+            "duende.madrugada_desde": desde,
+            "duende.madrugada_hasta": hasta,
+            "duende.canales_formales": formales.join(","),
+        };
+        guildSettings.setManySettings(guildId, valores);
+        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.duende.tono", details: valores });
+        if (interaction.isFromMessage?.()) await interaction.update(buildDuendePanel(guildId));
+        else await interaction.reply({ content: "✅ Tono del Duende actualizado.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+
     if (id === "paneladmin_cfg_cripto_market_modal") {
         guildSettings.setManySettings(guildId, {
             "cripto.ttcl_base_price": interaction.fields.getTextInputValue("base").trim(),
@@ -592,6 +750,48 @@ async function handleSettingsModal(interaction) {
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.diario.update", details: valores });
         if (interaction.isFromMessage?.()) await interaction.update(buildDiarioPanel(guildId));
         else await interaction.reply({ content: "✅ Recompensa diaria actualizada.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+
+    if (id === "paneladmin_cfg_eventos_xp_modal" || id === "paneladmin_cfg_eventos_casino_modal") {
+        const campo = (c) => interaction.fields.getTextInputValue(c).trim();
+        const entero = (c, min, max) => {
+            const n = Number(campo(c));
+            return Number.isFinite(n) && n >= min && n <= max ? n : null;
+        };
+        let valores;
+        if (id === "paneladmin_cfg_eventos_xp_modal") {
+            const mult = entero("mult", 1, 5);
+            const desde = entero("desde", 0, 23);
+            const hasta = entero("hasta", 0, 23);
+            if (mult === null || !Number.isInteger(desde) || !Number.isInteger(hasta) || desde === hasta) {
+                await interaction.reply({
+                    content: "❌ El multiplicador va de 1 a 5, y las horas son enteras de 0 a 23 (y distintas entre sí).",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return true;
+            }
+            valores = {
+                "eventos.xp_activo": campo("activo"),
+                "eventos.xp_mult": mult,
+                "eventos.xp_desde": desde,
+                "eventos.xp_hasta": hasta,
+            };
+        } else {
+            const pct = entero("pct", 100, 300);
+            if (!Number.isInteger(pct)) {
+                await interaction.reply({
+                    content: "❌ El % de los premios es un número entero de 100 a 300.",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return true;
+            }
+            valores = { "eventos.casino_activo": campo("activo"), "eventos.casino_pct": pct };
+        }
+        guildSettings.setManySettings(guildId, valores);
+        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.eventos.update", details: valores });
+        if (interaction.isFromMessage?.()) await interaction.update(buildEventosPanel(guildId));
+        else await interaction.reply({ content: "✅ Eventos actualizados.", flags: MessageFlags.Ephemeral });
         return true;
     }
 

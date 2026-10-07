@@ -11,6 +11,8 @@ const {
 } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
+const marcadorExacto = require("../../systems/apuestas/marcador");
+const limites = require("../../systems/apuestas/limites");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas");
@@ -42,7 +44,7 @@ module.exports = {
         {
             types: ["button"],
             ids: ["ver_mis_apuestas"],
-            prefixes: ["apuestas_", "apuesta_home_", "apuesta_draw_", "apuesta_away_"],
+            prefixes: ["apuestas_", "apuesta_home_", "apuesta_draw_", "apuesta_away_", "apuesta_exacto_"],
             method: "handleButton",
             acl: "juegos",
         },
@@ -205,7 +207,8 @@ module.exports = {
                 `¿A qué resultado quieres apostar?\n\n` +
                     `🏠 **${partido.home_team}**: cuota \`${partido.cuota_home}\`\n` +
                     `🤝 **Empate**: cuota \`${partido.cuota_draw}\`\n` +
-                    `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`\n\n` +
+                    `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`\n` +
+                    `🎯 **Marcador exacto**: premio fijo de \`×${marcadorExacto.PREMIO}\` lo apostado\n\n` +
                     "Pulsa un botón para elegir tu apuesta.",
             )
             .setColor(0xf1c40f);
@@ -222,6 +225,10 @@ module.exports = {
             new ButtonBuilder().setCustomId(`apuesta_home_${match_id}`).setLabel(`🏠 ${partido.home_team}`).setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId(`apuesta_draw_${match_id}`).setLabel("🤝 Empate").setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId(`apuesta_away_${match_id}`).setLabel(`🚩 ${partido.away_team}`).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId(`apuesta_exacto_${match_id}`)
+                .setLabel(`🎯 Marcador exacto (×${marcadorExacto.PREMIO})`)
+                .setStyle(ButtonStyle.Secondary),
         );
 
         await interaction.reply({ embeds: [embed], components: [row] });
@@ -264,6 +271,12 @@ module.exports = {
             match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
             eleccion = "away";
             cuota = match?.cuota_away;
+        } else if (interaction.customId.startsWith("apuesta_exacto_")) {
+            // 🎯 Marcador exacto (F-AP-10): sin cuota de la API, premio fijo.
+            const match_id = interaction.customId.replace("apuesta_exacto_", "");
+            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            eleccion = "exacto";
+            cuota = marcadorExacto.PREMIO;
         } else {
             return;
         }
@@ -289,6 +302,21 @@ module.exports = {
             .setPlaceholder("Ejemplo: 100")
             .setRequired(true);
 
+        if (eleccion === "exacto") {
+            const goles = (id, equipo) =>
+                new ActionRowBuilder().addComponents(
+                    new TextInputBuilder()
+                        .setCustomId(id)
+                        .setLabel(`Goles de ${equipo}`.slice(0, 45))
+                        .setStyle(TextInputStyle.Short)
+                        .setMinLength(1)
+                        .setMaxLength(2)
+                        .setPlaceholder("0")
+                        .setRequired(true),
+                );
+            modal.setTitle(`🎯 Marcador exacto (×${marcadorExacto.PREMIO})`);
+            modal.addComponents(goles("goles_local", match.home_team), goles("goles_visitante", match.away_team));
+        }
         modal.addComponents(new ActionRowBuilder().addComponents(cantidadInput));
 
         await interaction.showModal(modal);
@@ -299,10 +327,25 @@ module.exports = {
         if (!interaction.customId.startsWith("apuestas_modal_")) return;
 
         const parts = interaction.customId.split("_");
-        const eleccion = parts[2];
+        let eleccion = parts[2];
         const match_id = parts.slice(3).join("_");
         const cantidadStr = interaction.fields.getTextInputValue("cantidad");
         const cantidad = parseInt(cantidadStr, 10);
+
+        // 🎯 Marcador exacto (F-AP-10): los goles de cada equipo; la elección se guarda como "exacto_2-1".
+        if (eleccion === "exacto") {
+            const golesLocal = marcadorExacto.golesValidos(interaction.fields.getTextInputValue("goles_local"));
+            const golesVisitante = marcadorExacto.golesValidos(interaction.fields.getTextInputValue("goles_visitante"));
+            if (golesLocal === null || golesVisitante === null) {
+                const errorEmbed = new EmbedBuilder()
+                    .setColor(0xe74c3c)
+                    .setTitle("❌ Error")
+                    .setDescription(`Los goles tienen que ser números enteros de 0 a ${marcadorExacto.MAX_GOLES}.`);
+                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+                return;
+            }
+            eleccion = marcadorExacto.eleccion(golesLocal, golesVisitante);
+        }
 
         // Antes solo se comprobaba un mínimo fijo de 10: el máximo de MAX_BET_AMOUNT no se aplicaba.
         if (isNaN(cantidad) || cantidad < MIN_BET_AMOUNT || cantidad > MAX_BET_AMOUNT) {
@@ -355,6 +398,7 @@ module.exports = {
         if (eleccion === "home") cuota = match.cuota_home;
         else if (eleccion === "draw") cuota = match.cuota_draw;
         else if (eleccion === "away") cuota = match.cuota_away;
+        else if (marcadorExacto.marcadorDe(eleccion)) cuota = marcadorExacto.PREMIO;
 
         if (!cuota || cuota < 1) {
             const errorEmbed = new EmbedBuilder()
@@ -378,7 +422,21 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setColor(0xe74c3c)
                 .setTitle("❌ Ya has apostado")
-                .setDescription("Ya tienes una apuesta activa para este partido y resultado.");
+                .setDescription(
+                    marcadorExacto.marcadorDe(eleccion)
+                        ? "Ya tienes una apuesta a ese marcador en este partido."
+                        : "Ya tienes una apuesta activa para este partido y resultado.",
+                );
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            return;
+        }
+
+        // 🚦 Tope diario y máximo por partido del servidor (F-AP-09). Justo antes de cobrar y sin await por medio: dos
+        // formularios a la vez no pueden pasarse del límite entre los dos.
+        const limite = limites.comprobar(interaction.guildId, userId, cantidad, { matchId: match_id });
+        if (limite) {
+            logInfo(`[Apuestas] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
+            const errorEmbed = new EmbedBuilder().setColor(0xe74c3c).setTitle("🚦 Límite de apuestas").setDescription(limite);
             await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
@@ -411,7 +469,13 @@ module.exports = {
         );
 
         const saldoActual = dinero.efectivo(userId);
-        const resultadoTxt = eleccion === "home" ? match.home_team : eleccion === "draw" ? "Empate" : match.away_team;
+        const resultadoTxt = marcadorExacto.marcadorDe(eleccion)
+            ? `Marcador exacto ${match.home_team} ${marcadorExacto.marcadorDe(eleccion)} ${match.away_team}`
+            : eleccion === "home"
+              ? match.home_team
+              : eleccion === "draw"
+                ? "Empate"
+                : match.away_team;
         const embed = new EmbedBuilder()
             .setTitle("✅ ¡Apuesta registrada!")
             .setDescription(
