@@ -65,6 +65,8 @@ const DEFAULT_FLAT = {
     "apuestas.canal_resultados": "",
     "apuestas.recordatorio": true,
     "apuestas.recordatorio_min": 30,
+    "apuestas.tope_diario": 0,
+    "apuestas.max_partido": 0,
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
@@ -136,6 +138,8 @@ const KEY_TYPES = {
     "apuestas.canal_resultados": "string",
     "apuestas.recordatorio": "boolean",
     "apuestas.recordatorio_min": "number",
+    "apuestas.tope_diario": "number",
+    "apuestas.max_partido": "number",
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
@@ -231,6 +235,8 @@ function flattenToNested(flat) {
             canal_resultados: flat["apuestas.canal_resultados"],
             recordatorio: flat["apuestas.recordatorio"],
             recordatorio_min: flat["apuestas.recordatorio_min"],
+            tope_diario: flat["apuestas.tope_diario"],
+            max_partido: flat["apuestas.max_partido"],
         },
         alertas: {
             enabled: flat["alertas.enabled"],

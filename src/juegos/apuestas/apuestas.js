@@ -11,6 +11,7 @@ const {
 } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
+const limites = require("../../systems/apuestas/limites");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas");
@@ -379,6 +380,16 @@ module.exports = {
                 .setColor(0xe74c3c)
                 .setTitle("❌ Ya has apostado")
                 .setDescription("Ya tienes una apuesta activa para este partido y resultado.");
+            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            return;
+        }
+
+        // 🚦 Tope diario y máximo por partido del servidor (F-AP-09). Justo antes de cobrar y sin await por medio: dos
+        // formularios a la vez no pueden pasarse del límite entre los dos.
+        const limite = limites.comprobar(interaction.guildId, userId, cantidad, { matchId: match_id });
+        if (limite) {
+            logInfo(`[Apuestas] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
+            const errorEmbed = new EmbedBuilder().setColor(0xe74c3c).setTitle("🚦 Límite de apuestas").setDescription(limite);
             await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
             return;
         }
