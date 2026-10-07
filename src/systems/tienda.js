@@ -44,9 +44,9 @@ function historialCompras(userId) {
         .all(userId);
 }
 
-// El 💵 efectivo, con lo que se compra (systems/dinero).
+// Con lo que se compra (systems/dinero): efectivo + dinero negro (F-EC-06b, se gasta igual).
 function saldoDe(userId) {
-    return dinero.efectivo(userId);
+    return dinero.saldoGastable(userId);
 }
 
 /**
@@ -91,7 +91,7 @@ function cobrarCompra(userId, guildId, item, etiqueta = userId) {
         return db.transaction(() => {
             const impuestoCompra = impuestos.impuestoDeCompra(guildId, item.precio);
             const total = item.precio + (impuestoCompra?.impuesto || 0);
-            if (!dinero.cobrar(userId, total)) return false;
+            if (!dinero.cobrarCombinado(userId, total)) return false;
             if (item.stock !== null) {
                 const st = db.prepare("UPDATE tienda SET stock = stock - 1 WHERE id = ? AND stock > 0").run(item.tiendaId);
                 if (st.changes !== 1) throw new Error("Sin stock");

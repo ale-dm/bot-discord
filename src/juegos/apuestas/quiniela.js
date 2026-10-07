@@ -525,8 +525,8 @@ module.exports = {
         const userId = interaction.user.id;
         // Quien aún no tiene cuenta empieza con el saldo inicial (como en el casino); antes le salía
         // "saldo insuficiente" hasta que usara otro comando que le creara la cuenta.
-        // Se apuesta con el 💵 efectivo (systems/dinero).
-        if (dinero.efectivo(userId) < cantidad) {
+        // Se apuesta con el 💵 efectivo + 🥷 dinero negro (systems/dinero, F-EC-06b: se gasta igual).
+        if (dinero.saldoGastable(userId) < cantidad) {
             await interaction.reply({
                 content: "❌ No te llega el efectivo. Saca dinero del banco (💵 Sacar).",
                 flags: MessageFlags.Ephemeral,
@@ -541,7 +541,7 @@ module.exports = {
         }
 
         const tx = db.transaction(() => {
-            if (!dinero.cobrar(userId, cantidad)) throw new Error("Sin efectivo");
+            if (!dinero.cobrarCombinado(userId, cantidad)) throw new Error("Sin efectivo");
             db.prepare(
                 `
                 INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en)

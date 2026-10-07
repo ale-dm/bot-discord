@@ -15,7 +15,7 @@ function persona({ efectivo = 0, enBanco = 0 } = {}) {
 
 describe("systems/dinero", () => {
     test("una cuenta nueva empieza con el dinero inicial en efectivo y el banco vacío", () => {
-        expect(dinero.cuenta("nuevo-p5")).toEqual({ efectivo: dinero.INICIAL, banco: 0, total: dinero.INICIAL });
+        expect(dinero.cuenta("nuevo-p5")).toEqual({ efectivo: dinero.INICIAL, banco: 0, negro: 0, total: dinero.INICIAL });
     });
 
     test("ingresar y sacar mueven entre efectivo y banco, sin pasarse de lo que hay", () => {
