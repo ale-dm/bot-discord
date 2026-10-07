@@ -199,6 +199,10 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**💼 Cartera de apuestas (F-AP-04, #3)**
+- [ ] `/juegos` → 📋 Mis jugadas: arriba, lo que tienes en juego, el posible premio y el beneficio del mes, y que cuadren
+      con las apuestas de debajo y con 📋 Resueltas.
+
 **⚽ Ranking de apostadores (F-AP-03, #2)**
 - [ ] `/perfil` → 🏆 Rankings → ⚽ Apostadores: salen quienes tienen al menos 5 apuestas resueltas, y el beneficio de
       cada uno cuadra con el "Apuestas" de su `/juegos` → 📊 Stats.
