@@ -109,6 +109,7 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | Básicas | Nivel, XP y racha · saldo · precio de TTCL · logros · tirar un dado · lo que hay en la tienda · tu inventario · tus apuestas en juego y tu balance · tus últimas partidas del casino · si puedes cobrar la recompensa diaria (solo la consulta) | Siempre |
 | Plex (Tautulli) | Qué ha visto alguien · qué se ve ahora · horas vistas · última conexión · novedades · comparar a dos personas · top del servidor · buscar en Plex · ranking de quién más ve · bibliotecas · día/hora de más actividad · **trofeos de Plex** (los de alguien, quién tiene el de una serie, saga o director —"¿quién ha terminado Breaking Bad?"— o quién tiene más; sin los de quien los oculta) | Solo en canales permitidos para Plex |
 | Seerr | Buscar contenido · **pedir** película/serie (también "en nombre de" otra persona) · ver peticiones recientes | Solo en canales permitidos para Seerr |
+| 🧙 Economía | **Proponer** un reto a piedra, papel o tijera, una apuesta a un partido o un préstamo a quien le habla (ver [El Duende en la economía](#-el-duende-en-la-economía-f-du-03)) | En el chat de texto (no por voz) |
 
 - Pedir contenido en Seerr está limitado a 5 peticiones diarias por persona (`seerr.daily_request_limit`)
   y solo con un resultado de una búsqueda reciente en ese canal (el modelo no puede inventar IDs).
@@ -641,6 +642,27 @@ queda nada**: el ganador se lleva lo de todos. Entre 10 y 100.000 por persona. T
 - La pestaña ⚔️ Retos enseña los retos que te han lanzado, los que esperan respuesta, lo que está en juego y los
   últimos cerrados (con lo que ganaste o perdiste), cada uno con un enlace a su mensaje.
 - Las partidas se guardan en la BD (no en memoria): un reinicio del bot no pierde ningún reto.
+- También se puede retar al Duende, desde su chat: ver el apartado siguiente.
+
+### 🧙 El Duende en la economía (F-DU-03)
+
+Hablándole al Duende se le puede pedir que se juegue monedas contigo o que te preste: "te reto a piedra, papel o
+tijera por 200", "te apuesto 300 a que gana el Betis", "préstame 500". **Él solo lo propone**: debajo de su respuesta
+sale un mensaje con **✅ Acepto / ❌ No**, y el dinero solo se mueve si pulsas ✅. Solo lo puede aceptar a quien se lo
+propuso, y la propuesta caduca a los 10 minutos. Por voz no se ofrece (no hay botones).
+
+- **Su dinero es como la banca del casino**: no tiene saldo. Si gana, lo apostado desaparece; si pierde, su parte del
+  premio se crea. Lo que ganas paga el impuesto del servidor como cualquier reto. De **10 a 1.000 🪙**.
+- **🪨 Piedra, papel o tijera**: al aceptar, la propuesta se convierte en el mensaje del reto y eliges con sus botones;
+  el Duende ya tiene su jugada (al azar) y se resuelve en el momento. Si empatáis, él vuelve a elegir. Sin jugar en 15
+  minutos, se devuelve.
+- **⚽ Apuesta a un partido**: uno de los próximos de ⚽ Apuestas, buscado por los equipos (con su nombre oficial:
+  "Barcelona", no "Barça"). Tú vas con un resultado y el Duende con lo contrario; se resuelve en la liquidación de cada
+  hora, como los retos a partidos, y sale en el canal de resultados.
+- **🧙 Préstamo**: de 10 a 1.000 🪙, uno a la vez. Se devuelve con un **10 %** más en **7 días**, o antes con 🧙 Devolver
+  en `/perfil` → 💰 Economía (ahí se ve lo que debes y cuándo vence). Al vencer **se cobra solo**: del efectivo y, si no
+  llega, del banco, con aviso por DM. Lo que falte queda como **deuda**: se cobra de lo que vayas ganando (premios,
+  logros, retos...) y, hasta saldarla, ni otro préstamo ni apuestas con el Duende. En Movimientos, tipo 🧙 Préstamos.
 
 ---
 
@@ -761,7 +783,7 @@ Duende siguen en `/duende set | add | remove`.
 |---|---|
 | Al arrancar | Registra los slash commands · crea índices de BD · **devuelve lo apostado en partidas interrumpidas** · asigna roles de nivel que falten · prueba el modelo de Gemini (si no existe o no usa herramientas, se cambia solo por uno de respaldo que funcione; alerta en los dos casos) · manda las alertas del arranque |
 | Cada minuto | XP de voz |
-| Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) |
+| Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) · 🧙 cobra los préstamos del Duende vencidos (efectivo y luego banco) y avisa por DM |
 | Cada 10 minutos | Registra el precio de $TTCL |
 | Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr · copia del historial de Plex, fichas de Tautulli, idioma de lo visto y logros y trofeos de Plex (con los nombres de Gemini que falten y los roles de Gordos) |
 | Cada hora (min. 15) | Liquidación de apuestas deportivas, retos a partidos y quinielas + DM a ganadores + resumen en el canal de resultados |

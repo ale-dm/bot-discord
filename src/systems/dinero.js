@@ -34,6 +34,7 @@ const TIPOS = {
     impuesto: "🏛️ Impuesto",
     robo: "🥷 Robos",
     premio: "🏆 Premios",
+    prestamo: "🧙 Préstamos",
     otro: "📦 Otros",
 };
 
@@ -84,6 +85,15 @@ function cobrar(userId, cantidad) {
     );
 }
 
+/** Cobra del banco, solo si alcanza (como cobrar). Para el cobro de un préstamo del Duende vencido. No apunta nada. */
+function cobrarBanco(userId, cantidad) {
+    asegurarCuenta(userId);
+    return (
+        db.prepare("UPDATE banco SET saldo = saldo - ? WHERE userId = ? AND saldo >= ?").run(cantidad, String(userId), cantidad).changes ===
+        1
+    );
+}
+
 /** Suma al efectivo (premios, reembolsos, ventas, recompensas). No apunta nada. */
 function pagar(userId, cantidad) {
     asegurarCuenta(userId);
@@ -120,7 +130,8 @@ function cobrarCombinado(userId, cantidad) {
  * Como pagar()+apuntar(), pero además aplica las reglas de impuesto de ingreso del servidor
  * (F-EC-06a): paga y apunta la cantidad bruta como siempre, y si hay una regla de impuesto activa
  * para ese tipo, cobra aparte el impuesto y lo apunta como movimiento negativo ("impuesto"), sin
- * avisar en el mensaje de quien llama (es silencioso, solo se ve en Movimientos).
+ * avisar en el mensaje de quien llama (es silencioso, solo se ve en Movimientos). Si tiene una deuda con el Duende (un
+ * préstamo vencido sin pagar entero), lo que le queda de este ingreso va primero a pagarla (systems/prestamos).
  * @returns {{impuesto: number, destino: string, reglaId: number}|null} lo que haya cobrado de impuesto, o null si no aplicaba ninguna regla
  */
 function pagarConImpuesto(userId, guildId, tipo, descripcion, cantidad) {
@@ -133,6 +144,7 @@ function pagarConImpuesto(userId, guildId, tipo, descripcion, cantidad) {
         apuntar(userId, "impuesto", `Impuesto sobre ${TIPOS[tipo] || tipo}`, -resultado.impuesto);
         if (resultado.destino === "bote") impuestos.sumarBote(guildId, resultado.impuesto);
     }
+    require("./prestamos").cobrarDeuda(userId, cantidad - (resultado?.impuesto || 0));
     return resultado;
 }
 
@@ -229,6 +241,7 @@ module.exports = {
     saldoGastable,
     apuntar,
     cobrar,
+    cobrarBanco,
     pagar,
     pagarNegro,
     cobrarCombinado,

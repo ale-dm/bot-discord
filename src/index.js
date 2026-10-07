@@ -225,6 +225,10 @@ client.once("clientReady", async () => {
     cron.schedule("*/5 * * * *", () => runJob("Retos caducados", () => require("./juegos/retos/retos").revisarRetos(client)), {
         noOverlap: true,
     });
+    // 🧙 Préstamos del Duende vencidos: se cobran solos (efectivo y luego banco) y se avisa por DM.
+    cron.schedule("*/5 * * * *", () => runJob("Préstamos del Duende", () => require("./juegos/retos/duende").revisarPrestamos(client)), {
+        noOverlap: true,
+    });
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
         "15 * * * *",
@@ -494,6 +498,12 @@ client.on("messageCreate", async (message) => {
                 return message.channel.send(String(content));
             },
             followUp: async (payload) => {
+                // Las propuestas del Duende (F-DU-03) llevan embed y botones; lo demás es solo texto.
+                if (payload?.embeds || payload?.components) {
+                    didSendReply = true;
+                    const { content, embeds, components, allowedMentions } = payload;
+                    return message.channel.send({ ...(content ? { content } : {}), embeds, components, allowedMentions });
+                }
                 const content = typeof payload === "string" ? payload : payload?.content;
                 if (content === undefined || content === null) {
                     throw new Error("Contenido vacío en followUp");

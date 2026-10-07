@@ -22,6 +22,8 @@ const ts = (ms, estilo = "R") => `<t:${Math.floor(ms / 1000)}:${estilo}>`;
 const corto = (texto, max) => (texto.length > max ? `${texto.slice(0, max - 1)}…` : texto);
 // Discord corta los campos en 1.024 caracteres.
 const campo = (texto) => (texto.length > 1024 ? `${texto.slice(0, 1020)}…` : texto);
+/** Quién es alguien en un reto: su mención o, si es el Duende (F-DU-03), "🧙 el Duende" (no es un usuario de Discord). */
+const persona = (id) => (id === retos.DUENDE ? "🧙 **el Duende**" : `<@${id}>`);
 const menciones = (ids, max = 15) =>
     ids
         .slice(0, max)
@@ -57,11 +59,11 @@ function resumenCorto(reto) {
     if (reto.tipo === "partido") {
         const p = retos.partidoDe(reto.match_id);
         const partido = p ? `${p.home_team} vs ${p.away_team}` : "partido";
-        return `⚽ ${partido} · <@${reto.creador}> vs <@${reto.rival}> · ${fmt(reto.cantidad)} 🪙`;
+        return `⚽ ${partido} · ${persona(reto.creador)} vs ${persona(reto.rival)} · ${fmt(reto.cantidad)} 🪙`;
     }
     if (reto.tipo === "duelo") {
         const j = retos.JUEGOS[reto.juego];
-        return `${j.emoji} ${j.nombre} · <@${reto.creador}> vs <@${reto.rival}> · ${fmt(reto.cantidad)} 🪙`;
+        return `${j.emoji} ${j.nombre} · ${persona(reto.creador)} vs ${persona(reto.rival)} · ${fmt(reto.cantidad)} 🪙`;
     }
     return `🗳️ ${corto(reto.pregunta, 50)} · ${fmt(reto.cantidad)} 🪙 · ${reto.participantes.length} dentro`;
 }
@@ -255,10 +257,10 @@ function lineaFinal(reto) {
         const bote = reto.participantes.reduce((s, p) => s + p.cantidad, 0);
         return `🏆 ${reto.resultado}: ${menciones(g)} ${g.length === 1 ? "se lleva" : "se reparten"} **${fmt(bote)}** 🪙.`;
     }
-    return `${reto.resultado}\n🏆 Gana <@${g[0]}> y se lleva **${fmt(premioDe(reto, g[0]))}** 🪙.`;
+    return `${reto.resultado}\n🏆 Gana ${persona(g[0])} y se lleva **${fmt(premioDe(reto, g[0]))}** 🪙.`;
 }
 
-const espera = (reto) => `⏳ Esperando a <@${reto.rival}> · caduca ${ts(reto.expira_en)}`;
+const espera = (reto) => `⏳ Esperando a ${persona(reto.rival)} · caduca ${ts(reto.expira_en)}`;
 
 function botonesPendiente(reto) {
     return new ActionRowBuilder().addComponents(
@@ -275,9 +277,9 @@ function mensajePartido(reto, embed) {
         .setTitle("⚔️ Reto a un partido")
         .setDescription(
             (p
-                ? `<@${reto.creador}> apuesta **${fmt(reto.cantidad)}** 🪙 a que **${ladoTexto(p, reto.eleccion)}** en **${partido}** (${ts(Date.parse(p.start_time), "f")}).\n` +
-                  `<@${reto.rival}> va con lo contrario: **${contrarioTexto(p, reto.eleccion)}**.\n`
-                : `<@${reto.creador}> contra <@${reto.rival}>, **${fmt(reto.cantidad)}** 🪙 cada uno.\n`) +
+                ? `${persona(reto.creador)} apuesta **${fmt(reto.cantidad)}** 🪙 a que **${ladoTexto(p, reto.eleccion)}** en **${partido}** (${ts(Date.parse(p.start_time), "f")}).\n` +
+                  `${persona(reto.rival)} va con lo contrario: **${contrarioTexto(p, reto.eleccion)}**.\n`
+                : `${persona(reto.creador)} contra ${persona(reto.rival)}, **${fmt(reto.cantidad)}** 🪙 cada uno.\n`) +
                 `El que acierte se lleva **${fmt(reto.cantidad * 2)}** 🪙.\n\n` +
                 (reto.estado === "pendiente"
                     ? espera(reto)
@@ -302,7 +304,7 @@ function mensajeDuelo(reto, embed) {
         components = [botonesPendiente(reto)];
     } else if (reto.estado === "en_juego" && reto.juego === "ppt") {
         const d = reto.datos || { ronda: 1, jugadas: {}, empates: [] };
-        const quien = (id) => `<@${id}> ${d.jugadas[id] ? "✅ ya ha elegido" : "⏳ pensando"}`;
+        const quien = (id) => `${persona(id)} ${d.jugadas[id] ? "✅ ya ha elegido" : "⏳ pensando"}`;
         estado =
             `**Ronda ${d.ronda}**${d.empates.length ? ` (empates: ${d.empates.map((x) => retos.PPT[x].emoji).join(" ")})` : ""}. Elegid en secreto:\n` +
             `${quien(reto.creador)}\n${quien(reto.rival)}`;
@@ -319,7 +321,7 @@ function mensajeDuelo(reto, embed) {
     } else if (reto.estado === "en_juego" && reto.juego === "blackjack") {
         const quien = (id) => {
             const cartas = reto.datos.manos[id].length;
-            return `<@${id}> ${reto.datos.plantados[id] ? "✋ ha terminado" : "🃏 jugando"} (${cartas} cartas)`;
+            return `${persona(id)} ${reto.datos.plantados[id] ? "✋ ha terminado" : "🃏 jugando"} (${cartas} cartas)`;
         };
         estado = `Cada uno juega su mano en privado con **🃏 Mi mano**:\n${quien(reto.creador)}\n${quien(reto.rival)}`;
         components = [
@@ -330,13 +332,13 @@ function mensajeDuelo(reto, embed) {
     } else {
         estado = lineaFinal(reto) || "";
         if (reto.juego === "blackjack" && reto.datos?.manos) {
-            estado = `<@${reto.creador}>: ${manoTexto(reto, reto.creador)}\n<@${reto.rival}>: ${manoTexto(reto, reto.rival)}\n\n${estado}`;
+            estado = `${persona(reto.creador)}: ${manoTexto(reto, reto.creador)}\n${persona(reto.rival)}: ${manoTexto(reto, reto.rival)}\n\n${estado}`;
         }
     }
     embed
         .setTitle(`⚔️ Duelo de ${j.emoji} ${j.nombre}`)
         .setDescription(
-            `<@${reto.creador}> reta a <@${reto.rival}> por **${fmt(reto.cantidad)}** 🪙 cada uno. El que gane se lleva **${fmt(reto.cantidad * 2)}** 🪙.\n\n${estado}`,
+            `${persona(reto.creador)} reta a ${persona(reto.rival)} por **${fmt(reto.cantidad)}** 🪙 cada uno. El que gane se lleva **${fmt(reto.cantidad * 2)}** 🪙.\n\n${estado}`,
         );
     return components;
 }
@@ -353,7 +355,7 @@ function mensajePorra(reto, embed) {
     embed
         .setTitle(corto(`🗳️ ${reto.pregunta}`, 256))
         .setDescription(
-            `Porra de <@${reto.creador}> · entrada **${fmt(reto.cantidad)}** 🪙 · bote **${fmt(bote)}** 🪙 · ${reto.participantes.length} dentro\n\n${estado}`,
+            `Porra de ${persona(reto.creador)} · entrada **${fmt(reto.cantidad)}** 🪙 · bote **${fmt(bote)}** 🪙 · ${reto.participantes.length} dentro\n\n${estado}`,
         )
         .addFields(
             reto.opciones.map((opcion, n) => {
@@ -465,4 +467,5 @@ module.exports = {
     elegirGanadoraPorra,
     ladoTexto,
     contrarioTexto,
+    persona,
 };

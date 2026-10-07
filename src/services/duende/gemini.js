@@ -11,6 +11,7 @@ const {
     DUENDE_CORE_TOOL_DECLARATIONS,
     DUENDE_PLEX_TOOL_DECLARATIONS,
     DUENDE_SEERR_TOOL_DECLARATIONS,
+    DUENDE_ECONOMIA_TOOL_DECLARATIONS,
     DUENDE_TOOL_EXECUTORS,
 } = require("./herramientas");
 
@@ -67,10 +68,13 @@ async function generarConGemini(parts, options = {}) {
         const hasChannelCtx = options.toolContext.guildId && options.toolContext.channelId;
         const plexAllowed = hasChannelCtx && tautulliClient.isChannelAllowed(options.toolContext.guildId, options.toolContext.channelId);
         const seerrAllowed = hasChannelCtx && seerrClient.isChannelAllowed(options.toolContext.guildId, options.toolContext.channelId);
+        // Las de 🧙 economía, solo donde la propuesta puede salir con botones (el chat de texto, no la voz).
+        const conBotones = hasChannelCtx && Array.isArray(options.toolContext.propuestas);
         const declarations = [
             ...DUENDE_CORE_TOOL_DECLARATIONS,
             ...(plexAllowed ? DUENDE_PLEX_TOOL_DECLARATIONS : []),
             ...(seerrAllowed ? DUENDE_SEERR_TOOL_DECLARATIONS : []),
+            ...(conBotones ? DUENDE_ECONOMIA_TOOL_DECLARATIONS : []),
         ];
         baseConfig.tools = [{ functionDeclarations: declarations }];
     }

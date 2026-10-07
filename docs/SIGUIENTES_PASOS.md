@@ -148,7 +148,7 @@ El detalle técnico (flujo de cada sincronización y por qué se hizo así) est�
   `tests/plexDiagnostico.test.js`, el Tautulli de mentira).
 - **Cambiar la hora o el día del ranking**: `HORA` en `plexRankingSemanal.js`; para otro día, el cron `"0 * * * 1"` de
   `src/index.js` y la comprobación `diaSemana(dia) !== 1` en `enviar()`. El canal, desde el panel.
-- **Cambiar el esquema**: una migración nueva con el siguiente número (la próxima, `019_…`) en `src/core/migrations`.
+- **Cambiar el esquema**: una migración nueva con el siguiente número (la próxima, `025_…`) en `src/core/migrations`.
   Nunca editar una que ya se haya aplicado en producción.
 
 ## 8. Convenciones (resumen)

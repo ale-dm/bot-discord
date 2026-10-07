@@ -9,7 +9,8 @@ const PORCENTAJE_POR_DEFECTO = 5;
 // Tipos de historial que nunca pagan impuesto de ingreso: mover dinero propio (banco) o entre
 // jugadores (transferencia), y correcciones de admin — no son "ingresos" de verdad. El dinero
 // negro (F-EC-06b) se añadirá aquí cuando exista esa columna/tipo.
-const TIPOS_EXCLUIDOS = ["transferencia", "banco", "admin"];
+// Un préstamo del Duende (F-DU-03) tampoco es un ingreso: se devuelve.
+const TIPOS_EXCLUIDOS = ["transferencia", "banco", "admin", "prestamo"];
 
 function aRegla(r) {
     if (!r) return null;
