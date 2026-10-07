@@ -17,7 +17,7 @@ const {
 } = require("@discordjs/voice");
 const prism = require("prism-media");
 const { Modality } = require("@google/genai");
-const { getGenAILive } = require("../geminiClient");
+const { getGenAI } = require("../geminiClient");
 const { createLogger } = require("../../core/logger");
 const perfiles = require("../../systems/duende/perfiles");
 const tautulliClient = require("../tautulliClient");
@@ -32,7 +32,7 @@ const { GEMINI_TTS_VOICE } = require("../geminiTts");
 
 const log = createLogger("Duende").child("VozEnVivo");
 
-const LIVE_MODEL = process.env.DUENDE_LIVE_MODEL || "gemini-live-2.5-flash-preview";
+const LIVE_MODEL = process.env.DUENDE_LIVE_MODEL || "gemini-3.8-live";
 const LIVE_VOICE = process.env.DUENDE_LIVE_VOICE || process.env.DUENDE_TTS_VOICE || GEMINI_TTS_VOICE;
 // Se cobra mientras la conexión esté abierta, no solo cuando se habla: sin esto, dejarse la
 // llamada olvidada puede salir caro. No es opcional.
@@ -214,7 +214,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
             sesion.ultimaActividad = Date.now();
         };
 
-        const genAI = getGenAILive();
+        const genAI = getGenAI();
         const liveSession = await genAI.live.connect({
             model: LIVE_MODEL,
             config: {

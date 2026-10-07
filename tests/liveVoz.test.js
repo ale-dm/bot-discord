@@ -57,7 +57,7 @@ const mockConnect = jest.fn(async (opts) => {
 });
 jest.mock("../src/services/geminiClient", () => ({
     ...jest.requireActual("../src/services/geminiClient"),
-    getGenAILive: () => ({ live: { connect: mockConnect } }),
+    getGenAI: () => ({ live: { connect: mockConnect } }),
 }));
 
 const liveVoz = require("../src/services/duende/liveVoz");
