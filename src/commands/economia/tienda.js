@@ -77,7 +77,7 @@ async function comprar(interaction, tiendaCfg) {
         }
         // Resta saldo y registra compra, todo o nada: si algo falla a mitad no se
         // cobra sin entregar el objeto (ni se gasta stock sin cobrar).
-        if (!tienda.cobrarCompra(userId, item, interaction.user.tag)) {
+        if (!tienda.cobrarCompra(userId, interaction.guildId, item, interaction.user.tag)) {
             await interaction.update(
                 sustituir("❌ No se pudo completar la compra (saldo o stock insuficiente). No se te ha cobrado nada."),
             );

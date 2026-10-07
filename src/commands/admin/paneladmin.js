@@ -33,6 +33,7 @@ const {
     handlePerfilesModal,
     handlePerfilesStringSelect,
 } = require("../../adminPanel/perfilesDuende");
+const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPanel/impuestos");
 
 module.exports = {
     componentHandlers: [
@@ -108,6 +109,7 @@ module.exports = {
             if (await handleApuestasButton(interaction)) return;
             if (await handleCatalogoButton(interaction)) return;
             if (await handleSistemaButton(interaction)) return;
+            if (await handleImpuestosButton(interaction)) return;
         } catch (err) {
             log.error(`handleButton falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -134,6 +136,7 @@ module.exports = {
             if (await handleCatalogoModal(interaction)) return;
             if (await handleApuestasModal(interaction)) return;
             if (await handleSistemaModal(interaction)) return;
+            if (await handleImpuestosModal(interaction)) return;
         } catch (err) {
             log.error(`handleModal falló (${interaction.customId || "/paneladmin"}):`, err);
             try {

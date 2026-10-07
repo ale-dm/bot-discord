@@ -34,6 +34,8 @@ beforeEach(() => {
     db.prepare("DELETE FROM banco").run();
     db.prepare("DELETE FROM historial").run();
     db.prepare("DELETE FROM xp_users WHERE guildId = ?").run(G);
+    db.prepare("DELETE FROM impuestos_reglas WHERE guildId = ?").run(G);
+    db.prepare("DELETE FROM impuestos_bote WHERE guildId = ?").run(G);
 });
 
 afterEach(() => {
@@ -48,9 +50,13 @@ test("si sale bien, da dinero (base + bonus por nivel) y lo apunta en el histori
     const r = await trabajar(G, usuario("u1"), "canal-1");
 
     expect(r).toMatchObject({ ok: true, exito: true, cantidad: 20 + 10 * 2 }); // 20 base + 10 nivel * 2
-    expect(dinero.cuenta("u1").efectivo).toBe(dinero.INICIAL + 40);
-    const mov = db.prepare("SELECT cantidad, tipo FROM historial WHERE userId = 'u1'").get();
-    expect(mov).toMatchObject({ cantidad: 40, tipo: "trabajo" });
+    // 40 de /trabajar, menos el 5% de impuesto por defecto (2) = 38 netos.
+    expect(dinero.cuenta("u1").efectivo).toBe(dinero.INICIAL + 38);
+    const mov = db.prepare("SELECT cantidad, tipo FROM historial WHERE userId = 'u1' ORDER BY id").all();
+    expect(mov).toMatchObject([
+        { cantidad: 40, tipo: "trabajo" },
+        { cantidad: -2, tipo: "impuesto" },
+    ]);
 });
 
 test("si sale mal, no da nada y no toca el historial", async () => {

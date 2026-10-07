@@ -130,8 +130,13 @@ function cerrar(retoId, premios, estado, resultado) {
             const premio = premios[p.userId] || 0;
             db.prepare("UPDATE retos_participantes SET premio = ? WHERE reto_id = ? AND userId = ?").run(premio, retoId, p.userId);
             if (premio <= 0) continue;
-            dinero.pagar(p.userId, premio);
-            dinero.apuntar(p.userId, "retos", reembolso ? `Reto devuelto: ${desc} (${resultado})` : `Reto ganado: ${desc}`, premio);
+            dinero.pagarConImpuesto(
+                p.userId,
+                reto.guildId,
+                "retos",
+                reembolso ? `Reto devuelto: ${desc} (${resultado})` : `Reto ganado: ${desc}`,
+                premio,
+            );
             pagos.push({
                 userId: p.userId,
                 premio,

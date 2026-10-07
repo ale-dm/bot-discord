@@ -28,6 +28,7 @@ const TIPOS = {
     trabajo: "💼 Trabajo",
     objeto: "🎒 Objetos",
     admin: "🛠️ Admin",
+    impuesto: "🏛️ Impuesto",
     otro: "📦 Otros",
 };
 
@@ -74,6 +75,26 @@ function cobrar(userId, cantidad) {
 function pagar(userId, cantidad) {
     asegurarCuenta(userId);
     db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, String(userId));
+}
+
+/**
+ * Como pagar()+apuntar(), pero además aplica las reglas de impuesto de ingreso del servidor
+ * (F-EC-06a): paga y apunta la cantidad bruta como siempre, y si hay una regla de impuesto activa
+ * para ese tipo, cobra aparte el impuesto y lo apunta como movimiento negativo ("impuesto"), sin
+ * avisar en el mensaje de quien llama (es silencioso, solo se ve en Movimientos).
+ * @returns {{impuesto: number, destino: string, reglaId: number}|null} lo que haya cobrado de impuesto, o null si no aplicaba ninguna regla
+ */
+function pagarConImpuesto(userId, guildId, tipo, descripcion, cantidad) {
+    pagar(userId, cantidad);
+    apuntar(userId, tipo, descripcion, cantidad);
+    const impuestos = require("./impuestos");
+    const resultado = impuestos.calcularImpuesto(guildId, tipo, cantidad);
+    if (resultado) {
+        cobrar(userId, resultado.impuesto);
+        apuntar(userId, "impuesto", `Impuesto sobre ${TIPOS[tipo] || tipo}`, -resultado.impuesto);
+        if (resultado.destino === "bote") impuestos.sumarBote(guildId, resultado.impuesto);
+    }
+    return resultado;
 }
 
 function validarCantidad(cantidad) {
@@ -168,6 +189,7 @@ module.exports = {
     apuntar,
     cobrar,
     pagar,
+    pagarConImpuesto,
     ingresar,
     sacar,
     transferir,

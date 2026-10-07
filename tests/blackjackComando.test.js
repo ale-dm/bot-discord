@@ -47,7 +47,7 @@ test("doblar y ganar: cobra la segunda apuesta y paga el doble de las dos", asyn
     const i = interaccion(u, { customId: "bj_double" });
     await blackjack.handleButton(null, i);
     expect(titulo(i)).toBe("🃏 Blackjack - Resultado (Doblar)");
-    expect(saldo(u)).toBe(1200); // -200 apostado, +400
+    expect(saldo(u)).toBe(1200 - 10); // -200 apostado, +400 de ganancia total, -10 de impuesto (5% de los 200 netos)
 });
 
 test("split: se cobra la segunda apuesta y cada mano se liquida por separado", async () => {

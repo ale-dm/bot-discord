@@ -404,7 +404,7 @@ Cada uno tiene el dinero en dos sitios:
 - **💵 Efectivo**: lo que se gasta. Casino, apuestas, quiniela, tienda, cripto y transferencias cobran de
   aquí, y los premios, reembolsos, ventas de cripto, recompensas de logros y objetos de monedas llegan aquí.
 - **🏦 Banco**: el sitio seguro. Ahí no se gasta: hay que sacarlo antes. (Pensado para lo que vendrá:
-  impuestos, robos y dinero negro, ver F-EC-06.)
+  robos y dinero negro, ver F-EC-06b.)
 
 Todo el mundo empieza con **1.000 monedas en efectivo** (la cuenta se crea al usarla por primera vez). El dinero
 es único para todo el bot (no es por servidor).
@@ -416,7 +416,7 @@ es único para todo el bot (no es por servidor).
 | 🏦 Ingresar | Pasa efectivo al banco (formulario con la cantidad; máx. 1.000.000 por operación) |
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
-| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, admin |
+| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, admin |
 | 🎁 Diario | La recompensa diaria (ver abajo). Cuando ya la has cobrado sale desactivado como "🎁 Mañana" |
 
 **🎁 Recompensa diaria**: una vez al día (el día cambia a las 00:00, hora de Madrid, como las rachas), unas monedas
@@ -459,6 +459,24 @@ Los botones de la tienda solo los puede usar quien la abrió.
 
 Una compra es atómica: o se cobra y se entrega el objeto, o no pasa nada. Se puede limitar con cooldown y
 cupo diario de compras.
+
+### 🏛️ Impuestos (F-EC-06a)
+
+Motor de impuestos configurable por servidor, sin ningún % fijo en el código. Cada servidor tiene sus propias
+**reglas**, gestionadas desde `/paneladmin` → ⚙️ Config Global → 🏛️ Impuestos:
+
+- **Sobre ingresos** (trabajo, diario, logros, retos, cripto, casino...): se aplica a todo salvo transferencias,
+  movimientos de banco y acciones de admin (y, en el futuro, el dinero negro de F-EC-06b). Puede ser **general**
+  (afecta a cualquier ingreso) o **de un tipo concreto** (p. ej. solo al casino); si hay una regla general y otra
+  específica para el mismo tipo, siempre gana la específica, nunca se suman las dos.
+- **Sobre compras**: un % extra sobre el precio al comprar en la tienda, que se cobra junto al precio (también se
+  tiene en cuenta al comprobar si llega el saldo).
+- Cada regla tiene un **destino**: 💰 al **bote** del servidor (se acumula, de momento sin repartir — pensado para
+  mecánicas futuras) o al **sumidero** (desaparece, para controlar la inflación).
+- El redondeo del impuesto siempre es hacia abajo. Es **silencioso**: no se avisa al cobrarlo, solo aparece como una
+  línea aparte ("🏛️ Impuesto") en 📜 Movimientos, justo después del ingreso que lo generó.
+- Si un servidor no tiene ninguna regla todavía, se le crea sola una por defecto (5 % sobre ingresos, al bote) la
+  primera vez que hace falta calcular un impuesto o se abre el panel — para no empezar sin impuestos por descuido.
 
 ---
 
@@ -631,7 +649,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
-| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
+| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: precio base y volatilidad de TTCL, comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, crear y borrar trofeos de admin (también con fechas), 🪙 % de la importación (y cuántos vinculados están importando), 🎰 Roles de Gordos y 🔍 Idiomas (diagnóstico) |
 | 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |

@@ -2,6 +2,36 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🏛️ Motor de impuestos configurable (F-EC-06a): primera pieza de la economía de robos/blanqueo)
+
+Primera entrega del backlog de economía (#37): un motor de impuestos genérico y configurable por servidor,
+en vez de un % fijo en el código — para poder montar luego robos/dinero negro (F-EC-06b), objetos de
+protección (F-EC-06c) y negocios de blanqueo (F-EC-06d) encima de algo ya flexible.
+
+- **Reglas configurables por servidor** (`impuestos_reglas`): sobre **ingresos** (general o limitada a un
+  tipo concreto, p. ej. solo casino — y si hay una regla general y otra específica para el mismo tipo,
+  gana siempre la específica, nunca se suman) o sobre **compras** en la tienda (% extra sobre el precio).
+  Cada regla tiene un destino: 💰 bote del servidor (acumula, sin repartir por ahora) o sumidero
+  (desaparece, control de inflación). Redondeo siempre hacia abajo.
+- Los ingresos se gravan **por exclusión**: todo tipo de movimiento salvo transferencias, banco y admin (y,
+  en el futuro, dinero negro sin blanquear). Migrados a la nueva ruta con impuesto: 💼 trabajar, 🎁 diario,
+  🏅 logros, 🎲 retos, 💱 venta de cripto, 🛍️ objetos consumibles de monedas y 🎰 casino (solo sobre la
+  ganancia neta, nunca sobre la apuesta devuelta). Queda **silencioso**: no se avisa al cobrarlo, solo
+  aparece como línea aparte ("🏛️ Impuesto") en 📜 Movimientos.
+- Si un servidor no tiene ninguna regla, se le crea sola una por defecto (5 % sobre ingresos, al bote) la
+  primera vez que hace falta, para no quedarse sin impuestos por no haberlos configurado nunca.
+- **Panel admin** nuevo en Config Global → 🏛️ Impuestos: lista de reglas (con su ámbito, % y destino) y
+  botones para añadir, activar/desactivar y quitar, más el bote acumulado. Todo auditado.
+- `dinero.pagarConImpuesto(userId, guildId, tipo, descripcion, cantidad)`: wrapper que sustituye a
+  `pagar`+`apuntar` donde aplica, para no repetir la lógica de impuesto en cada sitio que paga un ingreso.
+- Fuera de alcance a propósito: las apuestas de fútbol/quiniela (`apuestas_usuario`/`quiniela_apuestas`) no
+  tienen `guildId` en su esquema (sistema global, no por servidor) y se quedan sin impuesto hasta que eso
+  cambie — requeriría tocar su esquema, no algo para meter de paso aquí.
+- Tests nuevos para el motor (`tests/impuestos.test.js`: regla por defecto, exclusión, redondeo, regla
+  específica gana a la general, regla inactiva no se aplica, impuesto de compra aparte del de ingresos,
+  acumulación en el bote, sumidero no toca el bote) y ajustados los importes esperados en los tests
+  existentes que cobran algún ingreso (ahora con el 5 % por defecto ya restado).
+
 ## 2026-10-07 (🎚️ `/conversación con @persona`: volver a escuchar solo a una, cuando hay mucha gente)
 
 Escuchar a cualquiera del canal por turnos (de la entrada anterior) se vuelve un caos con mucha

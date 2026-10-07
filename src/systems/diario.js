@@ -47,8 +47,7 @@ function cobrar(guildId, userId) {
             )
             .run(hoy, e.cantidad, String(userId), hoy);
         if (marcado.changes !== 1) return false;
-        dinero.pagar(userId, e.cantidad);
-        dinero.apuntar(userId, "diario", `Recompensa diaria (racha de ${e.racha} días)`, e.cantidad);
+        dinero.pagarConImpuesto(userId, guildId, "diario", `Recompensa diaria (racha de ${e.racha} días)`, e.cantidad);
         return true;
     })();
     if (!ok) return { ok: false, mensaje: "⏳ Ya has cobrado la recompensa de hoy. Vuelve mañana (desde las 00:00, hora de Madrid)." };

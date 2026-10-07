@@ -56,7 +56,7 @@ describe("la importación de cada uno", () => {
         expect(update.mock.calls[0][0].content).toBe(
             "✅ Reclamaste **Se apagan las luces** y ganaste **50 🪙** (📼 de la importación de Plex: el 50 % de las monedas).",
         );
-        expect(dinero.cuenta("disc-1").efectivo).toBe(antes + 50);
+        expect(dinero.cuenta("disc-1").efectivo).toBe(antes + 50 - Math.floor(50 * 0.05)); // 5% de impuesto por defecto
     });
 
     test("mientras quede algo antiguo por revisar (aquí, la biblioteca sin repasar), lo que sale sigue siendo de la importación", async () => {
@@ -257,7 +257,7 @@ test("la migración 018 añade la tabla y las columnas sin tocar lo que había",
     bd.prepare(
         "INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt) VALUES ('g', 'u', 'plex_pelis_1', 1, 5)",
     ).run();
-    expect(runMigrations(bd)).toBe(2); // 018 (este test) + 019 (duende_notas_vectores, ajena a Plex)
+    expect(runMigrations(bd)).toBe(3); // 018 (este test) + 019 (notas/embeddings) + 020 (impuestos), ajenas a Plex
     expect(bd.prepare("SELECT importado, completedAt FROM achievements_progress").get()).toEqual({ importado: 0, completedAt: 5 });
     const columnas = (t) =>
         bd

@@ -44,7 +44,7 @@ test("comprar un consumible: botones para verlo en el inventario o usarlo ya, y 
     expect(usado.embeds[0].data.title).toBe("🎒 Tu inventario");
     expect(usado.embeds[0].data.description).toMatch(/Saco de monedas/);
     expect(usado.embeds[0].data.description).toMatch(/300 monedas/);
-    expect(dinero.efectivo("comprador")).toBe(1200);
+    expect(dinero.efectivo("comprador")).toBe(900 + 300 - Math.floor(300 * 0.05)); // 5% de impuesto por defecto
     // Se ha gastado: ya solo queda la piedra, que no se puede usar (sin botón de Usar).
     expect(usado.embeds[0].data.fields.map((f) => f.name)).toEqual([expect.stringMatching(/Piedra bonita/)]);
     expect(ids(usado).some((id) => id.startsWith("tienda_usar_"))).toBe(false);

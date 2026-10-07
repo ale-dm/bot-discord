@@ -26,7 +26,8 @@ test("se cobra una vez al día, al efectivo, y queda en Movimientos como 🎁 Di
     expect(diario.estado(G, "u1")).toMatchObject({ activo: true, disponible: true, cantidad: 100, racha: 0 });
     const r = diario.cobrar(G, "u1");
     expect(r).toMatchObject({ ok: true, cantidad: 100 });
-    expect(dinero.cuenta("u1")).toMatchObject({ efectivo: dinero.INICIAL + 100, banco: 0 });
+    const impuesto = Math.floor(100 * 0.05); // 5% de impuesto por defecto
+    expect(dinero.cuenta("u1")).toMatchObject({ efectivo: dinero.INICIAL + 100 - impuesto, banco: 0 });
     expect(dinero.movimientos("u1", { tipo: "diario" }).filas).toEqual([
         expect.objectContaining({ cantidad: 100, descripcion: expect.stringMatching(/Recompensa diaria/) }),
     ]);
@@ -34,7 +35,7 @@ test("se cobra una vez al día, al efectivo, y queda en Movimientos como 🎁 Di
     const otra = diario.cobrar(G, "u1");
     expect(otra.ok).toBe(false);
     expect(otra.mensaje).toMatch(/Ya has cobrado/);
-    expect(dinero.efectivo("u1")).toBe(dinero.INICIAL + 100);
+    expect(dinero.efectivo("u1")).toBe(dinero.INICIAL + 100 - impuesto);
     expect(diario.estado(G, "u1")).toMatchObject({ disponible: false, veces: 1, total: 100 });
 });
 
