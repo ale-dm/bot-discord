@@ -2,6 +2,26 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎯 `/conversación` se cortaba sola justo al hablar: "Precondition check failed")
+
+Con el VAD manual (activityStart/activityEnd) puesto, el primer intento en producción se cortó a
+los 3 segundos de que el usuario empezara a hablar:
+
+```
+WARN [Duende:VozEnVivo] Conversación en directo cerrada (socket): Precondition check failed.
+```
+
+Es un error conocido de la Live API con detección manual: Gemini corta la sesión si le llega
+audio **fuera** de un `activityStart`/`activityEnd` — y eso pasa de verdad, porque el "end" que
+manda Discord y el último trozo que suelta el decoder de Opus no llegan perfectamente a la vez
+(el decoder puede soltar algún trozo con el stream ya "parado" según Discord). Mandábamos
+cualquier trozo que llegara, sin mirar si estábamos dentro de un turno abierto.
+
+- Nueva bandera `hablando`: se pone a `true` en el `activityStart`, a `false` en el
+  `activityEnd`, y el envío de audio a Gemini la comprueba antes de mandar nada — cualquier
+  trozo que llegue fuera de ese hueco se descarta en vez de mandarse.
+- Test nuevo: un trozo de audio llegado justo después del `activityEnd` no se manda a Gemini.
+
 ## 2026-10-07 (🎯 `/conversación` ya respondía el saludo y oía al usuario, pero no contestaba después)
 
 Con el fix de `maxMissedFrames` el log ya mostraba el pipeline funcionando de verdad: saludo
