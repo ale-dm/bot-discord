@@ -273,13 +273,19 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
         )
         .setColor(0xf1c40f)
         .setTimestamp();
-    // Los de Plex completados, por dificultad (si tiene alguno; los completados se ven aunque sean secretos).
-    const plexHechos = todos.filter((a) => a.category === "plex" && a.completed && a.dificultad);
-    if (plexHechos.length) {
+    // Dentro de 🍿 Plex: de cada dificultad, cuántos tiene de los que hay. Como en Completados, los secretos solo cuentan
+    // si los tiene; los trofeos de cada serie, saga... también (no se ven hasta conseguirlos).
+    const plexPorDificultad = FILTROS_LOGROS[filtro].plex
+        ? todos.filter((a) => a.category === "plex" && a.dificultad && (!a.hidden || a.completed))
+        : [];
+    if (plexPorDificultad.length) {
         embed.addFields({
             name: "🍿 Plex por dificultad",
             value: Object.keys(plexIdiomas.DIFICULTADES)
-                .map((d) => `${plexIdiomas.textoDificultad(d)}: **${plexHechos.filter((a) => a.dificultad === d).length}**`)
+                .map((d) => {
+                    const deEsta = plexPorDificultad.filter((a) => a.dificultad === d);
+                    return `${plexIdiomas.textoDificultad(d)}: **${deEsta.filter((a) => a.completed).length}**/${deEsta.length}`;
+                })
                 .join(" · "),
             inline: false,
         });

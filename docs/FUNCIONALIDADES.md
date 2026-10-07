@@ -347,7 +347,8 @@ A quien oculta sus logros de Plex no se le dan. El bot necesita "Gestionar roles
 ### Dificultad de los logros de Plex
 
 Cada logro de Plex (fijo o trofeo) es 🟢 **Fácil**, 🟡 **Normal** o 🎰 **Gordo del Plex** (los más difíciles). Se ve
-en `/perfil` → 🏅 Logros (junto a la categoría, y un recuento de los tuyos por dificultad) y en el anuncio. Los
+en `/perfil` → 🏅 Logros (junto a la categoría y, dentro del filtro 🍿 Plex, cuántos tienes de los que hay de cada
+dificultad: "🟢 Fácil: **3**/26") y en el anuncio. Los
 trofeos automáticos: temporada 🟢; serie, serie en un idioma, saga y director 🟡, y 🎰 si son largos (100 episodios o
 más, 8 películas de saga, 10 de un director); género 🟢 con 10 películas y 🟡 con 25; década 🟡. Los de admin, la que
 elija el admin. Panel admin → Plex → 🏆 Trofeos cuenta los creados de cada dificultad.
