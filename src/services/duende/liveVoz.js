@@ -331,7 +331,12 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
                     log.info(`Primer trozo de audio de ${userId} capturado (${chunk.length} bytes) — mandándolo a Gemini.`);
                 }
                 try {
-                    liveSession.sendRealtimeInput({ media: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
+                    // El campo es "audio" (stream de audio en tiempo real de verdad), no el
+                    // genérico "media" — con la detección manual de actividad puesta, el server
+                    // necesita el audio por ese campo para poder casarlo con activityStart/End;
+                    // por "media" llegaba igual pero sin ese seguimiento, y cortaba la sesión
+                    // con "Precondition check failed" a los pocos segundos de hablar.
+                    liveSession.sendRealtimeInput({ audio: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
                 } catch (e) {
                     log.warn(`Error enviando audio a Gemini Live: ${e.message}`);
                 }

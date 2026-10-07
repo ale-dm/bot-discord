@@ -187,6 +187,18 @@ test("no se suscribe al audio del usuario hasta que empieza a hablar (no al cone
     expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledWith(i.user.id, expect.anything());
 });
 
+test("el audio del usuario se manda por el campo 'audio', no el genérico 'media' (con VAD manual, Gemini necesita ese campo para casarlo con activityStart/End)", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+
+    mockPcmStreamListeners.data(Buffer.from("audio-de-verdad"));
+
+    expect(mockLiveSession.sendRealtimeInput).toHaveBeenCalledWith({
+        audio: { data: Buffer.from("audio-de-verdad").toString("base64"), mimeType: "audio/pcm;rate=16000" },
+    });
+});
+
 test("si habla otra persona del canal, no se suscribe a su audio", async () => {
     const i = interaccionEnVoz();
     await liveVoz.empezarConversacion(i);
@@ -221,7 +233,7 @@ test("descarta el audio que llega después del activityEnd (Gemini corta la sesi
     // Un trozo "atrasado" del decoder de Opus, llegado con el stream ya "parado" según Discord.
     mockPcmStreamListeners.data(Buffer.from("audio-atrasado"));
 
-    expect(mockLiveSession.sendRealtimeInput).not.toHaveBeenCalledWith(expect.objectContaining({ media: expect.anything() }));
+    expect(mockLiveSession.sendRealtimeInput).not.toHaveBeenCalledWith(expect.objectContaining({ audio: expect.anything() }));
 });
 
 test("el aviso de inicio/fin de turno se manda cada vez que habla, no solo la primera (a diferencia de la suscripción de audio)", async () => {
