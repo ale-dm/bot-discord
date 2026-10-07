@@ -24,6 +24,24 @@ con un efecto que `/robar` mira en el inventario de la víctima antes de cada in
   (`dinero.test.js` y `herramientasDuende.test.js`) empiezan ahora vaciando el catálogo, porque daban por hecho que
   estaba vacío.
 
+## 2026-10-07 (🤖 Cambio automático de modelo de Gemini (F-AD-03, #39))
+
+Al arrancar ya se probaba el modelo del Duende de cada servidor y, si fallaba, solo se avisaba a los admins: hasta que
+alguien lo cambiara a mano, el Duende no respondía (modelo retirado) o se inventaba los datos (modelo que no usa las
+herramientas). Ahora, en esos dos casos, **se cambia solo** por uno que funcione:
+
+- Se prueban, en orden, el de `GEMINI_MODEL` (.env) y los de `GEMINI_FALLBACK_MODELS` (nuevo; por defecto
+  `gemini-2.5-flash,gemini-2.5-pro`), sin repetir. El primero que existe y usa las herramientas pasa a ser el modelo
+  del servidor (Config Global → 🤖 Duende), en todos los servidores que tenían el que fallaba.
+- Queda en la auditoría (`settings.duende.modelo_automatico`, actor `bot`, con el modelo de antes, el nuevo y el
+  motivo) y la alerta lo dice: "🤖 He cambiado el modelo de Gemini … usa ahora **…**".
+- Un fallo **de paso** (cuota agotada, timeout, red) no cambia nada: el modelo no tiene la culpa y se avisa como antes.
+  Para distinguirlo, `comprobarModelo` devuelve ahora `error: true` en esos casos.
+- Si ninguno de respaldo funciona, se queda como estaba y el aviso lo dice.
+- Código en `src/systems/duende/modeloGemini.js` (lo llama el arranque de `index.js`). Tests nuevos en
+  `tests/modeloGeminiAutomatico.test.js` (404, sin herramientas, error de paso, ninguno de respaldo, sin modelo en el
+  panel, cada modelo probado una sola vez y la auditoría).
+
 ## 2026-10-07 (📊 Resumen semanal para admins (F-AD-02, #38))
 
 Cada lunes a las 09:00 (hora de Madrid) llega por DM a quien recibe las alertas (`systems/alertas`: los IDs del panel o,
