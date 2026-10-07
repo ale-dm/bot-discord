@@ -14,6 +14,7 @@ const rankingApuestas = require("../systems/apuestas/ranking");
 const plexResumen = require("../systems/plexResumen");
 const { duracion } = require("../systems/plexRankingSemanal");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
+const eventos = require("../systems/eventos");
 
 const MEDALLAS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
 
@@ -54,7 +55,11 @@ async function buildProfileEmbed(guild, userId, opcionesLogros = {}) {
     const embed = new EmbedBuilder()
         .setAuthor({ name: username, iconURL: avatarUrl || undefined })
         .setTitle(`${currentTitle.emoji || "▫️"} ${currentTitle.title || "SIN RANGO"} · Nivel ${profile.nivel}`)
-        .setDescription(`\`${progressBar(profile.xp, profile.xp_need)}\` **${profile.xp} / ${profile.xp_need} XP** (${xpPct}%)`)
+        .setDescription(
+            `\`${progressBar(profile.xp, profile.xp_need)}\` **${profile.xp} / ${profile.xp_need} XP** (${xpPct}%)` +
+                // ⚡ Happy hour de XP en marcha (F-EC-02)
+                (eventos.lineaXp(guild.id) ? `\n${eventos.lineaXp(guild.id)}` : ""),
+        )
         .addFields(
             { name: "🏆 Ranking", value: `#${profile.rank}`, inline: true },
             { name: "✨ XP total", value: `${profile.xp_total}`, inline: true },

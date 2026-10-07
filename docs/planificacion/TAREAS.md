@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🎉 Eventos temporales (F-EC-02, #34)**
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎉 Eventos: activar la happy hour con las horas de ahora mismo; en `/perfil` sale
+      "⚡ Happy hour" y un mensaje da el doble de XP (mirarlo en el log de XP o en la barra).
+- [ ] Activar el fin de semana del casino un sábado o domingo: 🎰 Casino lo dice arriba y una victoria paga más.
+
 **🕐 Tono del Duende (F-DU-02, #13)**
 - [ ] Config Global → 🤖 Duende → 🕐 Tono: poner un canal formal y hablarle allí: contesta sin tacos.
 - [ ] Activar la madrugada con una franja que incluya la hora actual (p. ej. de la hora de ahora a una más) y hablarle:

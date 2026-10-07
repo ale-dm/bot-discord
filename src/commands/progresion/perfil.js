@@ -27,7 +27,7 @@ async function pantalla(interaction, seccion, ownerId, targetId, extra = {}) {
                 guildId: guild.id,
             });
         case "juegos":
-            return require("../../paneles/casino").buildHome(ownerId);
+            return require("../../paneles/casino").buildHome(ownerId, guild.id);
         case "logros":
             return perfil.buildLogros(guild.id, ownerId, targetId, extra.page || 0, Boolean(extra.secretos), extra.filtro);
         case "rankings":

@@ -80,6 +80,12 @@ const DEFAULT_FLAT = {
     "clasificacion.canal": "",
     "clasificacion.premio": 500,
     "clasificacion.ultima_semana": "",
+    "eventos.xp_activo": false,
+    "eventos.xp_mult": 2,
+    "eventos.xp_desde": 20,
+    "eventos.xp_hasta": 22,
+    "eventos.casino_activo": false,
+    "eventos.casino_pct": 150,
 };
 
 const KEY_TYPES = {
@@ -159,6 +165,12 @@ const KEY_TYPES = {
     "clasificacion.canal": "string",
     "clasificacion.premio": "number",
     "clasificacion.ultima_semana": "string",
+    "eventos.xp_activo": "boolean",
+    "eventos.xp_mult": "number",
+    "eventos.xp_desde": "number",
+    "eventos.xp_hasta": "number",
+    "eventos.casino_activo": "boolean",
+    "eventos.casino_pct": "number",
 };
 
 function parseValue(key, value) {
@@ -264,6 +276,15 @@ function flattenToNested(flat) {
             canal: flat["clasificacion.canal"],
             premio: flat["clasificacion.premio"],
             ultima_semana: flat["clasificacion.ultima_semana"],
+        },
+        eventos: {
+            xp: {
+                activo: flat["eventos.xp_activo"],
+                mult: flat["eventos.xp_mult"],
+                desde: flat["eventos.xp_desde"],
+                hasta: flat["eventos.xp_hasta"],
+            },
+            casino: { activo: flat["eventos.casino_activo"], pct: flat["eventos.casino_pct"] },
         },
     };
 }
