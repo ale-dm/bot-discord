@@ -2,6 +2,29 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎯 `/conversación` dice el saludo y luego se queda muda: `maxMissedFrames`)
+
+Progreso real: con el modelo corregido, el saludo inicial SÍ se oía — pero luego no volvía a
+hablar nunca más, con este error en el log:
+
+```
+WARN [Duende:VozEnVivo] Error en ffmpeg (salida de voz en directo): Premature close
+```
+
+`@discordjs/voice` tiene un comportamiento pensado para reproducir pistas de audio normales, no
+para una conversación en directo: si el reproductor no consigue leer un paquete del stream
+durante `maxMissedFrames` ciclos (5 por defecto, 100 ms), da la pista por acabada y **destruye**
+el stream de ffmpeg de raíz — justo lo que pasaba en el hueco normal entre el saludo y el
+siguiente turno (Gemini puede tardar segundos en volver a mandar audio, esperando a que hables).
+Una vez destruido, ese `ffmpeg.write(...)` de cada mensaje nuevo de Gemini ya no iba a ningún
+sitio: de ahí el silencio total después del saludo.
+
+- `createAudioPlayer({ behaviors: { maxMissedFrames: Infinity } })`: el reproductor ya no da la
+  conversación por acabada por un hueco de audio. El corte de verdad sigue siendo cosa de los
+  timers de inactividad/duración que ya había (`IDLE_DISCONNECT_MS`/`MAX_DURATION_MS`), no del
+  reproductor.
+- Test nuevo: que `createAudioPlayer` se llama con ese `behaviors.maxMissedFrames: Infinity`.
+
 ## 2026-10-07 (🎯 El motivo real: el nombre del modelo estaba obsoleto, no la versión de la API)
 
 El cambio a `v1alpha` de la entrada anterior era un diagnóstico equivocado: en producción, el
