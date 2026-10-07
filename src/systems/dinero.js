@@ -1,7 +1,10 @@
-// El dinero de cada uno, en dos sitios (tabla `banco`):
+// El dinero de cada uno, en tres sitios (tabla `banco`):
 // - 💵 Efectivo (columna `enMano`): lo que se gasta. Casino, apuestas, quiniela, retos, tienda, cripto y
 //   transferencias cobran de aquí, y los premios, reembolsos, ventas y recompensas llegan aquí.
 // - 🏦 Banco (columna `saldo`): el sitio seguro. Solo se ingresa y se saca; no se gasta directamente.
+// - 🥷 Dinero negro (columna `negro`, F-EC-06b): lo robado con /robar. Se gasta igual que el efectivo
+//   en tienda/casino/apuestas (ver cobrarCombinado/saldoGastable, se gasta antes que el efectivo normal),
+//   pero no se puede meter en el banco ni paga impuestos hasta blanquearse (F-EC-06d, todavía sin hacer).
 // Todo movimiento de dinero pasa por este módulo, y se apunta en el historial con su `tipo` (para filtrar
 // los movimientos). Antes cada sistema hacía su propio UPDATE sobre el saldo del banco.
 const db = require("../core/db");
@@ -29,6 +32,7 @@ const TIPOS = {
     objeto: "🎒 Objetos",
     admin: "🛠️ Admin",
     impuesto: "🏛️ Impuesto",
+    robo: "🥷 Robos",
     otro: "📦 Otros",
 };
 
@@ -36,17 +40,25 @@ function asegurarCuenta(userId) {
     db.prepare("INSERT OR IGNORE INTO banco (userId, saldo, enMano) VALUES (?, 0, ?)").run(String(userId), INICIAL);
 }
 
-/** { efectivo, banco, total } de alguien (le crea la cuenta si no la tenía). */
+/** { efectivo, banco, negro, total } de alguien (le crea la cuenta si no la tenía). `total` es solo
+ * efectivo + banco: el dinero negro no cuenta como patrimonio oficial hasta blanquearse. */
 function cuenta(userId) {
     asegurarCuenta(userId);
-    const r = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(String(userId));
+    const r = db.prepare("SELECT saldo, enMano, negro FROM banco WHERE userId = ?").get(String(userId));
     const efectivo = Number(r?.enMano || 0);
     const banco = Number(r?.saldo || 0);
-    return { efectivo, banco, total: efectivo + banco };
+    const negro = Number(r?.negro || 0);
+    return { efectivo, banco, negro, total: efectivo + banco };
 }
 
 const efectivo = (userId) => cuenta(userId).efectivo;
 const banco = (userId) => cuenta(userId).banco;
+const negro = (userId) => cuenta(userId).negro;
+/** Lo que se puede gastar en tienda/casino/apuestas: efectivo + dinero negro. */
+const saldoGastable = (userId) => {
+    const c = cuenta(userId);
+    return c.efectivo + c.negro;
+};
 
 /** Apunta un movimiento en el historial. `cantidad` es lo que cambia el efectivo (o el banco, si tipo=banco). */
 function apuntar(userId, tipo, descripcion, cantidad) {
@@ -75,6 +87,32 @@ function cobrar(userId, cantidad) {
 function pagar(userId, cantidad) {
     asegurarCuenta(userId);
     db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, String(userId));
+}
+
+/** Suma al dinero negro (F-EC-06b: lo que roba /robar). No apunta nada. */
+function pagarNegro(userId, cantidad) {
+    asegurarCuenta(userId);
+    db.prepare("UPDATE banco SET negro = negro + ? WHERE userId = ?").run(cantidad, String(userId));
+}
+
+/**
+ * Cobra un gasto (tienda/casino/apuestas) tirando primero del dinero negro y, si no llega, completando
+ * con el efectivo normal — así el negro se gasta antes que el limpio, en vez de quedarse siempre
+ * acumulado. Una sola sentencia atómica: dos cobros a la vez no pueden dejar ningún saldo en negativo.
+ * No apunta nada: lo hace quien cobra, con su descripción. @returns {boolean}
+ */
+function cobrarCombinado(userId, cantidad) {
+    asegurarCuenta(userId);
+    return (
+        db
+            .prepare(
+                `UPDATE banco
+                 SET negro = negro - MIN(negro, ?),
+                     enMano = enMano - (? - MIN(negro, ?))
+                 WHERE userId = ? AND negro + enMano >= ?`,
+            )
+            .run(cantidad, cantidad, cantidad, String(userId), cantidad).changes === 1
+    );
 }
 
 /**
@@ -186,9 +224,13 @@ module.exports = {
     cuenta,
     efectivo,
     banco,
+    negro,
+    saldoGastable,
     apuntar,
     cobrar,
     pagar,
+    pagarNegro,
+    cobrarCombinado,
     pagarConImpuesto,
     ingresar,
     sacar,

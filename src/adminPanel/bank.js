@@ -105,8 +105,8 @@ async function handleBankButton(interaction) {
 
     if (id.startsWith("paneladmin_bank_confirm_reset_")) {
         const userId = id.replace("paneladmin_bank_confirm_reset_", "");
-        // Como una cuenta nueva: el dinero inicial en efectivo y el banco vacío.
-        db.prepare("UPDATE banco SET saldo = 0, enMano = ? WHERE userId = ?").run(require("../systems/dinero").INICIAL, userId);
+        // Como una cuenta nueva: el dinero inicial en efectivo, banco vacío y sin dinero negro.
+        db.prepare("UPDATE banco SET saldo = 0, enMano = ?, negro = 0 WHERE userId = ?").run(require("../systems/dinero").INICIAL, userId);
         require("../systems/dinero").apuntar(userId, "admin", "Reseteo admin", 0);
         adminAudit.logAdminAction({
             guildId: interaction.guildId,
@@ -157,14 +157,15 @@ async function handleBankModal(interaction) {
         const userId = id.replace("paneladmin_bank_modificar_modal_", "");
         const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
         const tipo = interaction.fields.getTextInputValue("tipo");
-        // "efectivo" (o el antiguo "enMano") o "banco".
+        // "efectivo" (o el antiguo "enMano"), "banco" o "negro" (dinero negro, F-EC-06b).
         const destino = tipo.trim().toLowerCase();
-        if (!["banco", "efectivo", "enmano"].includes(destino)) {
-            await interaction.reply({ content: "Tipo inválido. Usa efectivo o banco.", flags: MessageFlags.Ephemeral });
+        if (!["banco", "efectivo", "enmano", "negro"].includes(destino)) {
+            await interaction.reply({ content: "Tipo inválido. Usa efectivo, banco o negro.", flags: MessageFlags.Ephemeral });
             return true;
         }
         require("../systems/dinero").asegurarCuenta(userId);
         if (destino === "banco") db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, userId);
+        else if (destino === "negro") db.prepare("UPDATE banco SET negro = negro + ? WHERE userId = ?").run(cantidad, userId);
         else db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, userId);
         require("../systems/dinero").apuntar(userId, "admin", `Modificación admin (${tipo})`, cantidad);
         adminAudit.logAdminAction({
@@ -192,11 +193,13 @@ async function handleBankModal(interaction) {
             return true;
         }
 
-        const datos = db.prepare("SELECT saldo, enMano FROM banco WHERE userId = ?").get(member.id);
+        const datos = db.prepare("SELECT saldo, enMano, negro FROM banco WHERE userId = ?").get(member.id);
         const historial = db
             .prepare("SELECT fecha, descripcion, cantidad FROM historial WHERE userId = ? ORDER BY fecha DESC LIMIT 5")
             .all(member.id);
-        let desc = datos ? `💵 Efectivo: **${datos.enMano}**\n🏦 Banco: **${datos.saldo}**` : "Sin datos bancarios.";
+        let desc = datos
+            ? `💵 Efectivo: **${datos.enMano}**\n🏦 Banco: **${datos.saldo}**\n🥷 Dinero negro: **${datos.negro || 0}**`
+            : "Sin datos bancarios.";
         if (historial.length)
             desc +=
                 "\n\nÚltimos movimientos:\n" +
@@ -217,7 +220,7 @@ async function handleBankUserSelect(interaction) {
         const userId = interaction.values[0];
         const modal = simpleModal(`paneladmin_bank_modificar_modal_${userId}`, "Modificar saldo", [
             { id: "cantidad", label: "Cantidad (+ o -)", placeholder: "100 o -50" },
-            { id: "tipo", label: "Destino (efectivo o banco)", placeholder: "efectivo / banco" },
+            { id: "tipo", label: "Destino (efectivo, banco o negro)", placeholder: "efectivo / banco / negro" },
         ]);
         await interaction.showModal(modal);
         return true;

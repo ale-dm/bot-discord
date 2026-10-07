@@ -397,26 +397,28 @@ perfil solo los puede usar quien lo abrió.
 
 ## 7. Economía: banco, tienda e inventario
 
-### Dinero: efectivo y banco
+### Dinero: efectivo, banco y dinero negro
 
-Cada uno tiene el dinero en dos sitios:
+Cada uno tiene el dinero en tres sitios:
 
 - **💵 Efectivo**: lo que se gasta. Casino, apuestas, quiniela, tienda, cripto y transferencias cobran de
   aquí, y los premios, reembolsos, ventas de cripto, recompensas de logros y objetos de monedas llegan aquí.
-- **🏦 Banco**: el sitio seguro. Ahí no se gasta: hay que sacarlo antes. (Pensado para lo que vendrá:
-  robos y dinero negro, ver F-EC-06b.)
+- **🏦 Banco**: el sitio seguro. Ahí no se gasta: hay que sacarlo antes.
+- **🥷 Dinero negro** (F-EC-06b): lo robado con `/robar` (ver abajo). Se gasta igual que el efectivo en
+  tienda, casino y apuestas (de hecho se gasta **antes** que el efectivo normal), pero no se puede meter
+  en el banco ni cuenta como patrimonio hasta blanquearse (negocios de blanqueo, F-EC-06d, todavía sin hacer).
 
 Todo el mundo empieza con **1.000 monedas en efectivo** (la cuenta se crea al usarla por primera vez). El dinero
 es único para todo el bot (no es por servidor).
 
-**`/perfil` → 💰 Economía** (antes `/banco`): efectivo, banco y total, con los botones
+**`/perfil` → 💰 Economía** (antes `/banco`): efectivo, banco, dinero negro y total, con los botones
 
 | Botón | Qué hace |
 |---|---|
 | 🏦 Ingresar | Pasa efectivo al banco (formulario con la cantidad; máx. 1.000.000 por operación) |
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
-| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, admin |
+| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, robos, admin |
 | 🎁 Diario | La recompensa diaria (ver abajo). Cuando ya la has cobrado sale desactivado como "🎁 Mañana" |
 
 **🎁 Recompensa diaria**: una vez al día (el día cambia a las 00:00, hora de Madrid, como las rachas), unas monedas
@@ -430,6 +432,16 @@ activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJA
 nivel que tengas (`TRABAJAR_BONUS_NIVEL`), y un 12 % de las veces (`TRABAJAR_PROB_FALLO`) no da nada. El Duende
 escribe con Gemini, cada vez, en qué has "trabajado" (con tu personalidad y tu perfil si tienes uno) — no es una
 frase fija de una lista. Queda en Movimientos como 💼 Trabajo.
+
+**🥷 `/robar @persona`** (F-EC-06b): cooldown de **2 horas, global** (da igual el servidor — el dinero ya es
+global, así que el cooldown también). La víctima necesita al menos 150 de efectivo para que merezca la pena
+robarle (si no llega, no se gasta el intento ni el cooldown). 65 % de probabilidad de éxito:
+
+- **Si sale bien**: roba del **efectivo** de la víctima (nunca del banco) entre 50 y 150 monedas al azar más 2
+  por cada nivel del ladrón, sin pasar de lo que la víctima tenga. Se guarda como **dinero negro** del ladrón,
+  no como efectivo normal. Sin aviso a la víctima en el momento — solo se nota mirando su saldo o sus
+  Movimientos (queda como 🥷 Robos, igual que lo que gana el ladrón).
+- **Si sale mal**: el ladrón paga una multa de entre 30 y 80 de su propio efectivo (o lo que tenga, si es menos).
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
@@ -644,7 +656,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 
 | Sección | Qué se puede hacer |
 |---|---|
-| 🏦 Banco | Modificar saldo (efectivo o banco) · resetear usuario (como nuevo: 1.000 en efectivo) · borrar historial · historial global · buscar usuario |
+| 🏦 Banco | Modificar saldo (efectivo, banco o dinero negro) · resetear usuario (como nuevo: 1.000 en efectivo, sin dinero negro) · borrar historial · historial global · buscar usuario |
 | ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
