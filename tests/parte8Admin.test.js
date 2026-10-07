@@ -160,6 +160,7 @@ test("quedan 14 comandos, sin los de admin sueltos", () => {
             "perfil",
             "ping",
             "tienda",
+            "trabajar",
             "tts",
         ].sort(),
     );

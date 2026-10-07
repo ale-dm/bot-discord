@@ -416,7 +416,7 @@ es único para todo el bot (no es por servidor).
 | 🏦 Ingresar | Pasa efectivo al banco (formulario con la cantidad; máx. 1.000.000 por operación) |
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
-| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, objetos, admin |
+| 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, admin |
 | 🎁 Diario | La recompensa diaria (ver abajo). Cuando ya la has cobrado sale desactivado como "🎁 Mañana" |
 
 **🎁 Recompensa diaria**: una vez al día (el día cambia a las 00:00, hora de Madrid, como las rachas), unas monedas
@@ -424,6 +424,12 @@ al efectivo que crecen con tu **racha de XP** en el servidor: 100 + 20 por día 
 Panel admin → Config Global → 🎁 Diario, también se puede desactivar). El dinero es global, así que se cobra una vez
 al día aunque estés en varios servidores. Queda en Movimientos como 🎁 Diario. El Duende puede decirte si te toca
 cobrarla, pero no cobrarla por ti.
+
+**💼 `/trabajar`**: a diferencia del diario, se puede usar cada 30 min (`TRABAJAR_COOLDOWN_SEC`) — exige estar
+activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJAR_BASE_MIN`/`MAX`) más 2 por cada
+nivel que tengas (`TRABAJAR_BONUS_NIVEL`), y un 12 % de las veces (`TRABAJAR_PROB_FALLO`) no da nada. El Duende
+escribe con Gemini, cada vez, en qué has "trabajado" (con tu personalidad y tu perfil si tienes uno) — no es una
+frase fija de una lista. Queda en Movimientos como 💼 Trabajo.
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a
@@ -828,4 +834,5 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/perfil` | [Perfil](#6-perfil) |
 | `/ping` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
+| `/trabajar` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |
