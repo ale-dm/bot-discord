@@ -17,7 +17,7 @@ const {
 } = require("@discordjs/voice");
 const prism = require("prism-media");
 const { Modality } = require("@google/genai");
-const { getGenAI } = require("../geminiClient");
+const { getGenAILive } = require("../geminiClient");
 const { createLogger } = require("../../core/logger");
 const perfiles = require("../../systems/duende/perfiles");
 const tautulliClient = require("../tautulliClient");
@@ -214,7 +214,7 @@ async function empezarConversacion(interaction, { onTerminada } = {}) {
             sesion.ultimaActividad = Date.now();
         };
 
-        const genAI = getGenAI();
+        const genAI = getGenAILive();
         const liveSession = await genAI.live.connect({
             model: LIVE_MODEL,
             config: {

@@ -19,6 +19,25 @@ function getGenAI() {
     return client;
 }
 
+let liveClient = null;
+let liveClientKey = null;
+
+/**
+ * Cliente aparte para la Live API (voz en directo, websocket bidireccional): el modelo de voz
+ * en directo no está disponible en v1beta (el que usa getGenAI por defecto) — da "is not found
+ * for API version v1beta, or is not supported for bidiGenerateContent" (visto en producción).
+ * Necesita v1alpha.
+ */
+function getGenAILive() {
+    const apiKey = process.env.GOOGLE_API_KEY || "";
+    if (!apiKey) throw new Error("Falta GOOGLE_API_KEY en variables de entorno");
+    if (!liveClient || liveClientKey !== apiKey) {
+        liveClient = new GoogleGenAI({ apiKey, httpOptions: { apiVersion: "v1alpha" } });
+        liveClientKey = apiKey;
+    }
+    return liveClient;
+}
+
 // Consumo acumulado desde el arranque (lo muestra /diagnostico).
 const usage = { llamadas: 0, errores: 0, cuotaAgotada: 0, tokensEntrada: 0, tokensSalida: 0 };
 
@@ -79,4 +98,4 @@ function getUsage() {
     return { ...usage };
 }
 
-module.exports = { getGenAI, generateContentWithTimeout, getUsage, isQuotaError };
+module.exports = { getGenAI, getGenAILive, generateContentWithTimeout, getUsage, isQuotaError };
