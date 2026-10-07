@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🤖 Cambio automático de modelo de Gemini (F-AD-03, #39)**
+- [ ] Revisar `GEMINI_FALLBACK_MODELS` en el stack (por defecto `gemini-2.5-flash,gemini-2.5-pro`): que sean modelos que existan.
+- [ ] Poner en Config Global → 🤖 Duende un modelo que no exista y reiniciar: en el log `Modelo de Gemini cambiado solo de …
+      a …`, llega la alerta "🤖 He cambiado el modelo de Gemini" y el panel ya enseña el nuevo.
+
 **📊 Resumen semanal para admins (F-AD-02, #38)**
 - [ ] `/paneladmin` → 🩺 Sistema → 🔔 Alertas → 📊 Resumen semanal: los errores y comandos cuadran con los logs.
 - [ ] El lunes a las 09:00 llega por DM a quien recibe las alertas (en el log, `Resumen semanal enviado a N/N admins`).
