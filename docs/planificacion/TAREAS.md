@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🕐 Tono del Duende (F-DU-02, #13)**
+- [ ] Config Global → 🤖 Duende → 🕐 Tono: poner un canal formal y hablarle allí: contesta sin tacos.
+- [ ] Activar la madrugada con una franja que incluya la hora actual (p. ej. de la hora de ahora a una más) y hablarle:
+      más borde. Dejarlo después como se quiera (00 a 07 por defecto).
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

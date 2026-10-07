@@ -81,6 +81,8 @@ function buildConfigHome(guildId) {
     return { embeds: [embed], components: [row1, row2, navRow()] };
 }
 
+const hora = (h) => `${String(h).padStart(2, "0")}:00`;
+
 function buildDuendePanel(guildId) {
     const d = guildSettings.getSettings(guildId).duende;
     const embed = new EmbedBuilder()
@@ -100,6 +102,22 @@ function buildDuendePanel(guildId) {
                     : "Desactivados",
                 inline: true,
             },
+            {
+                // F-DU-02: encima de la personalidad que toque (la de cada canal se pone con /duende set).
+                name: "🕐 Tono",
+                value:
+                    (d.madrugada_activa
+                        ? `🌙 Más borde de ${hora(d.madrugada_desde)} a ${hora(d.madrugada_hasta)}`
+                        : "🌙 De madrugada: igual que siempre") +
+                    "\n" +
+                    (guildSettings.parseCsvIds(d.canales_formales).length
+                        ? `👔 Más formal en ${guildSettings
+                              .parseCsvIds(d.canales_formales)
+                              .map((id) => `<#${id}>`)
+                              .join(", ")}`
+                        : "👔 Ningún canal formal"),
+                inline: false,
+            },
         )
         .setColor(0x6c5ce7)
         .setTimestamp();
@@ -111,8 +129,11 @@ function buildDuendePanel(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_apodos_home").setLabel("🏷️ Apodos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_perfiles_home").setLabel("🧠 Perfiles").setStyle(ButtonStyle.Secondary),
     );
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cfg_duende_tono").setLabel("🕐 Tono").setStyle(ButtonStyle.Secondary),
+    );
 
-    return { embeds: [embed], components: [row, navRow()] };
+    return { embeds: [embed], components: [row, row2, navRow()] };
 }
 
 function buildCriptoPanel(guildId) {
@@ -324,6 +345,25 @@ async function handleSettingsButton(interaction) {
         return true;
     }
 
+    if (id === "paneladmin_cfg_duende_tono") {
+        const d = guildSettings.getSettings(guildId).duende;
+        await interaction.showModal(
+            simpleModal("paneladmin_cfg_duende_tono_modal", "Tono del Duende", [
+                { id: "activa", label: "Más borde de madrugada (1/0)", value: d.madrugada_activa ? "1" : "0" },
+                { id: "desde", label: "Madrugada desde la hora (0-23, Madrid)", value: String(d.madrugada_desde) },
+                { id: "hasta", label: "Madrugada hasta la hora (0-23, Madrid)", value: String(d.madrugada_hasta) },
+                {
+                    id: "formales",
+                    label: "Canales formales (IDs separados por comas)",
+                    required: false,
+                    placeholder: "Vacío = ninguno",
+                    value: d.canales_formales || "",
+                },
+            ]),
+        );
+        return true;
+    }
+
     if (id === "paneladmin_cfg_duende_espontaneo") {
         const d = guildSettings.getSettings(guildId).duende;
         const modal = simpleModal("paneladmin_cfg_duende_espontaneo_modal", "Duende: mensajes solos", [
@@ -476,6 +516,39 @@ async function handleSettingsModal(interaction) {
             details: { channelId: channelId || null },
         });
         await interaction.reply({ content: "✅ Mensajes espontáneos del Duende actualizados.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+
+    if (id === "paneladmin_cfg_duende_tono_modal") {
+        const campo = (c) => interaction.fields.getTextInputValue(c).trim();
+        const desde = Number(campo("desde"));
+        const hasta = Number(campo("hasta"));
+        const formales = guildSettings.parseCsvIds(campo("formales").replace(/[<#>]/g, ""));
+        if (![desde, hasta].every((h) => Number.isInteger(h) && h >= 0 && h <= 23) || desde === hasta) {
+            await interaction.reply({
+                content: "❌ Las horas de la madrugada son números enteros de 0 a 23 (y distintos entre sí).",
+                flags: MessageFlags.Ephemeral,
+            });
+            return true;
+        }
+        const malos = formales.filter((c) => !/^\d{17,20}$/.test(c));
+        if (malos.length) {
+            await interaction.reply({
+                content: `❌ Esto no son IDs de canal: ${malos.join(", ").slice(0, 200)}. (Clic derecho en el canal → Copiar ID del canal.)`,
+                flags: MessageFlags.Ephemeral,
+            });
+            return true;
+        }
+        const valores = {
+            "duende.madrugada_activa": campo("activa"),
+            "duende.madrugada_desde": desde,
+            "duende.madrugada_hasta": hasta,
+            "duende.canales_formales": formales.join(","),
+        };
+        guildSettings.setManySettings(guildId, valores);
+        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.duende.tono", details: valores });
+        if (interaction.isFromMessage?.()) await interaction.update(buildDuendePanel(guildId));
+        else await interaction.reply({ content: "✅ Tono del Duende actualizado.", flags: MessageFlags.Ephemeral });
         return true;
     }
 

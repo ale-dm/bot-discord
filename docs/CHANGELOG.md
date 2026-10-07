@@ -2,6 +2,23 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🕐 Tono del Duende según la hora o el canal (F-DU-02, #13))
+
+El Duende puede cambiar de tono según la hora y el canal, **encima de la personalidad** que toque (no la sustituye:
+cambiar la personalidad entera de un canal ya se hacía con `/duende set`). Viene desactivado; se configura en
+`/paneladmin` → ⚙️ Config Global → 🤖 Duende → **🕐 Tono** (botón nuevo, en una segunda fila: la primera ya tenía cinco).
+
+- 🌙 **Más borde de madrugada**: de una hora a otra (hora de Madrid; de 00:00 a 07:00 por defecto, y puede pasar la
+  medianoche, p. ej. 23 a 5) recibe la instrucción de estar más borde, seco y gruñón, con la hora de ese momento.
+- 👔 **Más formal en ciertos canales**: en los canales de la lista (IDs separados por comas; vale también pegar la
+  mención `<#…>`), más formal y educado, sin tacos ni insultos, aunque mantenga la ironía.
+- Se suman: un canal formal de madrugada recibe las dos. Se aplica a las respuestas del chat (`duende.js`, junto al
+  resto de instrucciones); los mensajes espontáneos ya solo salen de 11:00 a 23:00.
+- La pantalla de 🤖 Duende enseña cómo está (horas y canales). Ajustes nuevos `duende.madrugada_*` y
+  `duende.canales_formales`; la lógica, en `src/systems/duende/tono.js`.
+- Tests nuevos en `tests/tonoDuende.test.js` (horas en Madrid, canales formales, las dos a la vez, lo que llega de verdad
+  a Gemini con `/duende` y el panel con su validación).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
