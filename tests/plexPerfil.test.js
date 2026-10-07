@@ -115,13 +115,14 @@ describe("🏅 Logros: los de Plex solo a quien lo tiene vinculado (F-PX-02e)", 
 });
 
 describe("🏅 Logros: filtro (F-PX-02e)", () => {
-    test("el menú tiene las categorías que tiene, y con Plex, los trofeos y las dificultades", () => {
+    // Los menús del filtro: el de las categorías y, dentro de 🍿 Plex, el de lo de Plex.
+    const menuDe = (payload, customId) => payload.components.map((f) => f.toJSON().components[0]).find((c) => c.custom_id === customId);
+    const valores = (m) => m.options.map((o) => o.value);
+    const elegido = (m) => m.options.find((o) => o.default)?.value;
+
+    test("el menú tiene las categorías que tiene; lo de Plex (trofeos y dificultades) va dentro de 🍿 Plex", () => {
         const p = valido(perfilPanel.buildLogros(G, "disc-1", "disc-1"));
-        const opciones = p.components
-            .map((f) => f.toJSON().components[0])
-            .find((c) => c.custom_id === "perfil_logrosfiltro_disc-1_disc-1_0")
-            .options.map((o) => o.value);
-        expect(opciones).toEqual([
+        expect(valores(menuDe(p, "perfil_logrosfiltro_disc-1_disc-1_0"))).toEqual([
             "todos",
             "cat-social",
             "cat-xp",
@@ -129,22 +130,42 @@ describe("🏅 Logros: filtro (F-PX-02e)", () => {
             "cat-cripto",
             "cat-tienda",
             "cat-plex",
-            "trofeos",
-            "dif-facil",
-            "dif-normal",
-            "dif-gordo",
         ]);
+        // Sin 🍿 Plex elegido, el de dentro no sale.
+        expect(ids(p)).not.toContain("perfil_logrosfiltro_disc-1_disc-1_0_plex");
         const sinPlex = valido(perfilPanel.buildLogros(G, "disc-3", "disc-3"));
-        const deCarlos = sinPlex.components
-            .map((f) => f.toJSON().components[0])
-            .find((c) => c.custom_id.startsWith("perfil_logrosfiltro_"))
-            .options.map((o) => o.value);
+        const deCarlos = valores(menuDe(sinPlex, "perfil_logrosfiltro_disc-3_disc-3_0"));
         expect(deCarlos).not.toContain("cat-plex");
         expect(deCarlos).not.toContain("dif-gordo");
     });
 
+    test("con 🍿 Plex elegido sale otro menú con todo lo de Plex; fuera de Plex, no", async () => {
+        const p = await menu("perfil_logrosfiltro_disc-1_disc-1_0", ["cat-plex"]);
+        expect(p.embeds[0].data.title).toBe("🏅 Tus logros · 🍿 Plex");
+        expect(elegido(menuDe(p, "perfil_logrosfiltro_disc-1_disc-1_0"))).toBe("cat-plex");
+        const dePlex = menuDe(p, "perfil_logrosfiltro_disc-1_disc-1_0_plex");
+        expect(valores(dePlex)).toEqual(["cat-plex", "trofeos", "dif-facil", "dif-normal", "dif-gordo"]);
+        expect(dePlex.options.map((o) => o.label)).toEqual([
+            "🍿 Todos los de Plex",
+            "🏆 Solo trofeos",
+            "🟢 Fácil",
+            "🟡 Normal",
+            "🎰 Gordo del Plex",
+        ]);
+        expect(elegido(dePlex)).toBe("cat-plex");
+        // Todos los de Plex, y solo esos.
+        const lineas = p.embeds[0].data.description.split("\n").filter((l) => /^(✅|🎁|⏳)/.test(l));
+        expect(lineas.length).toBeGreaterThan(0);
+        expect(lineas.every((l) => l.includes("(plex"))).toBe(true);
+        // Otra categoría: el de dentro de Plex se va.
+        const casino = await menu("perfil_logrosfiltro_disc-1_disc-1_0", ["cat-casino"]);
+        expect(elegido(menuDe(casino, "perfil_logrosfiltro_disc-1_disc-1_0"))).toBe("cat-casino");
+        expect(ids(casino)).not.toContain("perfil_logrosfiltro_disc-1_disc-1_0_plex");
+    });
+
     test("elegir un filtro: solo esos, el título lo dice, y los botones lo conservan", async () => {
-        const p = await menu("perfil_logrosfiltro_disc-1_disc-1_0", ["trofeos"]);
+        // Desde el menú de dentro de 🍿 Plex (su "_plex" sobra al leerlo).
+        const p = await menu("perfil_logrosfiltro_disc-1_disc-1_0_plex", ["trofeos"]);
         expect(p.embeds[0].data.title).toBe("🏅 Tus logros · 🏆 Solo trofeos de Plex");
         expect(p.embeds[0].data.description).toMatch(/Breaking Bad/);
         expect(p.embeds[0].data.description).not.toMatch(/\(social|Se apagan las luces/);
@@ -156,8 +177,17 @@ describe("🏅 Logros: filtro (F-PX-02e)", () => {
                 "perfil_logros_disc-1_disc-1_0_0_tab",
             ]),
         );
-        const opcion = p.components.map((f) => f.toJSON().components[0]).find((c) => c.custom_id.startsWith("perfil_logrosfiltro_"));
-        expect(opcion.options.find((o) => o.default).value).toBe("trofeos");
+        // Arriba sigue 🍿 Plex; dentro, los trofeos.
+        expect(elegido(menuDe(p, "perfil_logrosfiltro_disc-1_disc-1_0"))).toBe("cat-plex");
+        expect(elegido(menuDe(p, "perfil_logrosfiltro_disc-1_disc-1_0_plex"))).toBe("trofeos");
+        // Con los secretos a la vista, los dos menús lo conservan.
+        const conSecretos = await boton("perfil_logros_disc-1_disc-1_0_1_trofeos");
+        expect(ids(conSecretos)).toEqual(
+            expect.arrayContaining(["perfil_logrosfiltro_disc-1_disc-1_1", "perfil_logrosfiltro_disc-1_disc-1_1_plex"]),
+        );
+        const facil = await menu("perfil_logrosfiltro_disc-1_disc-1_1_plex", ["dif-facil"]);
+        expect(facil.embeds[0].data.title).toBe("🏅 Tus logros · 🍿 Plex: 🟢 Fácil");
+        expect(ids(facil)).toContain("perfil_logros_disc-1_disc-1_0_0_dif-facil");
     });
 
     test("pasar página y ver secretos con un filtro puesto; la pestaña 🏅 Logros lo quita", async () => {

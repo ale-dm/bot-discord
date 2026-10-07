@@ -83,8 +83,8 @@ leerlo de Plex directamente (un token de Plex) o de TMDB a partir del `guid` (un
 
 En Plex, pero no son gamificación: recomendaciones personales con "Pedir en Seerr" (F-PX-03), Plex Wrapped mensual
 (F-PX-04) y sesión de cine (F-PX-05). Fuera de Plex, las de "Por dónde empezar" de
-[FEATURES](planificacion/FEATURES.md#por-dónde-empezar): resumen semanal para admins (F-AD-02), ranking de apostadores
-(F-AP-03), clasificación semanal con premios (F-EC-03) y liga de pronósticos (F-AP-12).
+[FEATURES](planificacion/FEATURES.md#por-dónde-empezar): liga de pronósticos (F-AP-12). El ranking de apostadores
+(F-AP-03), la clasificación semanal con premios (F-EC-03) y el resumen semanal para admins (F-AD-02) ya están.
 
 ## 5. Decisiones pendientes (hablarlas con Javier)
 
@@ -142,7 +142,8 @@ El detalle técnico (flujo de cada sincronización y por qué se hizo así) est�
   `plexTrofeos.js`. Las fechas (`desde:`/`hasta:`) valen solas para cualquiera.
 - **Un umbral más de roles de Gordos**: `UMBRALES` en `plexGordos.js` y la clave `plex.rol_gordos_N` en
   `guildSettings.js` (las tres listas).
-- **Un filtro más en 🏅 Logros**: una entrada en `FILTROS_LOGROS` de `paneles/perfil.js` (la clave, sin "_").
+- **Un filtro más en 🏅 Logros**: una entrada en `FILTROS_LOGROS` de `paneles/perfil.js` (la clave, sin "_"). Si es de
+  Plex, con `plex: true` y su `opcion` (el nombre en el menú de dentro de 🍿 Plex).
 - **Una comprobación más en `npm run plex:check`**: un `paso(...)` en `comprobar()` de `plexDiagnostico.js` (y en
   `tests/plexDiagnostico.test.js`, el Tautulli de mentira).
 - **Cambiar la hora o el día del ranking**: `HORA` en `plexRankingSemanal.js`; para otro día, el cron `"0 * * * 1"` de

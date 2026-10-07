@@ -1,6 +1,6 @@
 // Panel admin → 🩺 Sistema: el diagnóstico del bot (uptime, memoria, BD, logs, Gemini, Odds API y ajustes), el de
-// TTCL, el nivel de log en caliente, las 🔔 alertas por DM a los admins y 🤖 probar el modelo de Gemini. Antes eran
-// los comandos /diagnostico y /ttcl-diagnostico.
+// TTCL, el nivel de log en caliente, las 🔔 alertas por DM a los admins (y la vista previa del 📊 resumen semanal) y 🤖
+// probar el modelo de Gemini. Antes eran los comandos /diagnostico y /ttcl-diagnostico.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require("discord.js");
 const db = require("../core/db");
 const guildSettings = require("../systems/guildSettings");
@@ -167,7 +167,10 @@ function buildAlertas(guild, aviso = "") {
             (aviso ? `${aviso}\n\n` : "") +
                 "Avisan por mensaje privado de: errores nuevos del bot (el mismo error, como mucho una vez cada 6 h), " +
                 `Odds API con menos de ${CREDITOS_AVISO} créditos, Gemini sin cuota, un modelo de Gemini que no funciona al ` +
-                `arrancar y copias de seguridad que fallan. Como mucho ${alertas.MAX_POR_HORA} a la hora.`,
+                `arrancar y copias de seguridad que fallan. Como mucho ${alertas.MAX_POR_HORA} a la hora.
+
+` +
+                "Además, cada lunes a las 09:00, un 📊 resumen de la semana (errores, comandos más usados, Gemini y Odds API).",
         )
         .addFields(
             { name: "Estado", value: e.activas ? "Activas" : "Desactivadas", inline: true },
@@ -179,6 +182,7 @@ function buildAlertas(guild, aviso = "") {
     const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_sis_alertas_editar").setLabel("✏️ Configurar").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_sis_alertas_probar").setLabel("📨 Probar").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_sis_resumen").setLabel("📊 Resumen semanal").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_sis_home").setLabel("◀ Sistema").setStyle(ButtonStyle.Secondary),
     );
     return { content: "", embeds: [embed], components: [fila] };
@@ -222,6 +226,16 @@ async function handleSistemaButton(interaction) {
             content: total
                 ? `📨 Alerta de prueba enviada a ${enviadas} de ${total}.${enviadas < total ? " Quien no la recibe tiene los DMs cerrados para el bot." : ""}`
                 : "❌ No hay a quién enviarla: las alertas están desactivadas.",
+        });
+        return true;
+    }
+    // 📊 Vista previa del resumen semanal (F-AD-02): lo que llegaría ahora, solo a quien pulsa (no cuenta como enviado).
+    if (id === "paneladmin_sis_resumen") {
+        const { construir } = require("../systems/resumenAdmin");
+        await interaction.reply({
+            content: "📊 Así va el resumen de esta semana (llega por DM los lunes a las 09:00 a quien recibe las alertas):",
+            embeds: [construir()],
+            flags: MessageFlags.Ephemeral,
         });
         return true;
     }

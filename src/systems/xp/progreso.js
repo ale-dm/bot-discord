@@ -6,6 +6,7 @@ const { createLogger } = require("../../core/logger");
 const { ensureGuildDefaults, getConfig, ensureUser, xpForNextLevel, titleForLevel, nextTitle } = require("./config");
 const { updateStreak, streakBonusPct, getEffectiveStreak, sendDm, buildStreakContinuedEmbed } = require("./rachas");
 const { tryAssignRewards, maybeAnnounceLevelUp } = require("./roles");
+const eventos = require("../eventos");
 
 const log = createLogger("XP");
 
@@ -15,7 +16,8 @@ async function addXp(guild, member, amount) {
     const userId = member.id;
     ensureGuildDefaults(guildId);
 
-    const multiplier = Number(getConfig(guildId, "xp_multiplier") || 1);
+    // El multiplicador global y, en la ⚡ happy hour (F-EC-02), el del evento.
+    const multiplier = Number(getConfig(guildId, "xp_multiplier") || 1) * eventos.multiplicadorXp(guildId);
     let gain = Math.floor(amount * multiplier);
     if (gain <= 0) gain = 1;
 

@@ -45,7 +45,7 @@ module.exports = {
                   ? buildStatsJuegos(userId, interaction.user.username)
                   : seccion === "retos"
                     ? buildRetos(userId)
-                    : casino.buildHome(userId);
+                    : casino.buildHome(userId, interaction.guildId);
         await interaction.reply(payload);
     },
 
@@ -58,7 +58,7 @@ module.exports = {
         }
         const id = interaction.customId;
         if (id === "juegos_casino") {
-            await interaction.update(casino.buildHome(interaction.user.id));
+            await interaction.update(casino.buildHome(interaction.user.id, interaction.guildId));
             return;
         }
         if (id === "juegos_jugadas") {
@@ -95,8 +95,8 @@ module.exports = {
 
 // Pantallas del casino que no juegan (sin tocar dinero): customId → panel.
 const PANTALLAS_CASINO = {
-    casino_home: (i) => casino.buildHome(i.user.id),
-    casino_refresh: (i) => casino.buildHome(i.user.id),
+    casino_home: (i) => casino.buildHome(i.user.id, i.guildId),
+    casino_refresh: (i) => casino.buildHome(i.user.id, i.guildId),
     casino_stats: (i) => casino.buildStats(i.user.id, i.user.username),
     casino_historial: (i) => casino.buildHistorial(i.user.id),
     casino_ranking: () => casino.buildRanking(),

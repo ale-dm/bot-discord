@@ -6,6 +6,7 @@ const { createLogger } = require("../core/logger");
 
 const log = createLogger("Casino");
 const guildSettings = require("./guildSettings");
+const eventos = require("./eventos");
 const achievements = require("./achievementsSystem");
 const userGuildContext = new Map();
 
@@ -147,8 +148,8 @@ function getRtpForGame(guildId, juego) {
 }
 
 /**
- * Ajusta una ganancia bruta según el RTP configurado para ese juego. Escala solo el premio neto
- * (nunca la apuesta que se devuelve en un empate/push). Llamar ANTES de mostrar el resultado al
+ * Ajusta una ganancia bruta según el RTP configurado para ese juego y, si está en marcha, el 🎉 fin de semana del
+ * casino. Escala solo el premio neto (nunca la apuesta que se devuelve en un empate/push). Llamar ANTES de mostrar el resultado al
  * usuario y antes de procesarGanancia, para que el mensaje mostrado y lo acreditado coincidan siempre.
  * @param {string|null} guildId
  * @param {string} juego
@@ -157,7 +158,9 @@ function getRtpForGame(guildId, juego) {
  * @returns {number} - Ganancia total ya ajustada por RTP
  */
 function applyRtp(guildId, juego, apuesta, gananciaTotal) {
-    const rtpPct = getRtpForGame(guildId, juego);
+    if (!RTP_SETTING_BY_GAME[juego]) return gananciaTotal;
+    // El RTP del juego y, en el 🎉 fin de semana del casino (F-EC-02), el % del evento encima.
+    const rtpPct = (getRtpForGame(guildId, juego) * eventos.porcentajeCasino(guildId)) / 100;
     if (rtpPct === 100) return gananciaTotal;
     const netWin = Math.max(0, Number(gananciaTotal || 0) - Number(apuesta || 0));
     const netWinAjustado = Math.max(0, Math.floor(netWin * (rtpPct / 100)));
