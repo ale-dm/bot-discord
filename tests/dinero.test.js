@@ -78,6 +78,7 @@ describe("XP", () => {
 });
 
 describe("tienda: cobro de una compra", () => {
+    const G = "guild-dinero-tienda";
     const item = (over = {}) => ({ id: 1, tiendaId: 1, nombre: "Palote", precio: 300, stock: 1, ...over });
     const saldo = (u) => db.prepare("SELECT enMano AS saldo FROM banco WHERE userId = ?").get(u).saldo;
     const inventario = (u) => db.prepare("SELECT COUNT(*) c FROM inventario WHERE userId = ?").get(u).c;
@@ -89,13 +90,13 @@ describe("tienda: cobro de una compra", () => {
     });
 
     test("sin saldo no se cobra ni se entrega nada", () => {
-        expect(cobrarCompra("pobre", item())).toBe(false);
+        expect(cobrarCompra("pobre", G, item())).toBe(false);
         expect(saldo("pobre")).toBe(100);
         expect(inventario("pobre")).toBe(0);
     });
 
     test("con saldo se cobra, se entrega, se apunta y baja el stock", () => {
-        expect(cobrarCompra("rico", item())).toBe(true);
+        expect(cobrarCompra("rico", G, item())).toBe(true);
         expect(saldo("rico")).toBe(700);
         expect(inventario("rico")).toBe(1);
         expect(db.prepare("SELECT stock FROM tienda WHERE id = 1").get().stock).toBe(0);
@@ -103,13 +104,13 @@ describe("tienda: cobro de una compra", () => {
     });
 
     test("sin stock se revierte todo (no se cobra aunque el saldo llegue)", () => {
-        expect(cobrarCompra("tarde", item())).toBe(false);
+        expect(cobrarCompra("tarde", G, item())).toBe(false);
         expect(saldo("tarde")).toBe(1000);
         expect(inventario("tarde")).toBe(0);
     });
 
     test("stock ilimitado (null) no se agota", () => {
-        expect(cobrarCompra("tarde", item({ stock: null }))).toBe(true);
+        expect(cobrarCompra("tarde", G, item({ stock: null }))).toBe(true);
         expect(saldo("tarde")).toBe(700);
     });
 });

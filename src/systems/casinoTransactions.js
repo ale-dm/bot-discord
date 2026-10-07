@@ -188,6 +188,18 @@ function procesarGanancia(userId, juego, apuesta, gananciaTotal, descripcion, de
         // Registrar en historial (ganancia neta)
         insertarHistorial(userId, descripcion, resultadoNeto);
 
+        // Impuesto (F-EC-06a): solo sobre la ganancia neta de verdad, nunca sobre la apuesta
+        // devuelta (eso ya era suyo, no es un ingreso).
+        if (resultadoNeto > 0) {
+            const impuestos = require("./impuestos");
+            const impuestoCalc = impuestos.calcularImpuesto(guildId, "casino", resultadoNeto);
+            if (impuestoCalc) {
+                dinero.cobrar(userId, impuestoCalc.impuesto);
+                dinero.apuntar(userId, "impuesto", `Impuesto sobre ${dinero.TIPOS.casino}`, -impuestoCalc.impuesto);
+                if (impuestoCalc.destino === "bote") impuestos.sumarBote(guildId, impuestoCalc.impuesto);
+            }
+        }
+
         log.info(
             `Ganancia procesada: ${userId} - ${juego} - Total recibido: ${gananciaTotal} - Ganancia neta: ${resultadoNeto} - Nuevo saldo: ${nuevoSaldo}`,
         );

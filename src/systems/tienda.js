@@ -2,6 +2,7 @@
 const db = require("../core/db");
 const guildSettings = require("./guildSettings");
 const dinero = require("./dinero");
+const impuestos = require("./impuestos");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Tienda");
@@ -58,7 +59,8 @@ function comprobarCompra(guildId, userId, item, tiendaCfg) {
         return { ok: false, mensaje: "❌ Solo puedes comprar este objeto una vez." };
     }
     if (item.stock !== null && item.stock <= 0) return { ok: false, mensaje: "❌ Este objeto está agotado." };
-    if (saldoDe(userId) < item.precio) {
+    const impuestoCompra = impuestos.impuestoDeCompra(guildId, item.precio)?.impuesto || 0;
+    if (saldoDe(userId) < item.precio + impuestoCompra) {
         return { ok: false, mensaje: "❌ No te llega el efectivo para comprar este objeto. Saca dinero del banco (💵 Sacar)." };
     }
     const limiter = guildSettings.checkAndConsumeLimit(guildId, "tienda_buy", userId, {
@@ -79,20 +81,27 @@ function comprobarCompra(guildId, userId, item, tiendaCfg) {
 
 /**
  * Cobra una compra de la tienda: saldo, stock, inventario e historial, todo o nada (si algo
- * falla a mitad no se cobra sin entregar el objeto ni se gasta stock sin cobrar).
+ * falla a mitad no se cobra sin entregar el objeto ni se gasta stock sin cobrar). Si hay una
+ * regla de impuesto de compra activa (F-EC-06a), el comprador paga precio + impuesto.
  * @param {{ id: number, tiendaId: number, nombre: string, precio: number, stock: number|null }} item
  * @returns {boolean} true si se completó
  */
-function cobrarCompra(userId, item, etiqueta = userId) {
+function cobrarCompra(userId, guildId, item, etiqueta = userId) {
     try {
         return db.transaction(() => {
-            if (!dinero.cobrar(userId, item.precio)) return false;
+            const impuestoCompra = impuestos.impuestoDeCompra(guildId, item.precio);
+            const total = item.precio + (impuestoCompra?.impuesto || 0);
+            if (!dinero.cobrar(userId, total)) return false;
             if (item.stock !== null) {
                 const st = db.prepare("UPDATE tienda SET stock = stock - 1 WHERE id = ? AND stock > 0").run(item.tiendaId);
                 if (st.changes !== 1) throw new Error("Sin stock");
             }
             db.prepare("INSERT INTO inventario (userId, itemId, fecha) VALUES (?, ?, ?)").run(userId, item.id, new Date().toISOString());
             dinero.apuntar(userId, "tienda", `Compra en tienda: ${item.nombre}`, -item.precio);
+            if (impuestoCompra) {
+                dinero.apuntar(userId, "impuesto", `Impuesto de compra: ${item.nombre}`, -impuestoCompra.impuesto);
+                if (impuestoCompra.destino === "bote") impuestos.sumarBote(guildId, impuestoCompra.impuesto);
+            }
             return true;
         })();
     } catch (e) {

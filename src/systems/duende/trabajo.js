@@ -58,8 +58,7 @@ async function trabajar(guildId, user, channelId) {
     const exito = Math.random() >= PROB_FALLO;
     const cantidad = exito ? cantidadBase() + nivel * BONUS_POR_NIVEL : 0;
     if (cantidad > 0) {
-        dinero.pagar(user.id, cantidad);
-        dinero.apuntar(user.id, "trabajo", "Trabajar", cantidad);
+        dinero.pagarConImpuesto(user.id, guildId, "trabajo", "Trabajar", cantidad);
     }
 
     let texto;

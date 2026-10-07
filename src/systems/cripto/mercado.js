@@ -294,7 +294,6 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
                 )
                 .run(cantAVender, userId, sym, cantAVender);
             if (r.changes === 0) return false;
-            dinero.pagar(userId, monedasRecibidas);
 
             if (sym === "TTCL") {
                 db.prepare("UPDATE cripto_ttcl SET circulacion = MAX(0, circulacion - ?) WHERE id = 1").run(cantAVender);
@@ -302,8 +301,9 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
                 db.prepare("INSERT INTO cripto_ttcl_precios (precio, timestamp) VALUES (?, ?)").run(newP, Date.now());
             }
 
-            dinero.apuntar(
+            dinero.pagarConImpuesto(
                 userId,
+                guildId,
                 "cripto",
                 `Venta ${formatCryptoAmt(cantAVender)} ${sym}${fee > 0 ? ` (fee ${fee})` : ""}`,
                 monedasRecibidas,

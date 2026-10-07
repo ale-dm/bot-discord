@@ -2,6 +2,7 @@
 const db = require("../src/core/db");
 const tienda = require("../src/systems/tienda");
 const comando = require("../src/commands/economia/tienda");
+const impuestos = require("../src/systems/impuestos");
 
 const G = "guild-tienda";
 const CFG = { enabled: true, buy_cooldown_sec: 0, daily_limit: 0 };
@@ -31,7 +32,7 @@ describe("comprobarCompra", () => {
         const u = cliente(1000);
         const corona = tienda.itemTienda(11);
         expect(tienda.comprobarCompra(G, u, corona, CFG).ok).toBe(true);
-        expect(tienda.cobrarCompra(u, corona)).toBe(true);
+        expect(tienda.cobrarCompra(u, G, corona)).toBe(true);
         expect(tienda.comprobarCompra(G, u, corona, CFG).mensaje).toMatch(/una vez/);
     });
 
@@ -63,4 +64,29 @@ test("el botón de compra cobra, entrega y enseña el resultado; sin stock ya no
     await comando.handleButton(null, agotado);
     expect(agotado.update.mock.calls[0][0].content).toMatch(/agotado/);
     expect(saldo(otro)).toBe(1000);
+});
+
+describe("impuesto de compra (F-EC-06a)", () => {
+    const GC = "guild-tienda-impuesto";
+    afterEach(() => {
+        db.prepare("DELETE FROM impuestos_reglas WHERE guildId = ?").run(GC);
+        db.prepare("DELETE FROM impuestos_bote WHERE guildId = ?").run(GC);
+    });
+
+    test("con una regla de compra activa, se cobra precio + impuesto y va al bote", () => {
+        impuestos.anadirRegla(GC, { base: "compra", porcentaje: 10, destino: "bote" });
+        const u = cliente(1000);
+        const corona = tienda.itemTienda(11);
+
+        expect(tienda.cobrarCompra(u, GC, corona)).toBe(true); // precio 100 + 10 de impuesto
+        expect(saldo(u)).toBe(1000 - 110);
+        expect(impuestos.boteTotal(GC)).toBe(10);
+    });
+
+    test("comprobarCompra tiene en cuenta el impuesto al mirar si llega el saldo", () => {
+        impuestos.anadirRegla(GC, { base: "compra", porcentaje: 10, destino: "bote" });
+        const corona = tienda.itemTienda(11); // precio 100, con impuesto hacen falta 110 (stock ilimitado)
+        expect(tienda.comprobarCompra(GC, cliente(105), corona, CFG).ok).toBe(false);
+        expect(tienda.comprobarCompra(GC, cliente(110), corona, CFG).ok).toBe(true);
+    });
 });
