@@ -199,6 +199,10 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**📊 Resumen semanal para admins (F-AD-02, #38)**
+- [ ] `/paneladmin` → 🩺 Sistema → 🔔 Alertas → 📊 Resumen semanal: los errores y comandos cuadran con los logs.
+- [ ] El lunes a las 09:00 llega por DM a quien recibe las alertas (en el log, `Resumen semanal enviado a N/N admins`).
+
 **🎉 Eventos temporales (F-EC-02, #34)**
 - [ ] `/paneladmin` → ⚙️ Config Global → 🎉 Eventos: activar la happy hour con las horas de ahora mismo; en `/perfil` sale
       "⚡ Happy hour" y un mensaje da el doble de XP (mirarlo en el log de XP o en la barra).

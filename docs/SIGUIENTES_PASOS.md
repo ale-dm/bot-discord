@@ -83,8 +83,8 @@ leerlo de Plex directamente (un token de Plex) o de TMDB a partir del `guid` (un
 
 En Plex, pero no son gamificación: recomendaciones personales con "Pedir en Seerr" (F-PX-03), Plex Wrapped mensual
 (F-PX-04) y sesión de cine (F-PX-05). Fuera de Plex, las de "Por dónde empezar" de
-[FEATURES](planificacion/FEATURES.md#por-dónde-empezar): resumen semanal para admins (F-AD-02) y liga
-de pronósticos (F-AP-12). El ranking de apostadores (F-AP-03) y la clasificación semanal con premios (F-EC-03) ya están.
+[FEATURES](planificacion/FEATURES.md#por-dónde-empezar): liga de pronósticos (F-AP-12). El ranking de apostadores
+(F-AP-03), la clasificación semanal con premios (F-EC-03) y el resumen semanal para admins (F-AD-02) ya están.
 
 ## 5. Decisiones pendientes (hablarlas con Javier)
 

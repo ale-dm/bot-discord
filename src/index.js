@@ -193,6 +193,12 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 📊 Resumen semanal por DM a quien recibe las alertas: los lunes desde las 09:00 (igual: cada hora y al arrancar).
+    cron.schedule("0 * * * 1", () => runJob("Resumen semanal para admins", () => require("./systems/resumenAdmin").enviarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Resumen semanal para admins (arranque)", () => require("./systems/resumenAdmin").enviarSiToca(client));
     // Mensajes espontáneos del Duende para animar un server parado: de 11:00 a 23:00, con una
     // probabilidad baja cada vez (DUENDE_ESPONTANEO_PROB) y solo si el canal lleva un rato sin
     // mensajes de verdad. Se puede desactivar o elegir el canal en Config Global → Duende.
