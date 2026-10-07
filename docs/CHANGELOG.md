@@ -2,6 +2,33 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🔊 `/conversación` sigue sin sonar: logs de verdad en todo el camino del audio, y voz por defecto Charon)
+
+Los dos fixes anteriores de `/conversación` (suscripción reactiva + bugs de `prism-media`) no
+eran suficientes en producción y, sin más datos, no se podía saber en qué paso se rompía. Antes de
+seguir adivinando, se añaden logs en cada punto del camino del audio, en los dos sentidos:
+
+- **Conexión de voz**: al unirse al canal, cuando queda lista, y si la conexión da un error o
+  cambia de estado (`VoiceConnection` tiene su propio `error`, no solo el de ffmpeg/Gemini).
+- **Salida (Gemini → ffmpeg → Discord)**: cuántos bytes genera ffmpeg de verdad (si no genera
+  nada, el problema es ffmpeg, no Discord), en qué estado está el `AudioPlayer`
+  (`stateChange`: Idle/Buffering/Playing/Paused — si se queda en Idle nada más empezar, el
+  recurso no tiene datos), y si `connection.subscribe(player)` devuelve algo o no.
+- **Entrada (usuario → Gemini)**: confirma cuándo se detecta que alguien empieza a hablar, el
+  primer trozo de audio capturado y decodificado, y errores del stream de Opus o del decoder que
+  antes podían perderse en silencio.
+- **Mensajes de Gemini Live**: qué claves trae cada mensaje (debug), y confirmación del primer
+  trozo de audio de salida que llega de verdad.
+- El error final, si no consigue arrancar la conversación, ahora se registra con el `stack`
+  completo, no solo el mensaje.
+- La mayoría son `log.info` (no se ven en consola por defecto, solo en `logs/app-log.txt`, salvo
+  que se ponga `LOG_CONSOLE_LEVEL=info`); los de clave en clave de cada mensaje son `log.debug`
+  (necesitan además `LOG_LEVEL=debug`).
+- Tests: el mock de `prism-media`/`@discordjs/voice` en `liveVoz.test.js` no tenía `.on()` en la
+  conexión ni en el stream de Opus — se añade, para que estos listeners nuevos no rompan nada.
+- **Voz por defecto**: `Puck` → `Charon` en `/tts`, en el Duende y en `/conversación`
+  (`DUENDE_TTS_VOICE`/`DUENDE_LIVE_VOICE`). Sigue siendo configurable igual que antes.
+
 ## 2026-10-07 (🐛 `/conversación` seguía muda: dos bugs más, en `prism-media`/ffmpeg)
 
 El arreglo anterior (suscripción reactiva a la voz de entrada) no era suficiente: ni siquiera el

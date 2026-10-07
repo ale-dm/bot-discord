@@ -724,7 +724,7 @@ Duende siguen en `/duende set | add | remove`.
 | `DUENDE_GIF_PROB` | 0.08 | Probabilidad de GIF |
 | `DUENDE_VOICE_REPLY_PROB` | 0.1 | Probabilidad de responder por voz |
 | `DUENDE_VOICE_IDLE_DISCONNECT_MS` | 300000 | Tiempo en voz tras la última respuesta |
-| `DUENDE_TTS_VOICE` | `Puck` | Voz por defecto de `/tts` y del Duende |
+| `DUENDE_TTS_VOICE` | `Charon` | Voz por defecto de `/tts` y del Duende |
 | `GEMINI_TTS_MODEL` | `gemini-3.8-flash-tts` | Modelo de TTS. Los 3.x van por la Interactions API; los 2.x, por `generateContent` |
 | `GEMINI_TTS_FALLBACK_MODELS` | `gemini-3.8-flash-lite-tts,gemini-2.5-flash-preview-tts` | Modelos que se prueban si el primero falla (siempre se prueba también el de por defecto) |
 | `GEMINI_TTS_STYLE` | (vacío) | Tono para los modelos 3.x ("natural, en español de España"...) |
@@ -751,7 +751,7 @@ Duende siguen en `/duende set | add | remove`.
 | Variable | Por defecto | Qué controla |
 |---|---|---|
 | `DUENDE_LIVE_MODEL` | `gemini-live-2.5-flash-preview` | Modelo de audio bidireccional en tiempo real (no confundir con `GEMINI_TTS_MODEL`, que es por lotes) |
-| `DUENDE_LIVE_VOICE` | `DUENDE_TTS_VOICE` o `Puck` | Voz de `/conversación` |
+| `DUENDE_LIVE_VOICE` | `DUENDE_TTS_VOICE` o `Charon` | Voz de `/conversación` |
 | `DUENDE_LIVE_IDLE_DISCONNECT_MS` | 300000 (5 min) | Corta la conversación tras este tiempo sin que nadie hable — se cobra mientras la conexión esté abierta, no solo al hablar |
 | `DUENDE_LIVE_MAX_DURATION_MS` | 1800000 (30 min) | Tope duro de duración, haya actividad o no |
 
