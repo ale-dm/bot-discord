@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (💼 Cartera de apuestas en 📋 Mis jugadas (F-AP-04, #3))
+
+`/juegos` → 📋 Mis jugadas → ⏳ En juego (lo que antes era `/misapuestas`) empieza con un resumen de tu cartera:
+
+- 💰 **En juego**: todo lo apostado que aún no se ha resuelto (partidos y quinielas), con cuántos partidos y quinielas
+  son. Antes solo se veía apuesta a apuesta, y la lista de partidos se corta en 10.
+- 🏆 **Posible premio**: lo máximo que puedes cobrar de tus partidos pendientes. En un mismo partido solo puede acertar
+  una de tus apuestas (p. ej. a local y a empate), así que de cada partido cuenta la de más premio. La quiniela no suma:
+  su premio depende del bote y de cuántos acierten.
+- 📅 **Beneficio del mes**: lo cobrado menos lo apostado en lo resuelto este mes, en hora de Madrid (los partidos por el
+  día del partido; las quinielas, por el día en que se cerraron). Lo reembolsado por falta de resultado, y las quinielas
+  devueltas, cuentan como recuperadas (ni ganan ni pierden).
+- Sin tabla nueva: sale de `apuestas_usuario` y `quiniela_apuestas` (`misJugadas.cartera`). Tests nuevos en
+  `tests/carteraApuestas.test.js` (lo máximo por partido, el cambio de mes en hora de Madrid, lo reembolsado y el
+  panel con y sin apuestas).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
