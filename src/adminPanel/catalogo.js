@@ -5,16 +5,21 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags
 const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
 const { simpleModal } = require("./common");
+const { efectoProteccion } = require("../systems/robar");
 
 const POR_PAGINA = 8;
 const TIPOS = ["rol", "consumible", "coleccionable"];
 const CAMPOS = ["nombre", "descripcion", "tipo", "efecto", "rol", "imagen", "categoria", "rareza", "unico"];
 
-// Efectos que entiende "Usar" (tienda → Inventario, systems/objetos) para los consumibles.
+// Efectos que entiende "Usar" (tienda → Inventario, systems/objetos) para los consumibles, y los de los coleccionables
+// que protegen de /robar con solo tenerlos (F-EC-06c, systems/robar).
 function validarEfecto(efecto) {
     if (!efecto) return null;
-    if (/^monedas:-?\d+$/.test(efecto) || /^mensaje:.+/.test(efecto)) return null;
-    return "El efecto debe ser `monedas:N` (da N monedas) o `mensaje:texto`.";
+    if (/^monedas:-?\d+$/.test(efecto) || /^mensaje:.+/.test(efecto) || efectoProteccion(efecto)) return null;
+    return (
+        "El efecto debe ser `monedas:N` (da N monedas) o `mensaje:texto` en un consumible, o `antirrobo:N` (1-100: quita N " +
+        "puntos de probabilidad al que intente robar) o `trampa:N` (2-10: multiplica su multa si falla) en un coleccionable."
+    );
 }
 
 const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
@@ -72,8 +77,8 @@ const MODALES = {
             { id: "tipo", label: "Tipo: rol, consumible o coleccionable", placeholder: "consumible" },
             {
                 id: "extra",
-                label: "Efecto (consumible) o rol (ID o mención)",
-                placeholder: "monedas:500 · mensaje:texto · <@&123…>",
+                label: "Efecto o rol (ID o mención)",
+                placeholder: "monedas:500 · mensaje:texto · antirrobo:30 · trampa:3 · <@&123…>",
                 required: false,
             },
             { id: "imagen", label: "Imagen (URL)", required: false },
@@ -130,7 +135,8 @@ function aplicar(interaction) {
         const tipo = v("tipo").toLowerCase();
         if (!TIPOS.includes(tipo)) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
         const extra = v("extra");
-        const efecto = tipo === "consumible" ? extra || null : null;
+        // Los consumibles hacen su efecto al usarlos; los coleccionables, con solo tenerlos (antirrobo/trampa).
+        const efecto = tipo === "consumible" || tipo === "coleccionable" ? extra || null : null;
         const rolId = tipo === "rol" ? idRol(extra) : null;
         const errorEfecto = validarEfecto(efecto);
         if (errorEfecto) return { error: errorEfecto };

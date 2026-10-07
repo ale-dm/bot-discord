@@ -199,6 +199,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🛡️ Objetos antirrobo (F-EC-06c, #79)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 023_objetos_antirrobo`; en la tienda salen el Candado y la Trampa para ladrones.
+      Decidir si los precios (150 y 100) valen o cambiarlos en 🛒 Catálogo.
+- [ ] Con dos cuentas: una compra el candado y la trampa y la otra le hace `/robar` — el mensaje lo dice y se le gastan
+      del inventario como toca.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

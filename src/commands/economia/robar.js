@@ -44,19 +44,25 @@ module.exports = {
             return;
         }
 
+        // Los objetos de protección de la víctima que han entrado en juego (F-EC-06c).
+        const candado = r.candado ? `🔒 ${victima.username} tenía **${r.candado}** (lo ha gastado en tu intento). ` : "";
         if (r.exito) {
             await interaction.reply(
-                `🥷 Le has robado **${r.cantidad.toLocaleString("es")}** 🪙 a ${victima.username}. Dinero negro: lo puedes gastar, pero no meterlo en el banco hasta blanquearlo.`,
+                `${candado}🥷 Le has robado **${r.cantidad.toLocaleString("es")}** 🪙 a ${victima.username}. Dinero negro: lo puedes gastar, pero no meterlo en el banco hasta blanquearlo.`,
             );
         } else {
+            const trampa = r.trampa ? `💣 ¡Ha saltado su **${r.trampa}**: la multa se multiplica! ` : "";
             await interaction.reply(
-                r.multa > 0
-                    ? `🚨 Te han pillado intentando robar a ${victima.username}. Pagas una multa de **${r.multa.toLocaleString("es")}** 🪙.`
-                    : `🚨 Te han pillado intentando robar a ${victima.username}, pero no tenías ni para la multa.`,
+                candado +
+                    trampa +
+                    (r.multa > 0
+                        ? `🚨 Te han pillado intentando robar a ${victima.username}. Pagas una multa de **${r.multa.toLocaleString("es")}** 🪙.`
+                        : `🚨 Te han pillado intentando robar a ${victima.username}, pero no tenías ni para la multa.`),
             );
         }
         log.info(
-            `${interaction.user.tag} usó /robar contra ${victima.tag}: ${r.exito ? `+${r.cantidad} (negro)` : `falló, multa ${r.multa}`}`,
+            `${interaction.user.tag} usó /robar contra ${victima.tag}: ${r.exito ? `+${r.cantidad} (negro)` : `falló, multa ${r.multa}`}` +
+                `${r.candado ? ` · candado` : ""}${r.trampa ? ` · trampa` : ""}`,
         );
     },
 };

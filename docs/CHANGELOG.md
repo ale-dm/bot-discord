@@ -2,6 +2,28 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🛡️ Objetos de protección contra robos (F-EC-06c, #79))
+
+Tercera pieza del backlog de economía (#37), encima de `/robar` (#78): dos objetos nuevos en la tienda que protegen de
+los robos con solo tenerlos en el inventario. Sin sistema nuevo: son objetos normales del catálogo (tipo coleccionable)
+con un efecto que `/robar` mira en el inventario de la víctima antes de cada intento.
+
+- 🔒 **Candado** (150 🪙, `antirrobo:30`): le quita 30 puntos a la probabilidad de éxito del ladrón (del 65 % al 35 %).
+  Se gasta con ese intento, salga bien o mal (si no, uno solo protegería para siempre).
+- 💣 **Trampa para ladrones** (100 🪙, `trampa:3`): si el robo falla, la multa se multiplica por 3 (con el mismo tope de
+  siempre: no más de lo que tenga el ladrón). Se gasta solo cuando salta. En Movimientos del ladrón la multa lleva el
+  nombre de la trampa.
+- Con varios del mismo tipo se usa el más fuerte, y solo se gasta ese. A una víctima con menos del mínimo para robarle no
+  se le gasta nada (no hay intento).
+- El ladrón se entera en el mensaje de `/robar`; la víctima, como hasta ahora, no recibe aviso.
+- La migración **023** los crea y los pone a la venta (solo si no hay ya objetos con esos efectos). Después se cambian
+  como cualquier otro en `/paneladmin` → 🛒 Catálogo, que ahora acepta `antirrobo:N` (1-100) y `trampa:N` (2-10) como
+  efecto, también al crear un coleccionable.
+- Tests nuevos en `tests/objetosAntirrobo.test.js` (la migración, comprarlos en la tienda de verdad, el candado, la
+  trampa, cuándo se gasta cada uno, el más fuerte, el mensaje de `/robar` y el catálogo). Dos tests de la tienda
+  (`dinero.test.js` y `herramientasDuende.test.js`) empiezan ahora vaciando el catálogo, porque daban por hecho que
+  estaba vacío.
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
