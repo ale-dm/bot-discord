@@ -68,6 +68,13 @@ const DEFAULT_FLAT = {
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
+
+    "eventos.xp_activo": false,
+    "eventos.xp_mult": 2,
+    "eventos.xp_desde": 20,
+    "eventos.xp_hasta": 22,
+    "eventos.casino_activo": false,
+    "eventos.casino_pct": 150,
 };
 
 const KEY_TYPES = {
@@ -135,6 +142,13 @@ const KEY_TYPES = {
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
+
+    "eventos.xp_activo": "boolean",
+    "eventos.xp_mult": "number",
+    "eventos.xp_desde": "number",
+    "eventos.xp_hasta": "number",
+    "eventos.casino_activo": "boolean",
+    "eventos.casino_pct": "number",
 };
 
 function parseValue(key, value) {
@@ -227,6 +241,15 @@ function flattenToNested(flat) {
         alertas: {
             enabled: flat["alertas.enabled"],
             admin_ids: flat["alertas.admin_ids"],
+        },
+        eventos: {
+            xp: {
+                activo: flat["eventos.xp_activo"],
+                mult: flat["eventos.xp_mult"],
+                desde: flat["eventos.xp_desde"],
+                hasta: flat["eventos.xp_hasta"],
+            },
+            casino: { activo: flat["eventos.casino_activo"], pct: flat["eventos.casino_pct"] },
         },
     };
 }

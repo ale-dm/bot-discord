@@ -199,6 +199,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Unos días después: alguien con "Sin spoilers" o "Primero del servidor" (hace falta que las fichas tengan ya la fecha
       de llegada; las de antes se vuelven a pedir cada 3 días si la serie se ve) y con "Cine compartido".
 
+**🎉 Eventos temporales (F-EC-02, #34)**
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎉 Eventos: activar la happy hour con las horas de ahora mismo; en `/perfil` sale
+      "⚡ Happy hour" y un mensaje da el doble de XP (mirarlo en el log de XP o en la barra).
+- [ ] Activar el fin de semana del casino un sábado o domingo: 🎰 Casino lo dice arriba y una victoria paga más.
+
 **Voz del Duende (2026-10-02, después del arreglo de DAVE)**
 - [ ] Quitar `GEMINI_TTS_MODEL` de las variables del stack si vale `gemini-2.5-flash-preview-tts`.
 - [ ] `/paneladmin` → 🩺 Sistema → 🔊 Probar voz: que diga "✅ Voz generada con **gemini-3.8-flash-tts**" y que el

@@ -2,6 +2,24 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎉 Eventos temporales: happy hour de XP y fin de semana del casino (F-EC-02, #34))
+
+Dos eventos que suben solos, durante un rato, los multiplicadores que ya había. Vienen **desactivados**: se activan y
+ajustan en `/paneladmin` → ⚙️ Config Global → 🎉 Eventos (pantalla nueva, con si están en marcha ahora).
+
+- **⚡ Happy hour de XP**: cada día, de una hora a otra (hora de Madrid; 20:00–22:00 por defecto, y puede pasar la
+  medianoche, p. ej. 22–2), la XP se multiplica (×2 por defecto, de 1 a 5). Va encima del multiplicador global de XP y
+  antes del bonus de racha (`xp/progreso.addXp`), así que sirve para mensajes y voz. Mientras dura, `/perfil` → 👤
+  Perfil lo dice debajo de la barra de XP.
+- **🎰 Fin de semana del casino**: sábado y domingo (hora de Madrid) el premio neto de cada victoria de blackjack,
+  tragaperras, ruleta y adivinar sube (al 150 % por defecto, de 100 a 300), encima del RTP de cada juego
+  (`casinoTransactions.applyRtp`, el mismo sitio donde se aplica el RTP: el mensaje de la partida y lo cobrado
+  coinciden). Nunca toca la probabilidad ni la apuesta devuelta en un empate. Mientras dura, la pantalla de 🎰 Casino
+  lo dice arriba (`buildHome` recibe ahora el servidor).
+- Ajustes nuevos por servidor `eventos.*` en `guildSettings`; la lógica, en `src/systems/eventos.js`. Tests nuevos en
+  `tests/eventosTemporales.test.js` (horas y fines de semana en hora de Madrid, la XP que se gana con `addXp`, los
+  premios con `applyRtp` junto al RTP, el aviso en el casino y el panel).
+
 ## 2026-10-07 (🥷 `/robar` y dinero negro (F-EC-06b): segunda pieza de la economía de robos/blanqueo)
 
 Segunda entrega del backlog de economía (#37), encima del motor de impuestos (#77): `/robar @persona`
