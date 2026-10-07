@@ -2,6 +2,31 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-07 (🎯 `/conversación` ya respondía el saludo y oía al usuario, pero no contestaba después)
+
+Con el fix de `maxMissedFrames` el log ya mostraba el pipeline funcionando de verdad: saludo
+reproducido, reproductor en `playing`, y la captura de audio del usuario llegando bien a Gemini
+(`Primer trozo de audio de ... capturado`). El problema era más sutil: tras hablar, Gemini nunca
+respondía — se quedaba "escuchando" para siempre.
+
+Causa: la detección de actividad automática de Gemini (la que decide sola cuándo ha acabado el
+turno del usuario) se basa en analizar silencios **dentro del propio audio que recibe**. Discord
+no manda paquetes durante los silencios reales (no hay "silencio codificado" que mandar) — así
+que el audio que le llega a Gemini tiene huecos, no silencio de verdad, y su detección automática
+nunca ve un final de turno claro. Se queda esperando audio para siempre.
+
+- `realtimeInputConfig: { automaticActivityDetection: { disabled: true } }` al conectar: ya no
+  es Gemini quien decide cuándo acaba el turno.
+- En su lugar, usamos la propia detección de Discord (el `speaking` del receptor, basado en
+  paquetes de voz reales, mucho más fiable): al "empieza a hablar" se manda
+  `sendRealtimeInput({ activityStart: {} })`, y al "deja de hablar" (Discord lo marca ~100ms
+  después del último paquete) `sendRealtimeInput({ activityEnd: {} })`. Esto se manda cada vez
+  que habla, no solo la primera — a diferencia de la suscripción al audio en sí, que sigue siendo
+  de una vez por llamada.
+- Tests nuevos: que la detección automática queda desactivada al conectar, que se avisa a Gemini
+  de inicio/fin de turno con las señales de voz de Discord, y que ese aviso se manda en cada
+  turno (no solo el primero).
+
 ## 2026-10-07 (🎯 `/conversación` dice el saludo y luego se queda muda: `maxMissedFrames`)
 
 Progreso real: con el modelo corregido, el saludo inicial SÍ se oía — pero luego no volvía a

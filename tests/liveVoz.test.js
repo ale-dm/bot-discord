@@ -92,6 +92,7 @@ beforeEach(() => {
     jest.useFakeTimers();
     mockConnect.mockClear();
     mockLiveSession.sendClientContent.mockClear();
+    mockLiveSession.sendRealtimeInput.mockClear();
 });
 
 afterEach(() => {
@@ -187,6 +188,36 @@ test("si habla otra persona del canal, no se suscribe a su audio", async () => {
     await liveVoz.empezarConversacion(i);
     mockConnectionActual.receiver.speaking.emit("start", "otro-usuario-cualquiera");
     expect(mockConnectionActual.receiver.subscribe).not.toHaveBeenCalled();
+});
+
+test("desactiva la detección automática de actividad de Gemini: Discord no manda audio durante los silencios", async () => {
+    await liveVoz.empezarConversacion(interaccionEnVoz());
+    const { config } = mockConnect.mock.calls.at(-1)[0];
+    expect(config.realtimeInputConfig).toEqual({ automaticActivityDetection: { disabled: true } });
+});
+
+test("avisa a Gemini del inicio y fin del turno con las señales de 'hablando' de Discord", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    expect(mockLiveSession.sendRealtimeInput).toHaveBeenCalledWith({ activityStart: {} });
+
+    mockConnectionActual.receiver.speaking.emit("end", i.user.id);
+    expect(mockLiveSession.sendRealtimeInput).toHaveBeenCalledWith({ activityEnd: {} });
+});
+
+test("el aviso de inicio/fin de turno se manda cada vez que habla, no solo la primera (a diferencia de la suscripción de audio)", async () => {
+    const i = interaccionEnVoz();
+    await liveVoz.empezarConversacion(i);
+
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+    mockConnectionActual.receiver.speaking.emit("end", i.user.id);
+    mockConnectionActual.receiver.speaking.emit("start", i.user.id);
+
+    const avisosInicio = mockLiveSession.sendRealtimeInput.mock.calls.filter(([arg]) => "activityStart" in arg);
+    expect(avisosInicio).toHaveLength(2);
+    expect(mockConnectionActual.receiver.subscribe).toHaveBeenCalledTimes(1);
 });
 
 test("si la persona habla varias veces, solo se suscribe una vez", async () => {
