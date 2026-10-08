@@ -255,19 +255,29 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Sin `TMDB_API_KEY`, no pasa nada y no hay trofeos por país.
 
 **🎯 Recomendaciones personales (#22)**
-- [ ] `/recomendar` (con la cuenta de Plex vinculada y historial): salen hasta 5 títulos, con "Porque viste …".
+- [ ] `/plex` → 🎯 Para ti (con la cuenta de Plex vinculada y historial): salen hasta 5 títulos, con "Porque viste …".
 - [ ] Lo que ya has visto o ya está en Plex no sale.
 - [ ] 📥 pide el título en Seerr; un usuario sin perfil de Seerr vinculado recibe el aviso (y no se pide nada).
 - [ ] Sin cuenta vinculada o sin historial, lo dice.
 
-**🎞️ Plex Wrapped mensual (#23)**
-- [ ] El día 1 después de las 10:00 (Madrid), en el canal del ranking de Plex sale el resumen del mes anterior con la gráfica.
-- [ ] Menciona al más viciado y lista las series más vistas; sin nadie que haya visto nada, lo dice sin gráfica.
+**🔊 /sonidos y 🍿 /plex**
+- [ ] Al arrancar: `[Migraciones] Aplicada 037_sonidos`.
+- [ ] `/sonidos archivo:<mp3> nombre:Risa` (admin): sale el aviso de añadido y el botón aparece en el panel.
+- [ ] Pulsar un sonido estando en un canal de voz: el bot entra, lo toca y se sale. Sin estar en voz, lo dice.
+- [ ] Dos sonidos a la vez en el mismo servidor: el segundo espera con el aviso.
+- [ ] `/sonidos borrar:Risa` (admin) lo quita; una persona sin permiso de admin recibe el aviso.
+- [ ] `/plex` tiene los cuatro botones; el formulario de cine crea la sesión.
+
+**🎞️ Plex Wrapped mensual (#23), por DM**
+- [ ] Al arrancar: `[Migraciones] Aplicada 038_plex_wrapped_enviados`.
+- [ ] El día 1 después de las 10:00 (Madrid), cada persona vinculada con actividad recibe por DM su propio resumen (sus horas, sus series). Nada sale en ningún canal.
+- [ ] El resumen no menciona a otras personas. Quien no ha visto nada no recibe DM.
 - [ ] No se repite el mismo mes aunque el bot se reinicie.
+- [ ] `/plex` → 🎞️ Wrapped enseña solo tu resumen, y solo a ti.
 
 **🎬 Sesión de cine (#24)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 033_sesion_cine`.
-- [ ] `/cine peli:Dune hora:<dentro de 30 min>`: sale el mensaje con tu nombre como apuntado y los tres botones.
+- [ ] `/plex` → 🎬 Sesión de cine con "Dune" y una hora dentro de 30 min: sale el mensaje con tu nombre como apuntado y los tres botones.
 - [ ] 🙋 Me apunto y 🚪 Me salgo actualizan la lista en el mismo mensaje.
 - [ ] 🛑 Cancelar: lo hace quien convoca; otra persona recibe el aviso de que no puede (y un admin sí puede).
 - [ ] 10 minutos antes: aparece el recordatorio en el canal, mencionando a los apuntados; no se repite.
