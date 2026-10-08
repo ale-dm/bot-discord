@@ -315,7 +315,7 @@ describe("🧙 el Duende lo propone desde el chat", () => {
     test("la herramienta deja la propuesta y sale con botones debajo de la respuesta; sin aceptar no se mueve nada", async () => {
         mockRespuestas.push(llamadaHerramienta("retar_piedra_papel_tijera", { cantidad: 200 }), texto("Venga, a ver si tienes narices."));
         const i = charla("te reto a piedra papel tijera por 200", { id: "ch-a", username: "ana" });
-        await duende.run(null, i);
+        await duende.hablar(null, i);
         expect(herramientasOfrecidas()).toEqual(
             expect.arrayContaining(["retar_piedra_papel_tijera", "apostar_partido_con_duende", "ofrecer_prestamo"]),
         );
@@ -332,7 +332,7 @@ describe("🧙 el Duende lo propone desde el chat", () => {
 
     test("por voz (/escuchar) no se ofrecen: no hay dónde pulsar", async () => {
         mockRespuestas.push(texto("Hola."));
-        await duende.run(null, charla("hola", { id: "ch-v", username: "v" }, { silentTextReply: true }));
+        await duende.hablar(null, charla("hola", { id: "ch-v", username: "v" }, { silentTextReply: true }));
         expect(herramientasOfrecidas()).not.toContain("ofrecer_prestamo");
         expect(DUENDE_TOOL_EXECUTORS.ofrecer_prestamo({ cantidad: 100 }, { guildId: G, userId: "ch-v" }).error).toMatch(/chat de texto/);
     });

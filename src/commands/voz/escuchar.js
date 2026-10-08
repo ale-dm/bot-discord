@@ -20,7 +20,7 @@ function startListeningLoop(client, guildId, channelId, targetUserId, textChanne
         async (transcript, ctx) => {
             if (transcript && String(transcript).trim()) {
                 // Responde por voz usando duende.js
-                await duende.run(client, {
+                await duende.hablar(client, {
                     guild: ctx.guild,
                     channel: textChannel,
                     user: ctx.user,

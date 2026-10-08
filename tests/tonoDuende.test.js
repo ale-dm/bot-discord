@@ -51,7 +51,7 @@ describe("le llega a Gemini con el resto de instrucciones", () => {
     const hablar = async (canal) => {
         mockPeticiones.length = 0;
         const enviados = [];
-        await duende.run(null, {
+        await duende.hablar(null, {
             id: `m-${Math.random()}`,
             user: { id: "u1", username: "alex" },
             guildId: G,

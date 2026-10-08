@@ -213,6 +213,15 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Si `/juegos` tiene canales restringidos (ACL), los botones del duelo no funcionan fuera de ellos: comprobar que el
       canal del Duende está permitido para `/juegos`.
 
+**🤖 /duende como panel único (F-DU-06, #113)**
+- [ ] `/duende` abre un panel privado con 💬 Hablar, 🧠 Recuerdos y 🎭 Personalidad (y, si eres admin, añadir y quitar).
+- [ ] 💬 Hablar: escribir algo y que el Duende conteste en el canal con la personalidad del canal.
+- [ ] 🧠 Recuerdos: anotar algo sobre ti y verlo; 🧹 Olvidar lo borra y no toca el perfil base.
+- [ ] Como no admin, no puedes anotar ni olvidar lo de otra persona (sale el aviso).
+- [ ] Como admin, eliges a otra persona con el selector y ves o cambias sus recuerdos.
+- [ ] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
+- [ ] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
+
 **🛒 /tienda como panel único (F-EC-11, #110)**
 - [ ] `/tienda` sin opciones abre el 🛒 Catálogo con los menús de categoría y rareza y el botón 🔍 Buscar.
 - [ ] Elegir una categoría deja solo sus objetos; elegir "todas" los vuelve a mostrar.

@@ -2,6 +2,23 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🤖 `/duende` como un solo comando con panel de botones (F-DU-06, #113))
+
+Igual que `/tienda`: `/duende` ya no tiene subcomandos. Abre un panel (solo lo ve quien lo abre) con:
+
+- **💬 Hablar**: formulario con el texto. La respuesta sale en el canal como siempre.
+- **🧠 Recuerdos**: lo que el Duende recuerda de ti, con ✏️ Anotar algo y 🧹 Olvidar notas. Los admins eligen a otra
+  persona con un selector. Quien no es admin solo gestiona lo suyo, como antes.
+- **🎭 Personalidad**: la del canal. Los admins la eligen con un menú, y pueden **añadir** y **quitar** personalidades
+  con formularios.
+
+Se quitan `talk`, `set`, `list`, `add`, `remove`, `recuerda`, `olvida` y `personas`, sin alias. El chat de texto
+y `/escuchar` siguen funcionando igual: llaman a `hablar` directamente.
+
+- Tests nuevos en `tests/duendePanel.test.js`: el panel, recuerdos (anotar, olvidar y los permisos de cada caso),
+  personalidades (ver, elegir la del canal, añadir y quitar, solo admins) y el formulario de Hablar. Los tests que
+  usaban `olvida`, `recuerda` y `personas` se han movido a ese fichero.
+
 ## 2026-10-08 (🛒 `/tienda` como un solo comando con panel de botones (F-EC-11, #110))
 
 Antes `/tienda` tenía tres subcomandos (`ver`, `inventario`, `historial`), cada uno con sus opciones de filtro. Ahora

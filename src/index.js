@@ -535,7 +535,7 @@ client.on("messageCreate", async (message) => {
             guildId: isGuild ? message.guild.id : undefined,
         };
         const t0 = Date.now();
-        await duendeCommand.run(client, fakeInteraction);
+        await duendeCommand.hablar(client, fakeInteraction);
         if (!didSendReply) {
             await message.channel.send("⚠️ No he podido responder ahora mismo. Prueba otra vez en unos segundos.");
             msgLog.warn(`Duende no envió respuesta visible; fallback aplicado · ${whoWhere(message)}`);

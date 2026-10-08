@@ -45,7 +45,7 @@ compras), `/cripto` y, para admins, `/paneladmin`. `/ayuda` explica cada parte y
 
 **Público o privado:** de momento los paneles y las partidas son **públicos** (los ve todo el canal), pero solo quien
 los abrió puede pulsar sus botones. Se quedan en privado los avisos de error, `/paneladmin`, lo que el Duende recuerda
-de la gente (`/duende recuerda | olvida | personas`), el editor de pronósticos de la quiniela (para que no se copien) y
+de la gente (`/duende` → 🧠 Recuerdos), el editor de pronósticos de la quiniela (para que no se copien) y
 las pantallas de ayuda de cada juego.
 
 Idioma: todo en español. Zona horaria de referencia: Europe/Madrid (rachas, cron).
@@ -77,11 +77,11 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
 - **🕐 Tono según la hora o el canal** (F-DU-02; Config Global → Duende → 🕐 Tono, desactivado por defecto): encima de la
   personalidad, 🌙 **más borde de madrugada** (de 00:00 a 07:00 en hora de Madrid, configurable; puede pasar la
   medianoche) y 👔 **más formal en los canales elegidos** (sin tacos ni insultos, aunque mantenga la ironía). Si se dan
-  las dos cosas, las dos a la vez. Cambiar la personalidad entera de un canal sigue siendo `/duende set`.
+  las dos cosas, las dos a la vez. Cambiar la personalidad entera de un canal se hace desde `/duende` → 🎭 Personalidad.
 - Recuerda los últimos 20 mensajes de cada canal (`history_limit`); el historial de un canal se borra
   tras 24 h sin actividad.
 - Usa los **perfiles de personas** (descripción escrita por un admin en Panel admin → Config Global → Duende →
-  🧠 Perfiles, más las notas de `/duende recuerda`) para tratar a cada uno según lo que sabe de él, y relaciona
+  🧠 Perfiles, más las notas de 🧠 Recuerdos de `/duende`) para tratar a cada uno según lo que sabe de él, y relaciona
   a quien habla con quien se menciona. Cada perfil va ligado al **Discord ID**: cambiar de username no lo pierde.
 - Convierte en **menciones reales** de Discord el nombre de la gente cuando lo escribe en una respuesta
   (el nombre principal de sus apodos, no los motes).
@@ -95,7 +95,7 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
 - Si Gemini bloquea la respuesta por contenido, reintenta con un tono neutro manteniendo las herramientas.
 - **Mensajes espontáneos** (Config Global → Duende → 💬 Mensajes solos): de vez en cuando, sin que nadie le hable, se
   dirige en el canal elegido a alguien al azar de quien tenga perfil (🧠 Perfiles, con descripción o notas de
-  `/duende recuerda`), mencionándole, para picarle y que conteste. Solo si ese canal lleva un rato sin mensajes de
+  🧠 Recuerdos de `/duende`), mencionándole, para picarle y que conteste. Solo si ese canal lleva un rato sin mensajes de
   verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00. Si no hay
   nadie con perfil al que dirigirse, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
 
@@ -810,7 +810,7 @@ Se aplica también a los botones (por ejemplo, los botones de la tienda respetan
 
 Antes eran comandos sueltos: `/pagarapuestas`, `/objeto` y `/tienda añadir | editar | eliminar | config`,
 `/diagnostico`, `/ttcl-diagnostico` y `/panel` (un panel antiguo del banco, ya repetido aquí). Las personalidades del
-Duende siguen en `/duende set | add | remove`.
+Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 
 ---
 
