@@ -32,6 +32,17 @@ Antes `/tienda` tenía tres subcomandos (`ver`, `inventario`, `historial`), cada
 - Tests nuevos en `tests/tiendaPanel.test.js`: `/tienda` sin opciones, filtrar por categoría y por búsqueda, quitar
   los filtros, filtros por persona y búsqueda en el inventario. Los tests antiguos de los subcomandos se adaptan.
 
+## 2026-10-08 (💸 Las ventas de cripto no pagan impuesto de ingresos (F-EC-12c, #119))
+
+Vender TTCL dejaba de ser una operación de intercambio y pasaba a ser un ingreso más, con el 5 % por defecto. Ahora la
+venta es íntegra: lo que devuelve el pool (menos su comisión) entra en el efectivo sin línea de impuesto.
+
+- `dinero.pagarSinImpuesto`: como `pagarConImpuesto`, pero sin impuesto. Sigue cobrando la deuda con el Duende: si no,
+  se podría vender cripto para no devolver un préstamo.
+- Las compras no cambian. Las liquidaciones de la migración 028 tampoco pagaban impuesto.
+- Tests nuevos en `tests/criptoSinImpuesto.test.js`: venta con una regla general del 5 % sin línea de impuesto, y deuda
+  con el Duende descontada de la venta.
+
 ## 2026-10-08 (🧹 Se quitan BTC, ETH, SOL, BNB, XRP y DOGE; solo queda TTCL (F-EC-12b, #118))
 
 Las criptos reales dependían de CoinGecko, no tenían oferta limitada y no aportaban nada al mercado del servidor. Ahora

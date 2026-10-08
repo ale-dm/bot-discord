@@ -222,6 +222,10 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [ ] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**💸 Ventas de cripto sin impuesto (F-EC-12c, #119)**
+- [ ] Con el impuesto de ingresos activo, vender TTCL: el efectivo sube lo que sale en la previsión, sin línea de 🏛️ Impuesto.
+- [ ] Con un préstamo del Duende vencido o en deuda, vender TTCL: la deuda se descuenta de lo que entra.
+
 **🧹 Solo TTCL (F-EC-12b, #118)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 028_liquidar_criptos_reales`.
 - [ ] En `/cripto` no sale BTC, ETH, SOL, BNB, XRP ni DOGE (ni en compra, venta, gráficos ni precios).
