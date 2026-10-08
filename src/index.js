@@ -193,6 +193,11 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 🎬 Sesiones de cine: el recordatorio de 10 minutos antes, cada 5 minutos.
+    cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => require("./systems/cine").enviarRecordatorios(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
     // 🏅 Liga de pronósticos: cada hora y al arrancar; liquida la temporada anterior el 1 de julio desde las 10:00.
     cron.schedule("0 * * * *", () => runJob("Liga de pronósticos", () => require("./systems/apuestas/liga").liquidarSiToca(client)), {
         timezone: "Europe/Madrid",

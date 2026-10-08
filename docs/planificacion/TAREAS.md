@@ -222,6 +222,14 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🎬 Sesión de cine (#24)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 033_sesion_cine`.
+- [ ] `/cine peli:Dune hora:<dentro de 30 min>`: sale el mensaje con tu nombre como apuntado y los tres botones.
+- [ ] 🙋 Me apunto y 🚪 Me salgo actualizan la lista en el mismo mensaje.
+- [ ] 🛑 Cancelar: lo hace quien convoca; otra persona recibe el aviso de que no puede (y un admin sí puede).
+- [ ] 10 minutos antes: aparece el recordatorio en el canal, mencionando a los apuntados; no se repite.
+- [ ] Hora mal escrita (p. ej. `25:00`): sale el aviso y no se crea nada.
+
 **🧩 Combinadas (#1)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 032_combinadas`.
 - [ ] ⚽ Apuestas → 🧩 Combinada: sale el boleto (privado). Sumar un partido desde su menú "🧩 Sumar a mi combinada" lo añade.
