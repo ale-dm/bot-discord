@@ -126,9 +126,25 @@ describe("reproducir", () => {
         };
     }
 
+    test("con /conectar ya dentro, suena en ese canal sin entrar ni salir", async () => {
+        const d = deps();
+        const conexion = { subscribe: jest.fn(), destroy: jest.fn() };
+        const r = await sonidos.reproducir(G, null, sonido, { ...d, presencia: { conexion } });
+        expect(r).toEqual({ ok: true });
+        expect(conexion.subscribe).toHaveBeenCalled();
+        expect(conexion.destroy).not.toHaveBeenCalled();
+        expect(d.unirse).not.toHaveBeenCalled();
+    });
+
+    test("sin estar en voz ni con /conectar, pide entrar a un canal", async () => {
+        const r = await sonidos.reproducir(G, null, sonido, { ...deps(), presencia: null });
+        expect(r.ok).toBe(false);
+        expect(r.motivo).toMatch(/\/conectar/);
+    });
+
     test("entra, toca y se sale", async () => {
         const d = deps();
-        expect(await sonidos.reproducir(canal(), sonido, d)).toEqual({ ok: true });
+        expect(await sonidos.reproducir(G, canal(), sonido, d)).toEqual({ ok: true });
         expect(d.unirse).toHaveBeenCalledWith(expect.objectContaining({ channelId: "c1", guildId: G, selfDeaf: true }));
         expect(d.conexion.subscribe).toHaveBeenCalled();
         expect(d.conexion.destroy).toHaveBeenCalled();
@@ -136,7 +152,7 @@ describe("reproducir", () => {
 
     test("sin permisos en el canal, no entra", async () => {
         const d = deps();
-        const r = await sonidos.reproducir(canal(false), sonido, d);
+        const r = await sonidos.reproducir(G, canal(false), sonido, d);
         expect(r.ok).toBe(false);
         expect(d.unirse).not.toHaveBeenCalled();
     });
@@ -144,7 +160,7 @@ describe("reproducir", () => {
     test("si ya hay una conversación de voz, no la toca", async () => {
         const d = deps();
         d.getConnection = () => ({});
-        expect((await sonidos.reproducir(canal(), sonido, d)).motivo).toMatch(/otra conversación/);
+        expect((await sonidos.reproducir(G, canal(), sonido, d)).motivo).toMatch(/otra conversación/);
         expect(d.unirse).not.toHaveBeenCalled();
     });
 
@@ -158,9 +174,9 @@ describe("reproducir", () => {
             };
             return r;
         };
-        const primero = sonidos.reproducir(canal(), sonido, d);
+        const primero = sonidos.reproducir(G, canal(), sonido, d);
         await new Promise((r) => setImmediate(r));
-        expect((await sonidos.reproducir(canal(), sonido, deps())).motivo).toMatch(/Ya está sonando/);
+        expect((await sonidos.reproducir(G, canal(), sonido, deps())).motivo).toMatch(/Ya está sonando/);
         liberar();
         expect((await primero).ok).toBe(true);
     });
@@ -172,9 +188,9 @@ describe("reproducir", () => {
             r.play = () => setImmediate(() => r.emit("error", new Error("roto")));
             return r;
         };
-        const r = await sonidos.reproducir(canal(), sonido, d);
+        const r = await sonidos.reproducir(G, canal(), sonido, d);
         expect(r.ok).toBe(false);
         expect(d.conexion.destroy).toHaveBeenCalled();
-        expect((await sonidos.reproducir(canal(), sonido, deps())).ok).toBe(true);
+        expect((await sonidos.reproducir(G, canal(), sonido, deps())).ok).toBe(true);
     });
 });

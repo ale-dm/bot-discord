@@ -106,49 +106,74 @@ function borrarPorNombre(guildId, nombre) {
 }
 
 const ocupados = new Set(); // servidores con un sonido sonando
+const presencia = require("./presencia");
+
+/** Toca el sonido en una conexión que ya existe (no se sale de ella al acabar). */
+function tocarEn(conexion, sonido, deps) {
+    const reproductor = (deps.crearReproductor || createAudioPlayer)();
+    const acabado = new Promise((resolve, reject) => {
+        const tope = setTimeout(resolve, TIEMPO_MAX_MS);
+        reproductor.once(AudioPlayerStatus.Idle, () => {
+            clearTimeout(tope);
+            resolve();
+        });
+        reproductor.on("error", (e) => {
+            clearTimeout(tope);
+            reject(e);
+        });
+    });
+    conexion.subscribe(reproductor);
+    reproductor.play((deps.crearRecurso || createAudioResource)(rutaDe(sonido)));
+    return acabado;
+}
 
 /**
- * Entra al canal, toca el sonido y se sale. `deps` es para los tests (unirse, esperar, crear el reproductor y el recurso).
+ * Reproduce un sonido. Si el bot ya está en un canal por /conectar, suena ahí (sin entrar ni salir). Si no, entra al
+ * canal de quien lo pide (`canal`), lo toca y se sale. `deps` es para los tests.
+ * @param {string} guildId
+ * @param {object|null} canal el canal de voz de quien pide el sonido, o null
  * @returns {Promise<{ ok: boolean, motivo?: string }>}
  */
-async function reproducir(voiceChannel, sonido, deps = {}) {
-    const guildId = voiceChannel.guild.id;
-    if (ocupados.has(guildId)) return { ok: false, motivo: "Ya está sonando otro sonido en el servidor. Espera a que acabe." };
-    const enConversacion = deps.getConnection ? deps.getConnection(guildId) : getVoiceConnection(guildId);
+async function reproducir(guildId, canal, sonido, deps = {}) {
+    const id = String(guildId);
+    if (ocupados.has(id)) return { ok: false, motivo: "Ya está sonando otro sonido en el servidor. Espera a que acabe." };
+
+    const presente = deps.presencia !== undefined ? deps.presencia : presencia.actual(id);
+    if (presente) {
+        ocupados.add(id);
+        try {
+            await tocarEn(presente.conexion, sonido, deps);
+            return { ok: true };
+        } catch (e) {
+            log.warn(`No se pudo reproducir «${sonido.nombre}» en ${id}: ${e.message}`);
+            return { ok: false, motivo: "No pude reproducirlo. Vuelve a intentarlo." };
+        } finally {
+            ocupados.delete(id);
+        }
+    }
+
+    if (!canal) return { ok: false, motivo: "Entra en un canal de voz, o pide al bot que se quede con /conectar." };
+    const enConversacion = deps.getConnection ? deps.getConnection(id) : getVoiceConnection(id);
     if (enConversacion) return { ok: false, motivo: "Estoy en otra conversación de voz en este servidor." };
-    const permisos = voiceChannel.permissionsFor(voiceChannel.guild.members.me);
+    const permisos = canal.permissionsFor(canal.guild.members.me);
     if (!permisos || !permisos.has("Connect") || !permisos.has("Speak")) {
         return { ok: false, motivo: "Me faltan permisos para entrar a ese canal o hablar en él." };
     }
 
-    ocupados.add(guildId);
+    ocupados.add(id);
     let conexion = null;
     try {
         conexion = (deps.unirse || joinVoiceChannel)({
-            channelId: voiceChannel.id,
-            guildId,
-            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+            channelId: canal.id,
+            guildId: id,
+            adapterCreator: canal.guild.voiceAdapterCreator,
             selfDeaf: true,
         });
         await (deps.esperarListo || ((c) => entersState(c, VoiceConnectionStatus.Ready, 10 * 1000)))(conexion);
-        const reproductor = (deps.crearReproductor || createAudioPlayer)();
-        const acabado = new Promise((resolve, reject) => {
-            const tope = setTimeout(resolve, TIEMPO_MAX_MS);
-            reproductor.once(AudioPlayerStatus.Idle, () => {
-                clearTimeout(tope);
-                resolve();
-            });
-            reproductor.on("error", (e) => {
-                clearTimeout(tope);
-                reject(e);
-            });
-        });
-        conexion.subscribe(reproductor);
-        reproductor.play((deps.crearRecurso || createAudioResource)(rutaDe(sonido)));
-        await acabado;
+        await tocarEn(conexion, sonido, deps);
         return { ok: true };
     } catch (e) {
-        log.warn(`No se pudo reproducir «${sonido.nombre}» en ${guildId}: ${e.message}`);
+        log.warn(`No se pudo reproducir «${sonido.nombre}» en ${id}: ${e.message}`);
         return { ok: false, motivo: "No pude reproducirlo. Vuelve a intentarlo." };
     } finally {
         try {
@@ -156,7 +181,7 @@ async function reproducir(voiceChannel, sonido, deps = {}) {
         } catch {
             /* ya estaba cerrada */
         }
-        ocupados.delete(guildId);
+        ocupados.delete(id);
     }
 }
 

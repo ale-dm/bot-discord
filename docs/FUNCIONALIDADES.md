@@ -967,20 +967,24 @@ Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.te
 pestaña de `/perfil`). El panel te dice si tu cuenta de Plex está vinculada. Es privado: solo lo ves tú (las sesiones de
 cine sí se publican en el canal, para que la gente se apunte).
 
-### 🔊 /sonidos: el panel de sonidos
+### 🔊 /sonidos y 🔌 /conectar
 
-`/sonidos` muestra un **panel público** con un botón por sonido, como el de Discord. Quien pulsa un botón (tiene que estar
-en un canal de voz) hace que el bot **entre a su canal, toque el sonido y se salga**. Solo puede sonar **uno a la vez** por
-servidor, y no entra si hay una conversación de voz con el Duende en marcha. Hay como mucho 40 sonidos por servidor, de 20
-en 20 por página.
+`/sonidos` muestra un **panel público** con un botón por sonido, como el de Discord. Quien pulsa uno hace que el bot lo
+toque en un canal de voz: si el bot **ya está en un canal** (con `/conectar`), suena ahí; si no, **entra al canal de quien
+pulsa, lo toca y se sale**. Solo puede sonar **uno a la vez** por servidor, y no entra si hay una conversación de voz con el
+Duende en marcha. De 20 en 20 por página, hasta 40 sonidos por servidor.
 
-- **Subir** (solo admins, Gestionar servidor): `/sonidos archivo:<fichero> nombre:<texto>`. Formatos: mp3, ogg o wav, hasta
-  1 MB. El nombre tiene hasta 32 caracteres y es único (sin distinguir mayúsculas).
-- **Borrar** (solo admins): `/sonidos borrar:<nombre>`.
-- Reproducir necesita `ffmpeg` en el servidor (ya viene en la imagen de Docker).
-- `SONIDOS_DIR` (opcional) cambia la carpeta donde se guardan; por defecto, `data/sonidos`.
+`/conectar` hace que el bot **entre a un canal de voz y se quede 30 minutos**, para que `/sonidos` suene sin entrar y salir
+cada vez. Elige el canal con la opción *canal* (por defecto, el tuyo). Sin canal, si ya está conectado, se sale. Si Discord
+lo echa, se olvida; si empieza una conversación con el Duende, se sale (la conversación manda). Una sola conexión por
+servidor.
 
-Migración 037: `sonidos`. Tests: `tests/sonidos.test.js`, `tests/plexComando.test.js`.
+**Los sonidos los sube y los borra un admin en `/paneladmin` → 🔊 Sonidos**: un formulario con el nombre (hasta 32 caracteres,
+único en el servidor) y el archivo (mp3, ogg o wav, hasta 1 MB). Borrar es elegirlo en un menú.
+
+Reproducir necesita `ffmpeg` en el servidor (ya viene en la imagen de Docker). `SONIDOS_DIR` (opcional) cambia la carpeta
+donde se guardan; por defecto, `data/sonidos`. Migración 037: `sonidos`. Tests: `tests/sonidos.test.js`,
+`tests/presencia.test.js`, `tests/adminSonidos.test.js`.
 
 ## 15. Configuración (.env)
 

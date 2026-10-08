@@ -24,7 +24,10 @@ function buildMainRows() {
         new ButtonBuilder().setCustomId("paneladmin_cat_home").setLabel("🛒 Catálogo").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_sis_home").setLabel("🩺 Sistema").setStyle(ButtonStyle.Secondary),
     );
-    return [row1, row2, row3];
+    const row4 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_sonidos_home").setLabel("🔊 Sonidos").setStyle(ButtonStyle.Secondary),
+    );
+    return [row1, row2, row3, row4];
 }
 
 function buildMainEmbed(client) {
