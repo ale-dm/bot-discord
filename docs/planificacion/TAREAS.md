@@ -222,6 +222,13 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🛡️ Pase de batalla (#36)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 036_pase_batalla`.
+- [ ] `/pase` (efímero) muestra temporada, nivel, XP, próxima recompensa, pendientes y las 3 misiones del día.
+- [ ] Escribir, estar en voz, jugar al casino, operar en cripto, apostar y comprar en la tienda suben la XP del pase.
+- [ ] 🎁 Reclamar paga en monedas los niveles alcanzados y no cobrados, una sola vez.
+- [ ] 📜 Niveles y 🧩 Misiones y 🏆 Top se ven bien (sin mezclar temporadas).
+
 **🔴 Apuestas en directo (#12)**
 - [ ] Sin `ODDS_DIRECTO`: un partido empezado no admite apuestas (aviso de "apuestas cerradas").
 - [ ] Con `ODDS_DIRECTO=1`: un partido en juego (menos de 2 horas) sale en la lista y admite apuestas con la cuota actual.

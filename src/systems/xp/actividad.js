@@ -3,6 +3,7 @@
 const db = require("../../core/db");
 const achievements = require("../achievementsSystem");
 const { createLogger } = require("../../core/logger");
+const pase = require("../pase/pase");
 const { ensureGuildDefaults, getConfig, ensureUser, isIgnoredChannel } = require("./config");
 const { addXp } = require("./progreso");
 
@@ -65,6 +66,7 @@ async function handleMessageXp(message) {
     const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
     await addXp(message.guild, member || { id: message.author.id }, gain);
     await achievements.applyEvent(message.guild, message.author.id, "message_count", 1);
+    pase.registrarSeguro(guildId, message.author.id, "mensaje");
 }
 
 function handleVoiceStateUpdate(oldState, newState) {
@@ -127,6 +129,8 @@ async function voiceTick(client) {
         }
 
         const gainedSecs = flushVoiceSeconds(row.guildId, row.userId);
+        const minutos = Math.floor(gainedSecs / 60);
+        if (minutos > 0) pase.registrarSeguro(row.guildId, row.userId, "voz", minutos);
         db.prepare(`UPDATE xp_users SET voz_inicio = ? WHERE guildId = ? AND userId = ?`).run(Date.now(), row.guildId, row.userId);
 
         const perMin = Number(getConfig(row.guildId, "xp_voice_per_min") || 5);
