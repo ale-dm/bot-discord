@@ -131,6 +131,19 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 
 ---
 
+### 🧠 Recuerdos automáticos (#15)
+
+El Duende lee la conversación en segundo plano y, cuando algo merece recordarse de alguien (un gusto, un dato de su vida,
+una manía), lo **propone** como nota de su perfil. Nada se guarda sin aprobación:
+
+- Mira a cada persona cada **10 mensajes** con texto de verdad (60 caracteres o más), en el canal del Duende si hay uno
+  configurado. Tope de llamadas a Gemini por día y servidor.
+- La propuesta llega por **DM a los admins** (`alertas.admin_ids`), con ✅ **Guardar** y ❌ **Descartar**. Lo decide un
+  admin, una sola vez; si lo guarda, pasa a las notas de la persona (`/duende` → 🧠 Recuerdos).
+- `DUENDE_RECUERDOS_AUTO=0` lo apaga; `DUENDE_RECUERDOS_MAX_DIA` (40 por defecto) limita las llamadas.
+
+Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.js`.
+
 ## 3. IA y multimedia
 
 | Comando | Qué hace |
@@ -139,7 +152,7 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario. |
 | `/tts texto* [voz]` | El bot entra en tu canal de voz y lee el texto (Gemini TTS). Voces: Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina. El idioma se detecta solo. Los textos se ponen en cola por servidor. |
 | `/escuchar [usuario]` | El bot escucha a un usuario en el canal de voz, transcribe lo que dice (Vosk, local) y le responde **por voz** como el Duende, encadenando turnos mientras la conversación siga activa. |
-| `/conversación [modo] [con]` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Por defecto le puede hablar **cualquiera del canal** — por turnos (uno habla y acaba, luego otro), y antes de cada turno sabe quién es quien habla —, pero con mucha gente eso se puede volver un caos: `con @persona` hace que solo escuche a esa persona, como antes. Por defecto (`modo: mención`) solo contesta si dices "Duende" al hablar; `modo: siempre` hace que conteste a todo. Dile que cuelgue, o vuelve a usar `/conversación`, para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Conoce el perfil de quien le habla y puede consultar el de cualquier otra persona (lo mismo que sabe el Duende por texto). Funcionalidad aparte de `/escuchar`, que sigue igual. |
+| `/conversación [modo] [con] [tertulia]` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Por defecto le puede hablar **cualquiera del canal** — por turnos (uno habla y acaba, luego otro), y antes de cada turno sabe quién es quien habla —, pero con mucha gente eso se puede volver un caos: `con @persona` hace que solo escuche a esa persona, como antes. Por defecto (`modo: mención`) solo contesta si dices "Duende" al hablar; `modo: siempre` hace que conteste a todo. Dile que cuelgue, o vuelve a usar `/conversación`, para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Conoce el perfil de quien le habla y puede consultar el de cualquier otra persona (lo mismo que sabe el Duende por texto). Funcionalidad aparte de `/escuchar`, que sigue igual. **`tertulia: sí`** (#16) cambia el modo: escucha a **todo el canal a la vez**, sin turnos (las voces se mezclan en un solo flujo, y el Duende contesta al grupo, sin saber quién dice cada cosa). No se combina con `con`. Es opt-in y sin probar con voz real todavía. |
 | `/bola8 pregunta*` | Respuesta al azar de la bola 8 mágica. |
 
 ---
@@ -258,6 +271,7 @@ vuelven a mirar cada 3 días por si hay episodios nuevos). Lo que alguien ha vis
 | 🎬 Saga | Ver todas las películas de una colección de Plex (de 2 a 40) | 100 por película (máx. 1.000) |
 | 🎥 Director | Ver todas las suyas que hay en Plex (si hay 3 o más) | 100 por película (máx. 1.000) |
 | 🎭 Género | 10 y 25 películas de un género (en español e inglés cuentan juntos: Terror = Horror) | 400 · 1.000 |
+| 🌍 País | 5 y 10 películas de un país de producción (según TMDB; hace falta `TMDB_API_KEY`). El nombre: "Viajero de Japón" | 250 · 600 |
 | 📼 Década | 10 películas de una década anterior a 2000 | 400 |
 | 🗣️ Serie en un idioma | Terminar una serie entera en una versión: "Breaking Bad en inglés", "Frieren en japonés con subtítulos en castellano" (todos sus episodios vistos así alguna vez) | 300 + 15 por episodio (máx. 2.000) |
 | ✍️ De admin | Lo que diga su condición (con fechas, solo lo visto entre ellas) | La que ponga el admin |
@@ -567,6 +581,31 @@ Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran 
 
 ---
 
+### 🛡️ Pase de batalla (#36)
+
+`/pase` (solo lo ves tú) muestra tu pase de la temporada: **temporadas de 15 días** (empiezan el 1 de octubre de 2026 y
+se suceden solas). Cada cosa que haces da XP de pase, con topes diarios:
+
+| Qué | XP | Tope diario |
+|---|---|---|
+| Mensaje que cuenta para la XP | 2 | 120 |
+| Minuto en voz | 1 | 120 |
+| Partida de casino | 8 | 260 |
+| Operación de cripto | 6 | 180 |
+| Apuesta resuelta | 12 | 180 |
+| Compra en la tienda | 8 | 80 |
+
+Cada día hay **3 misiones** (rotan) que dan **70 XP** al completarse ("Envía 25 mensajes", "Pasa 10 minutos en voz", "Juega 5
+partidas de casino", "Haz 2 operaciones de cripto", "Ten 1 apuesta resuelta").
+
+Hay **20 niveles**. Subir de nivel desbloquea una recompensa en **monedas** (de 80 🪙 en el nivel 1 a 2.500 🪙 en el 20, más un
+bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por nivel, en efectivo. El **🏆 Top** ordena por XP.
+
+**Decisión:** el diseño ([docs/planificacion/diseno/pase-de-batalla-s1.md](planificacion/diseno/pase-de-batalla-s1.md))
+incluía roles de Discord como recompensa (expulsar, mover o silenciar en voz, renombrar a otros, subir emojis). **No se
+conceden**: los permisos de moderación no los decide un juego. Las recompensas son monedas. Los logros no dan XP de pase
+todavía. Migración 036. Tests: `tests/pasePase.test.js`.
+
 ## 8. Casino
 
 Todo lo que es apostar monedas (casino, apuestas deportivas, quiniela y retos entre jugadores) está en
@@ -615,7 +654,7 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League, 
 
 | Pestaña | Qué hace |
 |---|---|
-| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre las siete competiciones; con las de torneo, solo salen cuando hay partidos en la API) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000), o 🎯 **Marcador exacto**: pones los goles de cada equipo y, si aciertas, cobras **×8** lo apostado (premio fijo: la API no da cuota para el marcador; se puede apostar a varios marcadores distintos del mismo partido). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
+| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre las siete competiciones; con las de torneo, solo salen cuando hay partidos en la API) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000), o 🎯 **Marcador exacto**: pones los goles de cada equipo y, si aciertas, cobras **×8** lo apostado (premio fijo: la API no da cuota para el marcador; se puede apostar a varios marcadores distintos del mismo partido). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo (salvo con las apuestas en directo, ver abajo). Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
 | 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
 | 🏅 Liga (desde Apuestas) | Liga de pronósticos de la temporada: cada acierto de una quiniela cerrada suma 1 punto. Clasificación con los puntos y las quinielas jugadas, tu posición y los campeones anteriores. La temporada va de julio a junio. |
 | 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (arriba, tu cartera: 💰 lo que tienes en juego, 🏆 lo máximo que puedes cobrar de tus partidos —en cada partido, el mejor resultado posible: solo uno de 1/X/2 puede salir, pero un 🎯 marcador exacto se cobra a la vez que el resultado que implica (el 2-1 y «gana el local»); la quiniela no suma porque depende del bote— y 📅 el beneficio de lo resuelto este mes, en hora de Madrid; debajo, cada apuesta, con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. En ⏳ En juego, el menú ↩️ **Cancelar una apuesta** devuelve al efectivo lo apostado a un partido que aún no ha empezado, menos un **10 % de comisión** (mínimo 1 🪙), después de confirmarlo; la apuesta desaparece (en Movimientos quedan la apuesta y la devolución). |
@@ -623,6 +662,13 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League, 
 | 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, retos, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
 
 Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
+
+**🔴 Apuestas en directo (#12)**: con `ODDS_DIRECTO=1`, un partido **admite apuestas durante sus 2 primeras horas**,
+con las cuotas que se refrescan cada 10 minutos mientras se juega (solo las competiciones con un partido en juego). Sin esa
+variable, todo se cierra al empezar, como antes. Cada refresco gasta créditos de la Odds API (3 por competición), por eso
+va apagado: en el plan gratuito se agota en un fin de semana. Las **combinadas** también aceptan partidos en juego; los
+**retos** y las **quinielas** siguen cerrándose al empezar. Un partido en juego no tiene marcador en vivo en el bot: la
+apuesta se hace solo con la cuota. Tests: `tests/apuestasDirecto.test.js`.
 
 **🧩 Combinadas (#1)**: un boleto con **de 2 a 5 partidos** (uno por partido). La cuota total es el producto de las
 cuotas de cada pata y el premio es lo apostado × esa cuota. Se gana **solo si aciertas todas**: en cuanto falla una, el
@@ -802,6 +848,21 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 
 ---
 
+### 🎯 Recomendaciones personales (#22)
+
+`/recomendar` (solo lo ves tú) propone qué ver a partir de lo que has visto en Plex en los últimos 6 meses: se toman tus
+3 títulos más vistos (las series, agrupadas por serie), se buscan en Seerr y se piden sus recomendaciones. Salen primero
+las que recomiendan más de tus títulos, y se descarta lo que ya has visto y lo que ya está en Plex. Cada sugerencia tiene
+un **📥** para pedirla en Seerr a tu nombre (tu perfil de Seerr debe estar vinculado a tu Discord). Requiere la cuenta
+de Plex vinculada. Tests: `tests/recomendaciones.test.js`. Migración: ninguna.
+
+### 🎞️ Plex Wrapped mensual (#23)
+
+El día 1 de cada mes, desde las 10:00 (hora de Madrid), el canal del ranking de Plex recibe el resumen del mes anterior:
+las horas vistas en total y por persona (con una gráfica), las series más vistas y quién es el **más viciado**. Solo
+cuenta a quien tiene la cuenta de Plex vinculada, con la copia local del historial. Una vez por mes y servidor
+(`plex.wrapped_ultimo_mes`). Tests: `tests/plexWrapped.test.js`. Migración: ninguna.
+
 ## 12. Administración
 
 ### `/paneladmin` 🔒
@@ -886,6 +947,18 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 
 ---
 
+### 🎬 Sesión de cine (#24)
+
+`/cine peli:<texto> hora:<HH:MM>` convoca a un grupo a ver algo a esa hora (hora de Madrid; si ya ha pasado, es la de
+mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
+
+- **🙋 Me apunto** / **🚪 Me salgo**. Quien convoca se apunta solo.
+- **🛑 Cancelar sesión**: solo quien la convocó o un admin.
+- **Recordatorio**: 10 minutos antes, el bot avisa en el canal y menciona a quien se haya apuntado. Una sola vez por
+  sesión. Lo revisa el cron cada 5 minutos.
+
+Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
+
 ## 15. Configuración (.env)
 
 ### Obligatorias
@@ -902,6 +975,10 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 |---|---|
 | `TAUTULLI_URL`, `TAUTULLI_API_KEY` | Plex (también configurable en el panel) |
 | `SEERR_URL`, `SEERR_API_KEY` | Seerr (también configurable en el panel) |
+| `ODDS_DIRECTO` | `0` | `1` activa las apuestas en directo (#12): cuotas refrescadas cada 10 min mientras se juega. Gasta créditos de la Odds API |
+| `DUENDE_RECUERDOS_AUTO` | `1` | Recuerdos automáticos del Duende (#15): `0` lo apaga |
+| `DUENDE_RECUERDOS_MAX_DIA` | 40 | Llamadas a Gemini por día y servidor para detectar recuerdos |
+| `TMDB_API_KEY` | Clave de TMDB (opcional): de cada película de Plex, sus países de producción, para los trofeos por país (🌍) |
 | `GIPHY_API_KEY` | GIFs del Duende |
 | `ESTADOS` | Lista separada por comas de estados del bot |
 

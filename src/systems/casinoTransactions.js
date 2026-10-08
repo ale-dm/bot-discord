@@ -2,6 +2,7 @@
 // columna `enMano` de la tabla banco. Antes se jugaba con el saldo del banco.
 const db = require("../core/db");
 const dinero = require("./dinero");
+const pase = require("./pase/pase");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Casino");
@@ -75,6 +76,7 @@ function insertarCasino(userId, juego, apuesta, resultado, detalleObj) {
         `,
         ).run(userId, juego, new Date().toISOString(), apuesta, resultado, JSON.stringify(detalleObj));
         log.info(`Partida registrada: ${userId} - ${juego} - Apuesta: ${apuesta} - Resultado: ${resultado}`);
+        pase.registrarEnTodos(userId, "casino");
     } catch (error) {
         log.error(`Error insertando en casino:`, error);
         throw error;

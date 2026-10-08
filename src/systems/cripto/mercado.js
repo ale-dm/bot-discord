@@ -5,6 +5,7 @@ const { logError, logInfo } = require("../../core/logger");
 const guildSettings = require("../guildSettings");
 const achievements = require("../achievementsSystem");
 const dinero = require("../dinero");
+const pase = require("../pase/pase");
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 
@@ -232,6 +233,7 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
 
     const r = comprarTtcl(guildId, userId, monedasInvertidas);
     if (r.ok) {
+        pase.registrarSeguro(guildId, userId, "cripto");
         void achievements.applyEvent(guildId, userId, "cripto_buy_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_buy_volume", monedasInvertidas);
@@ -263,6 +265,7 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
 
     const r = venderTtcl(userId, cantAVender, pct, minSell, maxSell, feeSellPct);
     if (r.ok) {
+        pase.registrarSeguro(guildId, userId, "cripto");
         void achievements.applyEvent(guildId, userId, "cripto_sell_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_sell_volume", r.monedas);

@@ -7,6 +7,7 @@ const dinero = require("../dinero");
 const retos = require("../retos");
 const mercados = require("./mercados");
 const combinadas = require("./combinadas");
+const pase = require("../pase/pase");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -181,6 +182,7 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 resumen.total++;
                 // Las de marcador exacto (F-AP-10) aciertan con el marcador; las demás, con el resultado.
                 const gana = mercados.acierta(ap.eleccion, resultado, marcador, ap.linea);
+                pase.registrarEnTodos(ap.user_id, "apuesta");
                 if (gana) {
                     const premio = Math.round(ap.cantidad * ap.cuota);
                     dinero.pagar(ap.user_id, premio);

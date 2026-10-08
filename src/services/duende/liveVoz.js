@@ -30,6 +30,10 @@ const {
     DUENDE_TOOL_EXECUTORS,
 } = require("./herramientas");
 const { GEMINI_TTS_VOICE } = require("../geminiTts");
+const { Mezclador, FRAME_MS } = require("./mezclador");
+
+// Tertulia (#16): cuando alguien deja de hablar durante este tiempo, se cierra el turno de Gemini.
+const FIN_TURNO_TERTULIA_MS = 1200;
 
 const log = createLogger("Duende").child("VozEnVivo");
 
@@ -81,17 +85,18 @@ function construirDeclaracionesHerramientas(guildId, channelId) {
 // En la llamada puede hablar más de una persona (no solo quien pidió /conversación) — antes de
 // cada turno se avisa de quién habla ahora mismo (ver empezarConversacion), así que aquí solo se
 // deja la instrucción general de qué hacer con eso.
-function construirInstruccionesSistema(channelId) {
+function construirInstruccionesSistema(channelId, { tertulia = false } = {}) {
     const persona = perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(channelId));
     const base = persona ? persona.systemInstructions : perfiles.instruccionDefault;
+    const quien = tertulia
+        ? "En la llamada hablan varias personas a la vez y no sé quién dice cada cosa: contesta al grupo, sin dirigirte a nadie en concreto salvo que te nombren. "
+        : "En la llamada puede hablar más de una persona: antes de cada turno te diré quién es quien va a hablar y lo que sepas de ella, para que sepas a quién te diriges sin tener que preguntarlo; ";
     return (
         `${base} Esto es una conversación de voz en directo, no texto escrito: responde corto y de forma natural, ` +
         "como hablarías en persona, sin markdown ni listas. Si tienes herramientas disponibles que te den datos " +
         "reales (nivel, saldo, Plex...), úsalas siempre antes de contestar, sea cual sea tu personalidad; no te " +
-        "niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede. En la llamada puede " +
-        "hablar más de una persona: antes de cada turno te diré quién es quien va a hablar y lo que sepas de " +
-        "ella, para que sepas a quién te diriges sin tener que preguntarlo; usa consultar_perfil_persona para " +
-        "cualquier otra persona de la que se hable."
+        `niegues a mirar ni digas que no puedes saberlo si hay una herramienta que sí puede. ${quien}` +
+        "usa consultar_perfil_persona para cualquier otra persona de la que se hable."
     );
 }
 
@@ -117,6 +122,8 @@ async function responderLlamadasHerramientas(liveSession, toolCall, toolContext)
 function limpiarSesion(sesion) {
     clearInterval(sesion.idleCheckInterval);
     clearTimeout(sesion.maxDurationTimer);
+    clearInterval(sesion.mezcladorTimer);
+    clearTimeout(sesion.finTurnoTimer);
     try {
         if (sesion.receiver && sesion.onSpeakingStart) sesion.receiver.speaking.removeListener("start", sesion.onSpeakingStart);
         if (sesion.receiver && sesion.onSpeakingEnd) sesion.receiver.speaking.removeListener("end", sesion.onSpeakingEnd);
@@ -162,7 +169,10 @@ function pararConversacion(guildId, motivo) {
  * Empieza una conversación de voz en directo en el canal de quien invoca.
  * @returns {Promise<{ok: true, voiceChannel: object} | {ok: false, error: string}>}
  */
-async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true, soloEscuchaA = null } = {}) {
+async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true, soloEscuchaA = null, tertulia = false } = {}) {
+    if (tertulia && soloEscuchaA) {
+        return { ok: false, error: "La tertulia escucha a todo el canal: no se puede combinar con «con»." };
+    }
     const guildId = interaction.guildId;
     if (sesiones.has(guildId)) {
         return { ok: false, error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
@@ -180,7 +190,7 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
     const channelId = interaction.channelId;
     const toolContext = { guildId, userId: interaction.user.id, guild: interaction.guild, channelId };
     const declaraciones = construirDeclaracionesHerramientas(guildId, channelId);
-    const systemInstruction = construirInstruccionesSistema(channelId);
+    const systemInstruction = construirInstruccionesSistema(channelId, { tertulia });
 
     // sesion.permitirAudioSalida empieza en true para que el saludo inicial siempre se oiga;
     // con soloSiLeLlaman, onSpeakingStart lo pone en false hasta que la transcripción de ese
@@ -198,6 +208,11 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         permitirAudioSalida: true,
         turnoTranscripcion: "",
         hablanteActivo: null,
+        // Tertulia (#16): todos a la vez, mezclados en un solo flujo (ver services/duende/mezclador.js).
+        tertulia,
+        hablantes: new Set(),
+        enTurno: false,
+        mezclador: tertulia ? new Mezclador() : null,
         suscripciones: new Map(),
     };
     sesiones.set(guildId, sesion);
@@ -378,7 +393,51 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         // Cualquiera del canal puede hablarle, no solo quien pidió /conversación — pero de uno
         // en uno: mientras sesion.hablanteActivo esté puesto, se ignora a quien más empiece a
         // hablar (no hay forma de mezclar a dos personas en el mismo turno de Gemini).
+        // Tertulia: se abre un turno para todos a la vez y el audio de cada persona entra en el mezclador. El turno se
+        // cierra cuando nadie ha hablado durante FIN_TURNO_TERTULIA_MS.
+        function alEmpezarHablarTertulia(userId) {
+            sesion.hablantes.add(userId);
+            clearTimeout(sesion.finTurnoTimer);
+            if (!sesion.enTurno) {
+                sesion.enTurno = true;
+                sesion.turnoTranscripcion = "";
+                sesion.avisoIgnoradoEsteTurno = false;
+                sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
+                try {
+                    liveSession.sendRealtimeInput({ activityStart: {} });
+                } catch (e) {
+                    log.warn(`Error avisando a Gemini del turno de la tertulia: ${e.message}`);
+                }
+            }
+            if (sesion.suscripciones.has(userId)) return;
+            const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
+            opusStream.on("error", (e) => log.warn(`Error leyendo el audio entrante (opus) de ${userId}: ${e.message}`));
+            sesion.suscripciones.set(userId, opusStream);
+            const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
+            pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
+            pcmStream.on("data", (chunk) => {
+                marcarActividad();
+                sesion.mezclador.empujar(userId, chunk);
+            });
+        }
+
+        function alDejarDeHablarTertulia(userId) {
+            sesion.hablantes.delete(userId);
+            if (sesion.hablantes.size) return;
+            clearTimeout(sesion.finTurnoTimer);
+            sesion.finTurnoTimer = setTimeout(() => {
+                if (sesion.hablantes.size || !sesion.enTurno) return;
+                sesion.enTurno = false;
+                try {
+                    liveSession.sendRealtimeInput({ activityEnd: {} });
+                } catch (e) {
+                    log.warn(`Error avisando a Gemini del fin del turno de la tertulia: ${e.message}`);
+                }
+            }, FIN_TURNO_TERTULIA_MS);
+        }
+
         const onSpeakingStart = (userId) => {
+            if (sesion.tertulia) return alEmpezarHablarTertulia(userId);
             if (sesion.soloEscuchaA && userId !== sesion.soloEscuchaA) return;
             if (sesion.hablanteActivo) return;
             sesion.hablanteActivo = userId;
@@ -442,6 +501,7 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         // fiable como señal de fin de turno que esperar a que Gemini la adivine de un audio con
         // huecos (sin paquetes durante los silencios, no hay "silencio" que analizar).
         const onSpeakingEnd = (userId) => {
+            if (sesion.tertulia) return alDejarDeHablarTertulia(userId);
             if (sesion.hablanteActivo !== userId) return;
             sesion.hablanteActivo = null;
             try {
@@ -452,6 +512,18 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         };
         receiver.speaking.on("start", onSpeakingStart);
         receiver.speaking.on("end", onSpeakingEnd);
+        if (sesion.tertulia) {
+            // Cada FRAME_MS, lo que se haya mezclado de todos sale hacia Gemini en tiempo real.
+            sesion.mezcladorTimer = setInterval(() => {
+                const trozo = sesion.mezclador.tick();
+                if (!trozo) return;
+                try {
+                    liveSession.sendRealtimeInput({ audio: { data: trozo.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
+                } catch (e) {
+                    log.warn(`Error enviando la tertulia a Gemini Live: ${e.message}`);
+                }
+            }, FRAME_MS);
+        }
         sesion.receiver = receiver;
         sesion.onSpeakingStart = onSpeakingStart;
         sesion.onSpeakingEnd = onSpeakingEnd;

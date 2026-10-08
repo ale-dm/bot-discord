@@ -2,6 +2,68 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🛡️ Pase de batalla con `/pase` (#36))
+
+- Temporadas de 15 días, 20 niveles. Cada mensaje, minuto en voz, partida de casino, operación de cripto, apuesta
+  resuelta y compra en la tienda da XP de pase, con topes diarios. Cada día hay 3 misiones (70 XP al completarlas).
+- Las recompensas son monedas (80 🪙 en el nivel 1 hasta 2.500 🪙 en el 20, y 2.000 🪙 de bonus final). Se cobran con 🎁 Reclamar.
+- **No se conceden roles de Discord** (moderación, emojis...) como en el diseño: se dejó fuera a propósito y se dice en
+  el documento de diseño.
+- Pendiente: los logros no dan XP de pase; el "bonus de XP normal" del diseño no se aplica.
+- Migración 036. Tests: `tests/pasePase.test.js`.
+
+## 2026-10-08 (🔴 Apuestas en directo (#12))
+
+- Con `ODDS_DIRECTO=1`, un partido admite apuestas durante sus 2 primeras horas, con las cuotas que se refrescan cada
+  10 minutos mientras se juega. Sin la variable, nada cambia.
+- Las apuestas simples y las combinadas usan la misma regla (`systems/apuestas/directo.js`). Retos y quinielas siguen
+  cerrándose al empezar.
+- Cada refresco gasta 3 créditos por competición con partido en juego: por eso va apagado por defecto.
+- Tests: `tests/apuestasDirecto.test.js`.
+
+## 2026-10-08 (🎙️ Tertulia en `/conversación`: escucha a todo el canal a la vez (#16))
+
+- Opción nueva `tertulia: sí` en `/conversación`: el Duende escucha a todo el canal a la vez, sin turnos. Las voces se
+  mezclan en un solo flujo de 16 kHz (`services/duende/mezclador.js`) y se mandan a Gemini Live cada 20 ms.
+- Por defecto no cambia nada. No se combina con `con`.
+- **Sin probar con voz real**: el mezclador tiene tests, pero el comportamiento de Gemini Live con voces solapadas hay
+  que comprobarlo en Discord.
+
+## 2026-10-08 (🧠 Recuerdos automáticos del Duende (#15))
+
+- El Duende mira la conversación cada 10 mensajes con texto de verdad y propone lo que merezca recordarse de cada persona.
+- La propuesta llega por DM a los admins, con ✅ Guardar / ❌ Descartar. Nada se guarda sin aprobación.
+- Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.js`.
+
+## 2026-10-08 (🌍 Trofeos por país de Plex (#19))
+
+- Nuevo tipo de trofeo: **🌍 País**, con 5 y 10 películas de un mismo país de producción ("Viajero de Japón").
+- Los países salen de TMDB, a partir del id que Tautulli da en los guids de cada película. Hace falta `TMDB_API_KEY`
+  (opcional). Sin ella no hay trofeos por país, y el resto no cambia.
+- Cada sincronización pide los países de hasta 60 películas nuevas; si TMDB falla, lo que falta se pide en la siguiente.
+- Migración 034: `plex_fichas.tmdb` y `plex_fichas.paises`. Tests: `tests/trofeosPais.test.js`.
+
+## 2026-10-08 (🎯 Recomendaciones personales de Plex: `/recomendar` (#22))
+
+- `/recomendar` (efímero): propone qué ver según lo que has visto en Plex en los últimos 6 meses. Se parte de tus 3
+  títulos más vistos, se piden a Seerr sus recomendaciones y salen primero las que recomiendan más. Se descarta lo ya
+  visto y lo que ya está en Plex.
+- 📥 pide la sugerencia en Seerr a tu nombre (tu perfil de Seerr vinculado a tu Discord).
+- Seerr: nueva llamada `recomendaciones` (`/{movie|tv}/{id}/recommendations`). Tests: `tests/recomendaciones.test.js`.
+
+## 2026-10-08 (🎞️ Plex Wrapped mensual (#23))
+
+El día 1 de cada mes, desde las 10:00 (Madrid), el canal del ranking de Plex recibe el resumen del mes anterior: horas
+por persona con su gráfica, las series más vistas y quién es el más viciado. Una vez por mes y servidor.
+Tests: `tests/plexWrapped.test.js`.
+
+## 2026-10-08 (🎬 Sesión de cine: `/cine` con botones para apuntarse (#24))
+
+- `/cine peli hora`: convoca una sesión de cine a una hora de Madrid. Quien convoca se apunta solo; los demás, con 🙋
+  Me apunto. Se sale con 🚪 Me salgo, y se cancela con 🛑 (quien convoca o un admin).
+- 10 minutos antes se avisa en el canal, con menciones a quien se apuntó. Una vez por sesión.
+- Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
+
 ## 2026-10-08 (🧩 Combinadas: un boleto con varios partidos (#1))
 
 - Un boleto de **2 a 5 partidos** (un partido por pata), con la cuota total como producto de las patas. Gana si

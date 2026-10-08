@@ -193,6 +193,23 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 🔴 Apuestas en directo (#12): refresca cada 10 minutos las cuotas de las competiciones con partidos en juego.
+    // Solo con ODDS_DIRECTO=1 (cada refresco gasta créditos de la Odds API).
+    cron.schedule("*/10 * * * *", () => runJob("Cuotas en directo", () => require("./services/oddsApi").refrescarEnDirecto()), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
+    cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => require("./systems/plexWrapped").enviarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Plex Wrapped (arranque)", () => require("./systems/plexWrapped").enviarSiToca(client));
+    // 🎬 Sesiones de cine: el recordatorio de 10 minutos antes, cada 5 minutos.
+    cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => require("./systems/cine").enviarRecordatorios(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
     // 🏅 Liga de pronósticos: cada hora y al arrancar; liquida la temporada anterior el 1 de julio desde las 10:00.
     cron.schedule("0 * * * *", () => runJob("Liga de pronósticos", () => require("./systems/apuestas/liga").liquidarSiToca(client)), {
         timezone: "Europe/Madrid",
@@ -431,6 +448,13 @@ client.on("messageCreate", async (message) => {
         await xpSystem.handleMessageXp(message);
     } catch (e) {
         msgLog.error(`Error dando XP por mensaje · ${whoWhere(message)}`, e);
+    }
+
+    // 🧠 Recuerdos automáticos del Duende (#15): mira la conversación en segundo plano; no bloquea nada.
+    try {
+        require("./systems/duende/recuerdosAuto").observar(message);
+    } catch (e) {
+        msgLog.error(`Error mirando la conversación para los recuerdos del Duende · ${whoWhere(message)}`, e);
     }
 
     const userText = message.content.trim();

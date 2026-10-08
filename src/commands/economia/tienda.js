@@ -16,6 +16,7 @@ const db = require("../../core/db");
 const guildSettings = require("../../systems/guildSettings");
 const achievements = require("../../systems/achievementsSystem");
 const tienda = require("../../systems/tienda");
+const pase = require("../../systems/pase/pase");
 const paneles = require("../../paneles/tienda");
 const { createLogger } = require("../../core/logger");
 
@@ -116,6 +117,7 @@ async function comprar(interaction, tiendaCfg) {
             `${interaction.user.tag} (${userId}) compró "${item.nombre}" (tienda #${item.tiendaId}) por ${item.precio}${item.stock !== null ? ` · stock restante ${item.stock - 1}` : ""}`,
         );
 
+        pase.registrarSeguro(interaction.guildId, userId, "tienda");
         const rolMsg = await entregarRol(interaction, item);
         await anunciarCompra(interaction, item, tiendaCfg);
         await interaction.update(paneles.buildCompraRealizada(item, rolMsg, tienda.saldoDe(userId)));

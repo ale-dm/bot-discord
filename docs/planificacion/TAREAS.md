@@ -222,6 +222,57 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🛡️ Pase de batalla (#36)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 036_pase_batalla`.
+- [ ] `/pase` (efímero) muestra temporada, nivel, XP, próxima recompensa, pendientes y las 3 misiones del día.
+- [ ] Escribir, estar en voz, jugar al casino, operar en cripto, apostar y comprar en la tienda suben la XP del pase.
+- [ ] 🎁 Reclamar paga en monedas los niveles alcanzados y no cobrados, una sola vez.
+- [ ] 📜 Niveles y 🧩 Misiones y 🏆 Top se ven bien (sin mezclar temporadas).
+
+**🔴 Apuestas en directo (#12)**
+- [ ] Sin `ODDS_DIRECTO`: un partido empezado no admite apuestas (aviso de "apuestas cerradas").
+- [ ] Con `ODDS_DIRECTO=1`: un partido en juego (menos de 2 horas) sale en la lista y admite apuestas con la cuota actual.
+- [ ] Las cuotas de un partido en juego se refrescan (cada 10 min) y en Odds API se ve el gasto de créditos.
+- [ ] Después de 2 horas del inicio, ya no admite apuestas.
+
+**🎙️ Tertulia en /conversación (#16)**
+- [ ] `/conversación tertulia:sí` en un canal con dos o tres personas: el Duende entiende a quien habla y contesta al grupo.
+- [ ] Dos personas hablando a la vez no se cortan entre sí (el audio se oye mezclado, no a trozos).
+- [ ] Sin `tertulia`, `/conversación` se comporta como antes (por turnos).
+- [ ] `tertulia` con `con` se rechaza con el aviso.
+- [ ] Probado con voz real: ver si Gemini Live contesta bien con voces solapadas (si no, dejar la opción apagada y decirlo).
+
+**🧠 Recuerdos automáticos del Duende (#15)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 035_recuerdos_auto`.
+- [ ] Tras 10 mensajes largos de una persona en el canal del Duende, a veces llega un DM a los admins con el recuerdo propuesto.
+- [ ] ✅ Guardar lo añade a `/duende` → 🧠 Recuerdos de esa persona; ❌ Descartar no guarda nada.
+- [ ] Quien no es admin no puede decidir; un recuerdo ya decidido no se puede volver a decidir.
+
+**🌍 Trofeos por país (#19)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 034_paises_peliculas`.
+- [ ] Con `TMDB_API_KEY`, tras una sincronización, las películas con id de TMDB tienen países (`plex_fichas.paises`).
+- [ ] Con 5 películas de un mismo país vistas, sale "Viajero de …" (🟢); con 10, el de experto (🟡).
+- [ ] Sin `TMDB_API_KEY`, no pasa nada y no hay trofeos por país.
+
+**🎯 Recomendaciones personales (#22)**
+- [ ] `/recomendar` (con la cuenta de Plex vinculada y historial): salen hasta 5 títulos, con "Porque viste …".
+- [ ] Lo que ya has visto o ya está en Plex no sale.
+- [ ] 📥 pide el título en Seerr; un usuario sin perfil de Seerr vinculado recibe el aviso (y no se pide nada).
+- [ ] Sin cuenta vinculada o sin historial, lo dice.
+
+**🎞️ Plex Wrapped mensual (#23)**
+- [ ] El día 1 después de las 10:00 (Madrid), en el canal del ranking de Plex sale el resumen del mes anterior con la gráfica.
+- [ ] Menciona al más viciado y lista las series más vistas; sin nadie que haya visto nada, lo dice sin gráfica.
+- [ ] No se repite el mismo mes aunque el bot se reinicie.
+
+**🎬 Sesión de cine (#24)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 033_sesion_cine`.
+- [ ] `/cine peli:Dune hora:<dentro de 30 min>`: sale el mensaje con tu nombre como apuntado y los tres botones.
+- [ ] 🙋 Me apunto y 🚪 Me salgo actualizan la lista en el mismo mensaje.
+- [ ] 🛑 Cancelar: lo hace quien convoca; otra persona recibe el aviso de que no puede (y un admin sí puede).
+- [ ] 10 minutos antes: aparece el recordatorio en el canal, mencionando a los apuntados; no se repite.
+- [ ] Hora mal escrita (p. ej. `25:00`): sale el aviso y no se crea nada.
+
 **🧩 Combinadas (#1)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 032_combinadas`.
 - [ ] ⚽ Apuestas → 🧩 Combinada: sale el boleto (privado). Sumar un partido desde su menú "🧩 Sumar a mi combinada" lo añade.

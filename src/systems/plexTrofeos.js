@@ -32,6 +32,7 @@ const LOTE_IA = 40;
 const DIRECTOR_MIN_PELICULAS = 3;
 const SAGA = { min: 2, max: 40 };
 const UMBRALES_GENERO = [10, 25];
+const UMBRALES_PAIS = [5, 10];
 const DECADA = { peliculas: 10, antesDe: 2000 };
 
 /** Contadores fijos del catálogo (achievementsSystem, categoría plex) que salen de las fichas. */
@@ -49,6 +50,7 @@ const RECOMPENSA = {
     saga: (peliculas) => Math.min(1000, 100 * peliculas),
     director: (peliculas) => Math.min(1000, 100 * peliculas),
     genero: { 10: 400, 25: 1000 },
+    pais: { 5: 250, 10: 600 },
     decada: 400,
     idioma: (episodios) => Math.min(2000, 300 + 15 * episodios),
 };
@@ -61,6 +63,7 @@ const DIFICULTAD = {
     saga: (peliculas) => (peliculas >= 8 ? "gordo" : "normal"),
     director: (peliculas) => (peliculas >= 10 ? "gordo" : "normal"),
     genero: (umbral) => (umbral >= 25 ? "normal" : "facil"),
+    pais: (umbral) => (umbral >= 10 ? "normal" : "facil"),
     decada: () => "normal",
 };
 /** La de un trofeo guardado antes de que hubiera dificultades (sin el número de episodios): por su tipo. */
@@ -68,10 +71,11 @@ function dificultadGuardada(t) {
     if (plexIdiomas.DIFICULTADES[t.dificultad]) return t.dificultad;
     if (t.tipo === "temporada") return "facil";
     if (t.tipo === "genero") return /:10$/.test(t.id) ? "facil" : "normal";
+    if (t.tipo === "pais") return /:5$/.test(t.id) ? "facil" : "normal";
     return "normal";
 }
 
-const EMOJI = { temporada: "📺", serie: "📺", saga: "🎬", director: "🎥", genero: "🎭", decada: "📼", admin: "🏆" };
+const EMOJI = { temporada: "📺", serie: "📺", saga: "🎬", director: "🎥", genero: "🎭", pais: "🌍", decada: "📼", admin: "🏆" };
 
 const slug = (s) =>
     normalizar(s)
@@ -223,6 +227,7 @@ function datosUsuario(guildId, tautulliUserId, ctx, rango = null) {
 
     const porGenero = new Map();
     const porDecada = new Map();
+    const porPais = new Map();
     let animePeliculas = 0;
     for (const f of fichasVistas.values()) {
         if (plexFichas.esAnime(f, ctx.anime)) animePeliculas++;
@@ -231,6 +236,12 @@ function datosUsuario(guildId, tautulliUserId, ctx, rango = null) {
         for (const [k, g] of generos) {
             if (!porGenero.has(k)) porGenero.set(k, { nombre: g, n: 0 });
             porGenero.get(k).n++;
+        }
+        // Los países de producción de la película (TMDB), una vez por película.
+        const paises = new Map((f.paises || []).map((p) => [normalizar(p), p]));
+        for (const [k, p] of paises) {
+            if (!porPais.has(k)) porPais.set(k, { nombre: p, n: 0 });
+            porPais.get(k).n++;
         }
         if (f.anio) {
             const d = Math.floor(f.anio / 10) * 10;
@@ -293,7 +304,7 @@ function datosUsuario(guildId, tautulliUserId, ctx, rango = null) {
         }
         series.push({ ficha, anime, temporadas, terminadas, total, completa, vistosEnFicha, completaEn, vistos, porModo });
     }
-    return { vistas, fichasVistas, porGenero, porDecada, series, cuentas };
+    return { vistas, fichasVistas, porGenero, porDecada, porPais, series, cuentas };
 }
 
 /** Horas, películas y episodios distintos vistos entre dos fechas (unix, s): para los trofeos de admin con fechas. */
@@ -406,6 +417,20 @@ function candidatos(datos, ctx) {
                 dificultad: DIFICULTAD.genero(u),
                 nombre: u === UMBRALES_GENERO[0] ? base : `${base} · Experto`,
                 descripcion: `Ve ${u} películas de ${g.nombre}`,
+            });
+        }
+    }
+    for (const [k, p] of datos.porPais) {
+        for (const u of UMBRALES_PAIS) {
+            if (p.n < u) continue;
+            lista.push({
+                id: `pais:${slug(k)}:${u}`,
+                tipo: "pais",
+                anime: false,
+                recompensa: RECOMPENSA.pais[u],
+                dificultad: DIFICULTAD.pais(u),
+                nombre: u === UMBRALES_PAIS[0] ? `Viajero de ${p.nombre}` : `Viajero de ${p.nombre} · Experto`,
+                descripcion: `Ve ${u} películas de ${p.nombre}`,
             });
         }
     }
@@ -996,7 +1021,7 @@ function describirCondicion(cond) {
     return cond.desde || cond.hasta ? `${texto} (${textoFechas(cond)})` : texto;
 }
 
-const ORDEN_TIPO = ["serie", "idioma", "saga", "director", "temporada", "admin", "genero", "decada"];
+const ORDEN_TIPO = ["serie", "idioma", "saga", "director", "temporada", "admin", "genero", "pais", "decada"];
 
 /**
  * Los trofeos cuyo nombre, descripción o condición tiene un texto ("Breaking Bad", "Nolan"), primero las series, y quién
@@ -1067,6 +1092,7 @@ module.exports = {
     CONDICIONES,
     AYUDA_FECHAS,
     catalogo,
+    candidatos,
     eventosDe,
     datosUsuario,
     contexto,

@@ -10,6 +10,7 @@
 // se satura Tautulli: con una biblioteca grande tarda unas horas en estar completa.
 const db = require("../core/db");
 const tautulli = require("../services/tautulliClient");
+const tmdbClient = require("../services/tmdbClient");
 const guildSettings = require("./guildSettings");
 const { createLogger } = require("../core/logger");
 
@@ -17,6 +18,8 @@ const log = createLogger("Plex");
 
 /** Llamadas a Tautulli por sincronización (cada 30 min) y por pulsación del botón del panel. */
 const PRESUPUESTO = { cron: 300, boton: 1200 };
+/** Películas cuyos países se piden a TMDB por sincronización (una llamada cada una). */
+const PRESUPUESTO_PAISES = 60;
 const EN_PARALELO = 4;
 const PAGINA_BIBLIOTECA = 2000;
 const MAX_PAGINAS_BIBLIOTECA = 100;
@@ -81,6 +84,13 @@ function guardarPerdida(guildId, key) {
     db.prepare("UPDATE plex_fichas SET encontrada = 0, actualizada = ? WHERE guildId = ? AND rating_key = ?").run(Date.now(), guildId, key);
 }
 
+/** El id de TMDB de una película, si Tautulli lo da en sus guids ("tmdb://603"). */
+function tmdbDe(m) {
+    const guids = [...(Array.isArray(m.guids) ? m.guids : []), m.guid].map((g) => String(g || ""));
+    const hallado = guids.map((g) => /tmdb:\/\/(\d+)/.exec(g)).find(Boolean);
+    return hallado ? hallado[1] : null;
+}
+
 function datosComunes(m) {
     return {
         titulo: m.title || null,
@@ -97,12 +107,13 @@ async function fichaPelicula(guildId, key, pedir) {
     db.prepare(
         `UPDATE plex_fichas SET titulo = COALESCE(@titulo, titulo), anio = COALESCE(@anio, anio), section_id = COALESCE(@section_id, section_id),
                 biblioteca = COALESCE(@biblioteca, biblioteca), generos = @generos, directores = @directores, colecciones = @colecciones,
-                alta = COALESCE(@alta, alta), encontrada = 1, actualizada = @ahora
+                tmdb = COALESCE(@tmdb, tmdb), alta = COALESCE(@alta, alta), encontrada = 1, actualizada = @ahora
          WHERE guildId = @guildId AND rating_key = @key`,
     ).run({
         ...datosComunes(m),
         directores: JSON.stringify(etiquetas(m.directors)),
         colecciones: JSON.stringify(etiquetas(m.collections)),
+        tmdb: tmdbDe(m),
         alta: alta(m),
         ahora: Date.now(),
         guildId,
@@ -237,6 +248,37 @@ function cola(guildId) {
 }
 
 /**
+ * Pide a TMDB los países de las películas que tienen su id de TMDB y aún no los tienen (sin clave, no hace nada).
+ * Un error de TMDB para la película: se deja para la siguiente vez.
+ * @returns {Promise<number>} cuántas películas se han completado
+ */
+async function completarPaises(guildId, { presupuesto = PRESUPUESTO_PAISES } = {}) {
+    if (!process.env.TMDB_API_KEY) return 0;
+    const pendientes = db
+        .prepare(
+            "SELECT rating_key, tmdb FROM plex_fichas WHERE guildId = ? AND tipo = 'movie' AND tmdb IS NOT NULL AND paises IS NULL AND encontrada = 1 LIMIT ?",
+        )
+        .all(guildId, presupuesto);
+    let completadas = 0;
+    for (const f of pendientes) {
+        try {
+            const paises = await tmdbClient.paisesDePelicula(f.tmdb);
+            if (!paises) return completadas;
+            db.prepare("UPDATE plex_fichas SET paises = ? WHERE guildId = ? AND rating_key = ?").run(
+                JSON.stringify(paises),
+                guildId,
+                f.rating_key,
+            );
+            completadas++;
+        } catch (e) {
+            log.warn(`No se pudieron pedir los países de la película ${f.tmdb} a TMDB: ${e.message}`);
+            break;
+        }
+    }
+    return completadas;
+}
+
+/**
  * Pide a Tautulli las fichas que faltan o están viejas, sin pasarse de `presupuesto` llamadas.
  * @returns {Promise<{ llamadas: number, fichas: number, nuevasEnBiblioteca: number, errores: number, pendientes: number }>}
  */
@@ -310,6 +352,11 @@ async function actualizar(guildId, { presupuesto = PRESUPUESTO.cron } = {}) {
         `Fichas de Plex de ${guildId}: ${r.fichas} actualizadas, ${r.nuevasEnBiblioteca} películas nuevas en la biblioteca, ` +
             `${r.pendientes} pendientes · ${r.llamadas} llamadas · ${Date.now() - t0} ms`,
     );
+    try {
+        r.paises = await completarPaises(guildId);
+    } catch (e) {
+        log.warn(`No se pudieron completar los países de las películas de ${guildId}: ${e.message}`);
+    }
     return r;
 }
 
@@ -349,6 +396,7 @@ function cargar(guildId) {
         generos: leerJson(f.generos, []),
         directores: leerJson(f.directores, []),
         colecciones: leerJson(f.colecciones, []),
+        paises: leerJson(f.paises, []),
         temporadas: leerJson(f.temporadas, null),
         altas: leerJson(f.altas, {}),
     }));
@@ -361,6 +409,8 @@ function cargar(guildId) {
 
 module.exports = {
     PRESUPUESTO,
+    completarPaises,
+    tmdbDe,
     actualizar,
     estado,
     cargar,
