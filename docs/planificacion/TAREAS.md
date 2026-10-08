@@ -222,6 +222,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🎯 Recomendaciones personales (#22)**
+- [ ] `/recomendar` (con la cuenta de Plex vinculada y historial): salen hasta 5 títulos, con "Porque viste …".
+- [ ] Lo que ya has visto o ya está en Plex no sale.
+- [ ] 📥 pide el título en Seerr; un usuario sin perfil de Seerr vinculado recibe el aviso (y no se pide nada).
+- [ ] Sin cuenta vinculada o sin historial, lo dice.
+
 **🎞️ Plex Wrapped mensual (#23)**
 - [ ] El día 1 después de las 10:00 (Madrid), en el canal del ranking de Plex sale el resumen del mes anterior con la gráfica.
 - [ ] Menciona al más viciado y lista las series más vistas; sin nadie que haya visto nada, lo dice sin gráfica.
