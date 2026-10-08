@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🎙️ Tertulia en `/conversación`: escucha a todo el canal a la vez (#16))
+
+- Opción nueva `tertulia: sí` en `/conversación`: el Duende escucha a todo el canal a la vez, sin turnos. Las voces se
+  mezclan en un solo flujo de 16 kHz (`services/duende/mezclador.js`) y se mandan a Gemini Live cada 20 ms.
+- Por defecto no cambia nada. No se combina con `con`.
+- **Sin probar con voz real**: el mezclador tiene tests, pero el comportamiento de Gemini Live con voces solapadas hay
+  que comprobarlo en Discord.
+
 ## 2026-10-08 (🧠 Recuerdos automáticos del Duende (#15))
 
 - El Duende mira la conversación cada 10 mensajes con texto de verdad y propone lo que merezca recordarse de cada persona.
