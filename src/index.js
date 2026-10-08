@@ -233,6 +233,10 @@ client.once("clientReady", async () => {
     cron.schedule("*/5 * * * *", () => runJob("Negocios y blanqueo", () => require("./systems/negocios").revisar()), {
         noOverlap: true,
     });
+    // 🏦 Patrimonio: cada persona tiene su ciclo semanal (interés del banco e impuesto sobre lo que pasa del umbral).
+    cron.schedule("0 * * * *", () => runJob("Patrimonio", () => require("./systems/patrimonio").revisar()), {
+        noOverlap: true,
+    });
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
         "15 * * * *",

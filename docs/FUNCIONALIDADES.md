@@ -530,6 +530,19 @@ ahora.
 
 ---
 
+### 🏦 Patrimonio (F-EC-10)
+
+Impuesto periódico sobre lo que se tiene en el banco, con su propio ciclo. Cada persona tiene su ciclo (**7 días** por
+defecto) y en cada ciclo se hace lo siguiente, en este orden:
+
+1. **Interés**: un **0,5 %** del saldo del banco, que se ingresa en el banco (tipo 🏦 Patrimonio en Movimientos).
+2. **Impuesto**: un **1 %** sobre lo que pasa del umbral (**50.000**). La base es el banco más lo pagado por sus
+   negocios. Se cobra del banco (tipo 🏛️ Impuesto). Lo que no se pueda pagar del banco no se cobra y no deja deuda.
+
+El impuesto va al **bote** del servidor donde se usó la economía por última vez, o desaparece si el destino es
+sumidero. Todo se configura en Panel admin → Config Global → 🏛️ Impuestos → 🏦 Patrimonio. El primer ciclo de cada
+persona solo marca su fecha, sin cobrar.
+
 ### 🏪 Negocios y blanqueo (F-EC-06d)
 
 Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran con dinero del **banco** (hay que ingresar antes).
