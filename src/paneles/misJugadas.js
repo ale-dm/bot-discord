@@ -37,6 +37,21 @@ function textoPartidoResuelto(a) {
     return `**${a.home_team}** vs **${a.away_team}** ${estado}\n🎯 ${eleccionTexto(a)} · ${a.cantidad} 🪙 @${a.cuota}`;
 }
 
+/** Una combinada: sus partidos con la elección de cada uno, y lo que cobra o cobró. */
+function textoCombinada(c) {
+    const cuando = `${c.patas.length} partidos · ${c.cantidad} 🪙 @${c.cuota}`;
+    const estado =
+        c.estado === "abierta"
+            ? `→ ${Math.round(c.cantidad * c.cuota)} 🪙`
+            : c.estado === "ganada"
+              ? `🏆 Ganada (+${c.premio})`
+              : c.estado === "perdida"
+                ? "❌ Perdida"
+                : "↩️ Devuelta";
+    const patas = c.patas.map((p) => `• ${p.home_team} vs ${p.away_team} · ${eleccionTexto(p)}`).join("\n");
+    return `**${cuando}** ${estado}\n${patas}`;
+}
+
 function textoQuinielaCerrada(q) {
     const estado = q.reembolsada ? "↩️ Devuelta" : q.premio > 0 ? `🏆 +${q.premio}` : "❌ Sin premio";
     return `**${q.jornada}** · ${q.cantidad} 🪙 · ${estado}\n${lineaQuiniela(q.detalle)}`;
@@ -89,6 +104,11 @@ function vistaActivas(userId, embed) {
                 "Ninguna quiniela abierta.",
         ),
     });
+    const combinadas = jugadas.combinadasDe(userId, { abiertas: true, limite: 5 });
+    embed.addFields({
+        name: `🧩 Combinadas (${combinadas.length})`,
+        value: campo(combinadas.map(textoCombinada).join("\n\n") || "Ninguna combinada abierta."),
+    });
     if (casino.length) {
         embed.addFields({
             name: "🎰 Últimas partidas del casino",
@@ -106,13 +126,19 @@ function vistaResueltas(userId, embed) {
         { name: "⚽ Partidos (últimos 8)", value: campo(partidos.map(textoPartidoResuelto).join("\n\n") || "Ninguna todavía.") },
         { name: "🧾 Quinielas (últimas 3)", value: campo(quinielas.map(textoQuinielaCerrada).join("\n\n") || "Ninguna todavía.") },
     );
+    const combinadas = jugadas.combinadasDe(userId, { abiertas: false, limite: 3 });
+    embed.addFields({
+        name: "🧩 Combinadas (últimas 3)",
+        value: campo(combinadas.map(textoCombinada).join("\n\n") || "Ninguna todavía."),
+    });
     return quinielas[0]?.deporte;
 }
 
 /** Campos de estadísticas de apuestas (partidos y quinielas) y el beneficio total; los usa la pestaña Stats. */
 function camposStatsApuestas(userId) {
     const { partidos: p, quinielas: q } = jugadas.estadisticas(userId);
-    const beneficio = p.ganado - p.apostado + (q.ganado - q.apostado);
+    const c = jugadas.estadisticasCombinadas(userId);
+    const beneficio = p.ganado - p.apostado + (q.ganado - q.apostado) + (c.ganado - c.apostado);
     const acierto = p.ganadas + p.perdidas > 0 ? ((p.ganadas / (p.ganadas + p.perdidas)) * 100).toFixed(1) : "0";
     const campos = [
         {
@@ -129,6 +155,14 @@ function camposStatsApuestas(userId) {
                 `• **${q.total}** jugadas · **${q.ganadas}** con premio\n` +
                 `• **${q.apostado}** apostado en las cerradas → **${q.ganado}** cobrado o devuelto (${signo(q.ganado - q.apostado)})` +
                 (q.enJuego ? `\n• **${q.enJuego}** en juego (${q.pendientes} abiertas)` : ""),
+            inline: false,
+        },
+        {
+            name: "🧩 Combinadas",
+            value:
+                `• **${c.total}** jugadas · **${c.ganadas}** ganadas | **${c.perdidas}** perdidas\n` +
+                `• **${c.apostado}** apostado en las cerradas → **${c.ganado}** cobrado o devuelto (${signo(c.ganado - c.apostado)})` +
+                (c.enJuego ? `\n• **${c.enJuego}** en juego (${c.pendientes} abiertas)` : ""),
             inline: false,
         },
     ];

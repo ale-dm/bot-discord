@@ -176,4 +176,53 @@ function cartera(userId, ahora = Date.now()) {
     };
 }
 
-module.exports = { SIGNO, partidosDe, detalleQuiniela, quinielasDe, quinielaDe, estadisticas, ultimasCasino, cartera, maximoDelPartido };
+/**
+ * Combinadas de alguien: las abiertas (estado 'abierta') o las ya cerradas, con cada pata y el nombre de su partido.
+ * Una combinada cerrada es 'ganada', 'perdida' o 'reembolsada'.
+ */
+function combinadasDe(userId, { abiertas = true, limite = 3 } = {}) {
+    const filtro = abiertas ? "estado = 'abierta'" : "estado != 'abierta'";
+    const combinadas = db
+        .prepare(`SELECT * FROM combinadas WHERE user_id = ? AND ${filtro} ORDER BY creada_en DESC LIMIT ?`)
+        .all(String(userId), limite);
+    const patas = db.prepare(
+        `SELECT pa.*, p.home_team, p.away_team, p.start_time
+         FROM combinada_patas pa LEFT JOIN apuestas_partidos p ON p.match_id = pa.match_id
+         WHERE pa.combinada_id = ? ORDER BY pa.id`,
+    );
+    return combinadas.map((c) => ({ ...c, patas: patas.all(c.id) }));
+}
+
+/**
+ * Estadísticas de las combinadas: cuántas se ganaron y perdieron, lo apostado en las cerradas y lo cobrado o devuelto
+ * (premio), igual que partidos y quinielas: el beneficio es cobrado − apostado.
+ */
+function estadisticasCombinadas(userId) {
+    const r = db
+        .prepare(
+            `SELECT COUNT(*) AS total,
+                SUM(CASE WHEN estado = 'ganada' THEN 1 ELSE 0 END) AS ganadas,
+                SUM(CASE WHEN estado = 'perdida' THEN 1 ELSE 0 END) AS perdidas,
+                SUM(CASE WHEN estado = 'abierta' THEN 1 ELSE 0 END) AS pendientes,
+                COALESCE(SUM(CASE WHEN estado != 'abierta' THEN cantidad ELSE 0 END), 0) AS apostado,
+                COALESCE(SUM(CASE WHEN estado != 'abierta' THEN COALESCE(premio, 0) ELSE 0 END), 0) AS ganado,
+                COALESCE(SUM(CASE WHEN estado = 'abierta' THEN cantidad ELSE 0 END), 0) AS enJuego
+             FROM combinadas WHERE user_id = ?`,
+        )
+        .get(String(userId));
+    return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, Number(v || 0)]));
+}
+
+module.exports = {
+    SIGNO,
+    partidosDe,
+    detalleQuiniela,
+    quinielasDe,
+    quinielaDe,
+    estadisticas,
+    combinadasDe,
+    estadisticasCombinadas,
+    ultimasCasino,
+    cartera,
+    maximoDelPartido,
+};

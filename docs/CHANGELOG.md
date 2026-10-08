@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (cabos sueltos: ayuda, logros, combinadas y premios de liga)
+
+- **`/ayuda`** tiene sección 🍿 Plex y nombra `/sonidos`, `/conectar` y `/pase`; `/pase` tiene su botón en 📈 Niveles.
+- **Pase de batalla**: cada logro completado da 20 XP de pase (tope 120 al día). Los que salen al importar el historial
+  de Plex no dan XP.
+- **Mis jugadas y Stats** muestran las 🧩 combinadas: las que están en juego, las resueltas y sus cifras.
+- **`/paneladmin` → ⚽ Apuestas → 🏆 Premios de liga**: los tres premios de la liga de pronósticos se editan con un
+  formulario, sin tocar los ajustes a mano.
+- Tests: `tests/cabosSueltos.test.js`.
+
 ## 2026-10-08 (🔌 `/conectar`, y los sonidos se suben desde /paneladmin)
 
 - **`/conectar`**: el bot entra al canal de voz que elijas y se queda 30 minutos. `/sonidos` suena ahí sin entrar y salir

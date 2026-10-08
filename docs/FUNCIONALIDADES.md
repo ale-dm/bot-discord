@@ -603,8 +603,9 @@ bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por niv
 
 **Decisión:** el diseño ([docs/planificacion/diseno/pase-de-batalla-s1.md](planificacion/diseno/pase-de-batalla-s1.md))
 incluía roles de Discord como recompensa (expulsar, mover o silenciar en voz, renombrar a otros, subir emojis). **No se
-conceden**: los permisos de moderación no los decide un juego. Las recompensas son monedas. Los logros no dan XP de pase
-todavía. Migración 036. Tests: `tests/pasePase.test.js`.
+conceden**: los permisos de moderación no los decide un juego. Las recompensas son monedas. Cada logro completado da
+**20 XP** de pase (tope de 120 al día); los que salen al importar el historial de Plex no dan XP. Migración 036. Tests:
+`tests/pasePase.test.js` y `tests/cabosSueltos.test.js`.
 
 ## 8. Casino
 
@@ -678,8 +679,8 @@ boleto se pierde. Si un partido se caduca sin resultado, la combinada se devuelv
   tener una pata: si sumas otra elección del mismo partido, sustituye a la anterior.
 - Antes de pagar se comprueba cada partido y cada cuota: si ha empezado o la cuota ha cambiado, hay que volver a sumarlo.
 - El importe cuenta para el tope diario y cobra como las demás apuestas (efectivo y dinero negro).
-- No entra en 🧾 Mis jugadas ni en las estadísticas: sus combinadas en juego se ven en el propio boleto. Tampoco se
-  puede cancelar una vez apostada, ni se incluye el marcador exacto (su premio es fijo).
+- Sale en 📋 Mis jugadas (⏳ En juego y 📋 Resueltas, con cada partido y su elección) y cuenta en 📊 Stats. No se puede
+  cancelar una vez apostada, ni se incluye el marcador exacto (su premio es fijo).
 
 **Mercados de goles y de hándicap (#9 y #10)**: debajo de los botones 1/X/2 de cada partido, cuando la API da la línea:
 - **⬆️ Más de 2,5 goles** / **⬇️ Menos de 2,5 goles**: gana si el total de goles es 3 o más (o 2 o menos).
@@ -697,7 +698,7 @@ cuenta a la vez el 1X2, el marcador exacto, los goles y el hándicap cuando sale
 caducadas no cuentan). La temporada va de **1 de julio a 30 de junio** (hora de Madrid). El 1 de julio, desde las 10:00,
 se publica la clasificación final de la temporada anterior en el canal de la clasificación y se paga al efectivo a los
 tres primeros: **5.000**, **2.500** y **1.000** 🪙 (`liga.premio_1`, `liga.premio_2` y `liga.premio_3` en los ajustes del
-servidor; de momento no tienen botón en `/paneladmin`). En empate manda quien menos quinielas ha jugado, y después el
+servidor; se editan en `/paneladmin` → ⚽ Apuestas → 🏆 Premios de liga). En empate manda quien menos quinielas ha jugado, y después el
 id. Cada temporada se liquida una sola vez por servidor. Sin canal de clasificación no se publica ni se paga nada.
 
 **🚦 Límites por jugador** (`/paneladmin` → ⚽ Apuestas → 🚦 Límites; 0 = sin límite, como viene por defecto):
