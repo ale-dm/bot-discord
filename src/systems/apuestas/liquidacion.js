@@ -401,9 +401,11 @@ function resultadosEmbed(resumen) {
             : `↩️ Nadie llegó a ${q.minimo} aciertos (máximo ${q.maxAciertos}): se devuelve lo apostado a ${q.jugadores} ${q.jugadores === 1 ? "jugador" : "jugadores"}`;
         lineas.push(`🧾 **Quiniela ${q.jornada}** · ${comp}\n${detalle}`);
     }
+    // Con persona(): el Duende (F-DU-03) sale por su nombre, no es un usuario de Discord.
+    const { persona } = require("../../paneles/retos");
     for (const r of resumen.retos || []) {
         lineas.push(
-            `⚔️ **Reto** <@${r.creador}> vs <@${r.rival}> · ${r.partido}\n🏆 Gana <@${r.ganador}> y se lleva **${fmt(r.premio)}** 🪙`,
+            `⚔️ **Reto** ${persona(r.creador)} vs ${persona(r.rival)} · ${r.partido}\n🏆 Gana ${persona(r.ganador)} y se lleva **${fmt(r.premio)}** 🪙`,
         );
     }
     if (!lineas.length) return null;

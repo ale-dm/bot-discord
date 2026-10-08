@@ -1,6 +1,7 @@
 // Pestaña 💰 Economía de /perfil: 💵 efectivo (lo que gastas) y 🏦 banco (el sitio seguro), lo ganado y
 // perdido en el casino, la cartera cripto y los objetos; en tu perfil, con Ingresar, Sacar, Transferir,
-// Movimientos (historial con filtro por tipo) y 🎁 Diario (systems/diario). En el de otro se ve todo, pero sin acciones.
+// Movimientos (historial con filtro por tipo) y 🎁 Diario (systems/diario), y el 🧙 préstamo del Duende si hay uno (con
+// su botón para devolverlo: systems/prestamos). En el de otro se ve todo, pero sin acciones.
 // También el botón "💵 Sacar del banco" que ponen el casino, la tienda y la cripto cuando no te llega el
 // efectivo. Los datos, en systems/dinero; los botones dinero_* los atiende src/perfil/dinero.
 const {
@@ -93,6 +94,18 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
         );
         embed.addFields({ name: "💹 Cartera cripto", value: `${lineas.join("\n")}\nTotal ≈ **${fmt(Math.floor(cartera.total))}** 🪙` });
     }
+    // 🧙 Préstamo del Duende (F-DU-03), si tiene uno sin devolver.
+    const prestamo = require("../systems/prestamos").abierto(targetId);
+    if (prestamo) {
+        const vence = Math.floor(prestamo.vence_en / 1000);
+        embed.addFields({
+            name: "🧙 Préstamo del Duende",
+            value:
+                prestamo.estado === "deuda"
+                    ? `Debe **${fmt(prestamo.falta)}** 🪙: venció <t:${vence}:R> y se va cobrando de lo que gane. Hasta saldarlo, ni otro préstamo ni apuestas con el Duende.`
+                    : `Devuelve **${fmt(prestamo.falta)}** 🪙 antes del <t:${vence}:f> (<t:${vence}:R>). Si no, se cobra solo.`,
+        });
+    }
     const diario = propio ? require("../systems/diario").estado(guildId, targetId) : null;
     if (diario?.activo) {
         embed.addFields({
@@ -137,7 +150,19 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
               ...botonDiario,
           )
         : new ActionRowBuilder().addComponents(movimientos);
-    return { content: "", embeds: [embed], components: [acciones, filaPestanasPerfil(viewerId, targetId, "eco")] };
+    // En su fila: la de acciones ya puede tener 5 botones.
+    const devolver =
+        propio && prestamo
+            ? [
+                  new ActionRowBuilder().addComponents(
+                      new ButtonBuilder()
+                          .setCustomId("dinero_prestamo_devolver")
+                          .setLabel(`🧙 Devolver ${fmt(prestamo.falta)} al Duende`)
+                          .setStyle(ButtonStyle.Success),
+                  ),
+              ]
+            : [];
+    return { content: "", embeds: [embed], components: [acciones, ...devolver, filaPestanasPerfil(viewerId, targetId, "eco")] };
 }
 
 /** Historial de movimientos de `targetId` con filtro por tipo (`todo` = sin filtro) y páginas. */

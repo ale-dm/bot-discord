@@ -57,6 +57,13 @@ module.exports = {
             if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
             return interaction.update(await economiaPropia(interaction, r.mensaje));
         }
+        // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
+        if (id === "dinero_prestamo_devolver") {
+            const r = require("../systems/prestamos").devolver(userId);
+            if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
+            log.info(`${interaction.user.tag}: ${r.mensaje.replace(/\*/g, "")}`);
+            return interaction.update(await economiaPropia(interaction, r.mensaje));
+        }
         if (id === "dinero_transferir") return interaction.update(economia.buildElegirDestinatario(userId));
         if (id === "dinero_ingresar")
             return interaction.showModal(economia.modalCantidad("dinero_modal_ingresar", "🏦 Ingresar en el banco", c.efectivo));
