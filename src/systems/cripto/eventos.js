@@ -117,4 +117,9 @@ async function revisarYAvisar(client, ahora = Date.now(), rng = Math.random) {
     return { ...evento, avisados };
 }
 
-module.exports = { PORCENTAJE, minutoMadrid, revisar, revisarYAvisar, destinatarios, textoAviso };
+/** El último evento que se ha aplicado (para el panel), o null si todavía no hay ninguno. */
+function ultimoEvento() {
+    return db.prepare("SELECT * FROM cripto_eventos WHERE aplicado_en IS NOT NULL ORDER BY aplicado_en DESC LIMIT 1").get() || null;
+}
+
+module.exports = { PORCENTAJE, minutoMadrid, revisar, revisarYAvisar, destinatarios, textoAviso, ultimoEvento };
