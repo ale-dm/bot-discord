@@ -258,6 +258,7 @@ vuelven a mirar cada 3 días por si hay episodios nuevos). Lo que alguien ha vis
 | 🎬 Saga | Ver todas las películas de una colección de Plex (de 2 a 40) | 100 por película (máx. 1.000) |
 | 🎥 Director | Ver todas las suyas que hay en Plex (si hay 3 o más) | 100 por película (máx. 1.000) |
 | 🎭 Género | 10 y 25 películas de un género (en español e inglés cuentan juntos: Terror = Horror) | 400 · 1.000 |
+| 🌍 País | 5 y 10 películas de un país de producción (según TMDB; hace falta `TMDB_API_KEY`). El nombre: "Viajero de Japón" | 250 · 600 |
 | 📼 Década | 10 películas de una década anterior a 2000 | 400 |
 | 🗣️ Serie en un idioma | Terminar una serie entera en una versión: "Breaking Bad en inglés", "Frieren en japonés con subtítulos en castellano" (todos sus episodios vistos así alguna vez) | 300 + 15 por episodio (máx. 2.000) |
 | ✍️ De admin | Lo que diga su condición (con fechas, solo lo visto entre ellas) | La que ponga el admin |
@@ -929,6 +930,7 @@ Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.te
 |---|---|
 | `TAUTULLI_URL`, `TAUTULLI_API_KEY` | Plex (también configurable en el panel) |
 | `SEERR_URL`, `SEERR_API_KEY` | Seerr (también configurable en el panel) |
+| `TMDB_API_KEY` | Clave de TMDB (opcional): de cada película de Plex, sus países de producción, para los trofeos por país (🌍) |
 | `GIPHY_API_KEY` | GIFs del Duende |
 | `ESTADOS` | Lista separada por comas de estados del bot |
 

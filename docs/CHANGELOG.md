@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🌍 Trofeos por país de Plex (#19))
+
+- Nuevo tipo de trofeo: **🌍 País**, con 5 y 10 películas de un mismo país de producción ("Viajero de Japón").
+- Los países salen de TMDB, a partir del id que Tautulli da en los guids de cada película. Hace falta `TMDB_API_KEY`
+  (opcional). Sin ella no hay trofeos por país, y el resto no cambia.
+- Cada sincronización pide los países de hasta 60 películas nuevas; si TMDB falla, lo que falta se pide en la siguiente.
+- Migración 034: `plex_fichas.tmdb` y `plex_fichas.paises`. Tests: `tests/trofeosPais.test.js`.
+
 ## 2026-10-08 (🎯 Recomendaciones personales de Plex: `/recomendar` (#22))
 
 - `/recomendar` (efímero): propone qué ver según lo que has visto en Plex en los últimos 6 meses. Se parte de tus 3
