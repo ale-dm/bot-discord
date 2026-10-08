@@ -2,6 +2,18 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (⚽ Más competiciones de apuestas: Mundial, Eurocopa, Copa del Rey y Europa League (#11))
+
+Las apuestas y las quinielas admiten cuatro competiciones más, además de LaLiga, Premier y Champions:
+
+- 🌍 Mundial (`soccer_fifa_world_cup`), 🇪🇺 Eurocopa, 👑 Copa del Rey y 🟠 Europa League.
+- En ⚽ Apuestas, los botones de competición pasan a varias filas (cada fila admite 5). Lo mismo en el crear quiniela de
+  `/paneladmin`.
+- Las claves de la Eurocopa, la Copa del Rey y la Europa League no están verificadas contra la API. Con
+  `ODDS_API_KEY=... node scripts/competicionesOdds.js` se ven las claves de fútbol que tiene la API y cuáles faltan.
+- Coste: cada competición se consulta solo cuando alguien la abre (cuotas, 1 crédito, con caché de 30 min) o cuando hay
+  apuestas pendientes en ella (resultados).
+
 ## 2026-10-08 (🏅 Liga de pronósticos por temporada (F-AP-12, #8))
 
 Cada acierto de una quiniela cerrada suma 1 punto. La temporada va de julio a junio (hora de Madrid).

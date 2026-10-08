@@ -13,6 +13,11 @@ const DEPORTES = {
     laliga: { name: "LaLiga 🇪🇸", apiKey: "soccer_spain_la_liga", emoji: "⚽" },
     premier: { name: "Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", apiKey: "soccer_epl", emoji: "⚽" },
     champions: { name: "Champions League 🏆", apiKey: "soccer_uefa_champs_league", emoji: "🏆" },
+    // Las claves de estas cuatro se comprueban con scripts/competicionesOdds.js (la API cambia el nombre de algunas).
+    mundial: { name: "Mundial 🌍", apiKey: "soccer_fifa_world_cup", emoji: "🌍" },
+    eurocopa: { name: "Eurocopa 🇪🇺", apiKey: "soccer_uefa_euro", emoji: "🇪🇺" },
+    copa_rey: { name: "Copa del Rey 👑", apiKey: "soccer_spain_copa_del_rey", emoji: "👑" },
+    europa: { name: "Europa League 🟠", apiKey: "soccer_uefa_europa_league", emoji: "🟠" },
 };
 
 // La API de resultados solo acepta daysFrom de 1 a 3 (con más responde 422
