@@ -1,14 +1,17 @@
-// Mensajes de /tienda, en pestañas: 🛒 Catálogo (páginas, confirmación y resultado de una compra), 🎒 Inventario
-// (tus objetos, con Usar; antes /inventario y /usar) y 🧾 Mis compras. Solo construyen embeds y botones; los
-// datos y el cobro están en systems/tienda y systems/objetos.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+// Panel de /tienda, en pestañas: 🛒 Catálogo (páginas, filtros, confirmación y resultado de una compra), 🎒 Inventario
+// (tus objetos, con Usar) y 🧾 Mis compras. Solo construyen embeds y botones; los datos y el cobro están en
+// systems/tienda y systems/objetos. Los filtros (categoría, rareza y búsqueda) los guarda el comando por persona.
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { botonSacar } = require("./economia");
 const dinero = require("../systems/dinero");
 const objetos = require("../systems/objetos");
+const tienda = require("../systems/tienda");
 
 const ITEMS_POR_PAGINA = 4; // una fila con un botón de compra por objeto
 const HISTORIAL_POR_PAGINA = 5;
 const INVENTARIO_POR_PAGINA = 5; // una fila con un botón de Usar por objeto
+// Valor del menú que quita el filtro (Discord no admite un valor vacío).
+const SIN_FILTRO = "__todas__";
 
 /**
  * Pestañas de /tienda (la actual, resaltada), en la última fila de sus pantallas. La de Inventario lleva "_tab": sin
@@ -25,6 +28,45 @@ function filaPestanasTienda(actual) {
         boton("inventario", "tienda_inv_1_tab", "🎒 Inventario"),
         boton("compras", "historial_ver_1", "🧾 Mis compras"),
     );
+}
+
+/** Menús de categoría y de rareza de la pestaña `tab`; cada uno en su fila. */
+function filasFiltros(tab, filtros = {}) {
+    const valores = tienda.valoresFiltro();
+    const menu = (tipo, etiqueta, lista, actual) =>
+        new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId(`tienda_filtro_${tipo}_${tab}`)
+                .setPlaceholder(actual ? `${etiqueta}: ${actual}`.slice(0, 150) : `${etiqueta}: todas`)
+                .addOptions([
+                    { label: `${etiqueta}: todas`, value: SIN_FILTRO, default: !actual },
+                    ...lista.slice(0, 24).map((v) => ({
+                        label: v.slice(0, 100),
+                        value: v.slice(0, 100),
+                        default: v === actual,
+                    })),
+                ]),
+        );
+    return [
+        menu("categoria", "Categoría", valores.categorias, filtros.categoria),
+        menu("rareza", "Rareza", valores.rarezas, filtros.rareza),
+    ];
+}
+
+/** Botones de búsqueda por nombre o tipo para la pestaña `tab` (y quitarla, si hay una activa). */
+function botonesBuscar(tab, filtros = {}) {
+    const botones = [
+        new ButtonBuilder()
+            .setCustomId(`tienda_buscar_${tab}`)
+            .setLabel(filtros.busqueda ? `🔍 ${filtros.busqueda}`.slice(0, 80) : "🔍 Buscar")
+            .setStyle(ButtonStyle.Secondary),
+    ];
+    if (filtros.busqueda) {
+        botones.push(
+            new ButtonBuilder().setCustomId(`tienda_nobuscar_${tab}`).setLabel("✖ Quitar búsqueda").setStyle(ButtonStyle.Secondary),
+        );
+    }
+    return botones;
 }
 
 function colorPorRareza(rareza) {
@@ -59,18 +101,25 @@ function emojiPorTipo(tipo) {
     }
 }
 
-/** Una página del catálogo: embed con los objetos y un botón de compra por cada uno. */
-function buildTiendaPage(items, pagina, isAdmin) {
-    const totalPaginas = Math.ceil(items.length / ITEMS_POR_PAGINA);
+/** Una página del catálogo (ya filtrado): embed con los objetos, un botón de compra por cada uno y los filtros. */
+function buildTiendaPage(items, pagina, isAdmin, filtros = {}) {
+    const totalPaginas = Math.max(1, Math.ceil(items.length / ITEMS_POR_PAGINA));
     if (pagina < 1) pagina = 1;
     if (pagina > totalPaginas) pagina = totalPaginas;
 
     const inicio = (pagina - 1) * ITEMS_POR_PAGINA;
     const pageItems = items.slice(inicio, inicio + ITEMS_POR_PAGINA);
+    const hayFiltros = Boolean(filtros.categoria || filtros.rareza || filtros.busqueda);
 
     const embed = new EmbedBuilder()
         .setTitle("🛒 Tienda del Servidor")
-        .setDescription("Compra objetos con tu 💵 efectivo. Pulsa un botón para comprar.")
+        .setDescription(
+            !items.length
+                ? hayFiltros
+                    ? "No hay objetos con estos filtros. Cambia el filtro o quítalo."
+                    : "La tienda está vacía de momento."
+                : "Compra objetos con tu 💵 efectivo y 🥷 dinero negro. Pulsa un botón para comprar.",
+        )
         .setColor(colorPorRareza(pageItems[0]?.rareza))
         .setFooter({ text: `Página ${pagina} de ${totalPaginas} — ${items.length} objetos en total` });
 
@@ -89,17 +138,21 @@ function buildTiendaPage(items, pagina, isAdmin) {
         embed.addFields({ name: name.slice(0, 256), value: value.slice(0, 1024), inline: false });
     });
 
-    const compraRow = new ActionRowBuilder();
-    pageItems.forEach((item) => {
-        const agotado = item.stock !== null && item.stock === 0;
-        compraRow.addComponents(
-            new ButtonBuilder()
-                .setCustomId(`tienda_confirmar_${item.tiendaId}`)
-                .setLabel(agotado ? `${item.nombre} (agotado)` : `🛒 ${item.nombre}`)
-                .setStyle(agotado ? ButtonStyle.Danger : ButtonStyle.Primary)
-                .setDisabled(agotado),
-        );
-    });
+    const filas = [];
+    if (pageItems.length) {
+        const compraRow = new ActionRowBuilder();
+        pageItems.forEach((item) => {
+            const agotado = item.stock !== null && item.stock === 0;
+            compraRow.addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`tienda_confirmar_${item.tiendaId}`)
+                    .setLabel(agotado ? `${item.nombre} (agotado)` : `🛒 ${item.nombre}`)
+                    .setStyle(agotado ? ButtonStyle.Danger : ButtonStyle.Primary)
+                    .setDisabled(agotado),
+            );
+        });
+        filas.push(compraRow);
+    }
 
     const navRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -112,9 +165,11 @@ function buildTiendaPage(items, pagina, isAdmin) {
             .setLabel("Siguiente ▶")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pagina >= totalPaginas),
+        ...botonesBuscar("catalogo", filtros),
     );
+    filas.push(navRow, ...filasFiltros("catalogo", filtros), filaPestanasTienda("catalogo"));
 
-    return { content: "", embeds: [embed], components: [compraRow, navRow, filaPestanasTienda("catalogo")] };
+    return { content: "", embeds: [embed], components: filas };
 }
 
 function buildConfirmacion(item, saldo, tiendaCfg, userId = null) {
@@ -204,18 +259,26 @@ function buildHistorialCompras(historial, pagina) {
     return { content: "", embeds: [embed], components: [row, filaPestanasTienda("compras")] };
 }
 
-/** Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes) y un botón de Usar por cada uno que haga algo. */
+/** Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes), con filtros y un botón de Usar por cada uno que haga algo. */
 function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
-    const lista = objetos.inventarioDe(userId, filtros);
+    const busqueda = filtros.busqueda ? filtros.busqueda.toLowerCase() : null;
+    const lista = objetos
+        .inventarioDe(userId, { categoria: filtros.categoria, rareza: filtros.rareza })
+        .filter((o) => !busqueda || o.nombre.toLowerCase().includes(busqueda));
     const totalPaginas = Math.max(1, Math.ceil(lista.length / INVENTARIO_POR_PAGINA));
     pagina = Math.min(Math.max(1, pagina), totalPaginas);
     const pagItems = lista.slice((pagina - 1) * INVENTARIO_POR_PAGINA, pagina * INVENTARIO_POR_PAGINA);
 
+    const hayFiltros = Boolean(filtros.categoria || filtros.rareza || filtros.busqueda);
     const embed = new EmbedBuilder()
         .setTitle("🎒 Tu inventario")
         .setDescription(
             (aviso ? `${aviso}\n\n` : "") +
-                (lista.length ? `💵 Efectivo: **${dinero.efectivo(userId)}**` : "No tienes objetos todavía. ¡Mira el 🛒 Catálogo!"),
+                (lista.length
+                    ? `💵 Efectivo: **${dinero.efectivo(userId)}**`
+                    : hayFiltros
+                      ? "No tienes objetos con estos filtros."
+                      : "No tienes objetos todavía. ¡Mira el 🛒 Catálogo!"),
         )
         .setColor(colorPorRareza(pagItems[0]?.rareza))
         .setFooter({ text: `Página ${pagina} de ${totalPaginas} · ${lista.reduce((a, o) => a + o.cantidad, 0)} objetos` });
@@ -230,10 +293,10 @@ function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
     }
     if (pagItems[0]?.imagen) embed.setThumbnail(pagItems[0].imagen);
 
-    const components = [];
+    const filas = [];
     const usables = pagItems.filter(objetos.esUsable);
     if (usables.length) {
-        components.push(
+        filas.push(
             new ActionRowBuilder().addComponents(
                 usables.map((obj) =>
                     new ButtonBuilder()
@@ -244,27 +307,28 @@ function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
             ),
         );
     }
-    if (totalPaginas > 1) {
-        components.push(
-            new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`tienda_inv_${pagina - 1}`)
-                    .setLabel("⬅️ Anterior")
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(pagina <= 1),
-                new ButtonBuilder()
-                    .setCustomId(`tienda_inv_${pagina + 1}`)
-                    .setLabel("Siguiente ➡️")
-                    .setStyle(ButtonStyle.Secondary)
-                    .setDisabled(pagina >= totalPaginas),
-            ),
-        );
-    }
-    components.push(filaPestanasTienda("inventario"));
-    return { content: "", embeds: [embed], components };
+    filas.push(
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`tienda_inv_${pagina - 1}`)
+                .setLabel("⬅️ Anterior")
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(pagina <= 1),
+            new ButtonBuilder()
+                .setCustomId(`tienda_inv_${pagina + 1}`)
+                .setLabel("Siguiente ➡️")
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(pagina >= totalPaginas),
+            ...botonesBuscar("inventario", filtros),
+        ),
+        ...filasFiltros("inventario", filtros),
+        filaPestanasTienda("inventario"),
+    );
+    return { content: "", embeds: [embed], components: filas };
 }
 
 module.exports = {
+    SIN_FILTRO,
     buildTiendaPage,
     buildConfirmacion,
     buildCompraRealizada,

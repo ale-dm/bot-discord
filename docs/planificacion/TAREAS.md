@@ -213,6 +213,14 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Si `/juegos` tiene canales restringidos (ACL), los botones del duelo no funcionan fuera de ellos: comprobar que el
       canal del Duende está permitido para `/juegos`.
 
+**🛒 /tienda como panel único (F-EC-11, #110)**
+- [ ] `/tienda` sin opciones abre el 🛒 Catálogo con los menús de categoría y rareza y el botón 🔍 Buscar.
+- [ ] Elegir una categoría deja solo sus objetos; elegir "todas" los vuelve a mostrar.
+- [ ] 🔍 Buscar "espada": solo los que tienen ese nombre; ✖ Quitar búsqueda los devuelve.
+- [ ] Un filtro sin resultados muestra el aviso y los menús siguen ahí.
+- [ ] 🎒 Inventario con los mismos filtros; 🧾 Mis compras sigue como pestaña.
+- [ ] En 📚 /ayuda → 💰 Economía, el botón "Abrir Tienda" abre el panel.
+
 **🏦 Patrimonio (F-EC-10, #81)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 026_patrimonio`.
 - [ ] En Config Global → 🏛️ Impuestos → 🏦 Patrimonio se ve la configuración (50.000, 1 %, 0,5 %, cada 7 días, bote). Editarla con un valor inválido (p. ej. 150 % de impuesto) sale el aviso y no cambia nada.
