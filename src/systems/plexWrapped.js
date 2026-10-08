@@ -1,10 +1,9 @@
-// 🎞️ Plex Wrapped mensual (#23): el día 1 de cada mes, desde las 10:00 (hora de Madrid), se publica en el canal del ranking
-// de Plex el resumen del mes anterior: las horas vistas en total y por cada persona (con su gráfica), las series más
-// vistas y quién es el más viciado. Usa la copia local del historial (plex_reproducciones), como el ranking semanal, y
-// solo cuenta a quien tiene la cuenta de Plex vinculada. Una vez por mes y servidor (plex.wrapped_ultimo_mes).
+// 🎞️ Plex Wrapped mensual (#23): el día 1 de cada mes, desde las 10:00 (hora de Madrid), cada persona con la cuenta de Plex
+// vinculada recibe por DM su propio resumen del mes anterior: sus horas vistas, sus películas y episodios, y sus series más
+// vistas. Es privado: no se publica nada en ningún canal ni se muestran datos de otras personas. Usa la copia local del
+// historial (plex_reproducciones), como el ranking semanal. Una vez por mes y persona (plex_wrapped_enviados).
 const { AttachmentBuilder } = require("discord.js");
 const db = require("../core/db");
-const guildSettings = require("./guildSettings");
 const plexLinks = require("./plexLinks");
 const plexHistorial = require("./plexHistorial");
 const tautulli = require("../services/tautulliClient");
@@ -37,101 +36,83 @@ function mesAnterior(ahora = Date.now()) {
 }
 
 /**
- * Lo que ha visto cada persona vinculada en el mes: horas, películas y episodios distintos, y las series más vistas
- * entre todos. `masViciado` es la persona con más horas (null si nadie ha visto nada).
+ * Lo que ha visto UNA persona (su cuenta de Plex) en el mes: horas, películas y episodios distintos, y sus series más vistas.
+ * Solo sus datos: nada de otras personas.
  */
-function datos(guildId, mes) {
-    const links = plexLinks.getLinks(guildId);
-    const base = { mes: mes.mes, etiqueta: mes.etiqueta, horas: 0, personas: [], masViciado: null, series: [], peliculas: 0, episodios: 0 };
-    if (!links.length) return base;
-    const porUsuario = new Map(links.map((l) => [String(l.tautulliUserId), { ...l, segundos: 0, eps: new Set(), pelis: new Set() }]));
-    const series = new Map();
-    // Un día de margen a cada lado (la hora de Madrid no es UTC); luego se filtra por el día en Madrid.
+function resumenPersonal(guildId, tautulliUserId, mes) {
     const desde = aFecha(mes.inicio).getTime() / 1000 - 86400;
     const hasta = aFecha(sumarDias(mes.fin, 1)).getTime() / 1000 + 86400;
     const filas = db
         .prepare(
-            `SELECT tautulliUserId, tipo, rating_key, serie, titulo, inicio, segundos, visto FROM plex_reproducciones
-             WHERE guildId = ? AND inicio >= ? AND inicio < ? AND tautulliUserId IN (${links.map(() => "?").join(",")})`,
+            `SELECT tipo, rating_key, serie, titulo, inicio, segundos, visto FROM plex_reproducciones
+             WHERE guildId = ? AND tautulliUserId = ? AND inicio >= ? AND inicio < ?`,
         )
-        .all(guildId, desde, hasta, ...porUsuario.keys());
+        .all(String(guildId), String(tautulliUserId), desde, hasta);
+    let segundos = 0;
+    const pelis = new Set();
+    const eps = new Set();
+    const series = new Map();
     for (const f of filas) {
         const { dia } = plexHistorial.momento(f.inicio);
         if (dia < mes.inicio || dia > mes.fin) continue;
-        const u = porUsuario.get(String(f.tautulliUserId));
-        u.segundos += f.segundos;
-        if (f.visto && f.rating_key) (f.tipo === "movie" ? u.pelis : u.eps).add(f.rating_key);
+        segundos += f.segundos;
+        if (f.visto && f.rating_key) (f.tipo === "movie" ? pelis : eps).add(f.rating_key);
         if (f.tipo === "episode") {
             const nombre = f.serie || f.titulo;
             if (nombre) series.set(nombre, (series.get(nombre) || 0) + f.segundos);
         }
     }
-    const personas = [...porUsuario.values()]
-        .filter((u) => u.segundos > 0)
-        .map((u) => ({
-            discordUserId: u.discordUserId,
-            plexUsername: u.plexUsername,
-            horas: horas(u.segundos),
-            episodios: u.eps.size,
-            peliculas: u.pelis.size,
-        }))
-        .sort((a, b) => b.horas - a.horas || String(a.plexUsername).localeCompare(String(b.plexUsername)));
-    if (!personas.length) return base;
     return {
-        ...base,
-        horas: horas(personas.reduce((t, p) => t + p.horas * 3600, 0)),
-        personas,
-        masViciado: personas[0],
+        mes: mes.mes,
+        etiqueta: mes.etiqueta,
+        horas: horas(segundos),
+        peliculas: pelis.size,
+        episodios: eps.size,
         series: [...series.entries()]
             .sort((a, b) => b[1] - a[1])
             .slice(0, TOP_SERIES)
-            .map(([nombre, segundos]) => ({ nombre, horas: horas(segundos) })),
-        peliculas: personas.reduce((t, p) => t + p.peliculas, 0),
-        episodios: personas.reduce((t, p) => t + p.episodios, 0),
+            .map(([nombre, s]) => ({ nombre, horas: horas(s) })),
     };
 }
 
-function mensaje(d) {
-    if (!d.personas.length)
-        return { content: `🎞️ **Plex Wrapped · ${d.etiqueta}**\n\nEste mes nadie ha visto Plex. 😴`, allowedMentions: { parse: [] } };
+/** El texto del resumen de una persona (para el DM y para el botón de /plex). */
+function mensajePersonal(r) {
+    if (r.horas <= 0) return `🎞️ **Tu Plex Wrapped · ${r.etiqueta}**\n\nEste mes no has visto nada en Plex. 😴`;
     const lineas = [
-        `🎞️ **Plex Wrapped · ${d.etiqueta}**`,
+        `🎞️ **Tu Plex Wrapped · ${r.etiqueta}**`,
         "",
-        `Entre todos: **${fmtH(d.horas)}** vistas (${d.peliculas} ${d.peliculas === 1 ? "película" : "películas"} y ${d.episodios} ${d.episodios === 1 ? "episodio" : "episodios"}).`,
-        `🦭 El más viciado: <@${d.masViciado.discordUserId}> con **${fmtH(d.masViciado.horas)}**.`,
+        `Has visto **${fmtH(r.horas)}** de Plex (${r.peliculas} ${r.peliculas === 1 ? "película" : "películas"} y ${r.episodios} ${r.episodios === 1 ? "episodio" : "episodios"}).`,
     ];
-    if (d.series.length)
-        lineas.push(`📺 Series más vistas: ${d.series.map((s, i) => `${i + 1}. ${s.nombre} (${fmtH(s.horas)})`).join(" · ")}`);
-    return { content: lineas.join("\n"), allowedMentions: { users: [d.masViciado.discordUserId] } };
+    if (r.series.length) lineas.push(`📺 Tus series: ${r.series.map((s, i) => `${i + 1}. ${s.nombre} (${fmtH(s.horas)})`).join(" · ")}`);
+    return lineas.join("\n");
 }
 
-/** La gráfica de horas por persona del mes (PNG), o null si nadie ha visto nada. */
-function grafico(d) {
-    if (!d.personas.length) return null;
-    const orden = [...d.personas].reverse();
-    const alto = Math.max(260, 110 + orden.length * 56);
+/** La gráfica de tus series del mes (PNG), o null si no has visto series. */
+function graficoPersonal(r) {
+    if (!r.series.length) return null;
+    const orden = [...r.series].reverse();
     return renderPng(
         {
             title: {
-                text: `Plex Wrapped · ${d.etiqueta}`,
-                subtext: `${fmtH(d.horas)} vistas en total`,
+                text: `Tu Plex Wrapped · ${r.etiqueta}`,
+                subtext: `${fmtH(r.horas)} vistas en total`,
                 left: 40,
                 top: 22,
                 textStyle: { color: TEXTO, fontSize: 22, fontWeight: "bold" },
                 subtextStyle: { color: TEXTO_SUAVE, fontSize: 15 },
             },
-            grid: { left: 170, right: 90, top: 100, bottom: 40 },
+            grid: { left: 200, right: 90, top: 100, bottom: 40 },
             xAxis: { type: "value", axisLabel: { color: TEXTO_SUAVE, fontSize: 12 }, splitLine: { lineStyle: { color: REJILLA } } },
             yAxis: {
                 type: "category",
-                data: orden.map((p) => p.plexUsername),
-                axisLabel: { color: TEXTO, fontSize: 15 },
+                data: orden.map((s) => s.nombre),
+                axisLabel: { color: TEXTO, fontSize: 14 },
                 axisTick: { show: false },
             },
             series: [
                 {
                     type: "bar",
-                    data: orden.map((p) => p.horas),
+                    data: orden.map((s) => s.horas),
                     itemStyle: { color: "#e5a00d", borderRadius: [0, 6, 6, 0] },
                     label: { show: true, position: "right", color: TEXTO, fontSize: 13, formatter: (x) => fmtH(x.value) },
                 },
@@ -139,31 +120,46 @@ function grafico(d) {
             backgroundColor: FONDO,
         },
         900,
-        alto,
+        Math.max(260, 110 + orden.length * 56),
     );
 }
 
-/** Publica el resumen de un mes en el canal del ranking de Plex y lo marca como publicado. */
-async function publicar(guild, mes = mesAnterior()) {
-    const canalId = guildSettings.getSettings(guild.id).plex.ranking_canal;
-    if (!canalId) return { ok: false, motivo: "No hay canal para el ranking de Plex." };
-    const canal = guild.channels?.cache?.get(canalId) || (await guild.channels?.fetch?.(canalId).catch(() => null));
-    if (!canal?.isTextBased?.()) {
-        log.warn(`Plex Wrapped: el canal ${canalId} no existe o no es de texto en ${guild.name || guild.id}`);
-        return { ok: false, motivo: `No encuentro el canal <#${canalId}> (o no es de texto).` };
+const yaEnviado = (guildId, tautulliUserId, mes) =>
+    Boolean(
+        db
+            .prepare("SELECT 1 FROM plex_wrapped_enviados WHERE guildId = ? AND tautulliUserId = ? AND mes = ?")
+            .get(String(guildId), String(tautulliUserId), mes),
+    );
+
+/** Manda por DM el resumen de cada persona vinculada que ha visto algo ese mes y aún no lo tiene. Un DM fallido no para a los demás. */
+async function enviarPorDm(client, guild, mes) {
+    let enviados = 0;
+    for (const link of plexLinks.getLinks(guild.id)) {
+        if (yaEnviado(guild.id, link.tautulliUserId, mes.mes)) continue;
+        const r = resumenPersonal(guild.id, link.tautulliUserId, mes);
+        if (r.horas <= 0) continue;
+        try {
+            const usuario = await client.users.fetch(link.discordUserId);
+            const buf = graficoPersonal(r);
+            const files = buf ? [new AttachmentBuilder(buf, { name: "wrapped.png" })] : [];
+            await usuario.send({ content: mensajePersonal(r), files, allowedMentions: { parse: [] } });
+            db.prepare("INSERT INTO plex_wrapped_enviados (guildId, tautulliUserId, mes, enviado_en) VALUES (?, ?, ?, ?)").run(
+                String(guild.id),
+                String(link.tautulliUserId),
+                mes.mes,
+                Date.now(),
+            );
+            enviados++;
+        } catch (e) {
+            log.debug(`No se pudo mandar el Plex Wrapped a ${link.plexUsername} (DMs cerrados o error): ${e.message}`);
+        }
     }
-    const d = datos(guild.id, mes);
-    const buf = grafico(d);
-    const files = buf ? [new AttachmentBuilder(buf, { name: "wrapped.png" })] : [];
-    await canal.send({ ...mensaje(d), files });
-    guildSettings.setSetting(guild.id, "plex.wrapped_ultimo_mes", mes.mes);
-    log.info(`Plex Wrapped ${mes.mes} publicado en ${guild.name || guild.id}: ${d.personas.length} personas, ${fmtH(d.horas)}`);
-    return { ok: true, datos: d };
+    return enviados;
 }
 
 let enCurso = null;
 
-/** Cron (cada hora) y arranque: el día 1 desde las 10:00 (Madrid), publica el mes anterior en cada servidor que no lo tenga. */
+/** Cron (cada hora) y arranque: el día 1 desde las 10:00 (Madrid), manda el resumen del mes anterior a cada persona. */
 function enviarSiToca(client, ahora = Date.now()) {
     if (!enCurso) enCurso = enviar(client, ahora).finally(() => (enCurso = null));
     return enCurso;
@@ -173,10 +169,9 @@ async function enviar(client, ahora) {
     const { dia, hora } = plexHistorial.momento(Math.floor(ahora / 1000));
     if (!dia.endsWith("-01") || hora < HORA) return 0;
     const mes = mesAnterior(ahora);
-    let publicados = 0;
+    let enviados = 0;
     for (const guild of client.guilds.cache.values()) {
-        const cfg = guildSettings.getSettings(guild.id).plex;
-        if (!cfg.ranking_canal || cfg.wrapped_ultimo_mes === mes.mes || !plexLinks.getLinks(guild.id).length) continue;
+        if (!plexLinks.getLinks(guild.id).length) continue;
         const { url, apiKey } = tautulli.getConfig(guild.id);
         if (url && apiKey) {
             try {
@@ -186,12 +181,13 @@ async function enviar(client, ahora) {
             }
         }
         try {
-            if ((await publicar(guild, mes)).ok) publicados++;
+            enviados += await enviarPorDm(client, guild, mes);
         } catch (e) {
-            log.warn(`No se pudo publicar el Plex Wrapped en ${guild.name}: ${e.message}`);
+            log.warn(`No se pudo mandar el Plex Wrapped en ${guild.name}: ${e.message}`);
         }
     }
-    return publicados;
+    log.info(`Plex Wrapped ${mes.mes}: ${enviados} resúmenes enviados por DM`);
+    return enviados;
 }
 
-module.exports = { HORA, mesAnterior, datos, mensaje, grafico, publicar, enviarSiToca };
+module.exports = { HORA, mesAnterior, resumenPersonal, mensajePersonal, graficoPersonal, enviarPorDm, enviarSiToca };

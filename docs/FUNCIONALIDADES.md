@@ -850,7 +850,7 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 
 ### 🎯 Recomendaciones personales (#22)
 
-`/recomendar` (solo lo ves tú) propone qué ver a partir de lo que has visto en Plex en los últimos 6 meses: se toman tus
+En `/plex` → 🎯 **Para ti** (solo lo ves tú) propone qué ver a partir de lo que has visto en Plex en los últimos 6 meses: se toman tus
 3 títulos más vistos (las series, agrupadas por serie), se buscan en Seerr y se piden sus recomendaciones. Salen primero
 las que recomiendan más de tus títulos, y se descarta lo que ya has visto y lo que ya está en Plex. Cada sugerencia tiene
 un **📥** para pedirla en Seerr a tu nombre (tu perfil de Seerr debe estar vinculado a tu Discord). Requiere la cuenta
@@ -858,10 +858,11 @@ de Plex vinculada. Tests: `tests/recomendaciones.test.js`. Migración: ninguna.
 
 ### 🎞️ Plex Wrapped mensual (#23)
 
-El día 1 de cada mes, desde las 10:00 (hora de Madrid), el canal del ranking de Plex recibe el resumen del mes anterior:
-las horas vistas en total y por persona (con una gráfica), las series más vistas y quién es el **más viciado**. Solo
-cuenta a quien tiene la cuenta de Plex vinculada, con la copia local del historial. Una vez por mes y servidor
-(`plex.wrapped_ultimo_mes`). Tests: `tests/plexWrapped.test.js`. Migración: ninguna.
+El día 1 de cada mes, desde las 10:00 (hora de Madrid), **cada persona con la cuenta de Plex vinculada recibe por DM su
+propio resumen** del mes anterior: sus horas vistas, sus películas y episodios, y sus series más vistas, con una gráfica
+de sus series. Es privado: no se publica nada en ningún canal y nadie ve los datos de otra persona. Quien no ha visto nada
+ese mes no recibe nada. Cada persona recibe cada mes una sola vez (tabla `plex_wrapped_enviados`, migración 038). Se puede
+ver el de este mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo lo ves tú). Tests: `tests/plexWrapped.test.js`.
 
 ## 12. Administración
 
@@ -949,7 +950,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 
 ### 🎬 Sesión de cine (#24)
 
-`/cine peli:<texto> hora:<HH:MM>` convoca a un grupo a ver algo a esa hora (hora de Madrid; si ya ha pasado, es la de
+En `/plex` → 🎬 **Sesión de cine** (formulario con qué veis y la hora HH:MM) convoca a un grupo a ver algo a esa hora (hora de Madrid; si ya ha pasado, es la de
 mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
 
 - **🙋 Me apunto** / **🚪 Me salgo**. Quien convoca se apunta solo.
@@ -958,6 +959,28 @@ mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
   sesión. Lo revisa el cron cada 5 minutos.
 
 Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
+
+### 🍿 /plex: todo lo de Plex en un panel
+
+`/plex` agrupa lo de Plex en botones, como `/tienda` y `/duende`: 🎬 **Sesión de cine**, 🎯 **Para ti** (recomendaciones),
+🎞️ **Wrapped** (el resumen de tu último mes, solo para ti) y 🏅 **Mi Plex** (tus horas, trofeos y logros de Plex, la misma
+pestaña de `/perfil`). El panel te dice si tu cuenta de Plex está vinculada. Es privado: solo lo ves tú (las sesiones de
+cine sí se publican en el canal, para que la gente se apunte).
+
+### 🔊 /sonidos: el panel de sonidos
+
+`/sonidos` muestra un **panel público** con un botón por sonido, como el de Discord. Quien pulsa un botón (tiene que estar
+en un canal de voz) hace que el bot **entre a su canal, toque el sonido y se salga**. Solo puede sonar **uno a la vez** por
+servidor, y no entra si hay una conversación de voz con el Duende en marcha. Hay como mucho 40 sonidos por servidor, de 20
+en 20 por página.
+
+- **Subir** (solo admins, Gestionar servidor): `/sonidos archivo:<fichero> nombre:<texto>`. Formatos: mp3, ogg o wav, hasta
+  1 MB. El nombre tiene hasta 32 caracteres y es único (sin distinguir mayúsculas).
+- **Borrar** (solo admins): `/sonidos borrar:<nombre>`.
+- Reproducir necesita `ffmpeg` en el servidor (ya viene en la imagen de Docker).
+- `SONIDOS_DIR` (opcional) cambia la carpeta donde se guardan; por defecto, `data/sonidos`.
+
+Migración 037: `sonidos`. Tests: `tests/sonidos.test.js`, `tests/plexComando.test.js`.
 
 ## 15. Configuración (.env)
 
@@ -975,6 +998,7 @@ Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.te
 |---|---|
 | `TAUTULLI_URL`, `TAUTULLI_API_KEY` | Plex (también configurable en el panel) |
 | `SEERR_URL`, `SEERR_API_KEY` | Seerr (también configurable en el panel) |
+| `SONIDOS_DIR` | `data/sonidos` | Carpeta donde se guardan los sonidos de `/sonidos` |
 | `ODDS_DIRECTO` | `0` | `1` activa las apuestas en directo (#12): cuotas refrescadas cada 10 min mientras se juega. Gasta créditos de la Odds API |
 | `DUENDE_RECUERDOS_AUTO` | `1` | Recuerdos automáticos del Duende (#15): `0` lo apaga |
 | `DUENDE_RECUERDOS_MAX_DIA` | 40 | Llamadas a Gemini por día y servidor para detectar recuerdos |
