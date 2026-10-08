@@ -229,6 +229,10 @@ client.once("clientReady", async () => {
     cron.schedule("*/5 * * * *", () => runJob("Préstamos del Duende", () => require("./juegos/retos/duende").revisarPrestamos(client)), {
         noOverlap: true,
     });
+    // 🏪 Negocios: blanquea el dinero negro depositado (24 h) y paga el ingreso diario de cada negocio.
+    cron.schedule("*/5 * * * *", () => runJob("Negocios y blanqueo", () => require("./systems/negocios").revisar()), {
+        noOverlap: true,
+    });
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
         "15 * * * *",

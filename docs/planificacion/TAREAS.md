@@ -213,6 +213,16 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Si `/juegos` tiene canales restringidos (ACL), los botones del duelo no funcionan fuera de ellos: comprobar que el
       canal del Duende está permitido para `/juegos`.
 
+**🏪 Negocios y blanqueo (F-EC-06d, #80)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 025_negocios_blanqueo`.
+- [ ] Ingresar al banco y comprar 🧺 Lavandería en /perfil → 💰 Economía → 🏪 Negocios: se resta del banco, no del efectivo.
+- [ ] Intentar comprarla sin dinero en el banco: sale el aviso y no se cobra nada.
+- [ ] 🧼 Depositar más de lo que queda de capacidad hoy: sale el aviso con lo que queda.
+- [ ] Depositar dinero negro: baja el 🥷 negro, no cambia el efectivo, aparece 🧼 En limpieza.
+- [ ] Al cabo de unas horas (cron cada 5 min): sube el efectivo poco a poco, con 🧼 Blanqueo y 🏛️ Impuesto en Movimientos.
+- [ ] Al día siguiente (00:00, hora de Madrid): vuelve la capacidad y llega el ingreso diario (🏪 Negocios).
+- [ ] Vender el negocio: vuelve el 50 % del precio al banco.
+
 **🛡️ Objetos antirrobo (F-EC-06c, #79)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 023_objetos_antirrobo`; en la tienda salen el Candado y la Trampa para ladrones.
       Decidir si los precios (150 y 100) valen o cambiarlos en 🛒 Catálogo.
