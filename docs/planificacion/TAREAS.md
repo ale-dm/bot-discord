@@ -222,6 +222,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🌍 Trofeos por país (#19)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 034_paises_peliculas`.
+- [ ] Con `TMDB_API_KEY`, tras una sincronización, las películas con id de TMDB tienen países (`plex_fichas.paises`).
+- [ ] Con 5 películas de un mismo país vistas, sale "Viajero de …" (🟢); con 10, el de experto (🟡).
+- [ ] Sin `TMDB_API_KEY`, no pasa nada y no hay trofeos por país.
+
 **🎯 Recomendaciones personales (#22)**
 - [ ] `/recomendar` (con la cuenta de Plex vinculada y historial): salen hasta 5 títulos, con "Porque viste …".
 - [ ] Lo que ya has visto o ya está en Plex no sale.
