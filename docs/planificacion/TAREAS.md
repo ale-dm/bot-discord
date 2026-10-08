@@ -222,6 +222,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [ ] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**📰 Eventos diarios de TTCL (F-EC-12d, #120)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 029_eventos_ttcl`.
+- [ ] Durante el día, a la hora del evento: el precio de TTCL en `/cripto` sube o baja un 5 % y aparece en el historial del gráfico.
+- [ ] Quien tiene TTCL recibe un DM con el evento; quien no tiene TTCL no recibe nada.
+- [ ] Al día siguiente hay otro evento, a otra hora (aleatoria).
+
 **💸 Ventas de cripto sin impuesto (F-EC-12c, #119)**
 - [ ] Con el impuesto de ingresos activo, vender TTCL: el efectivo sube lo que sale en la previsión, sin línea de 🏛️ Impuesto.
 - [ ] Con un préstamo del Duende vencido o en deuda, vender TTCL: la deuda se descuenta de lo que entra.

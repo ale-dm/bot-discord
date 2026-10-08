@@ -713,6 +713,7 @@ cartera, historial, top de inversores e información de $TTCL.
   el pool manteniendo el producto constante, así que comprar sube el precio y vender lo baja. La comisión (1 %) se queda
   en el pool. ⏱️ El precio se registra cada 10 minutos para el gráfico.
 - Las **ventas** de TTCL no pagan impuesto de ingresos. Sí se descuenta la deuda con el Duende, si la hay.
+- **Eventos de mercado**: cada día hay uno de **±5 %** del precio de TTCL, a una hora aleatoria (hora de Madrid, elegida al empezar el día). Mueve la reserva de TTCL del pool, así que el precio sube o baja sin que nadie opere. Se avisa por DM a quien tenga TTCL.
 - Configurable: comisiones de compra/venta, cooldowns y mínimos/máximos por operación. Las reservas del pool no se
   configuran (van fijas en el código).
 
