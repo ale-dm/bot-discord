@@ -2,6 +2,19 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🧩 Combinadas: un boleto con varios partidos (#1))
+
+- Un boleto de **2 a 5 partidos** (un partido por pata), con la cuota total como producto de las patas. Gana si
+  aciertan todas; una pata que falla lo pierde al liquidarse su partido; un partido caducado devuelve el boleto entero.
+- Se arma en privado: ⚽ Apuestas → 🧩 Combinada, y en cada partido el menú 🧩 Sumar a mi combinada. Antes de pagar se
+  comprueba que los partidos sigan abiertos y las cuotas no hayan cambiado.
+- Elecciones: 1X2, goles (2,5) y hándicap (±1,5). No el marcador exacto.
+- La liquidación de cada partido paga o pierde las combinadas que tenían una pata en él, en la misma pasada que las
+  apuestas simples. El tope diario cuenta lo apostado.
+- Migración 032: `combinadas`, `combinada_patas` y `combinada_borrador`.
+- Tests: `tests/combinadas.test.js`, `tests/combinadasLiquidacion.test.js` (liquidación de punta a punta con la API
+  simulada) y `tests/combinadaPanel.test.js`.
+
 ## 2026-10-08 (⚽ Apuestas de más/menos goles y de hándicap (#9, #10))
 
 - **Más/menos 2,5 goles**: botones ⬆️ y ⬇️ debajo del 1/X/2, con la cuota que da la API.

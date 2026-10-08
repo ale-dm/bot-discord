@@ -59,6 +59,7 @@ test("la pestaña Apuestas lista los partidos, deja cambiar de competición y ti
         "apuestas_pagina_europa_1",
         "quiniela_refrescar_premier",
         "liga_ver",
+        "combinada_abrir",
     ]);
     expect(pestanas(payload).map(([id]) => id)).toEqual(PESTANAS);
 });

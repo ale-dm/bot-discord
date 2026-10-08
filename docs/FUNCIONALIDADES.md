@@ -624,6 +624,17 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League, 
 
 Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
 
+**🧩 Combinadas (#1)**: un boleto con **de 2 a 5 partidos** (uno por partido). La cuota total es el producto de las
+cuotas de cada pata y el premio es lo apostado × esa cuota. Se gana **solo si aciertas todas**: en cuanto falla una, el
+boleto se pierde. Si un partido se caduca sin resultado, la combinada se devuelve entera.
+- Se arma en privado: ⚽ Apuestas → **🧩 Combinada** abre tu boleto (solo lo ves tú). En cada partido, el menú
+  **🧩 Sumar a mi combinada** añade una pata con la elección que quieras (1X2, goles o hándicap). Un partido solo puede
+  tener una pata: si sumas otra elección del mismo partido, sustituye a la anterior.
+- Antes de pagar se comprueba cada partido y cada cuota: si ha empezado o la cuota ha cambiado, hay que volver a sumarlo.
+- El importe cuenta para el tope diario y cobra como las demás apuestas (efectivo y dinero negro).
+- No entra en 🧾 Mis jugadas ni en las estadísticas: sus combinadas en juego se ven en el propio boleto. Tampoco se
+  puede cancelar una vez apostada, ni se incluye el marcador exacto (su premio es fijo).
+
 **Mercados de goles y de hándicap (#9 y #10)**: debajo de los botones 1/X/2 de cada partido, cuando la API da la línea:
 - **⬆️ Más de 2,5 goles** / **⬇️ Menos de 2,5 goles**: gana si el total de goles es 3 o más (o 2 o menos).
 - **🏠 Local −1,5**: gana el local si gana por 2 o más. **✈️ Visitante +1,5**: gana si pierde por 1 o menos (o no pierde).
