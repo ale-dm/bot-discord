@@ -93,3 +93,28 @@ test("al caducar, si hay una conversación con el Duende, no se corta: se mira m
     jest.advanceTimersByTime(5 * 60 * 1000);
     expect(c.destroy).toHaveBeenCalled();
 });
+
+describe("no se corta un sonido a mitad", () => {
+    const sonidos = require("../src/systems/sonidos");
+
+    test("al caducar, si suena un sonido, se espera a que acabe", async () => {
+        jest.useFakeTimers();
+        const c = conexion();
+        await presencia.conectar(canal("c1"), { deps: deps(c) });
+        const suena = jest.spyOn(sonidos, "sonando").mockReturnValue(true);
+        jest.advanceTimersByTime(30 * 60 * 1000);
+        expect(c.destroy).not.toHaveBeenCalled();
+        suena.mockReturnValue(false);
+        jest.advanceTimersByTime(10 * 1000);
+        expect(c.destroy).toHaveBeenCalled();
+    });
+
+    test("/conectar no sustituye la presencia mientras suena un sonido", async () => {
+        const c = conexion();
+        jest.spyOn(sonidos, "sonando").mockReturnValue(true);
+        const r = await presencia.conectar(canal("c2"), { deps: deps(c) });
+        expect(r.ok).toBe(false);
+        expect(r.motivo).toMatch(/suena un sonido/);
+        expect(presencia.actual(G)).toBeNull();
+    });
+});

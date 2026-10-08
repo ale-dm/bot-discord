@@ -2,6 +2,36 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (arreglos de los logs: 🍿 Para ti, sincronización de Plex y avisos)
+
+- **`/plex` → 🎯 Para ti** fallaba con «must be url encoded» cuando un título tenía `:`, `&`, `#` o `/` (p. ej. «Star
+  Wars: Episode IV»). La búsqueda de Seerr ya quita esos caracteres antes de enviarla.
+- **Sincronización de fichas de Plex**: un 400 de Tautulli (el elemento no existe, p. ej. una película borrada de Plex)
+  se toma como «no tiene esa ficha», no como caída. Antes, unas pocas fichas así cortaban la sincronización en cada
+  pasada y nunca avanzaba. Los 401 y 500 siguen contando como fallo.
+- **Aviso de Discord.js**: se quitó la opción `fetchReply` (obsoleta) de `/sonidos`, `/ping` y `/plex`.
+- Tests: `tests/seerrBusqueda.test.js` y un caso en `tests/plexTautulliHttp.test.js`.
+
+## 2026-10-08 (🔊 sonidos: se reproducen enteros y sin dejar nada colgado)
+
+- **Los sonidos suenan enteros**: antes se cortaban a los 30 s. Ahora acaban solos, con un tope de 4 minutos por si el
+  reproductor se atasca.
+- **Limpieza al acabar**: se quita la suscripción y se para el reproductor, también en la presencia de `/conectar`.
+  Si Discord cierra la conexión a mitad, no se espera al tope.
+- **`/conectar`** no se sale ni sustituye la presencia mientras suena un sonido; lo reintenta unos segundos después.
+- **`/sonidos`** confirma «Sonando…» cuando el sonido empieza, en vez de cuando acaba.
+- Tests: `tests/sonidos.test.js` y `tests/presencia.test.js` (sonido largo, tope, limpieza, aviso al empezar, cierre a mitad).
+
+## 2026-10-08 (cabos sueltos: ayuda, logros, combinadas y premios de liga)
+
+- **`/ayuda`** tiene sección 🍿 Plex y nombra `/sonidos`, `/conectar` y `/pase`; `/pase` tiene su botón en 📈 Niveles.
+- **Pase de batalla**: cada logro completado da 20 XP de pase (tope 120 al día). Los que salen al importar el historial
+  de Plex no dan XP.
+- **Mis jugadas y Stats** muestran las 🧩 combinadas: las que están en juego, las resueltas y sus cifras.
+- **`/paneladmin` → ⚽ Apuestas → 🏆 Premios de liga**: los tres premios de la liga de pronósticos se editan con un
+  formulario, sin tocar los ajustes a mano.
+- Tests: `tests/cabosSueltos.test.js`.
+
 ## 2026-10-08 (🔌 `/conectar`, y los sonidos se suben desde /paneladmin)
 
 - **`/conectar`**: el bot entra al canal de voz que elijas y se queda 30 minutos. `/sonidos` suena ahí sin entrar y salir

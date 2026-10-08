@@ -56,6 +56,14 @@ async function call(guildId, cmd, params = {}, { timeout = 10000 } = {}) {
             timeout,
         });
     } catch (e) {
+        // Tautulli contesta 400 cuando no tiene ese elemento (p. ej. una película que ya se borró de Plex). Es una
+        // respuesta suya, no una caída: así la ficha se da por perdida y la sincronización sigue con las demás.
+        if (e.response?.status === 400) {
+            log.debug(`${cmd} sin resultado (HTTP 400, no tiene ese elemento)`);
+            const sinResultado = new Error(`Tautulli no tiene el elemento pedido en ${cmd} (HTTP 400)`);
+            sinResultado.respuestaDeTautulli = true;
+            throw sinResultado;
+        }
         log.warn(
             `${cmd} falló tras ${Date.now() - t0} ms: ${e.response?.status ? `HTTP ${e.response.status}` : e.code || ""} ${e.message}`,
         );
@@ -113,7 +121,13 @@ async function getMetadata(guildId, ratingKey) {
 
 /** Los hijos de un elemento: las temporadas de una serie o los episodios de una temporada (con su media_index). */
 async function getChildrenMetadata(guildId, ratingKey, mediaType) {
-    const data = await call(guildId, "get_children_metadata", { rating_key: ratingKey, media_type: mediaType });
+    let data;
+    try {
+        data = await call(guildId, "get_children_metadata", { rating_key: ratingKey, media_type: mediaType });
+    } catch (e) {
+        if (e.respuestaDeTautulli) return [];
+        throw e;
+    }
     return data?.children_list || [];
 }
 

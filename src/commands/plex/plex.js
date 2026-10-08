@@ -111,7 +111,7 @@ module.exports = {
             peli,
             inicio,
         });
-        await interaction.reply({ ...pantallaSesion(id), fetchReply: true });
+        await interaction.reply(pantallaSesion(id));
         const mensaje = await interaction.fetchReply();
         cine.guardarMensaje(id, mensaje.id);
     },

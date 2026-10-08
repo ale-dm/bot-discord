@@ -194,3 +194,101 @@ describe("reproducir", () => {
         expect((await sonidos.reproducir(G, canal(), sonido, deps())).ok).toBe(true);
     });
 });
+
+describe("reproducir bien: el sonido entero, sin dejar nada colgado", () => {
+    const { EventEmitter } = require("events");
+    const { AudioPlayerStatus } = require("@discordjs/voice");
+    const canalDe = () => ({
+        id: "c1",
+        name: "General",
+        guild: { id: G, voiceAdapterCreator: () => {}, members: { me: {} } },
+        permissionsFor: () => ({ has: () => true }),
+    });
+    const sonido = { id: 1, guildId: G, nombre: "Risa", archivo: "1.mp3" };
+    /** Un reproductor que se controla desde el test: Playing, Idle y error a mano. */
+    function reproductorManual() {
+        const r = new EventEmitter();
+        r.play = jest.fn();
+        r.stop = jest.fn();
+        return r;
+    }
+
+    afterEach(() => jest.useRealTimers());
+
+    test("un sonido largo no se corta a los 30 segundos: acaba cuando acaba", async () => {
+        jest.useFakeTimers();
+        const reproductor = reproductorManual();
+        const conexion = { subscribe: jest.fn(), destroy: jest.fn() };
+        const pendiente = sonidos.reproducir(G, null, sonido, {
+            presencia: { conexion },
+            crearReproductor: () => reproductor,
+            crearRecurso: (ruta) => ({ ruta }),
+        });
+        jest.advanceTimersByTime(90 * 1000);
+        expect(reproductor.stop).not.toHaveBeenCalled();
+        expect(sonidos.sonando(G)).toBe(true);
+        reproductor.emit(AudioPlayerStatus.Idle);
+        expect(await pendiente).toEqual({ ok: true });
+        expect(sonidos.sonando(G)).toBe(false);
+    });
+
+    test("al acabar quita la suscripción y para el reproductor", async () => {
+        const reproductor = reproductorManual();
+        const suscripcion = { unsubscribe: jest.fn() };
+        const conexion = { subscribe: jest.fn(() => suscripcion), destroy: jest.fn() };
+        const pendiente = sonidos.reproducir(G, null, sonido, {
+            presencia: { conexion },
+            crearReproductor: () => reproductor,
+            crearRecurso: (ruta) => ({ ruta }),
+        });
+        reproductor.emit(AudioPlayerStatus.Idle);
+        await pendiente;
+        expect(suscripcion.unsubscribe).toHaveBeenCalled();
+        expect(reproductor.stop).toHaveBeenCalledWith(true);
+    });
+
+    test("si el reproductor se atasca, el tope lo para (4 minutos) y el servidor queda libre", async () => {
+        jest.useFakeTimers();
+        const reproductor = reproductorManual();
+        const conexion = { subscribe: jest.fn(), destroy: jest.fn() };
+        const pendiente = sonidos.reproducir(G, null, sonido, {
+            presencia: { conexion },
+            crearReproductor: () => reproductor,
+            crearRecurso: (ruta) => ({ ruta }),
+        });
+        jest.advanceTimersByTime(4 * 60 * 1000);
+        expect(await pendiente).toEqual({ ok: true });
+        expect(reproductor.stop).toHaveBeenCalledWith(true);
+        expect(sonidos.sonando(G)).toBe(false);
+    });
+
+    test("avisa cuando el sonido empieza a sonar (no cuando acaba)", async () => {
+        const reproductor = reproductorManual();
+        const conexion = { subscribe: jest.fn(), destroy: jest.fn() };
+        const alEmpezar = jest.fn();
+        const pendiente = sonidos.reproducir(G, null, sonido, {
+            presencia: { conexion },
+            crearReproductor: () => reproductor,
+            crearRecurso: (ruta) => ({ ruta }),
+            alEmpezar,
+        });
+        expect(alEmpezar).not.toHaveBeenCalled();
+        reproductor.emit(AudioPlayerStatus.Playing);
+        expect(alEmpezar).toHaveBeenCalledTimes(1);
+        reproductor.emit(AudioPlayerStatus.Idle);
+        await pendiente;
+    });
+
+    test("si Discord cierra la conexión a mitad, no se espera al tope", async () => {
+        const reproductor = reproductorManual();
+        const conexion = Object.assign(new EventEmitter(), { subscribe: jest.fn(), destroy: jest.fn() });
+        const pendiente = sonidos.reproducir(G, null, sonido, {
+            presencia: { conexion },
+            crearReproductor: () => reproductor,
+            crearRecurso: (ruta) => ({ ruta }),
+        });
+        conexion.emit("destroyed");
+        expect(await pendiente).toEqual({ ok: true });
+        expect(sonidos.sonando(G)).toBe(false);
+    });
+});
