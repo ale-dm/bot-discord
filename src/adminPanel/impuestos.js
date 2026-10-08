@@ -4,6 +4,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags
 const impuestos = require("../systems/impuestos");
 const dinero = require("../systems/dinero");
 const adminAudit = require("../systems/adminAudit");
+const patrimonio = require("../systems/patrimonio");
 const { simpleModal, fmt } = require("./common");
 
 function lineaRegla(r) {
@@ -39,6 +40,35 @@ function buildImpuestosHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_cfg_home").setLabel("◀ Config Global").setStyle(ButtonStyle.Secondary),
     );
+    const fila2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_patrimonio").setLabel("🏦 Patrimonio").setStyle(ButtonStyle.Primary),
+    );
+    return { embeds: [embed], components: [row, fila2] };
+}
+
+function buildPatrimonio() {
+    const c = patrimonio.configuracion();
+    const embed = new EmbedBuilder()
+        .setTitle("🏦 Impuesto de patrimonio")
+        .setDescription(
+            "Cada persona tiene su propio ciclo: cada **" +
+                c.dias +
+                " días** paga primero el interés de su banco y después el " +
+                "impuesto, sobre lo que pasa del umbral. La base del impuesto es el banco más lo pagado por sus negocios. " +
+                "Lo que no se pueda pagar del banco no se cobra.",
+        )
+        .addFields(
+            { name: "Umbral", value: fmt(c.umbral) + " 🪙", inline: true },
+            { name: "Impuesto", value: c.porcentaje + " % sobre el exceso", inline: true },
+            { name: "Interés", value: c.interes + " % sobre el banco", inline: true },
+            { name: "Cada", value: c.dias + " días", inline: true },
+            { name: "Destino", value: c.destino === "bote" ? "→ bote" : "→ desaparece", inline: true },
+        )
+        .setColor(0x16a085);
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_patrimonio_edit").setLabel("✏️ Editar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("◀ Impuestos").setStyle(ButtonStyle.Secondary),
+    );
     return { embeds: [embed], components: [row] };
 }
 
@@ -46,6 +76,23 @@ async function handleImpuestosButton(interaction) {
     const id = interaction.customId;
     if (id === "paneladmin_impuestos_home") {
         await interaction.update(buildImpuestosHome(interaction.guildId));
+        return true;
+    }
+    if (id === "paneladmin_impuestos_patrimonio") {
+        await interaction.update(buildPatrimonio());
+        return true;
+    }
+    if (id === "paneladmin_impuestos_patrimonio_edit") {
+        const c = patrimonio.configuracion();
+        await interaction.showModal(
+            simpleModal("paneladmin_impuestos_patrimonio_modal", "Editar impuesto de patrimonio", [
+                { id: "umbral", label: "Umbral (monedas)", value: String(c.umbral) },
+                { id: "porcentaje", label: "Impuesto (% sobre el exceso)", value: String(c.porcentaje) },
+                { id: "interes", label: "Interés semanal (% del banco)", value: String(c.interes) },
+                { id: "dias", label: "Cada cuántos días", value: String(c.dias) },
+                { id: "destino", label: "Destino: bote o sumidero", value: c.destino },
+            ]),
+        );
         return true;
     }
     if (id === "paneladmin_impuestos_add") {
@@ -113,6 +160,24 @@ async function handleImpuestosModal(interaction) {
         const regla = impuestos.anadirRegla(guildId, { base, tipoMovimiento, porcentaje, destino });
         adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.add", details: regla });
         await interaction.reply({ content: `✅ Regla #${regla.id} añadida.`, flags: MessageFlags.Ephemeral });
+        return true;
+    }
+
+    if (id === "paneladmin_impuestos_patrimonio_modal") {
+        const f = (campo) => interaction.fields.getTextInputValue(campo).trim();
+        const r = patrimonio.guardarConfiguracion({
+            umbral: f("umbral"),
+            porcentaje: f("porcentaje"),
+            interes: f("interes"),
+            dias: f("dias"),
+            destino: f("destino"),
+        });
+        if (!r.ok) {
+            await interaction.reply({ content: `❌ ${r.mensaje}`, flags: MessageFlags.Ephemeral });
+            return true;
+        }
+        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.patrimonio", details: r.cfg });
+        await interaction.reply({ content: "✅ Impuesto de patrimonio guardado.", flags: MessageFlags.Ephemeral });
         return true;
     }
 

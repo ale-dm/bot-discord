@@ -213,6 +213,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Si `/juegos` tiene canales restringidos (ACL), los botones del duelo no funcionan fuera de ellos: comprobar que el
       canal del Duende está permitido para `/juegos`.
 
+**🏦 Patrimonio (F-EC-10, #81)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 026_patrimonio`.
+- [ ] En Config Global → 🏛️ Impuestos → 🏦 Patrimonio se ve la configuración (50.000, 1 %, 0,5 %, cada 7 días, bote). Editarla con un valor inválido (p. ej. 150 % de impuesto) sale el aviso y no cambia nada.
+- [ ] Al cumplirse el primer ciclo de alguien con más de 50.000 en el banco: sale 🏦 Patrimonio (interés) y 🏛️ Impuesto en Movimientos, y el saldo del banco baja lo justo.
+- [ ] La subida del bote aparece en Config Global → 🏛️ Impuestos.
+
 **🏪 Negocios y blanqueo (F-EC-06d, #80)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 025_negocios_blanqueo`.
 - [ ] Ingresar al banco y comprar 🧺 Lavandería en /perfil → 💰 Economía → 🏪 Negocios: se resta del banco, no del efectivo.
