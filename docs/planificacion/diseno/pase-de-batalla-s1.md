@@ -1,5 +1,7 @@
 # Pase de Batalla — Temporada S1 (15 días, 20 niveles)
 
+> **Implementado** (#36) sin los roles de Discord de la sección 3 ni de la 4: no se conceden permisos de moderación desde el juego. Las recompensas son monedas (🪙). Ver la sección 10 y [FUNCIONALIDADES](../../FUNCIONALIDADES.md).
+
 ## 1) Resumen de diseño
 
 - Duración: **15 días**

@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🛡️ Pase de batalla con `/pase` (#36))
+
+- Temporadas de 15 días, 20 niveles. Cada mensaje, minuto en voz, partida de casino, operación de cripto, apuesta
+  resuelta y compra en la tienda da XP de pase, con topes diarios. Cada día hay 3 misiones (70 XP al completarlas).
+- Las recompensas son monedas (80 🪙 en el nivel 1 hasta 2.500 🪙 en el 20, y 2.000 🪙 de bonus final). Se cobran con 🎁 Reclamar.
+- **No se conceden roles de Discord** (moderación, emojis...) como en el diseño: se dejó fuera a propósito y se dice en
+  el documento de diseño.
+- Pendiente: los logros no dan XP de pase; el "bonus de XP normal" del diseño no se aplica.
+- Migración 036. Tests: `tests/pasePase.test.js`.
+
 ## 2026-10-08 (🔴 Apuestas en directo (#12))
 
 - Con `ODDS_DIRECTO=1`, un partido admite apuestas durante sus 2 primeras horas, con las cuotas que se refrescan cada

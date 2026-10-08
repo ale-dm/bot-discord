@@ -581,6 +581,31 @@ Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran 
 
 ---
 
+### 🛡️ Pase de batalla (#36)
+
+`/pase` (solo lo ves tú) muestra tu pase de la temporada: **temporadas de 15 días** (empiezan el 1 de octubre de 2026 y
+se suceden solas). Cada cosa que haces da XP de pase, con topes diarios:
+
+| Qué | XP | Tope diario |
+|---|---|---|
+| Mensaje que cuenta para la XP | 2 | 120 |
+| Minuto en voz | 1 | 120 |
+| Partida de casino | 8 | 260 |
+| Operación de cripto | 6 | 180 |
+| Apuesta resuelta | 12 | 180 |
+| Compra en la tienda | 8 | 80 |
+
+Cada día hay **3 misiones** (rotan) que dan **70 XP** al completarse ("Envía 25 mensajes", "Pasa 10 minutos en voz", "Juega 5
+partidas de casino", "Haz 2 operaciones de cripto", "Ten 1 apuesta resuelta").
+
+Hay **20 niveles**. Subir de nivel desbloquea una recompensa en **monedas** (de 80 🪙 en el nivel 1 a 2.500 🪙 en el 20, más un
+bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por nivel, en efectivo. El **🏆 Top** ordena por XP.
+
+**Decisión:** el diseño ([docs/planificacion/diseno/pase-de-batalla-s1.md](planificacion/diseno/pase-de-batalla-s1.md))
+incluía roles de Discord como recompensa (expulsar, mover o silenciar en voz, renombrar a otros, subir emojis). **No se
+conceden**: los permisos de moderación no los decide un juego. Las recompensas son monedas. Los logros no dan XP de pase
+todavía. Migración 036. Tests: `tests/pasePase.test.js`.
+
 ## 8. Casino
 
 Todo lo que es apostar monedas (casino, apuestas deportivas, quiniela y retos entre jugadores) está en
