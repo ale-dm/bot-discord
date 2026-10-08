@@ -22,7 +22,6 @@ const interaccion = (extra = {}) => ({
     guild: { id: G, roles: { cache: new Map() }, channels: { fetch: async () => null } },
     message: { interaction: { user: { id: "comprador" } } },
     isButton: () => true,
-    options: { getSubcommand: () => "inventario", getString: () => null },
     reply: jest.fn(async () => {}),
     update: jest.fn(async () => {}),
     ...extra,
@@ -50,7 +49,7 @@ test("comprar un consumible: botones para verlo en el inventario o usarlo ya, y 
     expect(ids(usado).some((id) => id.startsWith("tienda_usar_"))).toBe(false);
 });
 
-test("las tres pestañas en todas las pantallas, y /tienda inventario abre la suya", async () => {
+test("las tres pestañas en todas las pantallas, y /tienda abre el catálogo con ellas", async () => {
     const esperadas = ["tienda_volver_1", "tienda_inv_1_tab", "historial_ver_1"];
     const inv = interaccion();
     await comando.run(null, inv);
