@@ -166,7 +166,7 @@ function comprarTtcl(guildId, userId, monedasInvertidas) {
     }
 }
 
-function venderTtcl(guildId, userId, ttclAVender, pct, minSell, maxSell, feeSellPct) {
+function venderTtcl(userId, ttclAVender, pct, minSell, maxSell, feeSellPct) {
     try {
         const resultado = db.transaction(() => {
             const pool = leerPool();
@@ -189,9 +189,8 @@ function venderTtcl(guildId, userId, ttclAVender, pct, minSell, maxSell, feeSell
             const neto = brutas - fee;
             // La comisión se queda en el pool: el pool entrega el neto y recibe el TTCL.
             db.prepare("UPDATE cripto_pool SET monedas = monedas - ?, ttcl = ttcl + ? WHERE id = 1").run(neto, ttclAVender);
-            dinero.pagarConImpuesto(
+            dinero.pagarSinImpuesto(
                 userId,
-                guildId,
                 "cripto",
                 `Venta ${formatCryptoAmt(ttclAVender)} TTCL${fee > 0 ? ` (comisión ${fee})` : ""}`,
                 neto,
@@ -262,7 +261,7 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
     const maxSell = Math.max(minSell, Number(cfg.max_sell || minSell));
     const feeSellPct = Math.max(0, Number(cfg.fee_sell_pct || 0));
 
-    const r = venderTtcl(guildId, userId, cantAVender, pct, minSell, maxSell, feeSellPct);
+    const r = venderTtcl(userId, cantAVender, pct, minSell, maxSell, feeSellPct);
     if (r.ok) {
         void achievements.applyEvent(guildId, userId, "cripto_sell_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
