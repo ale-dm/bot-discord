@@ -27,7 +27,7 @@ function buildConfigHome(guildId) {
             },
             {
                 name: "📈 Cripto",
-                value: `TTCL base: **${cfg.cripto.ttcl_base_price}**\nVolatilidad: **${cfg.cripto.ttcl_volatility}**\nFee buy/sell: **${cfg.cripto.fee_buy_pct}% / ${cfg.cripto.fee_sell_pct}%**`,
+                value: `Fee buy/sell: **${cfg.cripto.fee_buy_pct}% / ${cfg.cripto.fee_sell_pct}%**`,
                 inline: true,
             },
             {
@@ -162,9 +162,9 @@ function buildCriptoPanel(guildId) {
     const c = guildSettings.getSettings(guildId).cripto;
     const embed = new EmbedBuilder()
         .setTitle("📈 Cripto")
-        .setDescription("Configura TTCL, comisiones y límites/cooldowns de compra-venta.")
+        .setDescription("Configura comisiones y límites/cooldowns de compra-venta. El precio de TTCL sale del pool de liquidez.")
         .addFields(
-            { name: "TTCL", value: `Base: **${c.ttcl_base_price}**\nVolatilidad: **${c.ttcl_volatility}**`, inline: true },
+            { name: "TTCL", value: "Pool de liquidez: reservas fijas en el código", inline: true },
             { name: "Fees", value: `Compra: **${c.fee_buy_pct}%**\nVenta: **${c.fee_sell_pct}%**`, inline: true },
             { name: "Compra", value: `Min/Max: **${c.min_buy} / ${c.max_buy}**\nCooldown: **${c.cooldown_buy_sec}s**`, inline: true },
             { name: "Venta", value: `Min/Max: **${c.min_sell} / ${c.max_sell}**\nCooldown: **${c.cooldown_sell_sec}s**`, inline: true },
@@ -461,9 +461,7 @@ async function handleSettingsButton(interaction) {
 
     if (id === "paneladmin_cfg_cripto_market") {
         const c = guildSettings.getSettings(guildId).cripto;
-        const modal = simpleModal("paneladmin_cfg_cripto_market_modal", "Cripto: TTCL + Fees", [
-            { id: "base", label: "TTCL precio base", value: String(c.ttcl_base_price) },
-            { id: "vol", label: "TTCL volatilidad", value: String(c.ttcl_volatility) },
+        const modal = simpleModal("paneladmin_cfg_cripto_market_modal", "Cripto: comisiones", [
             { id: "feeBuy", label: "Fee compra %", value: String(c.fee_buy_pct) },
             { id: "feeSell", label: "Fee venta %", value: String(c.fee_sell_pct) },
         ]);
@@ -639,8 +637,6 @@ async function handleSettingsModal(interaction) {
 
     if (id === "paneladmin_cfg_cripto_market_modal") {
         guildSettings.setManySettings(guildId, {
-            "cripto.ttcl_base_price": interaction.fields.getTextInputValue("base").trim(),
-            "cripto.ttcl_volatility": interaction.fields.getTextInputValue("vol").trim(),
             "cripto.fee_buy_pct": interaction.fields.getTextInputValue("feeBuy").trim(),
             "cripto.fee_sell_pct": interaction.fields.getTextInputValue("feeSell").trim(),
         });

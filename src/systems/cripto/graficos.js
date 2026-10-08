@@ -22,7 +22,7 @@ function roundRect(ctx, x, y, w, h, r) {
 async function generateLineChart(cryptoId, days, labelText, hexColor, guildId = null) {
     try {
         const { createCanvas } = require("canvas");
-        let history = await fetchCryptoHistory(cryptoId, days, guildId);
+        let history = await fetchCryptoHistory(cryptoId, days);
         if (!history || history.length < 2) return null;
         if (history.length > 400) {
             const step = Math.ceil(history.length / 400);
@@ -273,7 +273,7 @@ async function generateDonutChart(userId, guildId = null) {
         if (!cartera.length) return null;
 
         const prices = await fetchGeckoPrices();
-        const ttclPrecio = getTtclPrecio(guildId);
+        const ttclPrecio = getTtclPrecio();
 
         const segments = [];
         for (const row of cartera) {

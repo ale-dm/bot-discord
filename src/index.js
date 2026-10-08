@@ -298,7 +298,7 @@ client.once("clientReady", async () => {
             runJob("Ticker TTCL", () => {
                 // Con el servidor: sin él se usaba el precio base por defecto e ignoraba el configurado
                 // en el panel, y la gráfica saltaba entre los dos precios cada 10 minutos.
-                const currentPrice = cripto.getTtclPrecio(client.guilds.cache.first()?.id ?? null);
+                const currentPrice = cripto.getTtclPrecio();
                 db.prepare("INSERT INTO cripto_ttcl_precios (precio, timestamp) VALUES (?, ?)").run(currentPrice, Date.now());
                 createLogger("Cripto").debug(`Ticker TTCL: precio registrado ${Number(currentPrice).toFixed(2)}`);
             }),
