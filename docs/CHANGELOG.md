@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🏪 Negocios y blanqueo (F-EC-06d, #80): cierra la economía de robos y dinero negro (#37))
+
+Última pieza de #37: los negocios convierten el dinero negro en dinero limpio, poco a poco.
+
+- Cuatro negocios comprables con el **banco** (🧺 Lavandería, 📦 Oficina de correos, 🚗 Túnel de lavado, 🌮 Taco
+  Ticklers), uno de cada tipo por persona. Venta por el 50 % del precio pagado, al banco.
+- **Blanqueo**: el dinero negro depositado se limpia en 24 h, repartido a lo largo del día, con un tope diario
+  conjunto (suma de la capacidad de los negocios) que se reinicia a las 00:00 (hora de Madrid). Al limpiarse, pasa al
+  efectivo y paga impuesto como cualquier ingreso (tipo 🧼 Blanqueo).
+- **Ingreso diario** de cada negocio en efectivo (100 / 250 / 500 / 800), una vez por día, también con impuesto
+  (tipo 🏪 Negocios).
+- Migración 025 (`negocios_usuario`, `blanqueo_lotes`, `blanqueo_dia`). Cron cada 5 min (`systems/negocios.revisar`).
+- Panel en 💰 Economía → 🏪 Negocios: comprar o vender con un menú, y 🧼 Depositar dinero negro con un formulario.
+- Tests nuevos en `tests/negocios.test.js`: compra y venta con el banco, tope diario y su reinicio a medianoche en
+  Madrid, limpieza proporcional con impuesto (sin pagar dos veces), ingreso diario una vez al día, y el panel.
+
 ## 2026-10-08 (🧙 El Duende en la economía: retos, apuestas y préstamos desde el chat (F-DU-03, #14))
 
 El Duende ya puede jugarse monedas contigo desde el chat: retarte a 🪨 piedra, papel o tijera, apostar contigo a un
