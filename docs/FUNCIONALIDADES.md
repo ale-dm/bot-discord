@@ -802,6 +802,18 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 
 ---
 
+### 🎬 Sesión de cine (#24)
+
+`/cine peli:<texto> hora:<HH:MM>` convoca a un grupo a ver algo a esa hora (hora de Madrid; si ya ha pasado, es la de
+mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
+
+- **🙋 Me apunto** / **🚪 Me salgo**. Quien convoca se apunta solo.
+- **🛑 Cancelar sesión**: solo quien la convocó o un admin.
+- **Recordatorio**: 10 minutos antes, el bot avisa en el canal y menciona a quien se haya apuntado. Una sola vez por
+  sesión. Lo revisa el cron cada 5 minutos.
+
+Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
+
 ## 12. Administración
 
 ### `/paneladmin` 🔒

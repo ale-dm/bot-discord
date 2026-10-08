@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🎬 Sesión de cine: `/cine` con botones para apuntarse (#24))
+
+- `/cine peli hora`: convoca una sesión de cine a una hora de Madrid. Quien convoca se apunta solo; los demás, con 🙋
+  Me apunto. Se sale con 🚪 Me salgo, y se cancela con 🛑 (quien convoca o un admin).
+- 10 minutos antes se avisa en el canal, con menciones a quien se apuntó. Una vez por sesión.
+- Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
+
 ## 2026-10-08 (🧩 Combinadas: un boleto con varios partidos (#1))
 
 - Un boleto de **2 a 5 partidos** (un partido por pata), con la cuota total como producto de las patas. Gana si
