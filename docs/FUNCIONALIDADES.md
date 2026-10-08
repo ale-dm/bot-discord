@@ -131,6 +131,19 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 
 ---
 
+### 🧠 Recuerdos automáticos (#15)
+
+El Duende lee la conversación en segundo plano y, cuando algo merece recordarse de alguien (un gusto, un dato de su vida,
+una manía), lo **propone** como nota de su perfil. Nada se guarda sin aprobación:
+
+- Mira a cada persona cada **10 mensajes** con texto de verdad (60 caracteres o más), en el canal del Duende si hay uno
+  configurado. Tope de llamadas a Gemini por día y servidor.
+- La propuesta llega por **DM a los admins** (`alertas.admin_ids`), con ✅ **Guardar** y ❌ **Descartar**. Lo decide un
+  admin, una sola vez; si lo guarda, pasa a las notas de la persona (`/duende` → 🧠 Recuerdos).
+- `DUENDE_RECUERDOS_AUTO=0` lo apaga; `DUENDE_RECUERDOS_MAX_DIA` (40 por defecto) limita las llamadas.
+
+Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.js`.
+
 ## 3. IA y multimedia
 
 | Comando | Qué hace |
@@ -930,6 +943,8 @@ Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.te
 |---|---|
 | `TAUTULLI_URL`, `TAUTULLI_API_KEY` | Plex (también configurable en el panel) |
 | `SEERR_URL`, `SEERR_API_KEY` | Seerr (también configurable en el panel) |
+| `DUENDE_RECUERDOS_AUTO` | `1` | Recuerdos automáticos del Duende (#15): `0` lo apaga |
+| `DUENDE_RECUERDOS_MAX_DIA` | 40 | Llamadas a Gemini por día y servidor para detectar recuerdos |
 | `TMDB_API_KEY` | Clave de TMDB (opcional): de cada película de Plex, sus países de producción, para los trofeos por país (🌍) |
 | `GIPHY_API_KEY` | GIFs del Duende |
 | `ESTADOS` | Lista separada por comas de estados del bot |
