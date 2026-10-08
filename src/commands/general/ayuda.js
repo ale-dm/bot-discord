@@ -107,7 +107,6 @@ const SECCIONES = {
         abrir: [["cripto", "", "Cripto", "📊"]],
         texto: [
             "`/cripto` — panel con precios, gráficos, compra, venta, cartera e historial.",
-            "BTC, ETH, SOL, BNB, XRP y DOGE con su precio real (1 € = 1.000 monedas).",
             "**$TTCL**, la moneda del servidor: su precio sube cuando se compra y baja cuando se vende.",
         ],
     },

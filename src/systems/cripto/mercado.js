@@ -1,7 +1,7 @@
-// Mercado de criptomonedas: TTCL con su pool de liquidez, precios reales de CoinGecko, historial de precios y
-// compra/venta. Sin nada de Discord: lo usan /cripto, /perfil, las herramientas del Duende y el ticker de index.js.
+// Mercado de criptomonedas: TTCL con su pool de liquidez, historial de precios y compra/venta. Sin nada de Discord:
+// lo usan /cripto, /perfil, las herramientas del Duende y el ticker de index.js.
 const db = require("../../core/db");
-const { logError, logInfo, logWarn } = require("../../core/logger");
+const { logError, logInfo } = require("../../core/logger");
 const guildSettings = require("../guildSettings");
 const achievements = require("../achievementsSystem");
 const dinero = require("../dinero");
@@ -17,19 +17,7 @@ const TTCL = {
     precioInicial: 100,
 };
 
-const REAL_CRYPTOS = [
-    { id: "bitcoin", nombre: "Bitcoin", simbolo: "BTC", emoji: "🟡", color: "#f7931a" },
-    { id: "ethereum", nombre: "Ethereum", simbolo: "ETH", emoji: "🔷", color: "#627eea" },
-    { id: "solana", nombre: "Solana", simbolo: "SOL", emoji: "🟢", color: "#00ffa3" },
-    { id: "binancecoin", nombre: "BNB", simbolo: "BNB", emoji: "🟠", color: "#f3ba2f" },
-    { id: "ripple", nombre: "XRP", simbolo: "XRP", emoji: "🔵", color: "#346aa9" },
-    { id: "dogecoin", nombre: "Dogecoin", simbolo: "DOGE", emoji: "🐕", color: "#c2a633" },
-];
-
-const ALL_CRYPTOS = [TTCL, ...REAL_CRYPTOS];
-
-// 1 € = 1.000 monedas del servidor
-const COINS_PER_EUR = 1000;
+const ALL_CRYPTOS = [TTCL];
 
 // Opciones para el selector de rango de gráfico
 const RANGE_OPTIONS = [
@@ -68,29 +56,7 @@ function ttclCirculacion() {
     return db.prepare("SELECT COALESCE(SUM(cantidad), 0) AS n FROM cripto_carteras WHERE cripto = 'TTCL'").get().n;
 }
 
-// ─── COINGECKO ────────────────────────────────────────────────────────────────
-
-let geckoCache = { data: null, ts: 0 };
-const GECKO_TTL = 60_000;
-
-async function fetchGeckoPrices() {
-    const now = Date.now();
-    if (geckoCache.data && now - geckoCache.ts < GECKO_TTL) return geckoCache.data;
-    try {
-        const ids = REAL_CRYPTOS.map((c) => c.id).join(",");
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=eur`;
-        // Con timeout: sin él, una CoinGecko lenta dejaba colgada la compra/venta.
-        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-        // Un 429 (rate limit) devuelve JSON de error: no se cachea como si fueran precios.
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        geckoCache = { data, ts: now };
-        return data;
-    } catch (e) {
-        logWarn("[Cripto] CoinGecko price fetch failed: " + e.message);
-        return geckoCache.data || {};
-    }
-}
+// ─── HISTORIAL DE PRECIOS ─────────────────────────────────────────────────────
 
 const historyCache = new Map();
 const HISTORY_CACHE_TTL = 5 * 60_000;
@@ -100,31 +66,14 @@ async function fetchCryptoHistory(cryptoId, days) {
     const cached = historyCache.get(cacheKey);
     if (cached && Date.now() - cached.ts < HISTORY_CACHE_TTL) return cached.data;
 
-    let data = [];
-
-    if (cryptoId === "TTCL") {
-        const since = days >= 365 ? 0 : Date.now() - days * 24 * 3600 * 1000;
-        const rows = db.prepare("SELECT precio, timestamp FROM cripto_ttcl_precios WHERE timestamp >= ? ORDER BY timestamp ASC").all(since);
-        data = rows.map((r) => ({ t: r.timestamp, p: r.precio }));
-        // Añadir punto actual
-        data.push({ t: Date.now(), p: getTtclPrecio() });
-        // Si no hay historial suficiente, añadir punto inicial del módulo para poder dibujar algo
-        if (data.length < 2) {
-            data.unshift({ t: data[0]?.t - 1000 || Date.now() - 1000, p: TTCL.precioInicial });
-        }
-    } else {
-        try {
-            const daysParam = days >= 365 ? "365" : String(days);
-            const url = `https://api.coingecko.com/api/v3/coins/${cryptoId}/market_chart?vs_currency=eur&days=${daysParam}`;
-            const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const raw = await res.json();
-            data = (raw.prices || []).map(([t, p]) => ({ t, p: p * COINS_PER_EUR }));
-        } catch (e) {
-            logWarn("[Cripto] CoinGecko history fetch failed: " + e.message);
-            // Un fallo (timeout, 429...) no se cachea 5 min: el siguiente intento vuelve a probar.
-            return cached ? cached.data : [];
-        }
+    const since = days >= 365 ? 0 : Date.now() - days * 24 * 3600 * 1000;
+    const rows = db.prepare("SELECT precio, timestamp FROM cripto_ttcl_precios WHERE timestamp >= ? ORDER BY timestamp ASC").all(since);
+    const data = rows.map((r) => ({ t: r.timestamp, p: r.precio }));
+    // Añadir punto actual
+    data.push({ t: Date.now(), p: getTtclPrecio() });
+    // Si no hay historial suficiente, añadir punto inicial del módulo para poder dibujar algo
+    if (data.length < 2) {
+        data.unshift({ t: data[0]?.t - 1000 || Date.now() - 1000, p: TTCL.precioInicial });
     }
 
     historyCache.set(cacheKey, { data, ts: Date.now() });
@@ -160,17 +109,14 @@ function cryptoInfoBySymbol(sym) {
 }
 
 /**
- * Valor en monedas de la cartera de alguien: TTCL con el precio del pool y el resto con el de CoinGecko (cacheado
- * 1 min). Si CoinGecko no responde, esas criptos valen 0.
+ * Valor en monedas de la cartera de alguien, con el precio del pool.
  * @returns {Promise<{ lineas: {cripto, cantidad, info, precio, valor}[], total: number }>}
  */
 async function valorarCartera(userId) {
-    const cartera = getUserCarteras(userId);
-    const prices = cartera.some((r) => r.cripto !== "TTCL") ? await fetchGeckoPrices() : {};
     const ttclP = getTtclPrecio();
-    const lineas = cartera.map((row) => {
+    const lineas = getUserCarteras(userId).map((row) => {
         const info = cryptoInfoBySymbol(row.cripto);
-        const precio = row.cripto === "TTCL" ? ttclP : (prices[info?.id]?.eur || 0) * COINS_PER_EUR;
+        const precio = row.cripto === "TTCL" ? ttclP : 0;
         return { cripto: row.cripto, cantidad: row.cantidad, info, precio, valor: row.cantidad * precio };
     });
     return { lineas, total: lineas.reduce((acc, l) => acc + l.valor, 0) };
@@ -270,6 +216,7 @@ function venderTtcl(guildId, userId, ttclAVender, pct, minSell, maxSell, feeSell
 // ─── LÓGICA DE TRANSACCIONES ──────────────────────────────────────────────────
 
 async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
+    if (sym !== "TTCL") return { ok: false, msg: "Esa cripto ya no se opera." };
     const cfg = guildSettings.getSettings(guildId).cripto;
     const minBuy = Math.max(1, Number(cfg.min_buy || 0));
     const maxBuy = Math.max(minBuy, Number(cfg.max_buy || minBuy));
@@ -284,68 +231,22 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
         return { ok: false, msg: `⏳ Espera ${limiter.retrySeconds || 1}s antes de volver a comprar.` };
     }
 
-    if (sym === "TTCL") {
-        const r = comprarTtcl(guildId, userId, monedasInvertidas);
-        if (r.ok) {
-            void achievements.applyEvent(guildId, userId, "cripto_buy_count", 1);
-            void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
-            void achievements.applyEvent(guildId, userId, "cripto_buy_volume", monedasInvertidas);
-            void achievements.applyEvent(guildId, userId, "cripto_volume", monedasInvertidas);
-            const ttcl = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId)?.cantidad || 0;
-            void achievements.applyEvent(guildId, userId, "ttcl_hold_max", ttcl);
-        }
-        return r;
-    }
-
-    // Criptos reales (se quitan en #118): precio de CoinGecko, sin pool.
-    const ci = cryptoInfoBySymbol(sym);
-    const prices = await fetchGeckoPrices();
-    const priceCoins = (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
-    if (!priceCoins) return { ok: false, msg: "No se pudo obtener el precio." };
-
-    const feeBuyPct = Math.max(0, Number(cfg.fee_buy_pct || 0));
-    const fee = Math.floor((monedasInvertidas * feeBuyPct) / 100);
-    const costeTotal = monedasInvertidas + fee;
-    const saldo = getUserSaldo(userId);
-    if (saldo < costeTotal)
-        return { ok: false, msg: `No te llega el efectivo: necesitas ${costeTotal.toLocaleString("es")} 🪙. Saca dinero del banco.` };
-
-    const cryptoAmt = monedasInvertidas / priceCoins;
-    try {
-        const comprada = db.transaction(() => {
-            if (!dinero.cobrar(userId, costeTotal)) return false;
-            db.prepare(
-                `
-                INSERT INTO cripto_carteras (userId, cripto, cantidad)
-                VALUES (?, ?, ?)
-                ON CONFLICT(userId, cripto) DO UPDATE SET cantidad = cantidad + excluded.cantidad
-            `,
-            ).run(userId, sym, cryptoAmt);
-            dinero.apuntar(userId, "cripto", `Compra ${formatCryptoAmt(cryptoAmt)} ${sym}${fee > 0 ? ` (fee ${fee})` : ""}`, -costeTotal);
-            db.prepare(
-                "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp) VALUES (?,?,?,?,?,?,?)",
-            ).run(userId, "compra", sym, cryptoAmt, priceCoins, costeTotal, Date.now());
-            return true;
-        })();
-        if (!comprada)
-            return { ok: false, msg: `No te llega el efectivo: necesitas ${costeTotal.toLocaleString("es")} 🪙. Saca dinero del banco.` };
+    const r = comprarTtcl(guildId, userId, monedasInvertidas);
+    if (r.ok) {
         void achievements.applyEvent(guildId, userId, "cripto_buy_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_buy_volume", monedasInvertidas);
         void achievements.applyEvent(guildId, userId, "cripto_volume", monedasInvertidas);
-        logInfo(
-            `[Cripto] Compra: ${userId} compró ${cryptoAmt.toFixed(6)} ${sym} a ${priceCoins.toFixed(2)} por ${costeTotal} monedas (comisión ${fee})`,
-        );
-        return { ok: true, cantidad: cryptoAmt, precio: priceCoins, monedas: monedasInvertidas, fee, costeTotal };
-    } catch (e) {
-        logError(`[Cripto] Error en compra de ${sym} por ${userId}:`, e);
-        return { ok: false, msg: "Error interno al procesar la compra." };
+        const ttcl = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId)?.cantidad || 0;
+        void achievements.applyEvent(guildId, userId, "ttcl_hold_max", ttcl);
     }
+    return r;
 }
 
 async function ejecutarVenta(guildId, userId, sym, pct) {
+    if (sym !== "TTCL") return { ok: false, msg: "Esa cripto ya no se opera." };
     const cfg = guildSettings.getSettings(guildId).cripto;
-    const row = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = ?").get(userId, sym);
+    const row = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId);
     if (!row || row.cantidad <= 0) return { ok: false, msg: "No tienes esa cripto en cartera." };
 
     const limiter = guildSettings.checkAndConsumeLimit(guildId, "cripto_sell", userId, {
@@ -361,78 +262,25 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
     const maxSell = Math.max(minSell, Number(cfg.max_sell || minSell));
     const feeSellPct = Math.max(0, Number(cfg.fee_sell_pct || 0));
 
-    if (sym === "TTCL") {
-        const r = venderTtcl(guildId, userId, cantAVender, pct, minSell, maxSell, feeSellPct);
-        if (r.ok) {
-            void achievements.applyEvent(guildId, userId, "cripto_sell_count", 1);
-            void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
-            void achievements.applyEvent(guildId, userId, "cripto_sell_volume", r.monedas);
-            void achievements.applyEvent(guildId, userId, "cripto_volume", r.monedas);
-            const ttcl = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId)?.cantidad || 0;
-            void achievements.applyEvent(guildId, userId, "ttcl_hold_max", ttcl);
-        }
-        return r;
-    }
-
-    // Criptos reales (se quitan en #118): precio de CoinGecko, sin pool.
-    const ci = cryptoInfoBySymbol(sym);
-    const prices = await fetchGeckoPrices();
-    const priceCoins = (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
-    if (!priceCoins) return { ok: false, msg: "No se pudo obtener el precio." };
-
-    const monedasBrutas = Math.floor(cantAVender * priceCoins);
-    if (monedasBrutas < minSell || monedasBrutas > maxSell) {
-        return { ok: false, msg: `La venta debe estar entre ${minSell.toLocaleString("es")} y ${maxSell.toLocaleString("es")} 🪙.` };
-    }
-    const fee = Math.floor((monedasBrutas * feeSellPct) / 100);
-    const monedasRecibidas = Math.max(0, monedasBrutas - fee);
-
-    try {
-        // La cantidad se leyó antes de esperar a CoinGecko: se descuenta solo si sigue habiendo suficiente.
-        const vendida = db.transaction(() => {
-            const r = db
-                .prepare(
-                    "UPDATE cripto_carteras SET cantidad = MAX(0, cantidad - ?) WHERE userId = ? AND cripto = ? AND cantidad >= ? - 1e-9",
-                )
-                .run(cantAVender, userId, sym, cantAVender);
-            if (r.changes === 0) return false;
-            dinero.pagarConImpuesto(
-                userId,
-                guildId,
-                "cripto",
-                `Venta ${formatCryptoAmt(cantAVender)} ${sym}${fee > 0 ? ` (fee ${fee})` : ""}`,
-                monedasRecibidas,
-            );
-            db.prepare(
-                "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp) VALUES (?,?,?,?,?,?,?)",
-            ).run(userId, "venta", sym, cantAVender, priceCoins, monedasRecibidas, Date.now());
-            return true;
-        })();
-        if (!vendida) return { ok: false, msg: "Ya no tienes esa cantidad en cartera (¿otra venta a la vez?)." };
+    const r = venderTtcl(guildId, userId, cantAVender, pct, minSell, maxSell, feeSellPct);
+    if (r.ok) {
         void achievements.applyEvent(guildId, userId, "cripto_sell_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
-        void achievements.applyEvent(guildId, userId, "cripto_sell_volume", monedasRecibidas);
-        void achievements.applyEvent(guildId, userId, "cripto_volume", monedasRecibidas);
-        logInfo(
-            `[Cripto] Venta: ${userId} vendió ${cantAVender.toFixed(6)} ${sym} (${pct}%) a ${priceCoins.toFixed(2)} por ${monedasRecibidas} monedas (comisión ${fee})`,
-        );
-        return { ok: true, cantidad: cantAVender, precio: priceCoins, monedas: monedasRecibidas, fee };
-    } catch (e) {
-        logError(`[Cripto] Error en venta de ${sym} por ${userId}:`, e);
-        return { ok: false, msg: "Error interno al procesar la venta." };
+        void achievements.applyEvent(guildId, userId, "cripto_sell_volume", r.monedas);
+        void achievements.applyEvent(guildId, userId, "cripto_volume", r.monedas);
+        const ttcl = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId)?.cantidad || 0;
+        void achievements.applyEvent(guildId, userId, "ttcl_hold_max", ttcl);
     }
+    return r;
 }
 
 module.exports = {
     TTCL,
-    REAL_CRYPTOS,
     ALL_CRYPTOS,
-    COINS_PER_EUR,
     RANGE_OPTIONS,
     leerPool,
     ttclCirculacion,
     getTtclPrecio,
-    fetchGeckoPrices,
     fetchCryptoHistory,
     formatCoins,
     formatCryptoAmt,

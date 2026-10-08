@@ -26,15 +26,7 @@ function buildGraficoSelectPanel() {
         new StringSelectMenuBuilder()
             .setCustomId("cripto_grafico_sel")
             .setPlaceholder("Selecciona una criptomoneda")
-            .addOptions([
-                { label: "$TTCL — Cripto del servidor", value: "TTCL", emoji: "🟣" },
-                { label: "Bitcoin (BTC)", value: "BTC", emoji: "🟡" },
-                { label: "Ethereum (ETH)", value: "ETH", emoji: "🔷" },
-                { label: "Solana (SOL)", value: "SOL", emoji: "🟢" },
-                { label: "BNB", value: "BNB", emoji: "🟠" },
-                { label: "XRP", value: "XRP", emoji: "🔵" },
-                { label: "Dogecoin (DOGE)", value: "DOGE", emoji: "🐕" },
-            ]),
+            .addOptions([{ label: "$TTCL — Cripto del servidor", value: "TTCL", emoji: "🟣" }]),
     );
 
     return {

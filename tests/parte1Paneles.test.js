@@ -21,8 +21,7 @@ describe("economía del perfil", () => {
         );
         partida.run("2026-09-03", 150);
         partida.run("2026-09-04", -100);
-        db.prepare("INSERT INTO cripto_carteras (userId, cripto, cantidad) VALUES ('eco', 'TTCL', 2), ('eco', 'BTC', 0.5)").run();
-        global.fetch = jest.fn(async () => ({ ok: true, json: async () => ({ bitcoin: { eur: 10 } }) }));
+        db.prepare("INSERT INTO cripto_carteras (userId, cripto, cantidad) VALUES ('eco', 'TTCL', 2)").run();
     });
 
     test("ganado y perdido salen solo del casino (E-05)", async () => {
@@ -32,14 +31,13 @@ describe("economía del perfil", () => {
         expect(campo(embed, "Perdido en casino")).toBe("-100");
     });
 
-    test("todas las criptos tienen valor y cuentan en el total (E-12)", async () => {
+    test("la cartera valora TTCL al precio del pool (E-12)", async () => {
         const cartera = campo(
             (await economia.buildEconomia({ viewerId: "eco", nombre: "eco", guildId: guild.id })).embeds[0],
             "Cartera cripto",
         );
-        expect(cartera).toMatch(/BTC\*\* ≈ 5[.,]?000 🪙/); // 0,5 × 10 € × 1.000
-        const total = Number(/Total ≈ \*\*([\d.,]+)\*\*/.exec(cartera)[1].replace(/[.,]/g, ""));
-        expect(total).toBeGreaterThan(5000); // BTC + TTCL
+        expect(cartera).toMatch(/2\.0000 TTCL\*\* ≈ 200 🪙/); // 2 TTCL × 100 del pool inicial
+        expect(cartera).toMatch(/Total ≈ \*\*200\*\*/);
     });
 });
 
