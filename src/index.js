@@ -193,6 +193,12 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 🏅 Liga de pronósticos: cada hora y al arrancar; liquida la temporada anterior el 1 de julio desde las 10:00.
+    cron.schedule("0 * * * *", () => runJob("Liga de pronósticos", () => require("./systems/apuestas/liga").liquidarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Liga de pronósticos (arranque)", () => require("./systems/apuestas/liga").liquidarSiToca(client));
     // 📊 Resumen semanal por DM a quien recibe las alertas: los lunes desde las 09:00 (igual: cada hora y al arrancar).
     cron.schedule("0 * * * 1", () => runJob("Resumen semanal para admins", () => require("./systems/resumenAdmin").enviarSiToca(client)), {
         timezone: "Europe/Madrid",
