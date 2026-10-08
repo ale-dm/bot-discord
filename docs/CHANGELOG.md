@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🎯 Recomendaciones personales de Plex: `/recomendar` (#22))
+
+- `/recomendar` (efímero): propone qué ver según lo que has visto en Plex en los últimos 6 meses. Se parte de tus 3
+  títulos más vistos, se piden a Seerr sus recomendaciones y salen primero las que recomiendan más. Se descarta lo ya
+  visto y lo que ya está en Plex.
+- 📥 pide la sugerencia en Seerr a tu nombre (tu perfil de Seerr vinculado a tu Discord).
+- Seerr: nueva llamada `recomendaciones` (`/{movie|tv}/{id}/recommendations`). Tests: `tests/recomendaciones.test.js`.
+
 ## 2026-10-08 (🎞️ Plex Wrapped mensual (#23))
 
 El día 1 de cada mes, desde las 10:00 (Madrid), el canal del ranking de Plex recibe el resumen del mes anterior: horas

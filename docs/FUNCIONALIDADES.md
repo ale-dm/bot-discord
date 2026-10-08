@@ -802,6 +802,14 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 
 ---
 
+### 🎯 Recomendaciones personales (#22)
+
+`/recomendar` (solo lo ves tú) propone qué ver a partir de lo que has visto en Plex en los últimos 6 meses: se toman tus
+3 títulos más vistos (las series, agrupadas por serie), se buscan en Seerr y se piden sus recomendaciones. Salen primero
+las que recomiendan más de tus títulos, y se descarta lo que ya has visto y lo que ya está en Plex. Cada sugerencia tiene
+un **📥** para pedirla en Seerr a tu nombre (tu perfil de Seerr debe estar vinculado a tu Discord). Requiere la cuenta
+de Plex vinculada. Tests: `tests/recomendaciones.test.js`. Migración: ninguna.
+
 ### 🎞️ Plex Wrapped mensual (#23)
 
 El día 1 de cada mes, desde las 10:00 (hora de Madrid), el canal del ranking de Plex recibe el resumen del mes anterior:

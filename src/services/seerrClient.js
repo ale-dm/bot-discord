@@ -193,6 +193,20 @@ async function createRequest(guildId, { mediaType, tmdbId, seasons, userId } = {
     return result;
 }
 
+/** Recomendaciones de Seerr (TMDB) para una película o serie, con la misma forma que searchMulti. */
+async function recomendaciones(guildId, mediaType, tmdbId) {
+    const data = await call(guildId, "get", `/${mediaType}/${Number(tmdbId)}/recommendations`, { params: { language: "es" } });
+    return (data?.results || [])
+        .filter((r) => r.mediaType === "movie" || r.mediaType === "tv")
+        .map((r) => ({
+            tmdbId: r.id,
+            mediaType: r.mediaType,
+            titulo: r.mediaType === "movie" ? r.title : r.name,
+            anyo: (r.releaseDate || r.firstAirDate || "").slice(0, 4) || null,
+            estadoCodigo: r.mediaInfo?.status || 1,
+        }));
+}
+
 async function getMediaTitle(guildId, mediaType, tmdbId) {
     try {
         const data = await call(guildId, "get", `/${mediaType}/${tmdbId}`);
@@ -236,6 +250,7 @@ async function getRequests(guildId, { filter = "all", take = 10, sort = "added" 
 module.exports = {
     getConfig,
     searchMulti,
+    recomendaciones,
     testConnection,
     getUsersDetailed,
     resolveSeerrUserByDiscordId,
