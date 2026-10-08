@@ -47,11 +47,16 @@ test("la pestaña Apuestas lista los partidos, deja cambiar de competición y ti
     await juegos.handleButton(null, i);
     const payload = i.update.mock.calls[0][0];
     expect(JSON.stringify(payload.components[0].toJSON())).toMatch(/Arsenal/);
-    const competiciones = payload.components.at(-2).components.map((b) => b.data.custom_id);
+    // Las competiciones van en filas de 5 botones (con 7 competiciones, dos filas), entre el buscador y las pestañas.
+    const competiciones = payload.components.slice(1, -1).flatMap((fila) => fila.components.map((b) => b.data.custom_id));
     expect(competiciones).toEqual([
         "apuestas_pagina_laliga_1",
         "apuestas_pagina_premier_1",
         "apuestas_pagina_champions_1",
+        "apuestas_pagina_mundial_1",
+        "apuestas_pagina_eurocopa_1",
+        "apuestas_pagina_copa_rey_1",
+        "apuestas_pagina_europa_1",
         "quiniela_refrescar_premier",
         "liga_ver",
     ]);

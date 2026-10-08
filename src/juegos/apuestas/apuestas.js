@@ -17,6 +17,7 @@ const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
+const { trozos } = require("../../paneles/filas");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
@@ -153,8 +154,9 @@ module.exports = {
                     .setStyle(ButtonStyle.Secondary),
             );
 
-        // Competición (la actual resaltada) y la quiniela de esa competición.
-        const rowCompeticiones = new ActionRowBuilder().addComponents(
+        // Competiciones (la actual resaltada), la quiniela de esa competición y la liga. Cada fila admite 5 botones,
+        // así que con más competiciones salen en varias filas.
+        const botonesCompeticion = [
             ...Object.entries(DEPORTES).map(([key, d]) =>
                 new ButtonBuilder()
                     .setCustomId(`apuestas_pagina_${key}_1`)
@@ -166,12 +168,13 @@ module.exports = {
                 .setLabel("🧾 Quiniela")
                 .setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId("liga_ver").setLabel("🏅 Liga").setStyle(ButtonStyle.Secondary),
-        );
+        ];
+        const filasCompeticion = trozos(botonesCompeticion).map((grupo) => new ActionRowBuilder().addComponents(...grupo));
 
         const components = [
             row,
             ...(rowBtns.components.length > 0 ? [rowBtns] : []),
-            rowCompeticiones,
+            ...filasCompeticion,
             filaPestanas(interaction.user.id, "apuestas"),
         ];
 
