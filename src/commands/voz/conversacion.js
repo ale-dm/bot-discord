@@ -25,6 +25,12 @@ module.exports = {
                 .setName("con")
                 .setDescription("Solo escuchará a esta persona (por defecto, a cualquiera del canal, por turnos).")
                 .setRequired(false),
+        )
+        .addBooleanOption((option) =>
+            option
+                .setName("tertulia")
+                .setDescription("Escucha a todo el canal a la vez, sin turnos (no se combina con «con»). Solo al empezar.")
+                .setRequired(false),
         ),
     async run(client, interaction) {
         if (!interaction.guildId) {
@@ -41,9 +47,11 @@ module.exports = {
         await interaction.deferReply();
         const soloSiLeLlaman = interaction.options.getString("modo") !== "siempre";
         const soloEscuchaA = interaction.options.getUser("con");
+        const tertulia = interaction.options.getBoolean("tertulia") === true;
         const r = await liveVoz.empezarConversacion(interaction, {
             soloSiLeLlaman,
             soloEscuchaA: soloEscuchaA?.id || null,
+            tertulia,
             onTerminada: (motivo) => {
                 interaction.channel
                     ?.send(`🔴 Conversación en directo terminada${motivo ? ` (${motivo})` : ""}.`)
@@ -57,8 +65,9 @@ module.exports = {
         log.info(`Conversación en directo empezada en ${r.voiceChannel.name} (pedida por ${interaction.user.tag})`);
         const comoContesta = soloSiLeLlaman ? "Solo te contestará si dices «Duende» al hablar." : "Te contestará a todo lo que digas.";
         const aQuien = soloEscuchaA ? ` Solo escuchará a **${soloEscuchaA.username}**.` : "";
+        const comoEscucha = tertulia ? " Escucho a todo el canal a la vez (tertulia)." : "";
         await interaction.editReply(
-            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. ${comoContesta}${aQuien} Dile que cuelgue o usa \`/conversación\` otra vez para terminarla.`,
+            `🟢 Conversación en directo empezada en **${r.voiceChannel.name}**. ${comoContesta}${aQuien}${comoEscucha} Dile que cuelgue o usa \`/conversación\` otra vez para terminarla.`,
         );
     },
 };

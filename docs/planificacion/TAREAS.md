@@ -222,6 +222,13 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🎙️ Tertulia en /conversación (#16)**
+- [ ] `/conversación tertulia:sí` en un canal con dos o tres personas: el Duende entiende a quien habla y contesta al grupo.
+- [ ] Dos personas hablando a la vez no se cortan entre sí (el audio se oye mezclado, no a trozos).
+- [ ] Sin `tertulia`, `/conversación` se comporta como antes (por turnos).
+- [ ] `tertulia` con `con` se rechaza con el aviso.
+- [ ] Probado con voz real: ver si Gemini Live contesta bien con voces solapadas (si no, dejar la opción apagada y decirlo).
+
 **🧠 Recuerdos automáticos del Duende (#15)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 035_recuerdos_auto`.
 - [ ] Tras 10 mensajes largos de una persona en el canal del Duende, a veces llega un DM a los admins con el recuerdo propuesto.
