@@ -511,7 +511,7 @@ const DUENDE_TOOL_EXECUTORS = {
         };
     },
     precio_ttcl(args, ctx) {
-        return { precio_ttcl_en_coins: getTtclPrecio(ctx.guildId) };
+        return { precio_ttcl_en_coins: getTtclPrecio() };
     },
     consultar_logros(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };

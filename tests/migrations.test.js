@@ -31,7 +31,7 @@ describe("migraciones", () => {
             "xp_role_rewards",
             "apuestas_partidos",
             "quinielas",
-            "cripto_ttcl",
+            "cripto_pool",
             "guild_settings",
             "admin_audit",
             "plex_links",

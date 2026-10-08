@@ -222,6 +222,13 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [ ] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**💧 TTCL como pool de liquidez (F-EC-12a, #117)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 027_ttcl_pool`. El precio de TTCL en `/cripto` ha vuelto a 100.
+- [ ] Comprar 500.000 monedas de TTCL: sale una cantidad de TTCL y se cobra la comisión (1 %). El precio sube.
+- [ ] Vender esas unidades en varios trozos: no sale más de lo que se pagó (la comisión queda en el pool).
+- [ ] 🩺 Sistema → 💎 TTCL muestra el pool (monedas y TTCL) y las unidades en carteras.
+- [ ] Config Global → 📈 Cripto ya no tiene precio base ni volatilidad, solo comisiones.
+
 **🛒 /tienda como panel único (F-EC-11, #110)**
 - [ ] `/tienda` sin opciones abre el 🛒 Catálogo con los menús de categoría y rareza y el botón 🔍 Buscar.
 - [ ] Elegir una categoría deja solo sus objetos; elegir "todas" los vuelve a mostrar.

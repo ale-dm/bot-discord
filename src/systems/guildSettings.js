@@ -15,10 +15,8 @@ const DEFAULT_FLAT = {
     "duende.madrugada_hasta": 7,
     "duende.canales_formales": "",
 
-    "cripto.ttcl_base_price": 100,
-    "cripto.ttcl_volatility": 40,
-    "cripto.fee_buy_pct": 0,
-    "cripto.fee_sell_pct": 0,
+    "cripto.fee_buy_pct": 1,
+    "cripto.fee_sell_pct": 1,
     "cripto.cooldown_buy_sec": 0,
     "cripto.cooldown_sell_sec": 0,
     "cripto.min_buy": 100,
@@ -100,8 +98,6 @@ const KEY_TYPES = {
     "duende.madrugada_hasta": "number",
     "duende.canales_formales": "string",
 
-    "cripto.ttcl_base_price": "number",
-    "cripto.ttcl_volatility": "number",
     "cripto.fee_buy_pct": "number",
     "cripto.fee_sell_pct": "number",
     "cripto.cooldown_buy_sec": "number",
@@ -202,8 +198,6 @@ function flattenToNested(flat) {
             canales_formales: flat["duende.canales_formales"],
         },
         cripto: {
-            ttcl_base_price: flat["cripto.ttcl_base_price"],
-            ttcl_volatility: flat["cripto.ttcl_volatility"],
             fee_buy_pct: flat["cripto.fee_buy_pct"],
             fee_sell_pct: flat["cripto.fee_sell_pct"],
             cooldown_buy_sec: flat["cripto.cooldown_buy_sec"],

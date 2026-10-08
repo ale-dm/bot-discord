@@ -4,8 +4,8 @@ const guildSettings = require("../../systems/guildSettings");
 const db = require("../../core/db");
 const { generateLineChart } = require("../../systems/cripto/graficos");
 const {
-    TTCL,
     RANGE_OPTIONS,
+    leerPool,
     ttclCirculacion,
     getTtclPrecio,
     formatCoins,
@@ -97,7 +97,7 @@ async function buildGraficoChart(sym, days, guildId = null) {
 // ─── TOP HOLDERS ──────────────────────────────────────────────────────────────
 
 async function buildTopHolders(guildId = null) {
-    const ttclP = getTtclPrecio(guildId);
+    const ttclP = getTtclPrecio();
 
     const holders = db
         .prepare("SELECT userId, cantidad FROM cripto_carteras WHERE cripto = 'TTCL' AND cantidad > 0 ORDER BY cantidad DESC LIMIT 10")
@@ -150,36 +150,22 @@ function buildHistorialPanel(userId) {
 // ─── INFO TTCL ────────────────────────────────────────────────────────────────
 
 function buildInfoPanel(guildId = null) {
+    const pool = leerPool();
+    const precio = getTtclPrecio();
+    const enCarteras = ttclCirculacion();
+    const marketCap = enCarteras * precio;
     const cfg = guildSettings.getSettings(guildId).cripto;
-    const basePrice = Math.max(0.0001, Number(cfg.ttcl_base_price || TTCL.precioInicial));
-    const volatility = Math.max(0, Number(cfg.ttcl_volatility || TTCL.factorVolatilidad));
-    const circ = ttclCirculacion();
-    const precio = getTtclPrecio(guildId);
-    const marketCap = circ * precio;
-    const supplyPct = ((circ / TTCL.ofertaTotal) * 100).toFixed(2);
-
-    const curve = [
-        ["  0%", formatCoins(basePrice)],
-        [" 10%", formatCoins(basePrice * Math.exp((0.1 * volatility) / 10))],
-        [" 25%", formatCoins(basePrice * Math.exp((0.25 * volatility) / 10))],
-        [" 50%", formatCoins(basePrice * Math.exp((0.5 * volatility) / 10))],
-        [" 75%", formatCoins(basePrice * Math.exp((0.75 * volatility) / 10))],
-        [" 90%", formatCoins(basePrice * Math.exp((0.9 * volatility) / 10))],
-    ]
-        .map(([s, p]) => `\`${s} supply → ${p.padStart(8)} 🪙\``)
-        .join("\n");
 
     const embed = new EmbedBuilder()
-        .setTitle("ℹ️ TTCL Coin — Tokenomics")
+        .setTitle("ℹ️ TTCL Coin — Pool de liquidez")
         .setDescription(
             `**Símbolo:** $TTCL\n` +
-                `**Supply total:** ${TTCL.ofertaTotal.toLocaleString("es")}\n` +
-                `**En circulación:** ${circ.toFixed(4)} · _${supplyPct}% del supply_\n` +
                 `**Precio actual:** ${precio.toFixed(2)} 🪙\n` +
-                `**Market Cap:** ${formatCoins(marketCap)} 🪙\n\n` +
-                `**Modelo AMM (curva exponencial):**\n` +
-                `\`precio = ${basePrice} × e^(circulación / 1M × ${volatility / 10})\`\n\n` +
-                `**Tabla de precios aproximados:**\n${curve}`,
+                `**En carteras:** ${enCarteras.toFixed(4)} TTCL\n` +
+                `**Market cap (en carteras):** ${formatCoins(marketCap)} 🪙\n\n` +
+                `**Pool:** ${formatCoins(pool.monedas)} 🪙 · ${pool.ttcl.toFixed(2)} TTCL\n` +
+                `**Precio = monedas del pool / TTCL del pool.** Cada compra o venta se cobra contra el pool, así que cuanto más grande es la operación, más mueve el precio.\n\n` +
+                `**Comisión:** compra ${cfg.fee_buy_pct}% · venta ${cfg.fee_sell_pct}% (se queda en el pool).`,
         )
         .setColor(0x9b59b6)
         .setTimestamp();

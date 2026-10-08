@@ -51,7 +51,7 @@ async function buildComprarCantidad(userId, sym, guildId = null) {
 
     let priceCoins;
     if (sym === "TTCL") {
-        priceCoins = getTtclPrecio(guildId);
+        priceCoins = getTtclPrecio();
     } else {
         const prices = await fetchGeckoPrices();
         priceCoins = (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
@@ -167,7 +167,7 @@ async function buildVenderPct(userId, sym, guildId = null) {
     const ci = cryptoInfoBySymbol(sym);
     let priceCoins;
     if (sym === "TTCL") {
-        priceCoins = getTtclPrecio(guildId);
+        priceCoins = getTtclPrecio();
     } else {
         const prices = await fetchGeckoPrices();
         priceCoins = (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
