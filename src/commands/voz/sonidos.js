@@ -27,8 +27,11 @@ module.exports = {
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const canal = interaction.member?.voice?.channel ?? null;
-        const r = await sonidos.reproducir(interaction.guildId, canal, sonido);
         const donde = canal ? canal.name : "el canal donde estoy";
-        return interaction.editReply(r.ok ? `🔊 Sonando **${sonido.nombre}** en ${donde}.` : `❌ ${r.motivo}`);
+        // La confirmación sale cuando el sonido empieza, no cuando acaba (puede durar minutos).
+        const r = await sonidos.reproducir(interaction.guildId, canal, sonido, {
+            alEmpezar: () => interaction.editReply(`🔊 Sonando **${sonido.nombre}** en ${donde}.`),
+        });
+        if (!r.ok) return interaction.editReply(`❌ ${r.motivo}`);
     },
 };

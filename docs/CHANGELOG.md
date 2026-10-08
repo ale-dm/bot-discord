@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🔊 sonidos: se reproducen enteros y sin dejar nada colgado)
+
+- **Los sonidos suenan enteros**: antes se cortaban a los 30 s. Ahora acaban solos, con un tope de 4 minutos por si el
+  reproductor se atasca.
+- **Limpieza al acabar**: se quita la suscripción y se para el reproductor, también en la presencia de `/conectar`.
+  Si Discord cierra la conexión a mitad, no se espera al tope.
+- **`/conectar`** no se sale ni sustituye la presencia mientras suena un sonido; lo reintenta unos segundos después.
+- **`/sonidos`** confirma «Sonando…» cuando el sonido empieza, en vez de cuando acaba.
+- Tests: `tests/sonidos.test.js` y `tests/presencia.test.js` (sonido largo, tope, limpieza, aviso al empezar, cierre a mitad).
+
 ## 2026-10-08 (cabos sueltos: ayuda, logros, combinadas y premios de liga)
 
 - **`/ayuda`** tiene sección 🍿 Plex y nombra `/sonidos`, `/conectar` y `/pase`; `/pase` tiene su botón en 📈 Niveles.
