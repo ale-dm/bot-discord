@@ -14,8 +14,8 @@ function pantallaSonidos(guildId, pagina = 0) {
         .setColor(0x3498db)
         .setDescription(
             lista.length
-                ? "Pulsa uno: el bot entra a tu canal de voz, lo toca y se sale."
-                : "Todavía no hay sonidos. Un admin puede añadir uno con `/sonidos archivo:… nombre:…`.",
+                ? "Pulsa uno: suena en el canal donde esté el bot (con /conectar), o entra a tu canal, lo toca y se sale."
+                : "Todavía no hay sonidos. Un admin puede añadirlos desde /paneladmin → 🔊 Sonidos.",
         );
     if (lista.length) embed.setFooter({ text: `Página ${p + 1} de ${paginas} · ${lista.length} sonidos` });
 

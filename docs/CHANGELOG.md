@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🔌 `/conectar`, y los sonidos se suben desde /paneladmin)
+
+- **`/conectar`**: el bot entra al canal de voz que elijas y se queda 30 minutos. `/sonidos` suena ahí sin entrar y salir
+  cada vez. Sin canal, si ya está conectado se sale. No corta una conversación con el Duende en marcha.
+- **`/sonidos`** ya solo reproduce: subir y borrar sonidos pasa a **`/paneladmin` → 🔊 Sonidos** (formulario con archivo,
+  y un menú para borrar).
+- Tests: `tests/presencia.test.js`, `tests/adminSonidos.test.js`; `tests/sonidos.test.js` actualizado.
+
 ## 2026-10-08 (🍿 `/plex` y 🔊 `/sonidos`; el Wrapped, por DM y privado)
 
 - **`/plex`**: todo lo de Plex en un panel con botones, como `/tienda` y `/duende`: 🎬 Sesión de cine (formulario),
