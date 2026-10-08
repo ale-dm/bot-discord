@@ -37,6 +37,7 @@ const TIPOS = {
     prestamo: "🧙 Préstamos",
     blanqueo: "🧼 Blanqueo",
     negocio: "🏪 Negocios",
+    patrimonio: "🏦 Patrimonio",
     otro: "📦 Otros",
 };
 

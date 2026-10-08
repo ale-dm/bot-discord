@@ -2,6 +2,25 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🏦 Patrimonio (F-EC-10, #81): interés e impuesto semanal sobre el banco)
+
+El patrimonio se gestiona aparte del motor de impuestos de ingresos y compras (#77), porque no es una regla más sino
+su propio ciclo.
+
+- **Ciclo semanal por persona**: cada una tiene su propio ciclo (7 días por defecto). En cada ciclo paga primero el
+  **interés** del banco (0,5 %) y después el **impuesto** (1 %) sobre lo que pasa del umbral (50.000).
+- **La base del impuesto** es el banco más lo pagado por sus negocios (#80). El interés solo se calcula sobre el banco.
+- Lo que no se pueda pagar del banco **no se cobra y no genera deuda**.
+- **Destino**: el impuesto va al bote del servidor donde se usó la economía por última vez, o desaparece (sumidero).
+  Como el dinero es global, el servidor se toma de la última actividad de la persona.
+- Tipos nuevos en Movimientos: 🏦 Patrimonio (interés) e 🏛️ Impuesto (el cobro).
+- **Configuración** en Panel admin → Config Global → 🏛️ Impuestos → 🏦 Patrimonio: umbral, porcentaje, interés, días
+  entre cobros y destino. Se valida y queda auditada.
+- Migración 026 (`patrimonio_usuario`). Cron cada hora (`systems/patrimonio.revisar`); la primera vez que aparece
+  una persona solo se marca su fecha, sin cobrar.
+- Tests nuevos en `tests/patrimonio.test.js`: orden interés → impuesto, negocios en la base, umbral, lo que no hay en
+  el banco, bote o sumidero, ciclo semanal y validación de la configuración.
+
 ## 2026-10-08 (🏪 Negocios y blanqueo (F-EC-06d, #80): cierra la economía de robos y dinero negro (#37))
 
 Última pieza de #37: los negocios convierten el dinero negro en dinero limpio, poco a poco.
