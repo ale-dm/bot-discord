@@ -2,6 +2,18 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (⚽ Apuestas de más/menos goles y de hándicap (#9, #10))
+
+- **Más/menos 2,5 goles**: botones ⬆️ y ⬇️ debajo del 1/X/2, con la cuota que da la API.
+- **Hándicap ±1,5**: 🏠 local −1,5 y ✈️ visitante +1,5 (gana por 2 o más, o pierde por 1 o menos).
+- Cada apuesta guarda su línea, así que la liquidación no cambia si la API la mueve después.
+- **🧾 Mis jugadas**: lo máximo que se puede cobrar de un partido se calcula mirando todos los marcadores posibles, para
+  que cuenten a la vez el 1X2, el marcador exacto, los goles y el hándicap.
+- **Coste**: las cuotas piden ahora tres mercados (h2h, totals y spreads), 3 créditos por actualización de cada
+  competición. `ODDS_MERCADOS=h2h` lo deja como antes.
+- Migración 031: columnas de cuota y línea en `apuestas_partidos`, y `linea` en `apuestas_usuario`.
+- Tests: `tests/mercadosGolesHcap.test.js`.
+
 ## 2026-10-08 (⚽ Más competiciones de apuestas: Mundial, Eurocopa, Copa del Rey y Europa League (#11))
 
 Las apuestas y las quinielas admiten cuatro competiciones más, además de LaLiga, Premier y Champions:

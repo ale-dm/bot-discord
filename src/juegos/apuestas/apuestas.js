@@ -12,6 +12,7 @@ const {
 const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
 const marcadorExacto = require("../../systems/apuestas/marcador");
+const mercados = require("../../systems/apuestas/mercados");
 const limites = require("../../systems/apuestas/limites");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
@@ -45,7 +46,7 @@ module.exports = {
         {
             types: ["button"],
             ids: ["ver_mis_apuestas"],
-            prefixes: ["apuestas_", "apuesta_home_", "apuesta_draw_", "apuesta_away_", "apuesta_exacto_"],
+            prefixes: ["apuestas_", "apuesta_home_", "apuesta_draw_", "apuesta_away_", "apuesta_exacto_", "apuesta_mercado_"],
             method: "handleButton",
             acl: "juegos",
         },
@@ -212,8 +213,12 @@ module.exports = {
                     `🏠 **${partido.home_team}**: cuota \`${partido.cuota_home}\`\n` +
                     `🤝 **Empate**: cuota \`${partido.cuota_draw}\`\n` +
                     `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`\n` +
-                    `🎯 **Marcador exacto**: premio fijo de \`×${marcadorExacto.PREMIO}\` lo apostado\n\n` +
-                    "Pulsa un botón para elegir tu apuesta.",
+                    `🎯 **Marcador exacto**: premio fijo de \`×${marcadorExacto.PREMIO}\` lo apostado\n` +
+                    mercados
+                        .botonesDisponibles(partido)
+                        .map((b) => `${b.etiqueta}: cuota \`${mercados.cuotaDe(partido, b.eleccion)}\`\n`)
+                        .join("") +
+                    "\nPulsa un botón para elegir tu apuesta.",
             )
             .setColor(0xf1c40f);
 
@@ -235,7 +240,19 @@ module.exports = {
                 .setStyle(ButtonStyle.Secondary),
         );
 
-        await interaction.reply({ embeds: [embed], components: [row] });
+        // Mercados de goles y de hándicap, si la API dio su cuota para este partido (una fila aparte).
+        const filas = [row];
+        const botonesMercado = mercados
+            .botonesDisponibles(partido)
+            .map((b) =>
+                new ButtonBuilder()
+                    .setCustomId(`apuesta_mercado_${b.eleccion}_${match_id}`)
+                    .setLabel(b.etiqueta.slice(0, 80))
+                    .setStyle(ButtonStyle.Secondary),
+            );
+        if (botonesMercado.length) filas.push(new ActionRowBuilder().addComponents(botonesMercado));
+
+        await interaction.reply({ embeds: [embed], components: filas });
     },
 
     // Handler para los botones de apuesta y paginación
@@ -275,6 +292,15 @@ module.exports = {
             match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
             eleccion = "away";
             cuota = match?.cuota_away;
+        } else if (interaction.customId.startsWith("apuesta_mercado_")) {
+            // 🥅 Mercados de goles (#9) y de hándicap (#10): apuesta_mercado_{mas|menos|casa|fuera}_{match_id}.
+            const resto = interaction.customId.replace("apuesta_mercado_", "");
+            const corte = resto.indexOf("_");
+            eleccion = resto.slice(0, corte);
+            const match_id = resto.slice(corte + 1);
+            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            if (!mercados.esMercado(eleccion)) return;
+            cuota = match ? mercados.cuotaDe(match, eleccion) : null;
         } else if (interaction.customId.startsWith("apuesta_exacto_")) {
             // 🎯 Marcador exacto (F-AP-10): sin cuota de la API, premio fijo.
             const match_id = interaction.customId.replace("apuesta_exacto_", "");
@@ -403,6 +429,9 @@ module.exports = {
         else if (eleccion === "draw") cuota = match.cuota_draw;
         else if (eleccion === "away") cuota = match.cuota_away;
         else if (marcadorExacto.marcadorDe(eleccion)) cuota = marcadorExacto.PREMIO;
+        else if (mercados.esMercado(eleccion)) cuota = mercados.cuotaDe(match, eleccion);
+        // La línea de la apuesta queda guardada: si la API la cambia después, esta apuesta se liquida con la suya.
+        const linea = mercados.esMercado(eleccion) ? mercados.lineaDe(match, eleccion) : null;
 
         if (!cuota || cuota < 1) {
             const errorEmbed = new EmbedBuilder()
@@ -451,10 +480,10 @@ module.exports = {
             if (!dinero.cobrarCombinado(userId, cantidad)) return false;
             db.prepare(
                 `
-                INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota, linea)
+                VALUES (?, ?, ?, ?, ?, ?)
             `,
-            ).run(userId, match_id, eleccion, cantidad, cuota);
+            ).run(userId, match_id, eleccion, cantidad, cuota, linea);
             // Antes solo se apuntaba el premio al ganar: en /banco historial no aparecía lo apostado
             // y el "ganado/perdido" de /nivel contaba el premio entero como ganancia.
             dinero.apuntar(userId, "apuestas", `Apuesta: ${match.home_team} vs ${match.away_team}`, -cantidad);
@@ -475,11 +504,7 @@ module.exports = {
         const saldoActual = dinero.efectivo(userId);
         const resultadoTxt = marcadorExacto.marcadorDe(eleccion)
             ? `Marcador exacto ${match.home_team} ${marcadorExacto.marcadorDe(eleccion)} ${match.away_team}`
-            : eleccion === "home"
-              ? match.home_team
-              : eleccion === "draw"
-                ? "Empate"
-                : match.away_team;
+            : mercados.textoEleccion({ eleccion, linea, home_team: match.home_team, away_team: match.away_team });
         const embed = new EmbedBuilder()
             .setTitle("✅ ¡Apuesta registrada!")
             .setDescription(

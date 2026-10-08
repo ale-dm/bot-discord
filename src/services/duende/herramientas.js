@@ -560,11 +560,13 @@ const DUENDE_TOOL_EXECUTORS = {
         const eleccion = (a) =>
             marcadorDe(a.eleccion)
                 ? `marcador exacto ${marcadorDe(a.eleccion)}`
-                : a.eleccion === "home"
-                  ? a.home_team
-                  : a.eleccion === "away"
-                    ? a.away_team
-                    : "empate";
+                : require("../../systems/apuestas/mercados").esMercado(a.eleccion)
+                  ? require("../../systems/apuestas/mercados").textoEleccion(a).toLowerCase()
+                  : a.eleccion === "home"
+                    ? a.home_team
+                    : a.eleccion === "away"
+                      ? a.away_team
+                      : "empate";
         const stats = misJugadas.estadisticas(ctx.userId);
         return {
             partidos_en_juego: misJugadas.partidosDe(ctx.userId, { pendientes: true, limite: 10 }).map((a) => ({

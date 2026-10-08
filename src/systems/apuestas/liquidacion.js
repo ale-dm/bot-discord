@@ -5,7 +5,7 @@ const { EmbedBuilder } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../dinero");
 const retos = require("../retos");
-const marcadorExacto = require("./marcador");
+const mercados = require("./mercados");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -175,7 +175,7 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             for (const ap of apuestas) {
                 resumen.total++;
                 // Las de marcador exacto (F-AP-10) aciertan con el marcador; las demás, con el resultado.
-                const gana = marcadorExacto.acierta(ap.eleccion, resultado, marcador);
+                const gana = mercados.acierta(ap.eleccion, resultado, marcador, ap.linea);
                 if (gana) {
                     const premio = Math.round(ap.cantidad * ap.cuota);
                     dinero.pagar(ap.user_id, premio);

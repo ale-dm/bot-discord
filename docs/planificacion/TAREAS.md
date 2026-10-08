@@ -222,6 +222,14 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**⚽ Goles y hándicap en apuestas (#9, #10)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 031_mercados_goles_hcap`.
+- [ ] ⚽ Apuestas → un partido con cuotas: aparecen ⬆️ Más de 2,5, ⬇️ Menos de 2,5, 🏠 local −1,5 y ✈️ visitante +1,5 (los que la API dé).
+- [ ] Apostar a más de 2,5 y que el partido acabe con 3 goles: cobra la cuota; con 2 goles, pierde.
+- [ ] Apostar a 🏠 −1,5 y que gane por 2: cobra; por 1: pierde. Apostar a ✈️ +1,5: gana si pierde por 1 o no pierde.
+- [ ] 🧾 Mis jugadas enseña el texto correcto ("Más de 2,5 goles", "Barça −1,5") y el máximo a cobrar.
+- [ ] Con `ODDS_MERCADOS=h2h`, las cuotas vuelven a pedirse solo con el 1X2 (y los botones nuevos no salen).
+
 **🏅 Liga de pronósticos (F-AP-12, #8)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 030_liga_pronosticos`.
 - [ ] ⚽ Apuestas → 🏅 Liga: sale la clasificación de la temporada con puntos y quinielas, tu posición y "Temporadas anteriores".
