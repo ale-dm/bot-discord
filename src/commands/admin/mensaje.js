@@ -1,6 +1,6 @@
 // ✉️ /mensaje: un admin escribe un mensaje privado (DM) de parte del bot a alguien. Eliges a quién por la opción
-// «usuario» y el texto va en un formulario (campo de varias líneas). Solo admins: un bot que escribe a cualquiera se
-// puede usar mal. Cada envío queda en la auditoría (sin el texto, solo cuántos caracteres).
+// «usuario» y el texto va en un formulario (campo de varias líneas); el DM lleva solo ese texto. Solo admins: un bot que
+// escribe a cualquiera se puede usar mal. Cada envío queda en la auditoría (sin el texto, solo cuántos caracteres).
 const {
     SlashCommandBuilder,
     ActionRowBuilder,
@@ -36,7 +36,7 @@ module.exports = {
             .setCustomId("texto")
             .setLabel("Mensaje")
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Lo que le quieres decir. Llegará como DM del bot, con tu nombre.")
+            .setPlaceholder("Lo que le quieres decir. Le llega tal cual, como DM del bot.")
             .setMaxLength(TEXTO_MAX)
             .setRequired(true);
         const modal = new ModalBuilder()
@@ -55,13 +55,11 @@ module.exports = {
         const destino = await client.users.fetch(destinoId).catch(() => null);
         if (!destino) return interaction.reply(efimero("❌ No encuentro a esa persona."));
 
-        const remitente = interaction.user.username;
-        const servidor = interaction.guild?.name || "un servidor";
         try {
-            await destino.send({ content: `📨 **${remitente}** te escribe desde **${servidor}**:\n\n${texto}` });
+            await destino.send({ content: texto });
         } catch (e) {
             // Suele ser que tiene cerrados los mensajes privados de los servidores.
-            log.warn(`No pude mandar el DM a ${destinoId} de parte de ${remitente}: ${e.message}`);
+            log.warn(`No pude mandar el DM a ${destinoId} de parte de ${interaction.user.username}: ${e.message}`);
             return interaction.reply(efimero(`❌ No pude mandarle el mensaje a **${destino.username}** (quizá tiene los DM cerrados).`));
         }
 
@@ -71,7 +69,7 @@ module.exports = {
             action: "mensaje.dm",
             details: { destinatario: destinoId, caracteres: texto.length },
         });
-        log.info(`${remitente} mandó un DM a ${destinoId} desde ${interaction.guildId}`);
+        log.info(`${interaction.user.username} mandó un DM a ${destinoId} desde ${interaction.guildId}`);
         return interaction.reply(efimero(`✅ Mensaje enviado a **${destino.username}**.`));
     },
 };

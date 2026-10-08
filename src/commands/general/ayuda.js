@@ -134,7 +134,7 @@ const SECCIONES = {
         texto: [
             "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas, premios de la liga, límites), 🛒 Catálogo (objetos y lo que está a la venta), 🔊 Sonidos (subir y borrar), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
             "`/duende` → 🎭 Personalidad — los admins añaden, quitan y eligen las personalidades del canal.",
-            "`/mensaje usuario` — manda un DM de parte del bot a alguien: eliges a quién y escribes el texto en un formulario (tu nombre va en el mensaje). Solo admins; cada envío queda en la auditoría.",
+            "`/mensaje usuario` — manda un DM de parte del bot a alguien: eliges a quién y escribes el texto en un formulario; el DM lleva solo ese texto. Solo admins; cada envío queda en la auditoría.",
         ],
     },
 };
