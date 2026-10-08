@@ -222,6 +222,15 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🧩 Combinadas (#1)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 032_combinadas`.
+- [ ] ⚽ Apuestas → 🧩 Combinada: sale el boleto (privado). Sumar un partido desde su menú "🧩 Sumar a mi combinada" lo añade.
+- [ ] Con un solo partido, "💰 Apostar combinada" está apagado. Con dos, cobra el importe y aparece en "Tus combinadas en juego".
+- [ ] Ganar: con todas las patas acertadas, se paga la cuota total al liquidarse el último partido.
+- [ ] Perder: una pata fallida pierde el boleto, aunque las demás acierten.
+- [ ] Caducar: si un partido no tiene resultado, la combinada se devuelve entera.
+- [ ] Un partido ya empezado o con la cuota cambiada no se puede apostar (sale el aviso para volver a sumarlo).
+
 **⚽ Goles y hándicap en apuestas (#9, #10)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 031_mercados_goles_hcap`.
 - [ ] ⚽ Apuestas → un partido con cuotas: aparecen ⬆️ Más de 2,5, ⬇️ Menos de 2,5, 🏠 local −1,5 y ✈️ visitante +1,5 (los que la API dé).

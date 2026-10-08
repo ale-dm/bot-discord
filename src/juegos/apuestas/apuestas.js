@@ -169,6 +169,7 @@ module.exports = {
                 .setLabel("🧾 Quiniela")
                 .setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId("liga_ver").setLabel("🏅 Liga").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("combinada_abrir").setLabel("🧩 Combinada").setStyle(ButtonStyle.Secondary),
         ];
         const filasCompeticion = trozos(botonesCompeticion).map((grupo) => new ActionRowBuilder().addComponents(...grupo));
 
@@ -251,6 +252,26 @@ module.exports = {
                     .setStyle(ButtonStyle.Secondary),
             );
         if (botonesMercado.length) filas.push(new ActionRowBuilder().addComponents(botonesMercado));
+        // 🧩 Sumar a mi combinada: el mismo partido con la elección que se quiera (una pata por partido).
+        const opciones = [
+            partido.cuota_home && { value: "home", label: `🏠 ${partido.home_team} · cuota ${partido.cuota_home}` },
+            partido.cuota_draw && { value: "draw", label: `🤝 Empate · cuota ${partido.cuota_draw}` },
+            partido.cuota_away && { value: "away", label: `🚩 ${partido.away_team} · cuota ${partido.cuota_away}` },
+            ...mercados.botonesDisponibles(partido).map((b) => ({
+                value: b.eleccion,
+                label: `${b.etiqueta} · cuota ${mercados.cuotaDe(partido, b.eleccion)}`,
+            })),
+        ].filter(Boolean);
+        if (opciones.length) {
+            filas.push(
+                new ActionRowBuilder().addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId(`combinada_sumar_${match_id}`)
+                        .setPlaceholder("🧩 Sumar a mi combinada…")
+                        .addOptions(opciones.map((o) => ({ ...o, label: o.label.slice(0, 100) }))),
+                ),
+            );
+        }
 
         await interaction.reply({ embeds: [embed], components: filas });
     },
