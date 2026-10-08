@@ -102,8 +102,21 @@ function statusLabel(status) {
     return STATUS_LABELS[Number(status)] || "desconocido";
 }
 
+/**
+ * El texto de una búsqueda sin caracteres reservados. Seerr lo reenvía a TMDB, que rechaza con 400 los títulos con ":",
+ * "&", "#", "/" o "'" ("Star Wars: Episode IV", "Tom & Jerry"). Se quitan: la búsqueda sigue encontrando el título.
+ */
+function textoDeBusqueda(texto) {
+    return String(texto ?? "")
+        .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 async function searchMulti(guildId, query, page = 1) {
-    const data = await call(guildId, "get", "/search", { params: { query, page, language: "es" } });
+    const texto = textoDeBusqueda(query);
+    if (!texto) return [];
+    const data = await call(guildId, "get", "/search", { params: { query: texto, page, language: "es" } });
     return (data?.results || [])
         .filter((r) => r.mediaType === "movie" || r.mediaType === "tv")
         .map((r) => ({

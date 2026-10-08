@@ -12,7 +12,7 @@ module.exports = {
 
     async run(client, interaction) {
         // El panel es público: cualquiera lo puede pulsar, y lo que pasa al pulsar se ve solo a quien lo pulsa.
-        return interaction.reply({ ...pantallaSonidos(interaction.guildId, 0), fetchReply: true });
+        return interaction.reply(pantallaSonidos(interaction.guildId, 0));
     },
 
     async handleButton(client, interaction) {

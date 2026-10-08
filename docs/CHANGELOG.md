@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (arreglos de los logs: 🍿 Para ti, sincronización de Plex y avisos)
+
+- **`/plex` → 🎯 Para ti** fallaba con «must be url encoded» cuando un título tenía `:`, `&`, `#` o `/` (p. ej. «Star
+  Wars: Episode IV»). La búsqueda de Seerr ya quita esos caracteres antes de enviarla.
+- **Sincronización de fichas de Plex**: un 400 de Tautulli (el elemento no existe, p. ej. una película borrada de Plex)
+  se toma como «no tiene esa ficha», no como caída. Antes, unas pocas fichas así cortaban la sincronización en cada
+  pasada y nunca avanzaba. Los 401 y 500 siguen contando como fallo.
+- **Aviso de Discord.js**: se quitó la opción `fetchReply` (obsoleta) de `/sonidos`, `/ping` y `/plex`.
+- Tests: `tests/seerrBusqueda.test.js` y un caso en `tests/plexTautulliHttp.test.js`.
+
 ## 2026-10-08 (🔊 sonidos: se reproducen enteros y sin dejar nada colgado)
 
 - **Los sonidos suenan enteros**: antes se cortaban a los 30 s. Ahora acaban solos, con un tope de 4 minutos por si el
