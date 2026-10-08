@@ -32,6 +32,18 @@ Antes `/tienda` tenía tres subcomandos (`ver`, `inventario`, `historial`), cada
 - Tests nuevos en `tests/tiendaPanel.test.js`: `/tienda` sin opciones, filtrar por categoría y por búsqueda, quitar
   los filtros, filtros por persona y búsqueda en el inventario. Los tests antiguos de los subcomandos se adaptan.
 
+## 2026-10-08 (🧹 Se quitan BTC, ETH, SOL, BNB, XRP y DOGE; solo queda TTCL (F-EC-12b, #118))
+
+Las criptos reales dependían de CoinGecko, no tenían oferta limitada y no aportaban nada al mercado del servidor. Ahora
+`/cripto` opera solo con TTCL.
+
+- Se quitan del mercado BTC, ETH, SOL, BNB, XRP y DOGE: ni se compran ni se venden, y ya no se consulta CoinGecko.
+- **Migración 028**: lo que tenga cada persona de esas criptos se convierte en monedas al último precio que se operó
+  (`cripto_historial`) y va al efectivo, **sin impuesto** (es una liquidación, no una venta). Queda una línea de tipo
+  cripto en Movimientos. Si una cripto nunca tuvo precio operado, se liquida a 0 y se deja constancia en el log.
+- Se quitan el historial, el gráfico y el donut de esas criptos; el donut de la cartera solo tiene TTCL.
+- Tests nuevos en `tests/liquidarCriptos.test.js`: liquidación al último precio sin impuesto, y la cripto sin precio.
+
 ## 2026-10-08 (💧 TTCL como pool de liquidez (F-EC-12a, #117))
 
 Primera parte del rediseño de las criptos (#116). El precio de TTCL dejaba de ser una función de la circulación, y eso
