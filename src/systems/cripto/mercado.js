@@ -273,6 +273,60 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
     return r;
 }
 
+// ─── PREVISIÓN Y CONSULTAS DEL PANEL ─────────────────────────────────────────
+
+/** Lo que daría comprar TTCL por `monedas` (la comisión va aparte, como en comprarTtcl). Sin tocar nada. */
+function cotizarCompra(monedas, feePct) {
+    const pool = leerPool();
+    const precioAntes = pool.monedas / pool.ttcl;
+    const ttcl = ttclPorMonedas(pool, monedas);
+    const fee = Math.floor((monedas * Math.max(0, feePct)) / 100);
+    const coste = monedas + fee;
+    const precioDespues = (pool.monedas + coste) / (pool.ttcl - ttcl);
+    return { ttcl, fee, coste, precioAntes, precioMedio: monedas / ttcl, precioDespues };
+}
+
+/** Lo que daría vender `ttcl` (la comisión sale de lo bruto, como en venderTtcl). Sin tocar nada. */
+function cotizarVenta(ttcl, feePct) {
+    const pool = leerPool();
+    const precioAntes = pool.monedas / pool.ttcl;
+    const brutas = Math.floor(monedasPorTtcl(pool, ttcl));
+    const fee = Math.floor((brutas * Math.max(0, feePct)) / 100);
+    const neto = brutas - fee;
+    const precioDespues = (pool.monedas - neto) / (pool.ttcl + ttcl);
+    return { ttcl, brutas, fee, neto, precioAntes, precioMedio: brutas / ttcl, precioDespues };
+}
+
+/** Movimientos de TTCL de alguien, más recientes primero, paginados. */
+function historialTtcl(userId, limite, offset) {
+    return db
+        .prepare(
+            "SELECT tipo, cantidad, precio, monedas, timestamp FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?",
+        )
+        .all(String(userId), limite, offset);
+}
+
+function totalHistorialTtcl(userId) {
+    return db.prepare("SELECT COUNT(*) AS n FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL'").get(String(userId)).n;
+}
+
+/** Coste medio por TTCL de las compras de alguien (lo pagado entre lo comprado). 0 si nunca ha comprado. */
+function costeMedioTtcl(userId) {
+    const r = db
+        .prepare(
+            "SELECT COALESCE(SUM(cantidad), 0) AS unidades, COALESCE(SUM(monedas), 0) AS pagado FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' AND tipo = 'compra'",
+        )
+        .get(String(userId));
+    return r.unidades > 0 ? r.pagado / r.unidades : 0;
+}
+
+/** Quien más TTCL tiene en cartera. */
+function topTenedoresTtcl(limite = 5) {
+    return db
+        .prepare("SELECT userId, cantidad FROM cripto_carteras WHERE cripto = 'TTCL' AND cantidad > 0 ORDER BY cantidad DESC LIMIT ?")
+        .all(limite);
+}
+
 module.exports = {
     TTCL,
     ALL_CRYPTOS,
@@ -280,6 +334,12 @@ module.exports = {
     leerPool,
     ttclCirculacion,
     getTtclPrecio,
+    cotizarCompra,
+    cotizarVenta,
+    historialTtcl,
+    totalHistorialTtcl,
+    costeMedioTtcl,
+    topTenedoresTtcl,
     fetchCryptoHistory,
     formatCoins,
     formatCryptoAmt,

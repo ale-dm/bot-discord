@@ -2,6 +2,30 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (📈 `/cripto` con pestañas y vista previa antes de operar (F-EC-12e, #121))
+
+`/cripto` ya no tiene botones sueltos: es un panel con cinco pestañas (📈 Mercado, 🛒 Comprar, 💸 Vender, 💼 Cartera y
+🧾 Historial), y la fila de pestañas sale siempre debajo.
+
+- **📈 Mercado**: precio, gráfica con rango (24 h, 7 días, 30 días, todo), pool, último evento y quién tiene más TTCL.
+- **🛒 Comprar**: importes fijos o cantidad escrita con ✏️ Otra cantidad. Antes de pagar, una vista previa: lo que
+  pagas con comisión, lo que recibes, el precio medio y cómo se mueve el precio. Sin efectivo, no se puede confirmar y
+  se ofrece 💵 Sacar del banco.
+- **💸 Vender**: 25, 50 o 100 % de tu TTCL, también con vista previa (lo que recibes, la comisión y el precio). Sin impuestos.
+- **💼 Cartera**: cantidad, valor, coste medio, ganancia sin vender y donut.
+- **🧾 Historial**: compras y ventas, con páginas.
+
+Se quitan los botones de precios, gráfico, top de inversores e información, que pasan a la pestaña 📈 Mercado. Ya no
+hay botones de criptos retiradas.
+
+- `src/paneles/cripto/` se reparte por pestañas (`mercado`, `operar`, `cartera`, `historial`); `resumen` y `consultas`
+  se quitan.
+- Las compras y ventas se confirman desde el panel (`cripto_comprar_ok_*`, `cripto_vender_ok_*`); la cantidad escrita
+  llega por modal.
+- `/perfil` → Rankings → 💎 TTCL ya no depende del panel antiguo.
+- Tests: `tests/panelesCripto.test.js` reescrito (pestañas, vista previa sin mover dinero, límites, sacar del banco,
+  modal, cartera, historial y el repintado).
+
 ## 2026-10-08 (🤖 `/duende` como un solo comando con panel de botones (F-DU-06, #113))
 
 Igual que `/tienda`: `/duende` ya no tiene subcomandos. Abre un panel (solo lo ve quien lo abre) con:

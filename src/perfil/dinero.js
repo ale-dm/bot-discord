@@ -26,9 +26,7 @@ async function repintar(volver, interaction) {
         const cfg = require("../systems/guildSettings").getSettings(interaction.guildId).tienda;
         if (item) return require("../paneles/tienda").buildConfirmacion(item, tienda.saldoDe(userId), cfg, userId);
     }
-    if (volver.startsWith("cripto_cant_")) {
-        return require("../paneles/cripto").buildComprarCantidad(userId, volver.replace("cripto_cant_", ""), interaction.guildId);
-    }
+    if (volver.startsWith("cripto_")) return require("../paneles/cripto").repintar(volver, userId, interaction.guildId);
     return economiaPropia(interaction);
 }
 
