@@ -41,7 +41,7 @@ test("/ayuda es pública y cada sección trae los botones de sus paneles, sin id
 
     for (const [seccion, esperado] of [
         ["progresion", ["ayuda_abrir_perfil_perfil", "ayuda_abrir_perfil_logros", "ayuda_abrir_perfil_rankings"]],
-        ["economia", ["ayuda_abrir_perfil_eco", "ayuda_abrir_tienda_ver", "ayuda_abrir_tienda_inventario"]],
+        ["economia", ["ayuda_abrir_perfil_eco", "ayuda_abrir_tienda_catalogo"]],
         ["casino", ["ayuda_abrir_juegos_casino", "ayuda_abrir_juegos_stats"]],
         ["apuestas", ["ayuda_abrir_juegos_apuestas", "ayuda_abrir_juegos_retos", "ayuda_abrir_juegos_jugadas"]],
         ["cripto", ["ayuda_abrir_cripto_"]],
@@ -64,8 +64,8 @@ test("abrir el casino desde la ayuda responde con un panel nuevo y público", as
     expect(ids(payload)).toContain("casino_blackjack");
 });
 
-test("abrir la tienda usa el subcomando y es pública", async () => {
-    const i = interaccion("ayuda_abrir_tienda_ver");
+test("abrir la tienda es pública y abre el panel de /tienda", async () => {
+    const i = interaccion("ayuda_abrir_tienda_catalogo");
     await ayuda.handleButton(client, i);
     const payload = i.reply.mock.calls[0][0];
     expect(payload.flags).toBeUndefined();

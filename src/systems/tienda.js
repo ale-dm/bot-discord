@@ -31,6 +31,16 @@ function itemsTienda({ busqueda, soloDisponibles, categoria, rareza } = {}) {
     return db.prepare(`${SELECT_ITEM}${filtro} ORDER BY tienda.id ASC`).all(...params);
 }
 
+/** Categorías y rarezas que hay en el catálogo, para los menús de filtro de /tienda. */
+function valoresFiltro() {
+    const distintos = (col) =>
+        db
+            .prepare(`SELECT DISTINCT ${col} AS v FROM objeto WHERE ${col} IS NOT NULL AND ${col} <> '' ORDER BY ${col}`)
+            .all()
+            .map((r) => r.v);
+    return { categorias: distintos("categoria"), rarezas: distintos("rareza") };
+}
+
 function itemTienda(tiendaId) {
     return db.prepare(`${SELECT_ITEM} WHERE tienda.id = ?`).get(tiendaId);
 }
@@ -110,4 +120,4 @@ function cobrarCompra(userId, guildId, item, etiqueta = userId) {
     }
 }
 
-module.exports = { itemsTienda, itemTienda, historialCompras, saldoDe, comprobarCompra, cobrarCompra };
+module.exports = { itemsTienda, itemTienda, valoresFiltro, historialCompras, saldoDe, comprobarCompra, cobrarCompra };

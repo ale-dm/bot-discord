@@ -2,6 +2,19 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🛒 `/tienda` como un solo comando con panel de botones (F-EC-11, #110))
+
+Antes `/tienda` tenía tres subcomandos (`ver`, `inventario`, `historial`), cada uno con sus opciones de filtro. Ahora
+`/tienda` no tiene subcomandos ni opciones: abre directamente el 🛒 Catálogo, con las pestañas de siempre.
+
+- Los filtros pasan a ser botones dentro del panel: un menú de **categoría**, un menú de **rareza** y un botón **🔍 Buscar**
+  por nombre o tipo (formulario). Se aplican al catálogo y al inventario, y se recuerdan para cada persona.
+- Se quitan `ver`, `inventario` e `historial` sin alias. La opción `solo_disponibles` desaparece: el catálogo ya
+  muestra los objetos agotados con el botón desactivado.
+- Ayuda: el botón de la pestaña 💰 Economía abre `/tienda`.
+- Tests nuevos en `tests/tiendaPanel.test.js`: `/tienda` sin opciones, filtrar por categoría y por búsqueda, quitar
+  los filtros, filtros por persona y búsqueda en el inventario. Los tests antiguos de los subcomandos se adaptan.
+
 ## 2026-10-08 (🏦 Patrimonio (F-EC-10, #81): interés e impuesto semanal sobre el banco)
 
 El patrimonio se gestiona aparte del motor de impuestos de ingresos y compras (#77), porque no es una regla más sino

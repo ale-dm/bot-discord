@@ -484,9 +484,10 @@ Tipos de objeto:
 
 | Comando | Qué hace |
 |---|---|
-| `/tienda ver [busqueda] [solo_disponibles] [categoria] [rareza]` | Pestaña 🛒 Catálogo: la tienda con botones de compra (paginada) |
-| `/tienda inventario [categoria] [rareza]` | Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes) y un botón **Usar** en los que hacen algo (antes `/inventario` y `/usar`) |
-| `/tienda historial` | Pestaña 🧾 Mis compras |
+| `/tienda` | Abre el panel de la tienda: 🛒 Catálogo (la tienda con botones de compra, paginada), 🎒 Inventario (tus objetos, con un botón **Usar** en los que hacen algo) y 🧾 Mis compras. Sin subcomandos ni opciones |
+
+En el catálogo y el inventario hay menús de **categoría** y **rareza**, y un botón **🔍 Buscar** por nombre o tipo. Los filtros
+se recuerdan para cada persona mientras el bot esté encendido. Antes eran `/tienda ver`, `/tienda inventario` y `/tienda historial`, con opciones.
 
 Las tres pestañas (🛒 Catálogo · 🎒 Inventario · 🧾 Mis compras) salen en la última fila de todas las pantallas
 de la tienda. Después de comprar: ⬅️ Volver a la tienda · 🎒 Ver en inventario · 🔮 Usar ya (en los consumibles).
