@@ -166,6 +166,16 @@ function pagarConImpuesto(userId, guildId, tipo, descripcion, cantidad) {
     return resultado;
 }
 
+/**
+ * Como pagarConImpuesto, pero sin impuesto de ingreso (las ventas de cripto, #119). Sí cobra la deuda con el Duende,
+ * como cualquier ingreso: si no, se podría vender cripto para no devolver un préstamo.
+ */
+function pagarSinImpuesto(userId, tipo, descripcion, cantidad) {
+    pagar(userId, cantidad);
+    apuntar(userId, tipo, descripcion, cantidad);
+    require("./prestamos").cobrarDeuda(userId, cantidad);
+}
+
 function validarCantidad(cantidad) {
     if (!Number.isInteger(cantidad) || cantidad <= 0) return "La cantidad tiene que ser un número entero mayor que cero.";
     if (cantidad > LIMITE_OPERACION) return `Como mucho ${LIMITE_OPERACION.toLocaleString("es")} monedas por operación.`;
@@ -266,6 +276,7 @@ module.exports = {
     pagarNegro,
     cobrarCombinado,
     pagarConImpuesto,
+    pagarSinImpuesto,
     ingresar,
     sacar,
     transferir,
