@@ -14,20 +14,21 @@ criptomonedas e integración con Plex/Seerr.
 
 ## Cómo se usa
 
-Casi todo está en **cinco paneles** con pestañas y botones, enlazados entre sí (14 comandos en total):
+Casi todo está en **seis paneles** con pestañas y botones, enlazados entre sí (17 comandos en total):
 
 | Panel | Qué hay |
 |---|---|
 | `/perfil [usuario] [seccion]` | 👤 Perfil (nivel, racha, recompensas) · 💰 Economía (efectivo y banco, ingresar, sacar, transferir, movimientos, 🎁 recompensa diaria) · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. El de otra persona se ve entero; los botones de acción, solo en el tuyo |
 | `/juegos [seccion]` | 🎰 Casino (blackjack, tragaperras, ruleta, adivinar, PPT) · ⚽ Apuestas (partidos y quiniela) · ⚔️ Retos (1 contra 1 a un partido, duelos y porras) · 📋 Mis jugadas · 📊 Stats |
-| `/tienda ver \| inventario \| historial` | 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras |
-| `/cripto` | Precios, gráficos, compra y venta, cartera e historial (BTC, ETH… y $TTCL) |
+| `/tienda` | 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras. Sin subcomandos |
+| `/cripto` | 📈 Mercado (precio, gráfica, pool y eventos) · 🛒 Comprar · 💸 Vender (ambas con vista previa antes de confirmar) · 💼 Cartera · 🧾 Historial. Solo $TTCL |
+| `/duende` | 💬 Hablar · 🧠 Recuerdos · 🎭 Personalidad (las personalidades y los recuerdos de otros, solo admins) |
 | `/paneladmin` 🔒 | Banco, niveles, configuración, apuestas, catálogo, sistema, Plex, Seerr y auditoría |
 
 `/ayuda` explica cada parte y tiene botones que abren estos paneles. El dinero está en **efectivo** (con lo que se
 juega y se compra) o en el **banco** (seguro; hay que sacarlo para gastarlo). De momento los paneles son públicos
 (solo quien los abre puede pulsarlos); los avisos de error, `/paneladmin` y lo que el Duende recuerda, en privado.
-Aparte: el Duende en el chat y por voz (`/duende`, `/ia`, `/imagen`, `/tts`, `/escuchar`) y `/bola8`, `/ping`, `/javier`.
+Aparte: el Duende en el chat y por voz (`/ia`, `/imagen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/bola8`, `/ping` y `/javier`.
 
 ## Puesta en marcha (desarrollo)
 
@@ -61,9 +62,9 @@ el-duende/
 │   │   └── registerCommands.js Registra los slash commands en Discord
 │   ├── commands/           Un fichero por slash command, agrupados por tema
 │   │   ├── duende/           /duende /ia /imagen /bola8 /javier
-│   │   ├── voz/              /tts /escuchar
+│   │   ├── voz/              /tts /escuchar /conversación
 │   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
-│   │   ├── economia/         /tienda (catálogo, inventario y compras) /cripto
+│   │   ├── economia/         /tienda (catálogo, inventario y compras) /cripto /robar /trabajar
 │   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas)
 │   │   ├── admin/            /paneladmin (banco, niveles, config, apuestas, catálogo, sistema...)
 │   │   └── general/          /ayuda /ping
@@ -71,7 +72,7 @@ el-duende/
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
 │   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/)
 │   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
-│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda y /cripto
+│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda, /cripto y /duende
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, apuestas, catálogo, sistema, Plex, Seerr, apodos y
 │   │                         perfiles del Duende, auditoría)
 │   ├── systems/            Lógica del bot que usan varios comandos
@@ -82,7 +83,7 @@ el-duende/
 │   │                         jugadores (dinero retenido hasta resolverse), tienda, objetos,
 │   │                         alertas por DM a los admins, avisos de lo pedido en Seerr; xp/ (niveles,
 │   │                         rachas, roles), apuestas/ (liquidación, recordatorios y mis jugadas),
-│   │                         duende/ (memoria, perfiles, personas) y cripto/ (mercado y gráficos)
+│   │                         duende/ (memoria, perfiles, personas) y cripto/ (mercado, eventos y gráficos)
 │   └── services/           Clientes de servicios externos
 │                             Gemini, Gemini TTS, Tautulli, Seerr, Odds API, Giphy, transcripción de
 │                             voz (STT); duende/ (herramientas, llamada a Gemini, voz)
