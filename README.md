@@ -14,7 +14,7 @@ criptomonedas e integración con Plex/Seerr.
 
 ## Cómo se usa
 
-Casi todo está en **seis paneles** con pestañas y botones, enlazados entre sí (17 comandos en total):
+Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (17 comandos en total):
 
 | Panel | Qué hay |
 |---|---|
@@ -23,6 +23,8 @@ Casi todo está en **seis paneles** con pestañas y botones, enlazados entre sí
 | `/tienda` | 🛒 Catálogo · 🎒 Inventario (con Usar) · 🧾 Mis compras. Sin subcomandos |
 | `/cripto` | 📈 Mercado (precio, gráfica, pool y eventos) · 🛒 Comprar · 💸 Vender (ambas con vista previa antes de confirmar) · 💼 Cartera · 🧾 Historial. Solo $TTCL |
 | `/duende` | 💬 Hablar · 🧠 Recuerdos · 🎭 Personalidad (las personalidades y los recuerdos de otros, solo admins) |
+| `/plex` | 🎬 Sesión de cine · 🎯 Para ti (recomendaciones) · 🎞️ Wrapped (tu resumen, privado) · 🏅 Mi Plex |
+| `/sonidos` | 🔊 El panel de sonidos del servidor: pulsa uno y el bot lo toca en tu canal de voz |
 | `/paneladmin` 🔒 | Banco, niveles, configuración, apuestas, catálogo, sistema, Plex, Seerr y auditoría |
 
 `/ayuda` explica cada parte y tiene botones que abren estos paneles. El dinero está en **efectivo** (con lo que se

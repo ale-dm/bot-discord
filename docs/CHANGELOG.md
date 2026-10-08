@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🍿 `/plex` y 🔊 `/sonidos`; el Wrapped, por DM y privado)
+
+- **`/plex`**: todo lo de Plex en un panel con botones, como `/tienda` y `/duende`: 🎬 Sesión de cine (formulario),
+  🎯 Para ti, 🎞️ Wrapped (tu resumen, solo tú) y 🏅 Mi Plex. Sustituye a `/cine` y `/recomendar`, que se quitan.
+- **Plex Wrapped (#23)**: ya no se publica en un canal. El día 1, cada persona recibe por DM solo su resumen del mes.
+  Migración 038 (`plex_wrapped_enviados`), para no repetir un mes.
+- **`/sonidos`**: panel público con un botón por sonido. Al pulsar, el bot entra a tu canal de voz, toca el sonido y se
+  sale. Un sonido a la vez por servidor; no interrumpe una conversación del Duende. Los admins suben (`archivo` y
+  `nombre`) o borran (`borrar`) sonidos. Migración 037 (`sonidos`).
+- Tests: `tests/sonidos.test.js`, `tests/plexComando.test.js` y `tests/plexWrapped.test.js` (reescrito para los DM).
+
 ## 2026-10-08 (🛡️ Pase de batalla con `/pase` (#36))
 
 - Temporadas de 15 días, 20 niveles. Cada mensaje, minuto en voz, partida de casino, operación de cripto, apuesta
