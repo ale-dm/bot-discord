@@ -126,7 +126,8 @@ function buildDiagnostico(client, guildId, aviso = "") {
 
 function buildTtcl(guildId) {
     const cripto = require("../systems/cripto/mercado");
-    const circulacion = db.prepare("SELECT circulacion FROM cripto_ttcl WHERE id = 1").get()?.circulacion || 0;
+    const circulacion = cripto.ttclCirculacion();
+    const pool = cripto.leerPool();
     const ultimo = db.prepare("SELECT precio, timestamp FROM cripto_ttcl_precios ORDER BY timestamp DESC LIMIT 1").get();
     const totalPuntos = db.prepare("SELECT COUNT(*) as total FROM cripto_ttcl_precios").get()?.total || 0;
     const puntos24h =
@@ -138,8 +139,13 @@ function buildTtcl(guildId) {
         .setTitle("💎 Diagnóstico TTCL")
         .setColor(0x9b59b6)
         .addFields(
-            { name: "💰 Precio actual", value: `${Number(cripto.getTtclPrecio(guildId)).toFixed(2)} monedas`, inline: true },
-            { name: "🔄 Circulación", value: `${Number(circulacion).toFixed(2)} / 1M`, inline: true },
+            { name: "💰 Precio actual", value: `${Number(cripto.getTtclPrecio()).toFixed(2)} monedas`, inline: true },
+            { name: "🔄 En carteras", value: `${Number(circulacion).toFixed(2)} TTCL`, inline: true },
+            {
+                name: "💧 Pool",
+                value: `${Math.round(pool.monedas).toLocaleString("es")} monedas · ${pool.ttcl.toFixed(2)} TTCL`,
+                inline: true,
+            },
             { name: "📊 Puntos gráfica", value: `${totalPuntos} registros (${puntos24h} en 24h)`, inline: true },
             { name: "⏱️ Último registro", value: ultimo ? `<t:${Math.floor(ultimo.timestamp / 1000)}:R>` : "Sin registros", inline: true },
             { name: "👥 Holders", value: `${holders} usuarios con TTCL`, inline: true },

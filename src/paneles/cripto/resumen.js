@@ -2,7 +2,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
 const { generateDonutChart } = require("../../systems/cripto/graficos");
 const {
-    TTCL,
     REAL_CRYPTOS,
     COINS_PER_EUR,
     ttclCirculacion,
@@ -22,8 +21,7 @@ const { backButton } = require("./comun");
 async function buildMainPanel(userId, guildId = null) {
     const saldo = getUserSaldo(userId);
     const prices = await fetchGeckoPrices();
-    const ttclP = getTtclPrecio(guildId);
-    const circ = ttclCirculacion();
+    const ttclP = getTtclPrecio();
 
     // ── Cartera del usuario
     const cartera = getUserCarteras(userId);
@@ -48,7 +46,7 @@ async function buildMainPanel(userId, guildId = null) {
     const marketLines = marketPairs
         .filter((m) => m.coins > 0)
         .map((m) => {
-            const eurStr = m.eur ? ` _(${m.eur.toLocaleString("es", { maximumFractionDigits: 0 })} €)_` : ` _(circ: ${circ.toFixed(0)})_`;
+            const eurStr = m.eur ? ` _(${m.eur.toLocaleString("es", { maximumFractionDigits: 0 })} €)_` : "";
             return `${m.emoji} **${m.sym}** ${formatCoins(m.coins)} 🪙${eurStr}`;
         });
 
@@ -100,12 +98,10 @@ async function buildMainPanel(userId, guildId = null) {
 
 async function buildPreciosPanel(guildId = null) {
     const prices = await fetchGeckoPrices();
-    const ttclPrecio = getTtclPrecio(guildId);
+    const ttclPrecio = getTtclPrecio();
     const circ = ttclCirculacion();
 
-    const lines = [
-        `🟣 **$TTCL** — \`${ttclPrecio.toFixed(4)}\` 🪙  _(circ: ${circ.toFixed(2)} / ${TTCL.ofertaTotal.toLocaleString("es")})_`,
-    ];
+    const lines = [`🟣 **$TTCL** — \`${ttclPrecio.toFixed(4)}\` 🪙  _(en carteras: ${circ.toFixed(2)})_`];
     for (const c of REAL_CRYPTOS) {
         const eur = prices[c.id]?.eur;
         if (eur) {

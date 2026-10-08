@@ -32,6 +32,25 @@ Antes `/tienda` tenía tres subcomandos (`ver`, `inventario`, `historial`), cada
 - Tests nuevos en `tests/tiendaPanel.test.js`: `/tienda` sin opciones, filtrar por categoría y por búsqueda, quitar
   los filtros, filtros por persona y búsqueda en el inventario. Los tests antiguos de los subcomandos se adaptan.
 
+## 2026-10-08 (💧 TTCL como pool de liquidez (F-EC-12a, #117))
+
+Primera parte del rediseño de las criptos (#116). El precio de TTCL dejaba de ser una función de la circulación, y eso
+permitía ganar dinero con un ciclo compra→venta: la compra se cobraba al precio de antes de sumar las monedas propias,
+y la venta al de después.
+
+- **Pool de liquidez global** (`cripto_pool`): 1.000.000 monedas y 10.000 TTCL al arrancar, precio inicial 100. El
+  precio es monedas / TTCL del pool, y cada operación se cobra contra el pool manteniendo el producto constante.
+- **Comisión en el pool**: la compra y la venta cobran la comisión (1 % por defecto, configurable) y la comisión se queda
+  en el pool. Comprar y vender de vuelta ya no sale gratis.
+- **Migración 027**: el precio vuelve a 100. Las unidades que tiene cada persona se conservan. Se borra la tabla
+  `cripto_ttcl` (la circulación ahora es lo que suma `cripto_carteras`).
+- Se quitan los ajustes `ttcl_base_price` y `ttcl_volatility` de Config Global → Cripto; las reservas van fijas en el código.
+- Pantallas y diagnóstico de TTCL actualizados: el pool (monedas y TTCL) sustituye a la curva de supply.
+- Tests nuevos en `tests/ttclPool.test.js`: precio inicial, cálculo de una compra, que la comisión queda en el pool, que
+  el ciclo comprar→vender de vuelta ya no da beneficio, y los límites.
+- Pendiente de #116: quitar las criptos reales (#118), las ventas exentas de impuesto (#119), los eventos (#120), las
+  gráficas (#122) y el panel (#121).
+
 ## 2026-10-08 (🏦 Patrimonio (F-EC-10, #81): interés e impuesto semanal sobre el banco)
 
 El patrimonio se gestiona aparte del motor de impuestos de ingresos y compras (#77), porque no es una regla más sino
