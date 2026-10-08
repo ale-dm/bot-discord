@@ -222,6 +222,13 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🏅 Liga de pronósticos (F-AP-12, #8)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 030_liga_pronosticos`.
+- [ ] ⚽ Apuestas → 🏅 Liga: sale la clasificación de la temporada con puntos y quinielas, tu posición y "Temporadas anteriores".
+- [ ] Tras una quiniela cerrada, sus aciertos suman en la liga; una caducada no suma.
+- [ ] Empate a puntos y quinielas: va primero quien tiene el id menor (criterio fijo).
+- [ ] El 1 de julio desde las 10:00: se publica la clasificación final en el canal de la clasificación y se pagan 5.000 / 2.500 / 1.000 al efectivo (una sola vez).
+
 **🗂️ /cripto con pestañas (F-EC-12e, #121)**
 - [x] `/cripto` abre 📈 Mercado con la gráfica; los botones 24 h / 7 días / 30 días / Todo cambian el rango.
 - [x] 🛒 Comprar: elegir 1.000 monedas → sale la vista previa (pagas, recibes, precio) y no se ha cobrado nada. Confirmar → aviso ✅ y el efectivo baja.

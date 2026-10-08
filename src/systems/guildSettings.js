@@ -78,6 +78,9 @@ const DEFAULT_FLAT = {
     "clasificacion.canal": "",
     "clasificacion.premio": 500,
     "clasificacion.ultima_semana": "",
+    "liga.premio_1": 5000,
+    "liga.premio_2": 2500,
+    "liga.premio_3": 1000,
     "eventos.xp_activo": false,
     "eventos.xp_mult": 2,
     "eventos.xp_desde": 20,
@@ -161,6 +164,9 @@ const KEY_TYPES = {
     "clasificacion.canal": "string",
     "clasificacion.premio": "number",
     "clasificacion.ultima_semana": "string",
+    "liga.premio_1": "number",
+    "liga.premio_2": "number",
+    "liga.premio_3": "number",
     "eventos.xp_activo": "boolean",
     "eventos.xp_mult": "number",
     "eventos.xp_desde": "number",
@@ -270,6 +276,11 @@ function flattenToNested(flat) {
             canal: flat["clasificacion.canal"],
             premio: flat["clasificacion.premio"],
             ultima_semana: flat["clasificacion.ultima_semana"],
+        },
+        liga: {
+            premio_1: flat["liga.premio_1"],
+            premio_2: flat["liga.premio_2"],
+            premio_3: flat["liga.premio_3"],
         },
         eventos: {
             xp: {
