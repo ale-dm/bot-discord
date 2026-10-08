@@ -444,6 +444,13 @@ client.on("messageCreate", async (message) => {
         msgLog.error(`Error dando XP por mensaje · ${whoWhere(message)}`, e);
     }
 
+    // 🧠 Recuerdos automáticos del Duende (#15): mira la conversación en segundo plano; no bloquea nada.
+    try {
+        require("./systems/duende/recuerdosAuto").observar(message);
+    } catch (e) {
+        msgLog.error(`Error mirando la conversación para los recuerdos del Duende · ${whoWhere(message)}`, e);
+    }
+
     const userText = message.content.trim();
     const imageAttachmentsRaw = message.attachments
         ? [...message.attachments.values()].filter((a) => (a.contentType || "").startsWith("image/"))

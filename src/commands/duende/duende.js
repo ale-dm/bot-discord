@@ -21,6 +21,7 @@ const { ajusteDeTono } = require("../../systems/duende/tono");
 const { instruccionDefault } = perfiles;
 const { mentionizeKnownNames, buildPersonProfileText, detectMentionedPersons } = require("../../systems/duende/personas");
 const { generarConGemini, buildPromptFromParts, isGeminiProhibitedContentError } = require("../../services/duende/gemini");
+const recuerdosAuto = require("../../systems/duende/recuerdosAuto");
 const { tryVoiceReply } = require("../../services/duende/voz");
 const { getGifForText } = require("../../services/giphy");
 const paneles = require("../../paneles/duende");
@@ -506,7 +507,17 @@ const responder = (interaction, payload) =>
     interaction.isFromMessage?.() ? interaction.update(payload) : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
 
 module.exports = {
+    async handleRecuerdoAuto(client, interaction) {
+        const [, decision, id] = /^recuerdo_auto_(ok|no)_(\d+)$/.exec(interaction.customId) || [];
+        if (!decision) return;
+        const r = recuerdosAuto.resolver(id, interaction.user.id, decision === "ok");
+        if (!r.ok) return interaction.reply({ content: `⚠️ ${r.mensaje}`, flags: MessageFlags.Ephemeral });
+        return interaction.update({ content: r.mensaje, embeds: [], components: [] });
+    },
+
     componentHandlers: [
+        // 🧠 Recuerdos automáticos (#15): ✅ Guardar / ❌ Descartar de la propuesta (llega por DM a los admins).
+        { types: ["button"], prefixes: ["recuerdo_auto_"], method: "handleRecuerdoAuto", acl: "duende" },
         { types: ["button"], prefixes: ["duendepanel_"], method: "handleButton", acl: "duende" },
         { types: ["stringSelect"], prefixes: ["duendepanel_"], method: "handleSelect", acl: "duende" },
         { types: ["userSelect"], prefixes: ["duendepanel_"], method: "handleUserSelect", acl: "duende" },

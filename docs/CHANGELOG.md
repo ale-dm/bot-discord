@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🧠 Recuerdos automáticos del Duende (#15))
+
+- El Duende mira la conversación cada 10 mensajes con texto de verdad y propone lo que merezca recordarse de cada persona.
+- La propuesta llega por DM a los admins, con ✅ Guardar / ❌ Descartar. Nada se guarda sin aprobación.
+- Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.js`.
+
 ## 2026-10-08 (🌍 Trofeos por país de Plex (#19))
 
 - Nuevo tipo de trofeo: **🌍 País**, con 5 y 10 películas de un mismo país de producción ("Viajero de Japón").

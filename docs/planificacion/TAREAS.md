@@ -222,6 +222,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🧠 Recuerdos automáticos del Duende (#15)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 035_recuerdos_auto`.
+- [ ] Tras 10 mensajes largos de una persona en el canal del Duende, a veces llega un DM a los admins con el recuerdo propuesto.
+- [ ] ✅ Guardar lo añade a `/duende` → 🧠 Recuerdos de esa persona; ❌ Descartar no guarda nada.
+- [ ] Quien no es admin no puede decidir; un recuerdo ya decidido no se puede volver a decidir.
+
 **🌍 Trofeos por país (#19)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 034_paises_peliculas`.
 - [ ] Con `TMDB_API_KEY`, tras una sincronización, las películas con id de TMDB tienen países (`plex_fichas.paises`).
