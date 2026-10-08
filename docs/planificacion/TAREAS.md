@@ -232,6 +232,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] Con el impuesto de ingresos activo, vender TTCL: el efectivo sube lo que sale en la previsión, sin línea de 🏛️ Impuesto.
 - [ ] Con un préstamo del Duende vencido o en deuda, vender TTCL: la deuda se descuenta de lo que entra.
 
+**📊 Gráficas de /cripto (F-EC-12f, #122)**
+- [ ] `/cripto` → 📈 gráfico de TTCL: se ve la gráfica nítida, con la fuente Outfit, precio y % en el título.
+- [ ] 💼 Cartera: el donut sale con la leyenda y el total en monedas.
+- [ ] El bot arranca sin errores de `canvas` (la dependencia se ha quitado) y la imagen de Docker se construye.
+
 **🧹 Solo TTCL (F-EC-12b, #118)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 028_liquidar_criptos_reales`.
 - [ ] En `/cripto` no sale BTC, ETH, SOL, BNB, XRP ni DOGE (ni en compra, venta, gráficos ni precios).

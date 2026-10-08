@@ -48,7 +48,7 @@ async function buildGraficoChart(sym, days, guildId = null) {
     const rangeLabel = RANGE_OPTIONS.find((r) => String(r.days) === String(days))?.label || `${days}d`;
     const chartLabel = `${ci.emoji} ${sym} — ${rangeLabel}`;
 
-    const buf = await generateLineChart(geckoId, days, chartLabel, ci.color, guildId);
+    const buf = await generateLineChart(geckoId, days, chartLabel, ci.color);
 
     const embed = new EmbedBuilder()
         .setTitle(`📊 ${ci.emoji} ${sym} — ${rangeLabel}`)

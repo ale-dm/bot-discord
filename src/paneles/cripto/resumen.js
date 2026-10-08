@@ -127,7 +127,7 @@ async function buildCarteraPanel(userId, guildId = null) {
 
     const files = [];
     if (lines.length) {
-        const donut = await generateDonutChart(userId, guildId);
+        const donut = await generateDonutChart(userId);
         if (donut) {
             const att = new AttachmentBuilder(donut, { name: "cartera.png" });
             embed.setImage("attachment://cartera.png");
