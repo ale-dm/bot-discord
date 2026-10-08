@@ -260,12 +260,13 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] 📥 pide el título en Seerr; un usuario sin perfil de Seerr vinculado recibe el aviso (y no se pide nada).
 - [ ] Sin cuenta vinculada o sin historial, lo dice.
 
-**🔊 /sonidos y 🍿 /plex**
-- [ ] Al arrancar: `[Migraciones] Aplicada 037_sonidos`.
-- [ ] `/sonidos archivo:<mp3> nombre:Risa` (admin): sale el aviso de añadido y el botón aparece en el panel.
-- [ ] Pulsar un sonido estando en un canal de voz: el bot entra, lo toca y se sale. Sin estar en voz, lo dice.
-- [ ] Dos sonidos a la vez en el mismo servidor: el segundo espera con el aviso.
-- [ ] `/sonidos borrar:Risa` (admin) lo quita; una persona sin permiso de admin recibe el aviso.
+**🔊 /sonidos, 🔌 /conectar y 🍿 /plex**
+- [ ] `/paneladmin` → 🔊 Sonidos → ➕ Subir sonido: se elige un mp3 y un nombre; sale el aviso y aparece en `/sonidos`.
+- [ ] `/paneladmin` → 🔊 Sonidos → 🗑️ Borrar: el menú quita el sonido.
+- [ ] `/conectar canal:<voz>`: el bot entra y lo confirma con la hora de salida (unos 30 minutos).
+- [ ] Con el bot conectado por `/conectar`, pulsar un sonido en `/sonidos` suena en ese canal sin que el bot entre y salga.
+- [ ] Sin `/conectar`, pulsar un sonido estando en voz entra al canal, lo toca y se sale.
+- [ ] A los 30 minutos el bot se sale solo; `/conectar` sin canal con el bot conectado lo echa.
 - [ ] `/plex` tiene los cuatro botones; el formulario de cine crea la sesión.
 
 **🎞️ Plex Wrapped mensual (#23), por DM**

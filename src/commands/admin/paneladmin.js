@@ -34,6 +34,7 @@ const {
     handlePerfilesStringSelect,
 } = require("../../adminPanel/perfilesDuende");
 const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPanel/impuestos");
+const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = require("../../adminPanel/sonidos");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 
 module.exports = {
@@ -42,7 +43,13 @@ module.exports = {
         { types: ["modal"], prefixes: ["paneladmin_"], method: "handleModal" },
         {
             types: ["stringSelect"],
-            prefixes: ["paneladmin_levels_reward_search_pick_", "paneladmin_perfiles_", "paneladmin_sis_", "paneladmin_plex_"],
+            prefixes: [
+                "paneladmin_levels_reward_search_pick_",
+                "paneladmin_perfiles_",
+                "paneladmin_sis_",
+                "paneladmin_plex_",
+                "paneladmin_sonidos_",
+            ],
             method: "handleStringSelect",
         },
         {
@@ -113,6 +120,7 @@ module.exports = {
             if (await handleSistemaButton(interaction)) return;
             if (await handleImpuestosButton(interaction)) return;
             if (await handleClasificacionButton(interaction)) return;
+            if (await handleSonidosButton(interaction)) return;
         } catch (err) {
             log.error(`handleButton falló (${interaction.customId || "/paneladmin"}):`, err);
             try {
@@ -132,6 +140,7 @@ module.exports = {
             if (await handleLevelsModal(interaction)) return;
             if (await handleSettingsModal(interaction)) return;
             if (await handlePlexModal(interaction)) return;
+            if (await handleSonidosModal(interaction)) return;
             if (await handleSeerrModal(interaction)) return;
             if (await handleBankModal(interaction)) return;
             if (await handleApodosModal(interaction)) return;
@@ -219,6 +228,7 @@ module.exports = {
             if (await handlePerfilesStringSelect(interaction)) return;
             if (await handleSistemaSelect(interaction)) return;
             if (await handlePlexStringSelect(interaction)) return;
+            if (await handleSonidosStringSelect(interaction)) return;
             await handleLevelsStringSelect(interaction);
         } catch (err) {
             log.error(`handleStringSelect falló (${interaction.customId || "/paneladmin"}):`, err);
