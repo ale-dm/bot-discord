@@ -35,6 +35,8 @@ const TIPOS = {
     robo: "🥷 Robos",
     premio: "🏆 Premios",
     prestamo: "🧙 Préstamos",
+    blanqueo: "🧼 Blanqueo",
+    negocio: "🏪 Negocios",
     otro: "📦 Otros",
 };
 
@@ -82,6 +84,21 @@ function cobrar(userId, cantidad) {
     return (
         db.prepare("UPDATE banco SET enMano = enMano - ? WHERE userId = ? AND enMano >= ?").run(cantidad, String(userId), cantidad)
             .changes === 1
+    );
+}
+
+/** Suma al banco (venta de un negocio). No apunta nada. */
+function pagarBanco(userId, cantidad) {
+    asegurarCuenta(userId);
+    db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, String(userId));
+}
+
+/** Quita del dinero negro, solo si alcanza (al depositarlo en un negocio para limpiarlo). No apunta nada. */
+function cobrarNegro(userId, cantidad) {
+    asegurarCuenta(userId);
+    return (
+        db.prepare("UPDATE banco SET negro = negro - ? WHERE userId = ? AND negro >= ?").run(cantidad, String(userId), cantidad).changes ===
+        1
     );
 }
 
@@ -242,6 +259,8 @@ module.exports = {
     apuntar,
     cobrar,
     cobrarBanco,
+    pagarBanco,
+    cobrarNegro,
     pagar,
     pagarNegro,
     cobrarCombinado,

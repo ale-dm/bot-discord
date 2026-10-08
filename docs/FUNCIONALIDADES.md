@@ -420,7 +420,7 @@ Cada uno tiene el dinero en tres sitios:
 - **🏦 Banco**: el sitio seguro. Ahí no se gasta: hay que sacarlo antes.
 - **🥷 Dinero negro** (F-EC-06b): lo robado con `/robar` (ver abajo). Se gasta igual que el efectivo en
   tienda, casino y apuestas (de hecho se gasta **antes** que el efectivo normal), pero no se puede meter
-  en el banco ni cuenta como patrimonio hasta blanquearse (negocios de blanqueo, F-EC-06d, todavía sin hacer).
+  en el banco ni cuenta como patrimonio hasta blanquearse: para eso están los 🏪 negocios (ver abajo).
 
 Todo el mundo empieza con **1.000 monedas en efectivo** (la cuenta se crea al usarla por primera vez). El dinero
 es único para todo el bot (no es por servidor).
@@ -527,6 +527,29 @@ Se menciona a los premiados (solo a ellos les llega el aviso), y una misma perso
 una categoría no tiene a nadie (nadie ha ganado XP o nadie ha ganado apostando), no se da. Se configura en `/paneladmin`
 → ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio y quién ganaría si fuera
 ahora.
+
+---
+
+### 🏪 Negocios y blanqueo (F-EC-06d)
+
+Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran con dinero del **banco** (hay que ingresar antes).
+
+| Negocio | Precio | Blanquea/día | Ingreso diario (efectivo) |
+|---|---|---|---|
+| 🧺 Lavandería | 15.000 | 7.500 | 100 |
+| 📦 Oficina de correos | 38.000 | 15.000 | 250 |
+| 🚗 Túnel de lavado | 75.000 | 22.500 | 500 |
+| 🌮 Taco Ticklers | 190.000 | 30.000 | 800 |
+
+- **Uno de cada tipo** por persona. Su capacidad de blanqueo se **suma** en un tope diario conjunto.
+- **Depositar 🧼** mete dinero negro en los negocios. Se limpia en **24 h**, repartido a lo largo del día, y al terminar
+  pasa al **efectivo** pagando impuesto como cualquier ingreso (tipo 🧼 Blanqueo en Movimientos).
+- El tope se **reinicia a las 00:00 (hora de Madrid)**. Lo que no cabe en el tope de hoy se queda como dinero negro.
+- Cada negocio paga su **ingreso diario** en efectivo una vez al día (tipo 🏪 Negocios; también paga impuesto). El primer
+  pago llega el día siguiente a comprarlo.
+- **Vender** un negocio devuelve el **50 % de lo pagado** al banco.
+- Un cron cada 5 minutos hace el blanqueo y los ingresos diarios; no avisa por DM.
+
 
 ---
 

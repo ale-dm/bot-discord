@@ -162,7 +162,18 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
                   ),
               ]
             : [];
-    return { content: "", embeds: [embed], components: [acciones, ...devolver, filaPestanasPerfil(viewerId, targetId, "eco")] };
+    const negocios = propio
+        ? [
+              new ActionRowBuilder().addComponents(
+                  new ButtonBuilder().setCustomId("dinero_negocios").setLabel("🏪 Negocios").setStyle(ButtonStyle.Secondary),
+              ),
+          ]
+        : [];
+    return {
+        content: "",
+        embeds: [embed],
+        components: [acciones, ...devolver, ...negocios, filaPestanasPerfil(viewerId, targetId, "eco")],
+    };
 }
 
 /** Historial de movimientos de `targetId` con filtro por tipo (`todo` = sin filtro) y páginas. */
