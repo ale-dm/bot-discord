@@ -2,6 +2,20 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🏅 Liga de pronósticos por temporada (F-AP-12, #8))
+
+Cada acierto de una quiniela cerrada suma 1 punto. La temporada va de julio a junio (hora de Madrid).
+
+- **⚽ Apuestas → 🏅 Liga**: la clasificación de la temporada actual con puntos y quinielas jugadas, tu posición y los
+  campeones de las temporadas anteriores.
+- **Premio de temporada**: el 1 de julio, desde las 10:00, se publica la clasificación final en el canal de la
+  clasificación y se paga al efectivo a los tres primeros (5.000 / 2.500 / 1.000 🪙 por defecto, en los ajustes
+  `liga.premio_1..3`). Una vez por temporada y servidor; sin canal no se paga nada.
+- Los puntos salen de `quiniela_apuestas.aciertos`, así que no hay tabla de puntos nueva. La migración 030 solo añade
+  `liga_temporadas`, con los campeones liquidados de cada servidor.
+- Tests: `tests/ligaPronosticos.test.js` (temporada y límites, clasificación con desempate, liquidación una vez por
+  temporada, el panel y el botón).
+
 ## 2026-10-08 (📈 `/cripto` con pestañas y vista previa antes de operar (F-EC-12e, #121))
 
 `/cripto` ya no tiene botones sueltos: es un panel con cinco pestañas (📈 Mercado, 🛒 Comprar, 💸 Vender, 💼 Cartera y

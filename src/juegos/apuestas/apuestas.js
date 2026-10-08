@@ -165,6 +165,7 @@ module.exports = {
                 .setCustomId(`quiniela_refrescar_${deporteSeleccionado}`)
                 .setLabel("🧾 Quiniela")
                 .setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId("liga_ver").setLabel("🏅 Liga").setStyle(ButtonStyle.Secondary),
         );
 
         const components = [
