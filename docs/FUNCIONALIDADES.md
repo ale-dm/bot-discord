@@ -867,6 +867,12 @@ ver el de este mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo 
 
 ## 12. Administración
 
+### `/mensaje` 🔒
+
+`/mensaje usuario` abre un formulario con un campo de varias líneas (hasta 1.500 caracteres) y lo manda por **DM** de
+parte del bot, con el nombre de quien lo escribe y el nombre del servidor. Si la persona tiene los DM cerrados, lo dice.
+Cada envío se audita (quién, a quién y cuántos caracteres; el texto no se guarda). Solo admins.
+
 ### `/paneladmin` 🔒
 
 Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditoría**.
