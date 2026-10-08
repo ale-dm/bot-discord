@@ -222,6 +222,12 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🔴 Apuestas en directo (#12)**
+- [ ] Sin `ODDS_DIRECTO`: un partido empezado no admite apuestas (aviso de "apuestas cerradas").
+- [ ] Con `ODDS_DIRECTO=1`: un partido en juego (menos de 2 horas) sale en la lista y admite apuestas con la cuota actual.
+- [ ] Las cuotas de un partido en juego se refrescan (cada 10 min) y en Odds API se ve el gasto de créditos.
+- [ ] Después de 2 horas del inicio, ya no admite apuestas.
+
 **🎙️ Tertulia en /conversación (#16)**
 - [ ] `/conversación tertulia:sí` en un canal con dos o tres personas: el Duende entiende a quien habla y contesta al grupo.
 - [ ] Dos personas hablando a la vez no se cortan entre sí (el audio se oye mezclado, no a trozos).

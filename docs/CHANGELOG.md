@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🔴 Apuestas en directo (#12))
+
+- Con `ODDS_DIRECTO=1`, un partido admite apuestas durante sus 2 primeras horas, con las cuotas que se refrescan cada
+  10 minutos mientras se juega. Sin la variable, nada cambia.
+- Las apuestas simples y las combinadas usan la misma regla (`systems/apuestas/directo.js`). Retos y quinielas siguen
+  cerrándose al empezar.
+- Cada refresco gasta 3 créditos por competición con partido en juego: por eso va apagado por defecto.
+- Tests: `tests/apuestasDirecto.test.js`.
+
 ## 2026-10-08 (🎙️ Tertulia en `/conversación`: escucha a todo el canal a la vez (#16))
 
 - Opción nueva `tertulia: sí` en `/conversación`: el Duende escucha a todo el canal a la vez, sin turnos. Las voces se

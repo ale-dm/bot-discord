@@ -7,6 +7,7 @@ const db = require("../../core/db");
 const dinero = require("../dinero");
 const limites = require("./limites");
 const mercados = require("./mercados");
+const directo = require("./directo");
 const { logInfo } = require("../../core/logger");
 
 const MIN_PATAS = 2;
@@ -23,7 +24,7 @@ const premioDe = (cantidad, cuota) => Math.round(cantidad * cuota);
 
 /** La cuota de una elección en un partido abierto, o null si no se puede apostar a ella ahora. */
 function cuotaDeEleccion(partido, eleccion) {
-    if (!partido || partido.estado !== "abierto" || !(partido.start_time > new Date().toISOString())) return null;
+    if (!directo.abiertoParaApostar(partido)) return null;
     if (ELECCIONES_1X2.includes(eleccion)) {
         const cuota = { home: partido.cuota_home, draw: partido.cuota_draw, away: partido.cuota_away }[eleccion];
         return cuota && cuota >= 1 ? cuota : null;

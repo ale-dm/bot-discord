@@ -193,6 +193,12 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 🔴 Apuestas en directo (#12): refresca cada 10 minutos las cuotas de las competiciones con partidos en juego.
+    // Solo con ODDS_DIRECTO=1 (cada refresco gasta créditos de la Odds API).
+    cron.schedule("*/10 * * * *", () => runJob("Cuotas en directo", () => require("./services/oddsApi").refrescarEnDirecto()), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
     // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
     cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => require("./systems/plexWrapped").enviarSiToca(client)), {
         timezone: "Europe/Madrid",
