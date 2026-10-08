@@ -802,17 +802,12 @@ El estado del registro de precios de TTCL está en `/paneladmin` → 🩺 Sistem
 
 ---
 
-### 🎬 Sesión de cine (#24)
+### 🎞️ Plex Wrapped mensual (#23)
 
-`/cine peli:<texto> hora:<HH:MM>` convoca a un grupo a ver algo a esa hora (hora de Madrid; si ya ha pasado, es la de
-mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
-
-- **🙋 Me apunto** / **🚪 Me salgo**. Quien convoca se apunta solo.
-- **🛑 Cancelar sesión**: solo quien la convocó o un admin.
-- **Recordatorio**: 10 minutos antes, el bot avisa en el canal y menciona a quien se haya apuntado. Una sola vez por
-  sesión. Lo revisa el cron cada 5 minutos.
-
-Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
+El día 1 de cada mes, desde las 10:00 (hora de Madrid), el canal del ranking de Plex recibe el resumen del mes anterior:
+las horas vistas en total y por persona (con una gráfica), las series más vistas y quién es el **más viciado**. Solo
+cuenta a quien tiene la cuenta de Plex vinculada, con la copia local del historial. Una vez por mes y servidor
+(`plex.wrapped_ultimo_mes`). Tests: `tests/plexWrapped.test.js`. Migración: ninguna.
 
 ## 12. Administración
 
@@ -897,6 +892,18 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/javier` | Contesta "Eres un mierdas." |
 
 ---
+
+### 🎬 Sesión de cine (#24)
+
+`/cine peli:<texto> hora:<HH:MM>` convoca a un grupo a ver algo a esa hora (hora de Madrid; si ya ha pasado, es la de
+mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
+
+- **🙋 Me apunto** / **🚪 Me salgo**. Quien convoca se apunta solo.
+- **🛑 Cancelar sesión**: solo quien la convocó o un admin.
+- **Recordatorio**: 10 minutos antes, el bot avisa en el canal y menciona a quien se haya apuntado. Una sola vez por
+  sesión. Lo revisa el cron cada 5 minutos.
+
+Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
 
 ## 15. Configuración (.env)
 

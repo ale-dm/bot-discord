@@ -182,4 +182,4 @@ async function generateDonutChart(userId) {
     }
 }
 
-module.exports = { generateLineChart, generateDonutChart };
+module.exports = { generateLineChart, generateDonutChart, renderPng, FONDO, TEXTO, TEXTO_SUAVE, REJILLA };

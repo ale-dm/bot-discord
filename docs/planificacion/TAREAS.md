@@ -222,6 +222,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🎞️ Plex Wrapped mensual (#23)**
+- [ ] El día 1 después de las 10:00 (Madrid), en el canal del ranking de Plex sale el resumen del mes anterior con la gráfica.
+- [ ] Menciona al más viciado y lista las series más vistas; sin nadie que haya visto nada, lo dice sin gráfica.
+- [ ] No se repite el mismo mes aunque el bot se reinicie.
+
 **🎬 Sesión de cine (#24)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 033_sesion_cine`.
 - [ ] `/cine peli:Dune hora:<dentro de 30 min>`: sale el mensaje con tu nombre como apuntado y los tres botones.

@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🎞️ Plex Wrapped mensual (#23))
+
+El día 1 de cada mes, desde las 10:00 (Madrid), el canal del ranking de Plex recibe el resumen del mes anterior: horas
+por persona con su gráfica, las series más vistas y quién es el más viciado. Una vez por mes y servidor.
+Tests: `tests/plexWrapped.test.js`.
+
 ## 2026-10-08 (🎬 Sesión de cine: `/cine` con botones para apuntarse (#24))
 
 - `/cine peli hora`: convoca una sesión de cine a una hora de Madrid. Quien convoca se apunta solo; los demás, con 🙋

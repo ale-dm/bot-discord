@@ -193,6 +193,12 @@ client.once("clientReady", async () => {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("./systems/clasificacionSemanal").publicarSiToca(client));
+    // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
+    cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => require("./systems/plexWrapped").enviarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Plex Wrapped (arranque)", () => require("./systems/plexWrapped").enviarSiToca(client));
     // 🎬 Sesiones de cine: el recordatorio de 10 minutos antes, cada 5 minutos.
     cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => require("./systems/cine").enviarRecordatorios(client)), {
         timezone: "Europe/Madrid",
