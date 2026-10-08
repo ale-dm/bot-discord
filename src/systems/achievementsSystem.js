@@ -1,5 +1,6 @@
 const db = require("../core/db");
 const guildSettings = require("./guildSettings");
+const pase = require("./pase/pase");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Logros");
@@ -740,6 +741,10 @@ async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true, 
     });
 
     tx();
+
+    // Cada logro nuevo da XP de pase de batalla (no los que se desbloquean al importar el historial de Plex).
+    const nuevos = unlocked.filter((a) => !a.importado).length;
+    if (nuevos) pase.registrarSeguro(guildId, userId, "logro", nuevos);
 
     if (unlocked.length) {
         log.info(

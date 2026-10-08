@@ -22,7 +22,8 @@ const MAX_SONIDOS = 40;
 const MAX_BYTES = 1024 * 1024;
 const NOMBRE_MAX = 32;
 const EXTENSIONES = [".mp3", ".ogg", ".wav"];
-const TIEMPO_MAX_MS = 30 * 1000;
+// Un archivo de 1 MB suena como mucho un par de minutos; el tope solo está por si el reproductor se atasca.
+const TIEMPO_MAX_MS = 4 * 60 * 1000;
 
 const carpetaRaiz = () => process.env.SONIDOS_DIR || path.join(DATA_DIR, "sonidos");
 const carpetaDe = (guildId) => path.join(carpetaRaiz(), String(guildId));
@@ -108,23 +109,48 @@ function borrarPorNombre(guildId, nombre) {
 const ocupados = new Set(); // servidores con un sonido sonando
 const presencia = require("./presencia");
 
-/** Toca el sonido en una conexión que ya existe (no se sale de ella al acabar). */
+/**
+ * Toca el sonido en una conexión que ya existe (no se sale de ella al acabar). Termina cuando acaba el sonido, o cuando
+ * Discord cierra la conexión a mitad. Al terminar, se quita la suscripción y se para el reproductor, para no dejar nada
+ * sonando ni colgado. `deps.alEmpezar` se llama en cuanto el sonido empieza a sonar de verdad.
+ */
 function tocarEn(conexion, sonido, deps) {
     const reproductor = (deps.crearReproductor || createAudioPlayer)();
+    let limpiar = () => {};
     const acabado = new Promise((resolve, reject) => {
-        const tope = setTimeout(resolve, TIEMPO_MAX_MS);
-        reproductor.once(AudioPlayerStatus.Idle, () => {
+        const tope = setTimeout(() => {
+            reproductor.stop?.(true);
+            resolve();
+        }, TIEMPO_MAX_MS);
+        const fin = () => {
             clearTimeout(tope);
             resolve();
-        });
+        };
+        const alCerrar = () => fin();
+        reproductor.once(AudioPlayerStatus.Playing, () => deps.alEmpezar?.());
+        reproductor.once(AudioPlayerStatus.Idle, fin);
         reproductor.on("error", (e) => {
             clearTimeout(tope);
             reject(e);
         });
+        conexion.once?.(VoiceConnectionStatus.Destroyed, alCerrar);
+        limpiar = () => {
+            clearTimeout(tope);
+            conexion.off?.(VoiceConnectionStatus.Destroyed, alCerrar);
+        };
     });
-    conexion.subscribe(reproductor);
+    const suscripcion = conexion.subscribe(reproductor);
     reproductor.play((deps.crearRecurso || createAudioResource)(rutaDe(sonido)));
-    return acabado;
+    return acabado.finally(() => {
+        limpiar();
+        suscripcion?.unsubscribe?.();
+        reproductor.stop?.(true);
+    });
+}
+
+/** ¿Suena ahora mismo un sonido en el servidor? (lo mira /conectar para no cortarlo). */
+function sonando(guildId) {
+    return ocupados.has(String(guildId));
 }
 
 /**
@@ -194,6 +220,7 @@ class ReproductorFalso extends EventEmitter {
 
 module.exports = {
     MAX_SONIDOS,
+    sonando,
     MAX_BYTES,
     EXTENSIONES,
     NOMBRE_MAX,

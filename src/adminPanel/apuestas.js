@@ -1,8 +1,8 @@
 // Panel admin → ⚽ Apuestas: lo que hay en juego (partidos con apuestas pendientes y quinielas abiertas), 💸 Liquidar
 // ahora (antes /pagarapuestas; normalmente lo hace solo el cron de cada hora), 🧾 Crear la quiniela de cada
 // competición (también está en la propia quiniela), el canal donde se publican los resultados (y el ⭐ partido destacado
-// del día), el recordatorio por DM antes de cada partido y los 🚦 límites por jugador (tope diario y máximo por partido,
-// F-AP-09).
+// del día), el recordatorio por DM antes de cada partido, los 🚦 límites por jugador (tope diario y máximo por partido,
+// F-AP-09) y los 🏆 premios de la liga de pronósticos.
 const {
     EmbedBuilder,
     ActionRowBuilder,
@@ -68,6 +68,14 @@ function buildApuestasHome(guildId) {
 ` + `Máximo por partido: ${cfg.max_partido ? `**${cfg.max_partido.toLocaleString("es")}** 🪙` : "sin límite"}`,
             },
             {
+                name: "🏆 Premios de la liga",
+                value: (() => {
+                    const liga = guildSettings.getSettings(guildId).liga;
+                    const fmt = (n) => `**${Number(n || 0).toLocaleString("es")}** 🪙`;
+                    return `1.º ${fmt(liga.premio_1)} · 2.º ${fmt(liga.premio_2)} · 3.º ${fmt(liga.premio_3)}\nSe pagan al cerrar cada temporada (julio–junio).`;
+                })(),
+            },
+            {
                 name: "📢 Avisos",
                 value:
                     `Resultados: ${cfg.canal_resultados ? `se publican en <#${cfg.canal_resultados}>` : "no se publican (solo DM a quien cobra)"}\n` +
@@ -85,6 +93,7 @@ function buildApuestasHome(guildId) {
         .setTimestamp();
     const acciones = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_apu_liquidar").setLabel("💸 Liquidar ahora").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_apu_premios").setLabel("🏆 Premios de liga").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_apu_home").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
     );
@@ -159,6 +168,17 @@ async function handleApuestasButton(interaction) {
             simpleModal("paneladmin_apu_limites_modal", "Límites de apuestas por jugador", [
                 { id: "tope", label: "Tope diario en 🪙 (0 = sin límite)", value: String(cfg.tope_diario) },
                 { id: "partido", label: "Máximo por partido en 🪙 (0 = sin límite)", value: String(cfg.max_partido) },
+            ]),
+        );
+        return true;
+    }
+    if (id === "paneladmin_apu_premios") {
+        const liga = guildSettings.getSettings(interaction.guildId).liga;
+        await interaction.showModal(
+            simpleModal("paneladmin_apu_premios_modal", "Premios de la liga (🪙)", [
+                { id: "p1", label: "1.º puesto en 🪙 (0 = ninguno)", value: String(liga.premio_1) },
+                { id: "p2", label: "2.º puesto en 🪙 (0 = ninguno)", value: String(liga.premio_2) },
+                { id: "p3", label: "3.º puesto en 🪙 (0 = ninguno)", value: String(liga.premio_3) },
             ]),
         );
         return true;
@@ -255,8 +275,34 @@ async function handleLimitesModal(interaction) {
     return true;
 }
 
+async function handlePremiosModal(interaction) {
+    const premios = ["p1", "p2", "p3"].map((id) => Number(interaction.fields.getTextInputValue(id).trim()));
+    if (!premios.every((n) => Number.isInteger(n) && n >= 0 && n <= 100_000_000)) {
+        await interaction.reply({
+            content: "❌ Los premios tienen que ser números enteros, de 0 (ninguno) en adelante.",
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    guildSettings.setManySettings(interaction.guildId, {
+        "liga.premio_1": premios[0],
+        "liga.premio_2": premios[1],
+        "liga.premio_3": premios[2],
+    });
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "apuestas.liga_premios",
+        details: { premios },
+    });
+    if (interaction.isFromMessage?.()) await interaction.update(buildApuestasHome(interaction.guildId));
+    else await interaction.reply({ content: "✅ Premios de la liga actualizados.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
 async function handleApuestasModal(interaction) {
     if (interaction.customId === "paneladmin_apu_limites_modal") return handleLimitesModal(interaction);
+    if (interaction.customId === "paneladmin_apu_premios_modal") return handlePremiosModal(interaction);
     if (interaction.customId !== "paneladmin_apu_recordatorio_modal") return false;
     const activo = interaction.fields.getTextInputValue("activo").trim();
     const minutos = Number(interaction.fields.getTextInputValue("minutos").trim());

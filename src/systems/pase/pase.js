@@ -1,6 +1,6 @@
 // 🛡️ Pase de batalla (#36), temporadas de 15 días. Cada cosa que haces (escribir, estar en voz, jugar al casino, operar en
-// cripto, apostar, comprar en la tienda) da XP de pase, con topes diarios por categoría. Las misiones del día (3) dan más XP
-// al completarlas. Subir de nivel desbloquea una recompensa en monedas, que se cobra a mano en /pase.
+// cripto, apostar, comprar en la tienda, completar un logro) da XP de pase, con topes diarios por categoría. Las misiones
+// del día (3) dan más XP al completarlas. Subir de nivel desbloquea una recompensa en monedas, que se cobra a mano en /pase.
 // Decisión: el diseño tenía roles de Discord como recompensa (moderación, emojis...). No se conceden: los permisos de
 // Discord los decide el servidor, no un juego. Ver docs/planificacion/diseno/pase-de-batalla-s1.md, sección 10.
 const db = require("../../core/db");
@@ -24,6 +24,7 @@ const CATEGORIAS = {
     cripto: { xp: 6, tope: 180 },
     apuesta: { xp: 12, tope: 180 },
     tienda: { xp: 8, tope: 80 },
+    logro: { xp: 20, tope: 120 }, // por logro completado (no los de la importación de Plex)
 };
 
 /** Misiones del día: se eligen 3 de estas cada día (rotando), y cuentan los eventos de su categoría. */

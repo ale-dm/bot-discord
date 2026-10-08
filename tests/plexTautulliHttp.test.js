@@ -173,6 +173,11 @@ beforeAll(async () => {
             res.statusCode = 500;
             return res.end("Internal Server Error");
         }
+        // Un elemento que Tautulli no tiene (p. ej. borrado de Plex): HTTP 400, con su respuesta de error.
+        if (q.rating_key === "404") {
+            res.statusCode = 400;
+            return res.end(JSON.stringify({ response: { result: "error", message: "Item not found" } }));
+        }
         res.end(JSON.stringify(responder(q)));
     });
     await new Promise((r) => servidor.listen(0, "127.0.0.1", r));
@@ -212,6 +217,11 @@ describe("cliente de Tautulli", () => {
             total: 3,
         });
         expect(ultima("get_library_media_info")).toMatchObject({ section_id: "1", start: "1", length: "1" });
+    });
+
+    test("un 400 de Tautulli (no tiene ese elemento) da null, no un fallo: la sincronización sigue", async () => {
+        expect(await tautulli.getMetadata(G, "404")).toBeNull();
+        expect(await tautulli.getChildrenMetadata(G, "404", "show")).toEqual([]);
     });
 
     test("un error de Tautulli se marca como respuesta suya; un fallo HTTP, no", async () => {

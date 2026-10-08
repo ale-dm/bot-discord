@@ -11,7 +11,8 @@ module.exports = {
      */
 
     async run(client, interaction) {
-        const sent = await interaction.reply({ content: "Calculando ping...", fetchReply: true });
+        await interaction.reply({ content: "Calculando ping..." });
+        const sent = await interaction.fetchReply();
         const apiLatency = client.ws.ping;
         const botLatency = sent.createdTimestamp - interaction.createdTimestamp;
 
