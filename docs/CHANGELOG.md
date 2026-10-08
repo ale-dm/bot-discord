@@ -32,6 +32,20 @@ Antes `/tienda` tenía tres subcomandos (`ver`, `inventario`, `historial`), cada
 - Tests nuevos en `tests/tiendaPanel.test.js`: `/tienda` sin opciones, filtrar por categoría y por búsqueda, quitar
   los filtros, filtros por persona y búsqueda en el inventario. Los tests antiguos de los subcomandos se adaptan.
 
+## 2026-10-08 (📰 Eventos diarios de TTCL (F-EC-12d, #120))
+
+Cada día hay un evento de mercado: el precio de TTCL sube o baja un **5 %**, a una hora aleatoria. Da algo que seguir
+sin que un solo jugador mueva el precio a su antojo.
+
+- El minuto (hora de Madrid) y la dirección se eligen al empezar el día y se guardan (`cripto_eventos`).
+- Al llegar la hora, el evento mueve la reserva de TTCL del pool: para subir un 5 %, el TTCL del pool se divide entre 1,05;
+  para bajar, entre 0,95. El precio cambia exactamente ese porcentaje, y queda registrado en el historial del gráfico.
+- Se avisa por DM a quien tenga TTCL en cartera (una vez por evento). Quien no tiene TTCL no recibe nada, y un aviso que
+  falla no para a los demás.
+- Migración 029 (`cripto_eventos`). Cron cada 5 min (`systems/cripto/eventos.revisarYAvisar`).
+- Tests nuevos en `tests/eventosTtcl.test.js`: la hora de Madrid, que no se aplica antes de su hora, la subida y la bajada
+  exactas, un evento por día, y el aviso solo a quien tiene TTCL.
+
 ## 2026-10-08 (💸 Las ventas de cripto no pagan impuesto de ingresos (F-EC-12c, #119))
 
 Vender TTCL dejaba de ser una operación de intercambio y pasaba a ser un ingreso más, con el 5 % por defecto. Ahora la

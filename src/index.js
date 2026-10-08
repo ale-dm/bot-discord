@@ -233,6 +233,10 @@ client.once("clientReady", async () => {
     cron.schedule("*/5 * * * *", () => runJob("Negocios y blanqueo", () => require("./systems/negocios").revisar()), {
         noOverlap: true,
     });
+    // 💹 Evento diario de TTCL (±5 %, a una hora aleatoria del día): aplica el del día y avisa por DM a quien lo tiene.
+    cron.schedule("*/5 * * * *", () => runJob("Evento de TTCL", () => require("./systems/cripto/eventos").revisarYAvisar(client)), {
+        noOverlap: true,
+    });
     // 🏦 Patrimonio: cada persona tiene su ciclo semanal (interés del banco e impuesto sobre lo que pasa del umbral).
     cron.schedule("0 * * * *", () => runJob("Patrimonio", () => require("./systems/patrimonio").revisar()), {
         noOverlap: true,
