@@ -21,8 +21,7 @@ const SECCIONES = {
         texto: [
             '**Hablar con el Duende**: escribe "duende" o menciónale y responde siempre. A veces se mete solo en la conversación, ve las imágenes que mandas y puede responder por voz si estás en un canal de voz.',
             'Puede mirar datos reales: tu nivel, saldo, logros, precio de TTCL y, en los canales permitidos, Plex y Seerr ("¿qué ha visto Raúl esta semana?", "pídeme Dune").',
-            "`/duende recuerda usuario nota` · `/duende olvida usuario` · `/duende personas` — lo que el Duende sabe de ti (en privado; los admins, de cualquiera).",
-            "`/duende talk texto` · `/duende list` — hablarle por comando / ver personalidades.",
+            "`/duende` — un panel con 💬 Hablar, 🧠 Recuerdos (anotar, olvidar y ver lo que sabe de ti; los admins, de cualquiera) y 🎭 Personalidad del canal.",
             "`/ia prompt [agente] [generar_imagen]` — asistentes especializados (técnico, creativo, profesor, coach…).",
             "`/imagen descripcion [imagen1..5] [estilo]` — genera o edita imágenes.",
             "`/bola8 pregunta` — la bola 8 mágica.",
@@ -120,7 +119,7 @@ const SECCIONES = {
         abrir: [["paneladmin", "", "Panel admin", "🛠️"]],
         texto: [
             "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas), 🛒 Catálogo (objetos y lo que está a la venta), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
-            "`/duende set | add | remove` — personalidades del Duende.",
+            "`/duende` → 🎭 Personalidad — los admins añaden, quitan y eligen las personalidades del canal.",
         ],
     },
 };

@@ -48,7 +48,7 @@ test("si la voz funciona, no se manda nada por texto", async () => {
     mockRespuestas.push(texto("Hola, pesado."));
     mockVoz.mockResolvedValue(true);
     const i = charlaDeVoz();
-    await duende.run(null, i);
+    await duende.hablar(null, i);
     expect(mockVoz).toHaveBeenCalledWith(null, i, "Hola, pesado.");
     expect(i.enviados).toEqual([]);
 });
@@ -57,7 +57,7 @@ test("si la voz falla, la respuesta va por texto al canal", async () => {
     mockRespuestas.push(texto("Hola, pesado."));
     mockVoz.mockResolvedValue(false);
     const i = charlaDeVoz();
-    await duende.run(null, i);
+    await duende.hablar(null, i);
     expect(i.enviados).toEqual([{ content: "🗣️ Hola, pesado.", allowedMentions: { parse: ["users"] } }]);
 });
 
@@ -66,6 +66,6 @@ test("en el chat normal la voz no se espera ni cambia la respuesta por texto", a
     mockVoz.mockReturnValue(new Promise(() => {})); // una voz que no termina nunca no bloquea la respuesta
     const i = { ...charlaDeVoz(), silentTextReply: false, forceVoiceReply: false, enviados: [] };
     i.editReply = async (p) => i.enviados.push(typeof p === "string" ? p : p.content);
-    await duende.run(null, i);
+    await duende.hablar(null, i);
     expect(i.enviados).toEqual(["Qué quieres."]);
 });
