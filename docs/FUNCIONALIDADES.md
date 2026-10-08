@@ -870,7 +870,7 @@ ver el de este mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo 
 ### `/mensaje` 🔒
 
 `/mensaje usuario` abre un formulario con un campo de varias líneas (hasta 1.500 caracteres) y lo manda por **DM** de
-parte del bot, con el nombre de quien lo escribe y el nombre del servidor. Si la persona tiene los DM cerrados, lo dice.
+parte del bot, tal cual lo escribiste (sin cabecera). Si la persona tiene los DM cerrados, lo dice.
 Cada envío se audita (quién, a quién y cuántos caracteres; el texto no se guarda). Solo admins.
 
 ### `/paneladmin` 🔒

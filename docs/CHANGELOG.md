@@ -4,8 +4,8 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 
 ## 2026-10-08 (✉️ `/mensaje`)
 
-- **`/mensaje usuario`**: un admin elige a quién y escribe el texto en un formulario; el bot lo manda por DM con el
-  nombre de quien lo escribe. Cada envío queda en la auditoría (sin el texto). Solo admins.
+- **`/mensaje usuario`**: un admin elige a quién y escribe el texto en un formulario; el bot lo manda por DM tal cual,
+  sin cabecera. Cada envío queda en la auditoría (sin el texto). Solo admins.
 - Tests: `tests/mensaje.test.js`; `tests/parte8Admin.test.js` cuenta 19 comandos.
 
 ## 2026-10-08 (arreglos de los logs: 🍿 Para ti, sincronización de Plex y avisos)
