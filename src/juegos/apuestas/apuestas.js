@@ -13,6 +13,7 @@ const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
 const marcadorExacto = require("../../systems/apuestas/marcador");
 const mercados = require("../../systems/apuestas/mercados");
+const directo = require("../../systems/apuestas/directo");
 const limites = require("../../systems/apuestas/limites");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
@@ -87,6 +88,7 @@ module.exports = {
         const partidosPorPagina = 25;
         const offset = (page - 1) * partidosPorPagina;
         const ahora = new Date().toISOString();
+        const inicioListado = directo.inicioListado(); // con ODDS_DIRECTO=1, también los partidos en juego
         const partidos = db
             .prepare(
                 `
@@ -101,7 +103,7 @@ module.exports = {
             LIMIT ? OFFSET ?
         `,
             )
-            .all(deporteSeleccionado, ahora, partidosPorPagina, offset);
+            .all(deporteSeleccionado, inicioListado, partidosPorPagina, offset);
 
         logInfo(`[APUESTAS] Consultando partidos desde ${ahora}, encontrados: ${partidos.length}`);
 
@@ -137,7 +139,7 @@ module.exports = {
                 AND start_time > ?
         `,
             )
-            .get(deporteSeleccionado, ahora).total;
+            .get(deporteSeleccionado, inicioListado).total;
 
         const rowBtns = new ActionRowBuilder();
         if (page > 1)
@@ -433,7 +435,7 @@ module.exports = {
 
         // El formulario se puede abrir desde un mensaje antiguo: sin esta comprobación se podía
         // apostar a un partido ya empezado (o terminado) sabiendo cómo iba.
-        if (match.estado !== "abierto" || !(match.start_time > new Date().toISOString())) {
+        if (!directo.abiertoParaApostar(match)) {
             logInfo(
                 `[Apuestas] Apuesta rechazada de ${interaction.user.tag}: ${match.home_team} vs ${match.away_team} ya empezó (${match.start_time}, ${match.estado})`,
             );

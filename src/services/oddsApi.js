@@ -7,6 +7,7 @@
 const db = require("../core/db");
 const { createLogger } = require("../core/logger");
 const { LINEA_GOLES, LINEA_HCAP } = require("../systems/apuestas/mercados");
+const directo = require("../systems/apuestas/directo");
 const log = createLogger("OddsAPI");
 
 // Mercados que se piden en cada actualización de cuotas: 1X2 (h2h), goles (totals) y hándicap (spreads). Cada mercado
@@ -187,14 +188,43 @@ async function sincronizarPartidos(deporteKey) {
         log.debug(`Cuotas de ${deporte.name} desde caché (${Math.round((Date.now() - cached.ts) / 60000)} min)`);
         return cached.data;
     }
-    if (!getApiKey()) throw new Error("Falta ODDS_API_KEY en .env");
+    return pedirCuotas(deporteKey);
+}
 
+/** Pide las cuotas de una competición a la API (sin caché) y las guarda. Cada mercado cuesta un crédito. */
+async function pedirCuotas(deporteKey) {
+    const deporte = DEPORTES[deporteKey];
+    if (!getApiKey()) throw new Error("Falta ODDS_API_KEY en .env");
     const { data, restantes } = await pedir(`${BASE_URL}/${deporte.apiKey}/odds/?apiKey={KEY}&regions=eu&markets=${MERCADOS}`, deporte);
     const partidos = Array.isArray(data) ? data : [];
     guardarPartidos(deporteKey, partidos);
     cacheCuotas.set(deporteKey, { data: partidos, ts: Date.now() });
     log.info(`Cuotas de ${deporte.name}: ${partidos.length} partidos · créditos restantes: ${restantes}`);
     return partidos;
+}
+
+/**
+ * Apuestas en directo (#12): refresca las cuotas de cada competición que tenga un partido en juego ahora mismo. Solo con
+ * ODDS_DIRECTO=1. Un error de una competición no para a las demás.
+ * @returns {Promise<number>} cuántas competiciones se han refrescado
+ */
+async function refrescarEnDirecto(ahora = Date.now()) {
+    if (!directo.directoActivo()) return 0;
+    const enJuego = db
+        .prepare("SELECT DISTINCT deporte FROM apuestas_partidos WHERE estado = 'abierto' AND start_time <= ? AND start_time > ?")
+        .all(new Date(ahora).toISOString(), directo.enJuegoDesde(ahora))
+        .map((r) => r.deporte);
+    let refrescadas = 0;
+    for (const deporteKey of enJuego) {
+        if (!DEPORTES[deporteKey]) continue;
+        try {
+            await pedirCuotas(deporteKey);
+            refrescadas++;
+        } catch (e) {
+            log.warn(`No se pudieron refrescar las cuotas en directo de ${deporteKey}: ${e.message}`);
+        }
+    }
+    return refrescadas;
 }
 
 /** Resultados de los últimos DIAS_RESULTADOS días de una competición. */
@@ -224,6 +254,7 @@ function resultadoDeScore(score) {
 
 module.exports = {
     cuotasMercados,
+    refrescarEnDirecto,
     DEPORTES,
     DIAS_RESULTADOS,
     deporteValido,
