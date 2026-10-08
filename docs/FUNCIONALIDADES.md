@@ -624,6 +624,18 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League, 
 
 Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
 
+**Mercados de goles y de hándicap (#9 y #10)**: debajo de los botones 1/X/2 de cada partido, cuando la API da la línea:
+- **⬆️ Más de 2,5 goles** / **⬇️ Menos de 2,5 goles**: gana si el total de goles es 3 o más (o 2 o menos).
+- **🏠 Local −1,5**: gana el local si gana por 2 o más. **✈️ Visitante +1,5**: gana si pierde por 1 o menos (o no pierde).
+
+Las líneas son medias, así que no hay empates de línea y nunca se devuelve nada por "push". Cada apuesta guarda la línea
+con la que se apostó: si la API la cambia después, la apuesta se liquida con la suya. Solo se ofrece la línea de 2,5 y
+la de ±1,5; si la casa no da esas líneas, el botón no sale. Coste: 3 créditos por actualización de cuotas de cada
+competición (ver `ODDS_MERCADOS`).
+
+**🧾 Mis jugadas** calcula lo máximo que puedes cobrar de un partido mirando todos los marcadores posibles, así que
+cuenta a la vez el 1X2, el marcador exacto, los goles y el hándicap cuando salen juntos.
+
 **🏅 Liga de pronósticos (F-AP-12, #8)**: cada acierto de una quiniela cerrada suma **1 punto** (las quinielas
 caducadas no cuentan). La temporada va de **1 de julio a 30 de junio** (hora de Madrid). El 1 de julio, desde las 10:00,
 se publica la clasificación final de la temporada anterior en el canal de la clasificación y se paga al efectivo a los
@@ -936,7 +948,8 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `MIN_BET_AMOUNT` / `MAX_BET_AMOUNT` | 10 / 1000 | Límites de apuestas deportivas y quiniela |
 | `BACKUP_KEEP` / `BACKUP_DIR` | 7 / `data/backups/` | Copias diarias de la BD que se conservan y dónde |
 | `QUINIELA_LOCK_MINUTES` | 15 | Bloqueo de la quiniela antes del primer partido |
-| `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada petición gasta 1 crédito de 500 al mes) |
+| `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada mercado de cada petición gasta 1 crédito de 500 al mes) |
+| `ODDS_MERCADOS` | `h2h,totals,spreads` | Mercados que se piden a la Odds API: 1X2, goles y hándicap. Con `h2h` solo, cada actualización cuesta 1 crédito en vez de 3 |
 | `ODDS_CREDITOS_AVISO` | 50 | Por debajo de estos créditos de la Odds API se avisa por DM a los admins |
 | `LOG_LEVEL` | info | Nivel mínimo en los ficheros: `debug`, `info`, `warn` o `error`. También se cambia en caliente en `/paneladmin` → 🩺 Sistema |
 | `LOG_CONSOLE_LEVEL` | warn | Nivel mínimo que sale por consola (`docker logs`); `off` para nada |

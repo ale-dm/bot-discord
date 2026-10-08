@@ -1,7 +1,7 @@
 // Lo que alguien tiene apostado: partidos sueltos, quinielas (con sus pronósticos y aciertos) y sus
 // estadísticas, más las últimas partidas del casino. Sin Discord: lo pintan paneles/misJugadas y la quiniela.
 const db = require("../../core/db");
-const { marcadorDe } = require("./marcador");
+const mercados = require("./mercados");
 
 const SIGNO = { home: "1", draw: "X", away: "2" };
 
@@ -113,26 +113,11 @@ const formatoNombreMes = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, mont
 const mesDe = (fecha) => formatoMes.format(new Date(fecha)).slice(0, 7);
 
 /**
- * Lo máximo que se puede cobrar de las apuestas a un partido: el mejor de sus resultados posibles. Solo uno de 1/X/2
- * puede salir, pero una apuesta al marcador exacto (F-AP-10) gana a la vez que la del resultado que implica (el 2-1 y
- * "gana el local"), así que cada marcador apostado es un escenario más.
+ * Lo máximo que se puede cobrar de las apuestas a un partido: el mejor de los marcadores finales posibles (1X2, marcador
+ * exacto, goles y hándicap a la vez; ver systems/apuestas/mercados.maximoPorMarcador).
  */
 function maximoDelPartido(apuestas) {
-    const premio = (a) => Math.round(a.cantidad * a.cuota);
-    const porResultado = { home: 0, draw: 0, away: 0 };
-    const porMarcador = new Map();
-    for (const a of apuestas) {
-        const m = marcadorDe(a.eleccion);
-        if (m) porMarcador.set(m, (porMarcador.get(m) || 0) + premio(a));
-        else if (a.eleccion in porResultado) porResultado[a.eleccion] += premio(a);
-    }
-    let mejor = Math.max(...Object.values(porResultado));
-    for (const [m, p] of porMarcador) {
-        const [local, visitante] = m.split("-").map(Number);
-        const resultado = local > visitante ? "home" : local < visitante ? "away" : "draw";
-        mejor = Math.max(mejor, p + porResultado[resultado]);
-    }
-    return mejor;
+    return mercados.maximoPorMarcador(apuestas);
 }
 
 /**

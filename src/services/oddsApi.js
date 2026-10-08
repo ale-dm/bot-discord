@@ -1,11 +1,18 @@
 // Cliente de The Odds API (https://the-odds-api.com): competiciones, cuotas y resultados.
 // Lo usan las apuestas y la quiniela de /juegos y la liquidación (/pagarapuestas y el cron de index.js).
 //
-// Coste en el plan gratuito (500 créditos al mes): cuotas = 1 crédito por competición
-// (1 mercado × 1 región), resultados con daysFrom = 2 créditos.
+// Coste en el plan gratuito (500 créditos al mes): cuotas = 1 crédito por mercado y competición (con los tres
+// mercados, h2h + totals + spreads, son 3 por actualización; ODDS_MERCADOS=h2h para volver a 1), resultados con
+// daysFrom = 2 créditos.
 const db = require("../core/db");
 const { createLogger } = require("../core/logger");
+const { LINEA_GOLES, LINEA_HCAP } = require("../systems/apuestas/mercados");
 const log = createLogger("OddsAPI");
+
+// Mercados que se piden en cada actualización de cuotas: 1X2 (h2h), goles (totals) y hándicap (spreads). Cada mercado
+// cuenta como 1 crédito por competición, así que con los tres una actualización cuesta 3 créditos. Para volver al
+// coste de antes: ODDS_MERCADOS=h2h.
+const MERCADOS = process.env.ODDS_MERCADOS || "h2h,totals,spreads";
 
 const BASE_URL = "https://api.the-odds-api.com/v4/sports";
 
@@ -77,6 +84,35 @@ async function pedir(url, deporte) {
     return { data, restantes };
 }
 
+/**
+ * Cuotas de los mercados de goles (línea 2,5) y de hándicap (±1,5) de un partido. Cada una es null si la casa no da esa
+ * línea: no se ofrece la apuesta en vez de una línea distinta.
+ */
+function cuotasMercados(match) {
+    const markets = match.bookmakers?.[0]?.markets || [];
+    const vacio = { cuota_mas: null, cuota_menos: null, total_linea: null, cuota_casa: null, cuota_fuera: null, hcap_linea: null };
+    const totals = markets.find((m) => m.key === "totals");
+    const spreads = markets.find((m) => m.key === "spreads");
+    const enLinea = (outcomes, nombre, linea) => outcomes.find((o) => o.name === nombre && Number(o.point) === linea)?.price ?? null;
+
+    const out = { ...vacio };
+    if (totals) {
+        const mas = enLinea(totals.outcomes, "Over", LINEA_GOLES);
+        const menos = enLinea(totals.outcomes, "Under", LINEA_GOLES);
+        if (mas && menos) Object.assign(out, { cuota_mas: mas, cuota_menos: menos, total_linea: LINEA_GOLES });
+    }
+    if (spreads) {
+        // La línea del local: −1,5 (gana por 2 o más) si la hay; si no, +1,5. El visitante tiene la línea contraria.
+        const local = spreads.outcomes.find((o) => o.name === match.home_team && Math.abs(Number(o.point)) === LINEA_HCAP);
+        if (local) {
+            const linea = Number(local.point);
+            const visitante = enLinea(spreads.outcomes, match.away_team, -linea);
+            if (local.price && visitante) Object.assign(out, { cuota_casa: local.price, cuota_fuera: visitante, hcap_linea: linea });
+        }
+    }
+    return out;
+}
+
 /** Cuotas 1/X/2 de un partido de la API, o null si ninguna casa las da. */
 function cuotasH2H(match) {
     const market = match.bookmakers?.[0]?.markets?.find((m) => m.key === "h2h");
@@ -91,13 +127,20 @@ function cuotasH2H(match) {
 // guardada en apuestas_usuario, así que no le afecta.
 const upsertPartido = () =>
     db.prepare(`
-        INSERT INTO apuestas_partidos (match_id, deporte, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO apuestas_partidos (match_id, deporte, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away,
+            cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(match_id) DO UPDATE SET
             start_time = excluded.start_time,
             cuota_home = COALESCE(excluded.cuota_home, cuota_home),
             cuota_draw = COALESCE(excluded.cuota_draw, cuota_draw),
-            cuota_away = COALESCE(excluded.cuota_away, cuota_away)
+            cuota_away = COALESCE(excluded.cuota_away, cuota_away),
+            cuota_mas = COALESCE(excluded.cuota_mas, cuota_mas),
+            cuota_menos = COALESCE(excluded.cuota_menos, cuota_menos),
+            total_linea = COALESCE(excluded.total_linea, total_linea),
+            cuota_casa = COALESCE(excluded.cuota_casa, cuota_casa),
+            cuota_fuera = COALESCE(excluded.cuota_fuera, cuota_fuera),
+            hcap_linea = COALESCE(excluded.hcap_linea, hcap_linea)
         WHERE apuestas_partidos.estado = 'abierto'
     `);
 
@@ -109,7 +152,23 @@ function guardarPartidos(deporteKey, partidos) {
     db.transaction(() => {
         for (const m of partidos) {
             const c = cuotasH2H(m);
-            stmt.run(m.id, deporteKey, m.home_team, m.away_team, m.commence_time, c.home, c.draw, c.away);
+            const x = cuotasMercados(m);
+            stmt.run(
+                m.id,
+                deporteKey,
+                m.home_team,
+                m.away_team,
+                m.commence_time,
+                c.home,
+                c.draw,
+                c.away,
+                x.cuota_mas,
+                x.cuota_menos,
+                x.total_linea,
+                x.cuota_casa,
+                x.cuota_fuera,
+                x.hcap_linea,
+            );
             horaQuiniela.run(m.commence_time, m.id);
         }
     })();
@@ -130,7 +189,7 @@ async function sincronizarPartidos(deporteKey) {
     }
     if (!getApiKey()) throw new Error("Falta ODDS_API_KEY en .env");
 
-    const { data, restantes } = await pedir(`${BASE_URL}/${deporte.apiKey}/odds/?apiKey={KEY}&regions=eu&markets=h2h`, deporte);
+    const { data, restantes } = await pedir(`${BASE_URL}/${deporte.apiKey}/odds/?apiKey={KEY}&regions=eu&markets=${MERCADOS}`, deporte);
     const partidos = Array.isArray(data) ? data : [];
     guardarPartidos(deporteKey, partidos);
     cacheCuotas.set(deporteKey, { data: partidos, ts: Date.now() });
@@ -164,6 +223,7 @@ function resultadoDeScore(score) {
 }
 
 module.exports = {
+    cuotasMercados,
     DEPORTES,
     DIAS_RESULTADOS,
     deporteValido,
