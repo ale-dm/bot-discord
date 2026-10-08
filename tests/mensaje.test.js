@@ -58,10 +58,8 @@ describe("/mensaje: enviar el DM", () => {
         await mensaje.handleModal(cliente, { ...i, fields: { getTextInputValue: () => "  Nos vemos mañana  " } });
 
         expect(cliente.users.fetch).toHaveBeenCalledWith(dest.id);
-        const enviado = dest.send.mock.calls[0][0].content;
-        expect(enviado).toContain("**Ana**");
-        expect(enviado).toContain("La Inquisición");
-        expect(enviado.endsWith("Nos vemos mañana")).toBe(true);
+        // El DM lleva solo el texto: ni nombre de quien escribe ni de servidor.
+        expect(dest.send.mock.calls[0][0]).toEqual({ content: "Nos vemos mañana" });
         expect(i.reply.mock.calls[0][0].content).toMatch(/Mensaje enviado a \*\*Raúl\*\*/);
 
         const fila = db
