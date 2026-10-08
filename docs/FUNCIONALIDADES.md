@@ -610,12 +610,12 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 
 ## 9. Apuestas deportivas y quinielas
 
-Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y Champions League. Todo está en
+Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League, Champions League, Mundial, Eurocopa, Copa del Rey y Europa League. Todo está en
 `/juegos`:
 
 | Pestaña | Qué hace |
 |---|---|
-| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre LaLiga, Premier y Champions) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000), o 🎯 **Marcador exacto**: pones los goles de cada equipo y, si aciertas, cobras **×8** lo apostado (premio fijo: la API no da cuota para el marcador; se puede apostar a varios marcadores distintos del mismo partido). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
+| ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre las siete competiciones; con las de torneo, solo salen cuando hay partidos en la API) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000), o 🎯 **Marcador exacto**: pones los goles de cada equipo y, si aciertas, cobras **×8** lo apostado (premio fijo: la API no da cuota para el marcador; se puede apostar a varios marcadores distintos del mismo partido). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo. Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
 | 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
 | 🏅 Liga (desde Apuestas) | Liga de pronósticos de la temporada: cada acierto de una quiniela cerrada suma 1 punto. Clasificación con los puntos y las quinielas jugadas, tu posición y los campeones anteriores. La temporada va de julio a junio. |
 | 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (arriba, tu cartera: 💰 lo que tienes en juego, 🏆 lo máximo que puedes cobrar de tus partidos —en cada partido, el mejor resultado posible: solo uno de 1/X/2 puede salir, pero un 🎯 marcador exacto se cobra a la vez que el resultado que implica (el 2-1 y «gana el local»); la quiniela no suma porque depende del bote— y 📅 el beneficio de lo resuelto este mes, en hora de Madrid; debajo, cada apuesta, con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. En ⏳ En juego, el menú ↩️ **Cancelar una apuesta** devuelve al efectivo lo apostado a un partido que aún no ha empezado, menos un **10 % de comisión** (mínimo 1 🪙), después de confirmarlo; la apuesta desaparece (en Movimientos quedan la apuesta y la devolución). |
@@ -623,6 +623,29 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League y
 | 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, retos, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
 
 Los admins pueden forzar la liquidación y crear la quiniela desde `/paneladmin` → ⚽ Apuestas.
+
+**🧩 Combinadas (#1)**: un boleto con **de 2 a 5 partidos** (uno por partido). La cuota total es el producto de las
+cuotas de cada pata y el premio es lo apostado × esa cuota. Se gana **solo si aciertas todas**: en cuanto falla una, el
+boleto se pierde. Si un partido se caduca sin resultado, la combinada se devuelve entera.
+- Se arma en privado: ⚽ Apuestas → **🧩 Combinada** abre tu boleto (solo lo ves tú). En cada partido, el menú
+  **🧩 Sumar a mi combinada** añade una pata con la elección que quieras (1X2, goles o hándicap). Un partido solo puede
+  tener una pata: si sumas otra elección del mismo partido, sustituye a la anterior.
+- Antes de pagar se comprueba cada partido y cada cuota: si ha empezado o la cuota ha cambiado, hay que volver a sumarlo.
+- El importe cuenta para el tope diario y cobra como las demás apuestas (efectivo y dinero negro).
+- No entra en 🧾 Mis jugadas ni en las estadísticas: sus combinadas en juego se ven en el propio boleto. Tampoco se
+  puede cancelar una vez apostada, ni se incluye el marcador exacto (su premio es fijo).
+
+**Mercados de goles y de hándicap (#9 y #10)**: debajo de los botones 1/X/2 de cada partido, cuando la API da la línea:
+- **⬆️ Más de 2,5 goles** / **⬇️ Menos de 2,5 goles**: gana si el total de goles es 3 o más (o 2 o menos).
+- **🏠 Local −1,5**: gana el local si gana por 2 o más. **✈️ Visitante +1,5**: gana si pierde por 1 o menos (o no pierde).
+
+Las líneas son medias, así que no hay empates de línea y nunca se devuelve nada por "push". Cada apuesta guarda la línea
+con la que se apostó: si la API la cambia después, la apuesta se liquida con la suya. Solo se ofrece la línea de 2,5 y
+la de ±1,5; si la casa no da esas líneas, el botón no sale. Coste: 3 créditos por actualización de cuotas de cada
+competición (ver `ODDS_MERCADOS`).
+
+**🧾 Mis jugadas** calcula lo máximo que puedes cobrar de un partido mirando todos los marcadores posibles, así que
+cuenta a la vez el 1X2, el marcador exacto, los goles y el hándicap cuando salen juntos.
 
 **🏅 Liga de pronósticos (F-AP-12, #8)**: cada acierto de una quiniela cerrada suma **1 punto** (las quinielas
 caducadas no cuentan). La temporada va de **1 de julio a 30 de junio** (hora de Madrid). El 1 de julio, desde las 10:00,
@@ -788,7 +811,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | Sección | Qué se puede hacer |
 |---|---|
 | 🏦 Banco | Modificar saldo (efectivo, banco o dinero negro) · resetear usuario (como nuevo: 1.000 en efectivo, sin dinero negro) · borrar historial · historial global · buscar usuario |
-| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de LaLiga, Premier o Champions · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) · ⭐ **Partido destacado** del día (publicarlo o no) |
+| ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de cualquiera de las siete competiciones · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) · ⭐ **Partido destacado** del día (publicarlo o no) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo; con la vista previa del 📊 resumen semanal) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
 | 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
@@ -936,7 +959,8 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `MIN_BET_AMOUNT` / `MAX_BET_AMOUNT` | 10 / 1000 | Límites de apuestas deportivas y quiniela |
 | `BACKUP_KEEP` / `BACKUP_DIR` | 7 / `data/backups/` | Copias diarias de la BD que se conservan y dónde |
 | `QUINIELA_LOCK_MINUTES` | 15 | Bloqueo de la quiniela antes del primer partido |
-| `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada petición gasta 1 crédito de 500 al mes) |
+| `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada mercado de cada petición gasta 1 crédito de 500 al mes) |
+| `ODDS_MERCADOS` | `h2h,totals,spreads` | Mercados que se piden a la Odds API: 1X2, goles y hándicap. Con `h2h` solo, cada actualización cuesta 1 crédito en vez de 3 |
 | `ODDS_CREDITOS_AVISO` | 50 | Por debajo de estos créditos de la Odds API se avisa por DM a los admins |
 | `LOG_LEVEL` | info | Nivel mínimo en los ficheros: `debug`, `info`, `warn` o `error`. También se cambia en caliente en `/paneladmin` → 🩺 Sistema |
 | `LOG_CONSOLE_LEVEL` | warn | Nivel mínimo que sale por consola (`docker logs`); `off` para nada |

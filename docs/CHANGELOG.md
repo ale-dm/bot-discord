@@ -2,6 +2,43 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-08 (🧩 Combinadas: un boleto con varios partidos (#1))
+
+- Un boleto de **2 a 5 partidos** (un partido por pata), con la cuota total como producto de las patas. Gana si
+  aciertan todas; una pata que falla lo pierde al liquidarse su partido; un partido caducado devuelve el boleto entero.
+- Se arma en privado: ⚽ Apuestas → 🧩 Combinada, y en cada partido el menú 🧩 Sumar a mi combinada. Antes de pagar se
+  comprueba que los partidos sigan abiertos y las cuotas no hayan cambiado.
+- Elecciones: 1X2, goles (2,5) y hándicap (±1,5). No el marcador exacto.
+- La liquidación de cada partido paga o pierde las combinadas que tenían una pata en él, en la misma pasada que las
+  apuestas simples. El tope diario cuenta lo apostado.
+- Migración 032: `combinadas`, `combinada_patas` y `combinada_borrador`.
+- Tests: `tests/combinadas.test.js`, `tests/combinadasLiquidacion.test.js` (liquidación de punta a punta con la API
+  simulada) y `tests/combinadaPanel.test.js`.
+
+## 2026-10-08 (⚽ Apuestas de más/menos goles y de hándicap (#9, #10))
+
+- **Más/menos 2,5 goles**: botones ⬆️ y ⬇️ debajo del 1/X/2, con la cuota que da la API.
+- **Hándicap ±1,5**: 🏠 local −1,5 y ✈️ visitante +1,5 (gana por 2 o más, o pierde por 1 o menos).
+- Cada apuesta guarda su línea, así que la liquidación no cambia si la API la mueve después.
+- **🧾 Mis jugadas**: lo máximo que se puede cobrar de un partido se calcula mirando todos los marcadores posibles, para
+  que cuenten a la vez el 1X2, el marcador exacto, los goles y el hándicap.
+- **Coste**: las cuotas piden ahora tres mercados (h2h, totals y spreads), 3 créditos por actualización de cada
+  competición. `ODDS_MERCADOS=h2h` lo deja como antes.
+- Migración 031: columnas de cuota y línea en `apuestas_partidos`, y `linea` en `apuestas_usuario`.
+- Tests: `tests/mercadosGolesHcap.test.js`.
+
+## 2026-10-08 (⚽ Más competiciones de apuestas: Mundial, Eurocopa, Copa del Rey y Europa League (#11))
+
+Las apuestas y las quinielas admiten cuatro competiciones más, además de LaLiga, Premier y Champions:
+
+- 🌍 Mundial (`soccer_fifa_world_cup`), 🇪🇺 Eurocopa, 👑 Copa del Rey y 🟠 Europa League.
+- En ⚽ Apuestas, los botones de competición pasan a varias filas (cada fila admite 5). Lo mismo en el crear quiniela de
+  `/paneladmin`.
+- Las claves de la Eurocopa, la Copa del Rey y la Europa League no están verificadas contra la API. Con
+  `ODDS_API_KEY=... node scripts/competicionesOdds.js` se ven las claves de fútbol que tiene la API y cuáles faltan.
+- Coste: cada competición se consulta solo cuando alguien la abre (cuotas, 1 crédito, con caché de 30 min) o cuando hay
+  apuestas pendientes en ella (resultados).
+
 ## 2026-10-08 (🏅 Liga de pronósticos por temporada (F-AP-12, #8))
 
 Cada acierto de una quiniela cerrada suma 1 punto. La temporada va de julio a junio (hora de Madrid).

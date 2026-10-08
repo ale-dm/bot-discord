@@ -6,6 +6,7 @@ const guildSettings = require("../guildSettings");
 const { sendDm } = require("../xp/rachas");
 const { DEPORTES } = require("../../services/oddsApi");
 const { marcadorDe } = require("./marcador");
+const mercados = require("./mercados");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Apuestas");
@@ -20,6 +21,7 @@ function configuracion(client) {
 }
 
 function eleccionTexto(a) {
+    if (mercados.esMercado(a.eleccion)) return mercados.textoEleccion(a).toLowerCase();
     if (marcadorDe(a.eleccion)) return `marcador exacto ${marcadorDe(a.eleccion)}`;
     if (a.eleccion === "home") return `1 (${a.home_team})`;
     if (a.eleccion === "away") return `2 (${a.away_team})`;

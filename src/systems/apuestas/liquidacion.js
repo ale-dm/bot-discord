@@ -5,7 +5,8 @@ const { EmbedBuilder } = require("discord.js");
 const db = require("../../core/db");
 const dinero = require("../dinero");
 const retos = require("../retos");
-const marcadorExacto = require("./marcador");
+const mercados = require("./mercados");
+const combinadas = require("./combinadas");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
@@ -60,6 +61,8 @@ function caducarSinResultado(limite, resumen) {
                 // premio = cantidad: se le devuelve lo apostado.
                 db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(ap.cantidad, ap.id);
             }
+            // Las combinadas con una pata en ese partido se devuelven enteras.
+            combinadas.caducarPartido(p.match_id, (userId, cantidad, descripcion) => reembolsar(userId, cantidad, descripcion));
             // Los retos 1 contra 1 a ese partido, igual: cada uno recupera lo suyo.
             const devueltos = retos.devolverPorPartido(p.match_id, "el partido se quedó sin resultado");
             resumen.reembolsos += devueltos.pagos.length;
@@ -150,8 +153,10 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                 `
             SELECT * FROM apuestas_partidos
             WHERE estado = 'abierto' AND start_time < ? AND start_time >= ?
-              -- Solo los que tienen apuestas o retos pendientes: preguntar por el resto gasta cuota para nada.
+              -- Solo los que tienen apuestas, patas de combinadas o retos pendientes: preguntar por el resto gasta cuota para nada.
               AND (EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
+                   OR EXISTS (SELECT 1 FROM combinada_patas pa JOIN combinadas c ON c.id = pa.combinada_id
+                              WHERE pa.match_id = apuestas_partidos.match_id AND pa.resultado = 'pendiente' AND c.estado = 'abierta')
                    OR EXISTS (SELECT 1 FROM retos r WHERE r.match_id = apuestas_partidos.match_id AND r.estado IN ('pendiente', 'en_juego')))
         `,
             )
@@ -175,7 +180,7 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             for (const ap of apuestas) {
                 resumen.total++;
                 // Las de marcador exacto (F-AP-10) aciertan con el marcador; las demás, con el resultado.
-                const gana = marcadorExacto.acierta(ap.eleccion, resultado, marcador);
+                const gana = mercados.acierta(ap.eleccion, resultado, marcador, ap.linea);
                 if (gana) {
                     const premio = Math.round(ap.cantidad * ap.cuota);
                     dinero.pagar(ap.user_id, premio);
@@ -198,6 +203,8 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
                     ap.id,
                 );
             }
+            // Combinadas con una pata en este partido: una pata fallida pierde el boleto; con todas acertadas, se paga.
+            resumen.pagos.push(...combinadas.resolverPartido(partido.match_id, resultado, marcador));
             // Retos 1 contra 1 al partido: el ganador se lleva lo de los dos (los que nadie aceptó se devuelven).
             const deRetos = retos.resolverPartido(partido.match_id, resultado, marcador);
             resumen.pagos.push(...deRetos.pagos);

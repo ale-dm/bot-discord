@@ -16,6 +16,7 @@ const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
 const guildSettings = require("../systems/guildSettings");
 const { DEPORTES } = require("../services/oddsApi");
+const { trozos } = require("../paneles/filas");
 const { simpleModal } = require("./common");
 const { createLogger } = require("../core/logger");
 
@@ -87,14 +88,15 @@ function buildApuestasHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_apu_home").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
     );
-    const crear = new ActionRowBuilder().addComponents(
+    // Una fila admite 5 botones: con más competiciones, varias filas.
+    const crear = trozos(
         Object.entries(DEPORTES).map(([key, d]) =>
             new ButtonBuilder()
                 .setCustomId(`paneladmin_apu_quiniela_${key}`)
                 .setLabel(`🧾 Crear quiniela ${d.name}`.slice(0, 80))
                 .setStyle(ButtonStyle.Primary),
         ),
-    );
+    ).map((grupo) => new ActionRowBuilder().addComponents(...grupo));
     const avisos = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_apu_canal").setLabel("📢 Canal de resultados").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
@@ -109,7 +111,7 @@ function buildApuestasHome(guildId) {
             .setLabel(cfg.destacado ? "⭐ Quitar el destacado" : "⭐ Publicar el destacado")
             .setStyle(ButtonStyle.Secondary),
     );
-    return { content: "", embeds: [embed], components: [acciones, crear, avisos] };
+    return { content: "", embeds: [embed], components: [acciones, ...crear, avisos] };
 }
 
 async function handleApuestasButton(interaction) {
