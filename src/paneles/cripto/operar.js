@@ -1,232 +1,218 @@
-// Paneles de /cripto para comprar y vender: elegir cripto, elegir importe/porcentaje y el resultado.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
-const db = require("../../core/db");
-const guildSettings = require("../../systems/guildSettings");
+// Pestañas 🛒 Comprar y 💸 Vender de /cripto. Cada operación pasa antes por una pantalla de confirmación con la vista
+// previa (lo que pagas o recibes, la comisión y cómo se mueve el precio); solo al confirmar se ejecuta.
 const {
-    getTtclPrecio,
-    formatCoins,
-    formatCryptoAmt,
-    getUserSaldo,
-    getUserCarteras,
-    cryptoInfoBySymbol,
-} = require("../../systems/cripto/mercado");
-const { backButton } = require("./comun");
-const { botonSacar } = require("../economia");
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+} = require("discord.js");
+const guildSettings = require("../../systems/guildSettings");
+const mercado = require("../../systems/cripto/mercado");
 const dinero = require("../../systems/dinero");
+const { botonSacar } = require("../economia");
+const { pantalla, fmtMonedas, avisoTexto } = require("./comun");
+
+const IMPORTES_COMPRA = [1000, 5000, 10000, 50000, 100000];
+const PORCENTAJES_VENTA = [25, 50, 100];
+
+function limitesCompra(guildId) {
+    const cfg = guildSettings.getSettings(guildId).cripto;
+    const min = Math.max(1, Number(cfg.min_buy || 1));
+    const max = Math.max(min, Number(cfg.max_buy || min));
+    return { min, max, fee: Number(cfg.fee_buy_pct || 0) };
+}
+
+function limitesVenta(guildId) {
+    const cfg = guildSettings.getSettings(guildId).cripto;
+    const min = Math.max(1, Number(cfg.min_sell || 1));
+    const max = Math.max(min, Number(cfg.max_sell || min));
+    return { min, max, fee: Number(cfg.fee_sell_pct || 0) };
+}
+
+/** Lo que tiene de TTCL alguien (0 si no tiene). */
+function tenenciaTtcl(userId) {
+    return mercado.getUserCarteras(userId).find((r) => r.cripto === mercado.TTCL.simbolo)?.cantidad || 0;
+}
 
 // ─── COMPRAR ──────────────────────────────────────────────────────────────────
 
-function buildComprarSelect() {
-    const embed = new EmbedBuilder()
-        .setTitle("🛒 Comprar — Elige una criptomoneda")
-        .setDescription("Selecciona la cripto que quieres comprar.")
-        .setColor(0x2ecc71);
-
-    const selectRow = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId("cripto_comprar_sel")
-            .setPlaceholder("Selecciona una criptomoneda")
-            .addOptions([{ label: "$TTCL — Cripto del servidor", value: "TTCL", emoji: "🟣" }]),
-    );
-    return {
-        embeds: [embed],
-        components: [selectRow, new ActionRowBuilder().addComponents(backButton())],
-    };
-}
-
-async function buildComprarCantidad(userId, sym, guildId = null) {
-    const cfg = guildSettings.getSettings(guildId).cripto;
-    const saldo = getUserSaldo(userId);
-    const ci = cryptoInfoBySymbol(sym);
-
-    const priceCoins = getTtclPrecio();
-
-    if (!priceCoins) {
-        return {
-            embeds: [new EmbedBuilder().setDescription("❌ No se pudo obtener el precio. Inténtalo más tarde.").setColor(0xe74c3c)],
-            components: [new ActionRowBuilder().addComponents(backButton("cripto_comprar", "◀ Volver"))],
-        };
-    }
-
-    // Opciones de importe: tiers fijos + "todo el saldo" como extra
-    const minBuy = Math.max(1, Number(cfg.min_buy || 100));
-    const maxBuy = Math.max(minBuy, Number(cfg.max_buy || 500000));
-    const tiers = [minBuy, 500, 1000, 5000, 10000, maxBuy];
-    if (saldo > 10000) tiers.push(Math.min(saldo, 50000));
-    const uniqueTiers = [...new Set(tiers.filter((t) => t <= saldo && t >= minBuy && t <= maxBuy))].sort((a, b) => a - b);
-
-    if (!uniqueTiers.length) {
-        return {
-            embeds: [
-                new EmbedBuilder()
-                    .setDescription(
-                        `❌ No te llega el efectivo. Tienes **${saldo} 🪙** y el mínimo de inversión es ${minBuy.toLocaleString("es")} 🪙.`,
-                    )
-                    .setColor(0xe74c3c),
-            ],
-            components: [filaVolverCompra(userId, sym)],
-        };
-    }
+function pantallaComprar(userId, guildId, aviso = null) {
+    const { min, max, fee } = limitesCompra(guildId);
+    const saldo = mercado.getUserSaldo(userId);
 
     const embed = new EmbedBuilder()
-        .setTitle(`🛒 Comprar ${ci?.emoji || "💰"} ${sym}`)
+        .setTitle(`🛒 Comprar ${mercado.TTCL.emoji} $TTCL`)
         .setDescription(
-            `**Precio actual:** ${formatCoins(priceCoins)} 🪙 / unidad\n` +
-                `**Tu efectivo:** ${saldo.toLocaleString("es")} 🪙\n\n` +
-                `**Política:** min ${minBuy.toLocaleString("es")} · max ${maxBuy.toLocaleString("es")} · cooldown ${Number(cfg.cooldown_buy_sec || 0)}s · fee ${Number(cfg.fee_buy_pct || 0)}%\n\n` +
-                `¿Cuántas monedas quieres invertir?`,
+            `${avisoTexto(aviso)}**Precio actual:** ${mercado.formatCoins(mercado.getTtclPrecio())} monedas por TTCL\n` +
+                `**Tu efectivo:** ${fmtMonedas(saldo)}\n` +
+                `**Límites:** de ${fmtMonedas(min)} a ${fmtMonedas(max)} · comisión ${fee} % (se queda en el pool)\n\n` +
+                `Elige cuánto invertir. Verás una vista previa antes de confirmar.`,
         )
         .setColor(0x2ecc71);
 
-    const amtRow = new ActionRowBuilder();
-    uniqueTiers.slice(0, 5).forEach((t) => {
-        const got = t / priceCoins;
-        amtRow.addComponents(
-            new ButtonBuilder()
-                .setCustomId(`cripto_comprar_exec_${sym}_${t}`)
-                .setLabel(`${t.toLocaleString("es")} 🪙 ≈ ${formatCryptoAmt(got)}`)
-                .setStyle(ButtonStyle.Success),
-        );
-    });
+    const importes = new ActionRowBuilder().addComponents(
+        IMPORTES_COMPRA.map((m) =>
+            new ButtonBuilder().setCustomId(`cripto_comprar_ver_${m}`).setLabel(fmtMonedas(m)).setStyle(ButtonStyle.Success),
+        ),
+    );
+    const otros = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("cripto_comprar_modal").setLabel("✏️ Otra cantidad").setStyle(ButtonStyle.Primary),
+    );
+    if (dinero.banco(userId) > 0) otros.addComponents(botonSacar("cripto_tab_comprar"));
 
-    return {
-        embeds: [embed],
-        components: [amtRow, filaVolverCompra(userId, sym)],
-    };
+    return pantalla({ embeds: [embed], filas: [importes, otros], actual: "comprar" });
 }
 
-// ◀ Volver y, si hay algo en el banco, 💵 Sacar del banco (vuelve a esta pantalla).
-function filaVolverCompra(userId, sym) {
-    const fila = new ActionRowBuilder().addComponents(backButton("cripto_comprar", "◀ Volver"));
-    if (dinero.banco(userId) > 0) fila.addComponents(botonSacar(`cripto_cant_${sym}`));
-    return fila;
+/** Vista previa de una compra: lo que pagas, lo que recibes y cómo se mueve el precio. Sin tocar nada. */
+function pantallaConfirmarCompra(userId, guildId, monedas) {
+    const { min, max, fee } = limitesCompra(guildId);
+    const cot = mercado.cotizarCompra(monedas, fee);
+    const saldo = mercado.getUserSaldo(userId);
+
+    let bloqueo = null;
+    if (monedas < min || monedas > max) bloqueo = `La compra debe estar entre ${fmtMonedas(min)} y ${fmtMonedas(max)}.`;
+    else if (cot.coste > saldo) bloqueo = "No te llega el efectivo. Saca dinero del banco o baja la cantidad.";
+
+    const embed = new EmbedBuilder()
+        .setTitle("🛒 Confirmar compra")
+        .setDescription(
+            `Vas a invertir **${fmtMonedas(monedas)}** en ${mercado.TTCL.emoji} $TTCL.\n\n` +
+                `**Pagas:** ${fmtMonedas(cot.coste)} (${fmtMonedas(monedas)} + comisión ${fmtMonedas(cot.fee)})\n` +
+                `**Recibes:** ${mercado.formatCryptoAmt(cot.ttcl)} TTCL\n` +
+                `**Precio medio:** ${mercado.formatCoins(cot.precioMedio)} monedas por TTCL\n` +
+                `**Precio del mercado:** ${mercado.formatCoins(cot.precioAntes)} → ${mercado.formatCoins(cot.precioDespues)}\n\n` +
+                `**Tu efectivo:** ${fmtMonedas(saldo)}` +
+                (bloqueo ? `\n\n❌ ${bloqueo}` : ""),
+        )
+        .setColor(bloqueo ? 0xe74c3c : 0x2ecc71)
+        .setFooter({ text: "Comprar sube el precio. Para cancelar, cambia de pestaña." });
+
+    const acciones = [
+        new ButtonBuilder()
+            .setCustomId(`cripto_comprar_ok_${monedas}`)
+            .setLabel("✅ Confirmar compra")
+            .setStyle(ButtonStyle.Success)
+            .setDisabled(Boolean(bloqueo)),
+    ];
+    if (bloqueo && cot.coste > saldo && dinero.banco(userId) > 0) acciones.push(botonSacar(`cripto_comprar_ver_${monedas}`));
+
+    return pantalla({ embeds: [embed], filas: [new ActionRowBuilder().addComponents(acciones)], actual: "comprar" });
+}
+
+/** Modal para escribir otra cantidad. */
+function modalCompra() {
+    return new ModalBuilder()
+        .setCustomId("cripto_modal_comprar")
+        .setTitle("Comprar $TTCL")
+        .addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId("monedas")
+                    .setLabel("Monedas a invertir")
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder("Número entero, p. ej. 2500")
+                    .setRequired(true)
+                    .setMaxLength(12),
+            ),
+        );
 }
 
 // ─── VENDER ───────────────────────────────────────────────────────────────────
 
-function buildVenderSelect(userId) {
-    const cartera = getUserCarteras(userId);
-    if (!cartera.length) {
-        return {
-            embeds: [new EmbedBuilder().setDescription("No tienes ninguna criptomoneda que vender.").setColor(0xe74c3c)],
-            components: [new ActionRowBuilder().addComponents(backButton())],
-        };
+function pantallaVender(userId, guildId, aviso = null) {
+    const { min, max, fee } = limitesVenta(guildId);
+    const tenencia = tenenciaTtcl(userId);
+    const embed = new EmbedBuilder().setTitle(`💸 Vender ${mercado.TTCL.emoji} $TTCL`).setColor(0xe74c3c);
+
+    if (!(tenencia > 0)) {
+        embed.setDescription(`${avisoTexto(aviso)}No tienes $TTCL que vender. Cómpralo en la pestaña 🛒 Comprar.`);
+        return pantalla({ embeds: [embed], actual: "vender" });
     }
 
-    const embed = new EmbedBuilder().setTitle("💸 Vender — Elige una criptomoneda").setColor(0xe74c3c);
-
-    const options = cartera.map((row) => {
-        const ci = cryptoInfoBySymbol(row.cripto);
-        return {
-            label: `${ci?.simbolo || row.cripto} — ${formatCryptoAmt(row.cantidad)}`,
-            value: row.cripto,
-            emoji: ci?.emoji || "💰",
-        };
-    });
-
-    const selectRow = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId("cripto_vender_sel")
-            .setPlaceholder("Selecciona una cripto para vender")
-            .addOptions(options),
+    const precio = mercado.getTtclPrecio();
+    embed.setDescription(
+        `${avisoTexto(aviso)}**Tienes:** ${mercado.formatCryptoAmt(tenencia)} TTCL ≈ ${fmtMonedas(tenencia * precio)} (antes de comisión)\n` +
+            `**Precio actual:** ${mercado.formatCoins(precio)} monedas por TTCL\n` +
+            `**Límites:** de ${fmtMonedas(min)} a ${fmtMonedas(max)} por venta · comisión ${fee} % (se queda en el pool)\n` +
+            `**Impuestos:** ninguno en las ventas de cripto.\n\n` +
+            `Elige qué parte vender. Verás una vista previa antes de confirmar.`,
     );
 
-    return {
-        embeds: [embed],
-        components: [selectRow, new ActionRowBuilder().addComponents(backButton())],
-    };
-}
-
-async function buildVenderPct(userId, sym, guildId = null) {
-    const cfg = guildSettings.getSettings(guildId).cripto;
-    const row = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = ?").get(userId, sym);
-
-    if (!row || row.cantidad <= 0) {
-        return {
-            embeds: [new EmbedBuilder().setDescription("No tienes esa cripto en cartera.").setColor(0xe74c3c)],
-            components: [new ActionRowBuilder().addComponents(backButton("cripto_vender", "◀ Volver"))],
-        };
-    }
-
-    const ci = cryptoInfoBySymbol(sym);
-    const priceCoins = getTtclPrecio();
-
-    const totalVal = row.cantidad * (priceCoins || 0);
-    const embed = new EmbedBuilder()
-        .setTitle(`💸 Vender ${ci?.emoji || "💰"} ${sym}`)
-        .setDescription(
-            `**Tienes:** ${formatCryptoAmt(row.cantidad)} ${sym} ≈ ${formatCoins(totalVal)} 🪙\n` +
-                `**Precio actual:** ${formatCoins(priceCoins || 0)} 🪙 / unidad\n\n` +
-                `**Política:** min ${Number(cfg.min_sell || 0).toLocaleString("es")} · max ${Number(cfg.max_sell || 0).toLocaleString("es")} · cooldown ${Number(cfg.cooldown_sell_sec || 0)}s · fee ${Number(cfg.fee_sell_pct || 0)}%\n\n` +
-                `¿Qué porcentaje quieres vender?`,
-        )
-        .setColor(0xe74c3c);
-
-    const pcts = [10, 25, 50, 75, 100];
-    const pctRow = new ActionRowBuilder();
-    pcts.forEach((pct) => {
-        const coins = Math.floor(row.cantidad * (pct / 100) * (priceCoins || 0));
-        pctRow.addComponents(
+    const porcentajes = new ActionRowBuilder().addComponents(
+        PORCENTAJES_VENTA.map((p) =>
             new ButtonBuilder()
-                .setCustomId(`cripto_vender_exec_${sym}_${pct}`)
-                .setLabel(`${pct}% ≈ ${formatCoins(coins)} 🪙`)
-                .setStyle(pct === 100 ? ButtonStyle.Danger : ButtonStyle.Primary),
-        );
-    });
-
-    return {
-        embeds: [embed],
-        components: [pctRow, new ActionRowBuilder().addComponents(backButton("cripto_vender", "◀ Volver"))],
-    };
+                .setCustomId(`cripto_vender_ver_${p}`)
+                .setLabel(`${p} %`)
+                .setStyle(p === 100 ? ButtonStyle.Danger : ButtonStyle.Primary),
+        ),
+    );
+    return pantalla({ embeds: [embed], filas: [porcentajes], actual: "vender" });
 }
 
-// ─── RESULTADO DE COMPRA / VENTA ─────────────────────────────────────────────
+/** Vista previa de una venta: lo que recibes, la comisión y cómo se mueve el precio. Sin tocar nada. */
+function pantallaConfirmarVenta(userId, guildId, pct) {
+    const { min, max, fee } = limitesVenta(guildId);
+    const tenencia = tenenciaTtcl(userId);
+    if (!(tenencia > 0)) return pantallaVender(userId, guildId, "No tienes $TTCL que vender.");
 
-function buildResultadoCompra(sym, monedas, result) {
-    const ci = cryptoInfoBySymbol(sym);
-    const embed = result.ok
-        ? new EmbedBuilder()
-              .setTitle("✅ Compra realizada")
-              .setDescription(
-                  `Compraste **${formatCryptoAmt(result.cantidad)} ${sym}** ${ci?.emoji || ""}\n` +
-                      `Invertido: **${monedas.toLocaleString("es")} 🪙** @ ${formatCoins(result.precio)} 🪙/u` +
-                      `${result.fee > 0 ? `\nComisión: **${result.fee.toLocaleString("es")} 🪙**` : ""}`,
-              )
-              .setColor(0x2ecc71)
-        : new EmbedBuilder().setTitle("❌ Error").setDescription(result.msg).setColor(0xe74c3c);
-    return {
-        embeds: [embed],
-        components: [
-            new ActionRowBuilder().addComponents(
-                backButton("cripto_panel", "🏠 Panel"),
-                backButton("cripto_comprar", "🛒 Seguir comprando"),
-            ),
-        ],
-        files: [],
-    };
+    const ttcl = tenencia * (pct / 100);
+    const cot = mercado.cotizarVenta(ttcl, fee);
+
+    const bloqueo =
+        cot.brutas < min || cot.brutas > max
+            ? `La venta debe estar entre ${fmtMonedas(min)} y ${fmtMonedas(max)} (antes de comisión).`
+            : null;
+
+    const embed = new EmbedBuilder()
+        .setTitle("💸 Confirmar venta")
+        .setDescription(
+            `Vas a vender **${mercado.formatCryptoAmt(ttcl)} TTCL** (${pct} % de lo que tienes).\n\n` +
+                `**Recibes:** ${fmtMonedas(cot.neto)} (bruto ${fmtMonedas(cot.brutas)} − comisión ${fmtMonedas(cot.fee)})\n` +
+                `**Precio medio:** ${mercado.formatCoins(cot.precioMedio)} monedas por TTCL\n` +
+                `**Precio del mercado:** ${mercado.formatCoins(cot.precioAntes)} → ${mercado.formatCoins(cot.precioDespues)}\n` +
+                `**Impuestos:** ninguno\n` +
+                (bloqueo ? `\n❌ ${bloqueo}` : ""),
+        )
+        .setColor(bloqueo ? 0xe74c3c : 0xe67e22)
+        .setFooter({ text: "Vender baja el precio. Para cancelar, cambia de pestaña." });
+
+    const acciones = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`cripto_vender_ok_${pct}`)
+            .setLabel("✅ Confirmar venta")
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(Boolean(bloqueo)),
+    );
+    return pantalla({ embeds: [embed], filas: [acciones], actual: "vender" });
 }
 
-function buildResultadoVenta(sym, result) {
-    const ci = cryptoInfoBySymbol(sym);
-    const embed = result.ok
-        ? new EmbedBuilder()
-              .setTitle("✅ Venta realizada")
-              .setDescription(
-                  `Vendiste **${formatCryptoAmt(result.cantidad)} ${sym}** ${ci?.emoji || ""}\n` +
-                      `Recibido: **${result.monedas.toLocaleString("es")} 🪙** @ ${formatCoins(result.precio)} 🪙/u`,
-              )
-              .setColor(0x2ecc71)
-        : new EmbedBuilder().setTitle("❌ Error").setDescription(result.msg).setColor(0xe74c3c);
-    return {
-        embeds: [embed],
-        components: [
-            new ActionRowBuilder().addComponents(
-                backButton("cripto_panel", "🏠 Panel"),
-                backButton("cripto_vender", "💸 Seguir vendiendo"),
-            ),
-        ],
-        files: [],
-    };
+// ─── AVISOS DEL RESULTADO ─────────────────────────────────────────────────────
+
+/** Línea que se muestra en la pestaña de Comprar tras una compra (o su error). */
+function avisoCompra(r) {
+    return r.ok
+        ? `✅ Compraste ${mercado.formatCryptoAmt(r.cantidad)} TTCL por ${fmtMonedas(r.costeTotal)} (comisión ${fmtMonedas(r.fee)}).`
+        : `❌ ${r.msg}`;
 }
 
-module.exports = { buildComprarSelect, buildComprarCantidad, buildVenderSelect, buildVenderPct, buildResultadoCompra, buildResultadoVenta };
+/** Línea que se muestra en la pestaña de Vender tras una venta (o su error). */
+function avisoVenta(r) {
+    return r.ok
+        ? `✅ Vendiste ${mercado.formatCryptoAmt(r.cantidad)} TTCL por ${fmtMonedas(r.monedas)} (comisión ${fmtMonedas(r.fee)}).`
+        : `❌ ${r.msg}`;
+}
+
+module.exports = {
+    IMPORTES_COMPRA,
+    PORCENTAJES_VENTA,
+    pantallaComprar,
+    pantallaConfirmarCompra,
+    modalCompra,
+    pantallaVender,
+    pantallaConfirmarVenta,
+    avisoCompra,
+    avisoVenta,
+};

@@ -222,6 +222,17 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [ ] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🗂️ /cripto con pestañas (F-EC-12e, #121)**
+- [ ] `/cripto` abre 📈 Mercado con la gráfica; los botones 24 h / 7 días / 30 días / Todo cambian el rango.
+- [ ] 🛒 Comprar: elegir 1.000 monedas → sale la vista previa (pagas, recibes, precio) y no se ha cobrado nada. Confirmar → aviso ✅ y el efectivo baja.
+- [ ] 🛒 Comprar sin efectivo: el botón de confirmar sale apagado; con dinero en el banco aparece 💵 Sacar del banco y vuelve a la vista previa.
+- [ ] 🛒 ✏️ Otra cantidad: escribir un número abre la vista previa; escribir texto muestra el aviso.
+- [ ] 💸 Vender: 25 / 50 / 100 % → vista previa sin impuestos; confirmar → aviso ✅ y el efectivo sube.
+- [ ] 💸 Vender sin TTCL: sale el aviso, sin porcentajes.
+- [ ] 💼 Cartera: cantidad, valor, coste medio y ganancia; sin TTCL, lo dice.
+- [ ] 🧾 Historial: compras y ventas, más recientes primero; los botones de página funcionan.
+- [ ] 🏆 `/perfil` → Rankings → 💎 TTCL sigue saliendo.
+
 **📰 Eventos diarios de TTCL (F-EC-12d, #120)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 029_eventos_ttcl`.
 - [ ] Durante el día, a la hora del evento: el precio de TTCL en `/cripto` sube o baja un 5 % y aparece en el historial del gráfico.

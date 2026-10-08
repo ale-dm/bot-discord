@@ -550,7 +550,14 @@ async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0)
             )
             .setColor(0xf39c12);
     } else if (tipo === "ttcl") {
-        embed = (await require("./cripto").buildTopHolders(guild.id)).embeds[0];
+        const top = require("../systems/cripto/mercado").topTenedoresTtcl(10);
+        embed = new EmbedBuilder()
+            .setTitle("📈 Quién tiene más $TTCL")
+            .setDescription(
+                top.map((t, i) => `${i + 1}. <@${t.userId}> — **${t.cantidad.toFixed(2)}** TTCL`).join("\n") ||
+                    "Nadie tiene $TTCL todavía.",
+            )
+            .setColor(0x9b59b6);
     } else if (tipo === "plex") {
         embed = embedRankingPlex(guild.id);
     } else if (tipo === "apuestas") {

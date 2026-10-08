@@ -1,8 +1,8 @@
-// /cripto: un panel con botones. La lógica (precios, compra/venta) está en systems/cripto y los
-// paneles en paneles/cripto; aquí solo se reparte cada botón a su panel.
+// /cripto: un panel con pestañas (📈 Mercado, 🛒 Comprar, 💸 Vender, 💼 Cartera, 🧾 Historial). La lógica está en
+// systems/cripto y las pantallas en paneles/cripto; aquí solo se reparte cada botón a su pantalla.
 const { SlashCommandBuilder } = require("discord.js");
 const { logWarn } = require("../../core/logger");
-const { getTtclPrecio, ejecutarCompra, ejecutarVenta } = require("../../systems/cripto/mercado");
+const mercado = require("../../systems/cripto/mercado");
 const paneles = require("../../paneles/cripto");
 
 // ─── HELPER DE RESPUESTA ─────────────────────────────────────────────────────
@@ -23,106 +23,78 @@ async function safeUpdate(interaction, payload) {
 // ─── MÓDULO PRINCIPAL ─────────────────────────────────────────────────────────
 
 module.exports = {
-    componentHandlers: [{ types: ["button", "stringSelect"], prefixes: ["cripto_"], method: "handleInteraction", acl: "cripto" }],
-    getTtclPrecio,
+    componentHandlers: [
+        { types: ["button"], prefixes: ["cripto_"], method: "handleInteraction", acl: "cripto" },
+        { types: ["modal"], prefixes: ["cripto_modal_"], method: "handleModal", acl: "cripto" },
+    ],
     data: new SlashCommandBuilder().setName("cripto").setDescription("📈 Panel de criptomonedas del servidor"),
 
     async run(client, interaction) {
         await interaction.deferReply();
-        await interaction.editReply(await paneles.buildMainPanel(interaction.user.id, interaction.guildId));
+        await interaction.editReply(await paneles.pantallaMercado(interaction.guildId));
     },
 
     async handleInteraction(client, interaction) {
         const id = interaction.customId;
         const userId = interaction.user.id;
+        const guildId = interaction.guildId;
 
-        // ── Panel principal
-        if (id === "cripto_panel") {
-            return safeUpdate(interaction, await paneles.buildMainPanel(userId, interaction.guildId));
+        // ── Pestañas
+        if (id.startsWith("cripto_tab_")) {
+            return safeUpdate(interaction, await paneles.pestana(id.replace("cripto_tab_", ""), userId, guildId));
         }
 
-        // ── Precios
-        if (id === "cripto_precios") {
-            return safeUpdate(interaction, await paneles.buildPreciosPanel(interaction.guildId));
+        // ── Mercado: rango de la gráfica (cripto_rango_DIAS)
+        if (id.startsWith("cripto_rango_")) {
+            return safeUpdate(interaction, await paneles.pantallaMercado(guildId, Number(id.replace("cripto_rango_", ""))));
         }
 
-        // ── Cartera + donut
-        if (id === "cripto_cartera") {
-            return safeUpdate(interaction, await paneles.buildCarteraPanel(userId, interaction.guildId));
+        // ── Comprar: otra cantidad (modal)
+        if (id === "cripto_comprar_modal") {
+            return interaction.showModal(paneles.modalCompra());
         }
 
-        // ── Comprar: selector de cripto
-        if (id === "cripto_comprar") {
-            return safeUpdate(interaction, paneles.buildComprarSelect());
+        // ── Comprar: vista previa de la cantidad elegida (cripto_comprar_ver_MONEDAS)
+        if (id.startsWith("cripto_comprar_ver_")) {
+            return safeUpdate(interaction, paneles.pantallaConfirmarCompra(userId, guildId, Number(id.replace("cripto_comprar_ver_", ""))));
         }
 
-        // ── Comprar: seleccionó cripto, muestra importes
-        if (id === "cripto_comprar_sel" && interaction.isStringSelectMenu()) {
-            const sym = interaction.values[0];
-            return safeUpdate(interaction, await paneles.buildComprarCantidad(userId, sym, interaction.guildId));
+        // ── Comprar: confirmada (cripto_comprar_ok_MONEDAS)
+        if (id.startsWith("cripto_comprar_ok_")) {
+            const monedas = Number(id.replace("cripto_comprar_ok_", ""));
+            const r = await mercado.ejecutarCompra(guildId, userId, mercado.TTCL.simbolo, monedas);
+            return safeUpdate(interaction, paneles.pantallaComprar(userId, guildId, paneles.avisoCompra(r)));
         }
 
-        // ── Comprar: ejecutar  (cripto_comprar_exec_SYM_MONEDAS)
-        if (id.startsWith("cripto_comprar_exec_")) {
-            const parts = id.split("_"); // ["cripto","comprar","exec","SYM","MONEDAS"]
-            const monedas = parseInt(parts[parts.length - 1], 10);
-            const sym = parts.slice(3, parts.length - 1).join("_");
-            const result = await ejecutarCompra(interaction.guildId, userId, sym, monedas);
-            return safeUpdate(interaction, paneles.buildResultadoCompra(sym, monedas, result));
+        // ── Vender: vista previa del porcentaje elegido (cripto_vender_ver_PCT)
+        if (id.startsWith("cripto_vender_ver_")) {
+            return safeUpdate(interaction, paneles.pantallaConfirmarVenta(userId, guildId, Number(id.replace("cripto_vender_ver_", ""))));
         }
 
-        // ── Vender: selector de cripto
-        if (id === "cripto_vender") {
-            return safeUpdate(interaction, paneles.buildVenderSelect(userId));
+        // ── Vender: confirmada (cripto_vender_ok_PCT)
+        if (id.startsWith("cripto_vender_ok_")) {
+            const pct = Number(id.replace("cripto_vender_ok_", ""));
+            const r = await mercado.ejecutarVenta(guildId, userId, mercado.TTCL.simbolo, pct);
+            return safeUpdate(interaction, paneles.pantallaVender(userId, guildId, paneles.avisoVenta(r)));
         }
 
-        // ── Vender: seleccionó cripto, muestra porcentajes
-        if (id === "cripto_vender_sel" && interaction.isStringSelectMenu()) {
-            const sym = interaction.values[0];
-            return safeUpdate(interaction, await paneles.buildVenderPct(userId, sym, interaction.guildId));
+        // ── Historial: página (cripto_hist_PAGINA)
+        if (id.startsWith("cripto_hist_")) {
+            return safeUpdate(interaction, await paneles.pantallaHistorial(userId, Number(id.replace("cripto_hist_", ""))));
         }
+    },
 
-        // ── Vender: ejecutar  (cripto_vender_exec_SYM_PCT)
-        if (id.startsWith("cripto_vender_exec_")) {
-            const parts = id.split("_"); // ["cripto","vender","exec","SYM","PCT"]
-            const pct = parseInt(parts[parts.length - 1], 10);
-            const sym = parts.slice(3, parts.length - 1).join("_");
-            const result = await ejecutarVenta(interaction.guildId, userId, sym, pct);
-            return safeUpdate(interaction, paneles.buildResultadoVenta(sym, result));
+    async handleModal(client, interaction) {
+        if (interaction.customId !== "cripto_modal_comprar") return;
+        const userId = interaction.user.id;
+        const guildId = interaction.guildId;
+        const texto = interaction.fields.getTextInputValue("monedas").replace(/[\s.]/g, "");
+        if (!/^\d+$/.test(texto)) {
+            return safeUpdate(
+                interaction,
+                paneles.pantallaComprar(userId, guildId, "❌ Escribe un número entero de monedas, p. ej. 2500."),
+            );
         }
-
-        // ── Gráfico: selector de cripto
-        if (id === "cripto_grafico") {
-            return safeUpdate(interaction, paneles.buildGraficoSelectPanel());
-        }
-
-        // ── Gráfico: seleccionó cripto → mostrar con 7d por defecto
-        if (id === "cripto_grafico_sel" && interaction.isStringSelectMenu()) {
-            const sym = interaction.values[0];
-            return safeUpdate(interaction, await paneles.buildGraficoChart(sym, 7, interaction.guildId));
-        }
-
-        // ── Gráfico: cambio de rango  (cripto_grafico_rng_SYM_DAYS)
-        if (id.startsWith("cripto_grafico_rng_")) {
-            const parts = id.split("_"); // ["cripto","grafico","rng","SYM","DAYS"]
-            const days = parseInt(parts[parts.length - 1], 10);
-            const sym = parts.slice(3, parts.length - 1).join("_");
-            return safeUpdate(interaction, await paneles.buildGraficoChart(sym, days, interaction.guildId));
-        }
-
-        // ── Top holders
-        if (id === "cripto_top") {
-            return safeUpdate(interaction, await paneles.buildTopHolders(interaction.guildId));
-        }
-
-        // ── Historial
-        if (id === "cripto_historial") {
-            return safeUpdate(interaction, paneles.buildHistorialPanel(userId));
-        }
-
-        // ── Info $TTCL
-        if (id === "cripto_info") {
-            return safeUpdate(interaction, paneles.buildInfoPanel(interaction.guildId));
-        }
+        return safeUpdate(interaction, paneles.pantallaConfirmarCompra(userId, guildId, Number(texto)));
     },
 };
