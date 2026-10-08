@@ -57,6 +57,17 @@ venta es íntegra: lo que devuelve el pool (menos su comisión) entra en el efec
 - Tests nuevos en `tests/criptoSinImpuesto.test.js`: venta con una regla general del 5 % sin línea de impuesto, y deuda
   con el Duende descontada de la venta.
 
+## 2026-10-08 (📊 Gráficas de /cripto con ECharts + resvg, sin canvas (F-EC-12f, #122))
+
+Las gráficas se dibujaban a mano con `canvas`, una librería nativa: el estilo era tosco y el texto dependía de las fuentes
+del servidor. Ahora ECharts dibuja la gráfica en SVG y resvg la convierte en PNG.
+
+- Línea de precio de TTCL (24 h, 7 días, 30 días, todo) y donut de la cartera, con el mismo tamaño y la misma información.
+- Fuente Outfit (licencia OFL) incluida en `assets/fonts`, así el texto se ve igual en local y en Docker.
+- Se quita la dependencia `canvas`. El Dockerfile ya no necesita cairo para las gráficas.
+- En las gráficas la unidad es la palabra "monedas": el emoji 🪙 no tiene glifo en la fuente.
+- Tests nuevos en `tests/graficosCripto.test.js`: PNG válido en la gráfica y el donut, y `null` sin cartera.
+
 ## 2026-10-08 (🧹 Se quitan BTC, ETH, SOL, BNB, XRP y DOGE; solo queda TTCL (F-EC-12b, #118))
 
 Las criptos reales dependían de CoinGecko, no tenían oferta limitada y no aportaban nada al mercado del servidor. Ahora
