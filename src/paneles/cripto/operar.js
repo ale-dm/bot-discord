@@ -3,9 +3,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelect
 const db = require("../../core/db");
 const guildSettings = require("../../systems/guildSettings");
 const {
-    COINS_PER_EUR,
     getTtclPrecio,
-    fetchGeckoPrices,
     formatCoins,
     formatCryptoAmt,
     getUserSaldo,
@@ -28,15 +26,7 @@ function buildComprarSelect() {
         new StringSelectMenuBuilder()
             .setCustomId("cripto_comprar_sel")
             .setPlaceholder("Selecciona una criptomoneda")
-            .addOptions([
-                { label: "$TTCL — Cripto del servidor", value: "TTCL", emoji: "🟣" },
-                { label: "Bitcoin (BTC)", value: "BTC", emoji: "🟡" },
-                { label: "Ethereum (ETH)", value: "ETH", emoji: "🔷" },
-                { label: "Solana (SOL)", value: "SOL", emoji: "🟢" },
-                { label: "BNB", value: "BNB", emoji: "🟠" },
-                { label: "XRP", value: "XRP", emoji: "🔵" },
-                { label: "Dogecoin (DOGE)", value: "DOGE", emoji: "🐕" },
-            ]),
+            .addOptions([{ label: "$TTCL — Cripto del servidor", value: "TTCL", emoji: "🟣" }]),
     );
     return {
         embeds: [embed],
@@ -49,13 +39,7 @@ async function buildComprarCantidad(userId, sym, guildId = null) {
     const saldo = getUserSaldo(userId);
     const ci = cryptoInfoBySymbol(sym);
 
-    let priceCoins;
-    if (sym === "TTCL") {
-        priceCoins = getTtclPrecio();
-    } else {
-        const prices = await fetchGeckoPrices();
-        priceCoins = (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
-    }
+    const priceCoins = getTtclPrecio();
 
     if (!priceCoins) {
         return {
@@ -165,13 +149,7 @@ async function buildVenderPct(userId, sym, guildId = null) {
     }
 
     const ci = cryptoInfoBySymbol(sym);
-    let priceCoins;
-    if (sym === "TTCL") {
-        priceCoins = getTtclPrecio();
-    } else {
-        const prices = await fetchGeckoPrices();
-        priceCoins = (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
-    }
+    const priceCoins = getTtclPrecio();
 
     const totalVal = row.cantidad * (priceCoins || 0);
     const embed = new EmbedBuilder()

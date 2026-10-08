@@ -1,7 +1,7 @@
 // Gráficos de /cripto con canvas: línea de precio y donut de la cartera.
 const db = require("../../core/db");
 const { logWarn } = require("../../core/logger");
-const { ALL_CRYPTOS, COINS_PER_EUR, getTtclPrecio, fetchGeckoPrices, fetchCryptoHistory, formatCoins } = require("./mercado");
+const { ALL_CRYPTOS, getTtclPrecio, fetchCryptoHistory, formatCoins } = require("./mercado");
 
 // ─── CANVAS: GRÁFICO DE LÍNEA ─────────────────────────────────────────────────
 
@@ -272,13 +272,12 @@ async function generateDonutChart(userId, guildId = null) {
         const cartera = db.prepare("SELECT cripto, cantidad FROM cripto_carteras WHERE userId = ? AND cantidad > 0").all(userId);
         if (!cartera.length) return null;
 
-        const prices = await fetchGeckoPrices();
         const ttclPrecio = getTtclPrecio();
 
         const segments = [];
         for (const row of cartera) {
             const ci = ALL_CRYPTOS.find((c) => c.simbolo === row.cripto);
-            const pCoins = ci?.id === "TTCL" || row.cripto === "TTCL" ? ttclPrecio : (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
+            const pCoins = row.cripto === "TTCL" ? ttclPrecio : 0;
             const val = row.cantidad * pCoins;
             if (val > 0) segments.push({ label: row.cripto, value: val, color: ci?.color || "#888" });
         }

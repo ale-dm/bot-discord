@@ -222,6 +222,11 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [ ] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
 
+**🧹 Solo TTCL (F-EC-12b, #118)**
+- [ ] Al arrancar: `[Migraciones] Aplicada 028_liquidar_criptos_reales`.
+- [ ] En `/cripto` no sale BTC, ETH, SOL, BNB, XRP ni DOGE (ni en compra, venta, gráficos ni precios).
+- [ ] Quien tenía de esas criptos ve el saldo en su efectivo y una línea de tipo cripto en Movimientos, sin 🏛️ Impuesto.
+
 **💧 TTCL como pool de liquidez (F-EC-12a, #117)**
 - [ ] Al arrancar: `[Migraciones] Aplicada 027_ttcl_pool`. El precio de TTCL en `/cripto` ha vuelto a 100.
 - [ ] Comprar 500.000 monedas de TTCL: sale una cantidad de TTCL y se cobra la comisión (1 %). El precio sube.

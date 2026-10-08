@@ -64,7 +64,7 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
     try {
         cartera = await require("../systems/cripto/mercado").valorarCartera(targetId, guildId);
     } catch {
-        // Sin precios de CoinGecko, la cartera sale sin valorar.
+        // Si el mercado falla, la cartera sale sin valorar.
     }
     const objetos = db.prepare("SELECT COUNT(*) AS n FROM inventario WHERE userId = ?").get(targetId).n;
 

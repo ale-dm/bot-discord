@@ -708,8 +708,6 @@ propuso, y la propuesta caduca a los 10 minutos. Por voz no se ofrece (no hay bo
 `/cripto` abre un panel con botones: precios, gráfico (24 h / 7 días / 30 días / todo), comprar, vender,
 cartera, historial, top de inversores e información de $TTCL.
 
-- **Criptos reales**: BTC, ETH, SOL, BNB, XRP y DOGE, con el precio real de CoinGecko en euros
-  (1 € = 1.000 monedas). Se cachea 1 minuto.
 - **$TTCL** (moneda del servidor): se opera contra un **pool de liquidez** global (1.000.000 monedas y 10.000 TTCL al
   arrancar, precio inicial 100). El precio es `monedas del pool / TTCL del pool`, y cada compra o venta se cobra contra
   el pool manteniendo el producto constante, así que comprar sube el precio y vender lo baja. La comisión (1 %) se queda

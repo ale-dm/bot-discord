@@ -2,11 +2,8 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
 const { generateDonutChart } = require("../../systems/cripto/graficos");
 const {
-    REAL_CRYPTOS,
-    COINS_PER_EUR,
     ttclCirculacion,
     getTtclPrecio,
-    fetchGeckoPrices,
     formatCoins,
     formatCryptoAmt,
     getUserSaldo,
@@ -20,7 +17,6 @@ const { backButton } = require("./comun");
 
 async function buildMainPanel(userId, guildId = null) {
     const saldo = getUserSaldo(userId);
-    const prices = await fetchGeckoPrices();
     const ttclP = getTtclPrecio();
 
     // ── Cartera del usuario
@@ -29,20 +25,15 @@ async function buildMainPanel(userId, guildId = null) {
     const holdingLines = [];
     for (const row of cartera) {
         const ci = cryptoInfoBySymbol(row.cripto);
-        const pCoins = row.cripto === "TTCL" ? ttclP : (prices[ci?.id]?.eur || 0) * COINS_PER_EUR;
+        const pCoins = row.cripto === "TTCL" ? ttclP : 0;
         const val = row.cantidad * pCoins;
         totalCripto += val;
         holdingLines.push(`${ci?.emoji || "💰"} **${row.cripto}** ${formatCryptoAmt(row.cantidad)} · ${formatCoins(val)} 🪙`);
     }
     const totalNeto = saldo + totalCripto;
 
-    // ── Snapshot de mercado (TTCL + BTC + ETH + SOL)
-    const marketPairs = [
-        { sym: "TTCL", eur: null, coins: ttclP, emoji: "🟣" },
-        { sym: "BTC", eur: prices["bitcoin"]?.eur, coins: (prices["bitcoin"]?.eur || 0) * COINS_PER_EUR, emoji: "🟡" },
-        { sym: "ETH", eur: prices["ethereum"]?.eur, coins: (prices["ethereum"]?.eur || 0) * COINS_PER_EUR, emoji: "🔷" },
-        { sym: "SOL", eur: prices["solana"]?.eur, coins: (prices["solana"]?.eur || 0) * COINS_PER_EUR, emoji: "🟢" },
-    ];
+    // ── Snapshot de mercado
+    const marketPairs = [{ sym: "TTCL", eur: null, coins: ttclP, emoji: "🟣" }];
     const marketLines = marketPairs
         .filter((m) => m.coins > 0)
         .map((m) => {
@@ -76,7 +67,7 @@ async function buildMainPanel(userId, guildId = null) {
         .setTitle("🏠 Cripto — Tu resumen")
         .setDescription(descParts.join("\n"))
         .setColor(0x9b59b6)
-        .setFooter({ text: "1 € = 1.000 🪙 · Precios CoinGecko" })
+        .setFooter({ text: "Precio del pool de TTCL" })
         .setTimestamp();
 
     const row1 = new ActionRowBuilder().addComponents(
@@ -97,28 +88,16 @@ async function buildMainPanel(userId, guildId = null) {
 // ─── PRECIOS ──────────────────────────────────────────────────────────────────
 
 async function buildPreciosPanel(guildId = null) {
-    const prices = await fetchGeckoPrices();
     const ttclPrecio = getTtclPrecio();
     const circ = ttclCirculacion();
 
     const lines = [`🟣 **$TTCL** — \`${ttclPrecio.toFixed(4)}\` 🪙  _(en carteras: ${circ.toFixed(2)})_`];
-    for (const c of REAL_CRYPTOS) {
-        const eur = prices[c.id]?.eur;
-        if (eur) {
-            const coins = eur * COINS_PER_EUR;
-            lines.push(
-                `${c.emoji} **${c.simbolo}** — \`${coins.toLocaleString("es", { maximumFractionDigits: 0 })} 🪙\`  _(≈ ${eur.toLocaleString("es", { maximumFractionDigits: 2 })} €)_`,
-            );
-        } else {
-            lines.push(`${c.emoji} **${c.simbolo}** — _sin datos_`);
-        }
-    }
 
     const embed = new EmbedBuilder()
         .setTitle("📈 Precios actuales")
         .setDescription(lines.join("\n"))
         .setColor(0x27ae60)
-        .setFooter({ text: "CoinGecko — caché 60 s · 1 € = 1.000 🪙" })
+        .setFooter({ text: "Precio del pool de TTCL" })
         .setTimestamp();
 
     return {
