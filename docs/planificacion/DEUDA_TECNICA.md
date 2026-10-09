@@ -12,7 +12,8 @@ complica el mantenimiento) · 🟢 baja (limpieza). **Esfuerzo:** S (una tarde) 
 
 | ID | Qué | Área | Prioridad | Esfuerzo |
 |---|---|---|---|---|
-| DT-16 | La capa `src/juegos` mezcla handlers y lógica de negocio. Resuelto el wrapper de 🏅 Liga; pendiente: sacar las reglas de `quiniela.js` (585 líneas), `apuestas.js` (548) y `casino/blackjack.js` (507) a `systems/` ([#166](https://github.com/ale-dm/bot-discord/issues/166)) | Estructura | 🟠 | M |
+
+_Sin filas abiertas: lo pendiente está en las issues de GitHub._
 
 Además: [decisiones tomadas](#decisiones-tomadas) que no son deuda pero conviene recordar.
 
