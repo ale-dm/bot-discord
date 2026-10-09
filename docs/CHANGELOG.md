@@ -14,6 +14,7 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
   - `src/systems/apuestas/apostar.js`: cuota de cada elección, cobro (todo o nada), si ya apostó, listado de partidos abiertos.
   - `src/systems/blackjackCobros.js`: pagar una mano y cobrar doblar o separar.
   Los módulos de `src/juegos` se quedan con los botones, los formularios y lo que se muestra.
+- **DT-16 resuelta** ([#166](https://github.com/ale-dm/bot-discord/issues/166)): las reglas de quinielas, apuestas y blackjack están en `src/systems/`. La fila sale del registro de deuda, que queda sin filas abiertas.
 - Mensajes del Duende, panel admin y tienda: ver la octava ronda.
 
 ## 2026-10-09 (octava ronda: funciones largas del core, panel y tienda)
