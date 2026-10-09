@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: helpers compartidos)
+
+- **Un solo sitio para los helpers repetidos** (DT-14, [#164](https://github.com/ale-dm/bot-discord/issues/164)):
+  - `core/formato.js` (`fmtNumero`): sustituye 15 copias de `fmt`. Un importe vacío o no numérico sale como `0` (antes,
+    en algunos mensajes, `NaN`).
+  - `core/respuestas.js` (`efimero`): sustituye 6 copias. Acepta un texto o un payload.
+  - `core/permisos.js` (`esAdmin`, `tienePermiso`): sustituye las 8 comprobaciones de admin. Un solo criterio: el permiso
+    del miembro en la interacción.
+  - `/plex` sigue cancelando sesiones con `ManageGuild` (no `Administrator`), pero ahora está escrito así a propósito.
+- Tests: `npm run check` en verde (1004 tests), y ESLint sin avisos.
+
 ## 2026-10-09 (auditoría: catálogo de logros aparte)
 
 - **`systems/logros/catalogo.js`**: el catálogo de logros (511 líneas de datos) sale de `achievementsSystem.js`, que pasa

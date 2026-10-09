@@ -2,8 +2,7 @@
 // Sin canal: si ya está conectado, se sale; si no, entra al canal de quien lo pide. Ver systems/presencia.js.
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require("discord.js");
 const presencia = require("../../systems/presencia");
-
-const efimero = (texto) => ({ content: texto, flags: MessageFlags.Ephemeral });
+const { efimero } = require("../../core/respuestas");
 
 module.exports = {
     data: new SlashCommandBuilder()

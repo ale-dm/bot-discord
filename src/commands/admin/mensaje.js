@@ -8,16 +8,14 @@ const {
     TextInputBuilder,
     TextInputStyle,
     PermissionFlagsBits,
-    MessageFlags,
 } = require("discord.js");
 const { isAdmin } = require("../../adminPanel/common");
 const adminAudit = require("../../systems/adminAudit");
 const { createLogger } = require("../../core/logger");
+const { efimero } = require("../../core/respuestas");
 
 const log = createLogger("Mensaje");
 const TEXTO_MAX = 1500; // deja sitio a la cabecera dentro de los 2000 caracteres de un DM
-
-const efimero = (content) => ({ content, flags: MessageFlags.Ephemeral });
 
 module.exports = {
     componentHandlers: [{ types: ["modal"], prefixes: ["mensaje_modal_"], method: "handleModal" }],

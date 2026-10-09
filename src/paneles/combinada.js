@@ -2,8 +2,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const combinadas = require("../systems/apuestas/combinadas");
 const mercados = require("../systems/apuestas/mercados");
-
-const fmt = (n) => Number(n).toLocaleString("es");
+const { fmtNumero } = require("../core/formato");
 
 /** La pantalla del boleto en armado de alguien. `aviso`: una línea de resultado de la última acción. */
 function pantallaCombinada(userId, aviso = null) {
@@ -20,7 +19,7 @@ function pantallaCombinada(userId, aviso = null) {
         ? "Todavía no has sumado ningún partido. En un partido de ⚽ Apuestas, elige **🧩 Sumar a mi combinada**."
         : patas.length < combinadas.MIN_PATAS
           ? `${lineas.join("\n")}\n\nHacen falta al menos **${combinadas.MIN_PATAS}** partidos.`
-          : `${lineas.join("\n")}\n\n**Cuota total:** \`${cuota}\` · con **100** monedas cobrarías **${fmt(combinadas.premioDe(100, cuota))}** 🪙`;
+          : `${lineas.join("\n")}\n\n**Cuota total:** \`${cuota}\` · con **100** monedas cobrarías **${fmtNumero(combinadas.premioDe(100, cuota))}** 🪙`;
 
     const embed = new EmbedBuilder()
         .setTitle("🧩 Tu combinada")
@@ -33,7 +32,7 @@ function pantallaCombinada(userId, aviso = null) {
             value: enJuego
                 .map(
                     (c) =>
-                        `**${fmt(c.cantidad)}** 🪙 · cuota \`${c.cuota}\` · ${c.patas.length} partidos · cobrarías **${fmt(combinadas.premioDe(c.cantidad, c.cuota))}** 🪙`,
+                        `**${fmtNumero(c.cantidad)}** 🪙 · cuota \`${c.cuota}\` · ${c.patas.length} partidos · cobrarías **${fmtNumero(combinadas.premioDe(c.cantidad, c.cuota))}** 🪙`,
                 )
                 .join("\n")
                 .slice(0, 1024),

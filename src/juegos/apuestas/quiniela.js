@@ -6,7 +6,6 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    PermissionsBitField,
     MessageFlags,
 } = require("discord.js");
 const db = require("../../core/db");
@@ -18,6 +17,7 @@ const { minimoAciertosQuiniela } = require("../../systems/apuestas/liquidacion")
 const misJugadas = require("../../systems/apuestas/misJugadas");
 const { lineaQuiniela, filaTrasApostar } = require("../../paneles/misJugadas");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
+const { esAdmin } = require("../../core/permisos");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
@@ -218,7 +218,7 @@ module.exports = {
             )
             .get(deporteSeleccionado);
 
-        const isAdmin = interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator);
+        const isAdmin = esAdmin(interaction);
 
         if (!quiniela) {
             const embed = new EmbedBuilder()
@@ -313,7 +313,7 @@ module.exports = {
         }
 
         if (customId.startsWith("quiniela_crear_")) {
-            const isAdmin = interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator);
+            const isAdmin = esAdmin(interaction);
             if (!isAdmin) {
                 await interaction.reply({ content: "❌ Solo administradores pueden crear quinielas.", flags: MessageFlags.Ephemeral });
                 return;

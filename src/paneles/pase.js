@@ -1,8 +1,8 @@
 // 🛡️ Pase de batalla (#36): el panel de /pase (solo lo ves tú): resumen, niveles, misiones y top.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const pase = require("../systems/pase/pase");
+const { fmtNumero } = require("../core/formato");
 
-const fmt = (n) => Number(n).toLocaleString("es");
 const barra = (parte, total) => {
     const llenos = Math.round(10 * Math.min(1, total ? parte / total : 0));
     return `${"█".repeat(llenos)}${"░".repeat(10 - llenos)}`;
@@ -39,7 +39,7 @@ function pantallaPase(guildId, userId, vista = "resumen", { aviso = null, ahora 
         embed
             .setTitle(`📜 Niveles · temporada ${e.temporada + 1}`)
             .setDescription(`${avisoTxt}Cada nivel alcanzado se cobra en 🎁 Reclamar.`);
-        const linea = (r) => `${r.cobrada ? "✅" : r.alcanzada ? "🎁" : "🔒"} **Nivel ${r.nivel}** · ${fmt(r.monedas)} 🪙`;
+        const linea = (r) => `${r.cobrada ? "✅" : r.alcanzada ? "🎁" : "🔒"} **Nivel ${r.nivel}** · ${fmtNumero(r.monedas)} 🪙`;
         embed.addFields(
             { name: "Niveles 1–10", value: e.recompensas.slice(0, 10).map(linea).join("\n"), inline: true },
             { name: "Niveles 11–20", value: e.recompensas.slice(10).map(linea).join("\n"), inline: true },
@@ -59,7 +59,7 @@ function pantallaPase(guildId, userId, vista = "resumen", { aviso = null, ahora 
         embed
             .setTitle("🏆 Top del pase")
             .setDescription(
-                `${avisoTxt}${top.length ? top.map((t, i) => `${i + 1}. <@${t.userId}> · nivel **${t.nivel}** (${fmt(t.xp)} XP)`).join("\n") : "Todavía nadie tiene XP de pase."}`,
+                `${avisoTxt}${top.length ? top.map((t, i) => `${i + 1}. <@${t.userId}> · nivel **${t.nivel}** (${fmtNumero(t.xp)} XP)`).join("\n") : "Todavía nadie tiene XP de pase."}`,
             );
     } else {
         const siguiente = e.nivel < pase.NIVEL_MAX ? e.recompensas[e.nivel] : null;
@@ -68,19 +68,19 @@ function pantallaPase(guildId, userId, vista = "resumen", { aviso = null, ahora 
         embed
             .setTitle(`🛡️ Pase de batalla · temporada ${e.temporada + 1}`)
             .setDescription(
-                `${avisoTxt}${subtitulo}\n\n**Nivel ${e.nivel}** de ${pase.NIVEL_MAX}\n\`${bar}\` ${fmt(e.xp)}` +
-                    (e.xpSiguiente ? ` / ${fmt(e.xpSiguiente)} XP` : " XP (nivel máximo)"),
+                `${avisoTxt}${subtitulo}\n\n**Nivel ${e.nivel}** de ${pase.NIVEL_MAX}\n\`${bar}\` ${fmtNumero(e.xp)}` +
+                    (e.xpSiguiente ? ` / ${fmtNumero(e.xpSiguiente)} XP` : " XP (nivel máximo)"),
             )
             .addFields(
                 {
                     name: "Próxima recompensa",
-                    value: siguiente ? `Nivel ${siguiente.nivel}: ${fmt(siguiente.monedas)} 🪙` : "Ya están todas.",
+                    value: siguiente ? `Nivel ${siguiente.nivel}: ${fmtNumero(siguiente.monedas)} 🪙` : "Ya están todas.",
                     inline: true,
                 },
                 {
                     name: "Por reclamar",
                     value: e.pendientes.length
-                        ? `${e.pendientes.length} ${e.pendientes.length === 1 ? "nivel" : "niveles"} · ${fmt(e.pendientes.reduce((t, r) => t + r.monedas, 0))} 🪙`
+                        ? `${e.pendientes.length} ${e.pendientes.length === 1 ? "nivel" : "niveles"} · ${fmtNumero(e.pendientes.reduce((t, r) => t + r.monedas, 0))} 🪙`
                         : "Nada todavía.",
                     inline: true,
                 },

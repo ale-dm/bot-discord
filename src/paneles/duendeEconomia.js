@@ -6,12 +6,12 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const retos = require("../systems/retos");
 const prestamos = require("../systems/prestamos");
 const { ladoTexto, contrarioTexto } = require("./retos");
+const { fmtNumero } = require("../core/formato");
 
 /** Lo que vale una propuesta sin aceptar. */
 const CADUCA_MS = 10 * 60 * 1000;
 const COLOR = 0x8e44ad;
 
-const fmt = (n) => Number(n || 0).toLocaleString("es");
 const ts = (ms, estilo = "R") => `<t:${Math.floor(ms / 1000)}:${estilo}>`;
 
 /** duende_{acepto|no}_{ppt|partido|prestamo}_{userId}_{cantidad}_{caduca, en s y base 36}[_{eleccion}_{matchId}] */
@@ -38,11 +38,11 @@ function leerPropuesta(customId) {
 
 function textoPartido(p) {
     const partido = retos.partidoDe(p.matchId);
-    if (!partido) return `<@${p.userId}> apuesta **${fmt(p.cantidad)}** 🪙 a un partido contra el Duende.`;
+    if (!partido) return `<@${p.userId}> apuesta **${fmtNumero(p.cantidad)}** 🪙 a un partido contra el Duende.`;
     return (
-        `<@${p.userId}> apuesta **${fmt(p.cantidad)}** 🪙 a que **${ladoTexto(partido, p.eleccion)}** en ` +
+        `<@${p.userId}> apuesta **${fmtNumero(p.cantidad)}** 🪙 a que **${ladoTexto(partido, p.eleccion)}** en ` +
         `**${partido.home_team} vs ${partido.away_team}** (${ts(Date.parse(partido.start_time), "f")}).\n` +
-        `🧙 El Duende va con lo contrario: **${contrarioTexto(partido, p.eleccion)}**. El que acierte se lleva **${fmt(p.cantidad * 2)}** 🪙.`
+        `🧙 El Duende va con lo contrario: **${contrarioTexto(partido, p.eleccion)}**. El que acierte se lleva **${fmtNumero(p.cantidad * 2)}** 🪙.`
     );
 }
 
@@ -59,7 +59,7 @@ function mensajePropuesta(p, ahora = Date.now()) {
         embed
             .setTitle("🧙 El Duende te reta a 🪨 Piedra, papel o tijera")
             .setDescription(
-                `<@${propuesta.userId}>, **${fmt(propuesta.cantidad)}** 🪙 cada uno: el que gane se lleva **${fmt(propuesta.cantidad * 2)}** 🪙.\n` +
+                `<@${propuesta.userId}>, **${fmtNumero(propuesta.cantidad)}** 🪙 cada uno: el que gane se lleva **${fmtNumero(propuesta.cantidad * 2)}** 🪙.\n` +
                     "Si aceptas, eliges tu jugada; el Duende ya tiene la suya.",
             );
     } else if (propuesta.tipo === "partido") {
@@ -67,9 +67,9 @@ function mensajePropuesta(p, ahora = Date.now()) {
     } else {
         const total = prestamos.totalDe(propuesta.cantidad);
         embed
-            .setTitle(`🧙 El Duende te presta ${fmt(propuesta.cantidad)} 🪙`)
+            .setTitle(`🧙 El Duende te presta ${fmtNumero(propuesta.cantidad)} 🪙`)
             .setDescription(
-                `<@${propuesta.userId}>, devuelves **${fmt(total)}** 🪙 (un ${prestamos.INTERES} % más) en ${prestamos.PLAZO_DIAS} días, o antes ` +
+                `<@${propuesta.userId}>, devuelves **${fmtNumero(total)}** 🪙 (un ${prestamos.INTERES} % más) en ${prestamos.PLAZO_DIAS} días, o antes ` +
                     "cuando quieras desde `/perfil` → 💰 Economía.\n" +
                     "Si no, al vencer se cobra solo del efectivo y del banco. Lo que falte queda como deuda: se va cobrando de lo " +
                     "que ganes, y hasta saldarla no hay otro préstamo ni apuestas con el Duende.",
@@ -99,10 +99,10 @@ function mensajeCerrada(p, motivo) {
 function mensajePrestamo(prestamo) {
     const embed = new EmbedBuilder()
         .setColor(0x27ae60)
-        .setTitle(`🧙 Préstamo del Duende: ${fmt(prestamo.cantidad)} 🪙`)
+        .setTitle(`🧙 Préstamo del Duende: ${fmtNumero(prestamo.cantidad)} 🪙`)
         .setDescription(
-            `<@${prestamo.userId}> tiene **${fmt(prestamo.cantidad)}** 🪙 más en el efectivo.\n` +
-                `Devuelve **${fmt(prestamo.total)}** 🪙 antes del ${ts(prestamo.vence_en, "f")} (${ts(prestamo.vence_en)}), desde ` +
+            `<@${prestamo.userId}> tiene **${fmtNumero(prestamo.cantidad)}** 🪙 más en el efectivo.\n` +
+                `Devuelve **${fmtNumero(prestamo.total)}** 🪙 antes del ${ts(prestamo.vence_en, "f")} (${ts(prestamo.vence_en)}), desde ` +
                 "`/perfil` → 💰 Economía → 🧙 Devolver.",
         );
     return { embeds: [embed], components: [], allowedMentions: { users: [] } };

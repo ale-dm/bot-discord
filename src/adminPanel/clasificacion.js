@@ -12,7 +12,8 @@ const {
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
 const clasificacion = require("../systems/clasificacionSemanal");
-const { simpleModal, fmt } = require("./common");
+const { simpleModal } = require("./common");
+const { fmtNumero } = require("../core/formato");
 
 function buildClasificacionHome(guildId, aviso = "") {
     const cfg = guildSettings.getSettings(guildId).clasificacion;
@@ -29,14 +30,14 @@ function buildClasificacionHome(guildId, aviso = "") {
         )
         .addFields(
             { name: "📢 Canal", value: cfg.canal ? `<#${cfg.canal}>` : "Ninguno: no se publica ni se paga nada", inline: true },
-            { name: "🪙 Premio", value: `**${fmt(cfg.premio)}** 🪙 por categoría`, inline: true },
+            { name: "🪙 Premio", value: `**${fmtNumero(cfg.premio)}** 🪙 por categoría`, inline: true },
             { name: "📅 Última", value: cfg.ultima_semana ? `semana del ${cfg.ultima_semana}` : "todavía ninguna", inline: true },
             {
                 name: "👀 Si fuera ahora",
                 value:
-                    `💰 ${quien(g.rico, (x) => `${fmt(x.total)} 🪙`)}\n` +
-                    `💬 ${quien(g.activo, (x) => `+${fmt(x.xp)} XP`)}\n` +
-                    `⚽ ${quien(g.apostador, (x) => `+${fmt(x.beneficio)} 🪙`)}`,
+                    `💰 ${quien(g.rico, (x) => `${fmtNumero(x.total)} 🪙`)}\n` +
+                    `💬 ${quien(g.activo, (x) => `+${fmtNumero(x.xp)} XP`)}\n` +
+                    `⚽ ${quien(g.apostador, (x) => `+${fmtNumero(x.beneficio)} 🪙`)}`,
             },
         )
         .setColor(0xf1c40f)
