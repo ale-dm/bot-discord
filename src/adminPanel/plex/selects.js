@@ -6,7 +6,7 @@ const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { simpleModal } = require("../common");
-const { log, buildRolesGordos, buildRankingSemanal } = require("./plex/vistas");
+const { log, buildRolesGordos, buildRankingSemanal } = require("./vistas");
 
 async function handlePlexChannelSelect(interaction) {
     if (interaction.customId === "paneladmin_plex_ranking_canal_select") {

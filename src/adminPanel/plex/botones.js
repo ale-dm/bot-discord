@@ -16,7 +16,7 @@ const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { simpleModal } = require("../common");
-const { log, buildPlexHome, buildPlexTrofeos, buildRolesGordos, buildDiagnosticoIdiomas, buildRankingSemanal } = require("./plex/vistas");
+const { log, buildPlexHome, buildPlexTrofeos, buildRolesGordos, buildDiagnosticoIdiomas, buildRankingSemanal } = require("./vistas");
 
 async function accionHome(interaction, id, guildId) {
     await interaction.update(buildPlexHome(guildId));

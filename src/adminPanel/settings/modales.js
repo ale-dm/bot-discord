@@ -1,7 +1,7 @@
 const { MessageFlags } = require("discord.js");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
-const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./settings/vistas");
+const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./vistas");
 
 async function modalDuende(interaction, id, guildId) {
     const modeloAntes = guildSettings.getSettings(guildId).duende.model;

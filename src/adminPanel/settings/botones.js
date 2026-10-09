@@ -10,7 +10,7 @@ const {
     buildLogrosPanel,
     buildDiarioPanel,
     buildEventosPanel,
-} = require("./settings/vistas");
+} = require("./vistas");
 
 async function accionEventos(interaction, id, guildId) {
     await interaction.update(buildEventosPanel(guildId));

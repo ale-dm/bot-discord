@@ -7,7 +7,7 @@ const achievements = require("../../systems/achievementsSystem");
 const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
-const { log } = require("./plex/vistas");
+const { log } = require("./vistas");
 
 async function modalImportacion(interaction) {
     const texto = interaction.fields.getTextInputValue("pct").trim().replace(/%$/, "").trim();
