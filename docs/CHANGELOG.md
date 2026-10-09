@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (caché de ajustes del servidor)
+
+- **Ajustes en memoria** (DT-23, [#189](https://github.com/ale-dm/bot-discord/issues/189)): `getSettings` lee la tabla
+  una vez por servidor y sirve la copia de memoria. Cada escritura (`setSetting`, `setManySettings`) la invalida. Un
+  mensaje ya no consulta los ajustes varias veces. Tests en `tests/ajustesCache.test.js`.
+
 ## 2026-10-09 (segunda ronda: consultas y duplicados)
 
 - **Consultas fuera de los bucles** (DT-24, [#190](https://github.com/ale-dm/bot-discord/issues/190)): en `plexFichas`
