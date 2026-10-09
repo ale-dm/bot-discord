@@ -2,8 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
-## 2026-10-09 (cuarta ronda: voz en directo)
+## 2026-10-09 (cuarta ronda: voz en directo y Duende)
 
+- **`hablar` del Duende** (el chat, la voz y el panel 💬) partida en pasos con nombre: configuración, personalidad y tono,
+  perfiles, equivalencias de usuarios, historial, instrucciones del turno, prompt, GIF, envío del texto y de la voz. Baja de
+  unas 310 líneas a 109. El orden de las llamadas al azar (intervención y GIF) no cambia.
+- **DT-22 resuelta** ([#172](https://github.com/ale-dm/bot-discord/issues/172)): `liquidarApuestas`, `empezarConversacion` y
+  `hablar` están todas por debajo de 120 líneas. La fila sale del registro de deuda.
 - **`empezarConversacion` del Duende en directo** (DT-22, [#172](https://github.com/ale-dm/bot-discord/issues/172)) partida
   en pasos con nombre: comprobar el inicio, crear la sesión, conectar al canal, la salida de audio (ffmpeg y reproductor),
   la sesión de Gemini Live, el saludo, la captura de audio por persona (ahora una sola función para la tertulia y para

@@ -161,17 +161,276 @@ async function pedirRespuestaGemini({ parts, activeModel, temperature, imageAtta
     return text;
 }
 
+function leerConfiguracion(guildCfg) {
+    return {
+        configuredModel: String(guildCfg?.model || "").trim(),
+        historyLimit: Math.max(1, Number(guildCfg?.history_limit || DUENDE_HISTORY_LIMIT)),
+        temperature: Number.isFinite(Number(guildCfg?.temperature))
+            ? Number(guildCfg.temperature)
+            : Number(process.env.DUENDE_TEMPERATURE || 0.7),
+        allowedChannel: String(guildCfg?.allowed_channel_id || "").trim(),
+    };
+}
+
+// Selección de personalidad: opción en comando > configuración de canal > default. Encima se le dice quién habla,
+// y el tono de madrugada o formal del canal (F-DU-02).
+function construirInstrucciones(interaction, channelId, userName) {
+    const requestedPersonality = interaction.options.getString("personality") || null;
+    let instrucciones = instruccionDefault;
+    let personaObj = null;
+    if (requestedPersonality) personaObj = perfiles.obtenerPersonalidad(requestedPersonality);
+    if (!personaObj) personaObj = perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(channelId));
+    if (personaObj) instrucciones = personaObj.systemInstructions;
+
+    // Los perfiles de las personas SÍ moldean el trato: es contenido escrito a
+    // mano para eso (ver buildPersonProfileText/lineaPerfiles más abajo). Cuando
+    // se hable de alguien, se le da al modelo tanto el perfil de quien pregunta
+    // como el de quien es el tema, para que pueda compararlos/relacionarlos en
+    // la misma respuesta en vez de describir solo al otro de forma aislada.
+    // El recordatorio de "usa las herramientas siempre" ya no va aquí: las
+    // personalidades personalizadas (masiko, javier, sanchez...) sustituyen del
+    // todo `instruccionDefault`, y mezclado en este texto competía con ellas en
+    // igualdad de condiciones. Ahora vive en el systemInstruction real de Gemini
+    // (gemini.js), que no se puede pisar cambiando de personalidad.
+    instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
+    // 🌙 Más borde de madrugada y 👔 más formal en ciertos canales (F-DU-02), encima de la personalidad que toque.
+    const tono = ajusteDeTono(interaction.guildId, channelId);
+    if (tono) instrucciones = `${instrucciones} ${tono}`;
+    return { instrucciones, personaObj };
+}
+
+// Perfil completo (sin truncar de forma agresiva, a diferencia de antes que
+// cortaba a 200 caracteres y encima ignoraba `description` si había `notas`)
+// para quien habla ahora + quien se mencione por nombre/apodo/mención en el
+// mensaje. Es lo que le permite al Duende tratar a cada uno según lo que sabe
+// de él y relacionar a ambos en la misma respuesta.
+async function lineaDePerfiles(interaction, userInput) {
+    const speakerProfile = perfiles.perfilDe(interaction.user);
+    const mentionedProfiles = detectMentionedPersons(userInput, interaction.guild, interaction.user.id)
+        .filter((p) => !speakerProfile || p.key !== speakerProfile.key)
+        .slice(0, 3);
+
+    // Con pocas notas se dan todas (perfiles.notasRelevantes no llama a Gemini); con
+    // muchas, solo las más relacionadas con lo que se acaba de decir en vez de
+    // siempre las últimas MAX_NOTAS — así no se pierden notas antiguas que sí vienen
+    // a cuento ahora. Si falla la llamada a Gemini, cae a las últimas como antes.
+    const conNotasRelevantes = async (p) => p && { ...p, notas: await perfiles.notasRelevantes(p, userInput) };
+    const [speakerConNotas, ...mentionedConNotas] = await Promise.all([
+        conNotasRelevantes(speakerProfile),
+        ...mentionedProfiles.map(conNotasRelevantes),
+    ]);
+
+    const perfilesDestacados = [];
+    if (speakerConNotas) {
+        perfilesDestacados.push(
+            `${speakerConNotas.name} (quien te habla ahora): ${truncateText(buildPersonProfileText(speakerConNotas), perfiles.MAX_PERFIL_PROMPT)}`,
+        );
+    }
+    for (const p of mentionedConNotas) {
+        perfilesDestacados.push(
+            `${p.name} (mencionado en el mensaje): ${truncateText(buildPersonProfileText(p), perfiles.MAX_PERFIL_PROMPT)}`,
+        );
+    }
+    return perfilesDestacados.length ? "Perfiles a tener en cuenta ahora mismo:\n" + perfilesDestacados.join("\n") : null;
+}
+
+// Equivalencias ligeras (solo nombre) para el resto de gente conocida, sin
+// volcar toda su descripción — así no se infla el prompt con perfiles que no
+// vienen a cuento en este mensaje.
+function lineasDeUsuarios(interaction, userName) {
+    // Nombre de cada uno según sus apodos (username de Discord -> nombre principal).
+    const nombrePorUsername = new Map();
+    for (const { discordId, nombre } of apodos.nombres(interaction.guildId)) {
+        const m = interaction.guild?.members?.cache?.get(discordId);
+        if (m) nombrePorUsername.set(m.user.username, nombre);
+    }
+    const personEntries = perfiles
+        .listarPerfiles()
+        .filter((p) => p.username)
+        .map((p) => `"${p.username}" es ${p.name}`);
+    const manualEntries = [...nombrePorUsername].map(([username, nombre]) => `"${username}" es ${nombre}`);
+    const equivalencias = [...manualEntries, ...personEntries].join(", ");
+    const lineaEquivalencias = "Equivalencias de usuarios: " + equivalencias + ".";
+
+    // Línea que indica quién envía el mensaje ahora mismo
+    const nombreHablante = apodos.nombreDe(interaction.guildId, interaction.user.id) || nombrePorUsername.get(userName);
+    const lineaUsuarioActual = `Mensaje actual enviado por: ${userName}${nombreHablante ? ` / ${nombreHablante}` : ""}`;
+    return { nombrePorUsername, lineaEquivalencias, lineaUsuarioActual };
+}
+
+// Historial con etiquetas claras de quién dijo qué
+function historialParaPrompt(channelId, historyLimit, nombrePorUsername) {
+    return conversationHistory[channelId]
+        .map((msg) => {
+            const nombre = nombrePorUsername.get(msg.name);
+            if (msg.role === "user")
+                return `Usuario (${msg.name}${nombre ? ` / ${nombre}` : ""}): ${truncateText(msg.text, DUENDE_PROMPT_MSG_MAX_CHARS)}`;
+            return `Duende: ${truncateText(msg.text, DUENDE_PROMPT_MSG_MAX_CHARS)}`;
+        })
+        .slice(-historyLimit);
+}
+
+// Decide si intervenir (mantengo la lógica previa) y añade las reglas de estilo de este turno.
+function instruccionesDelTurno(instrucciones, channelId, userInput) {
+    const lastMessages = conversationHistory[channelId].slice(-4);
+    const uniqueUsers = [...new Set(lastMessages.filter((m) => m.role === "user").map((m) => m.name))];
+    const mensajeMencionaOtro = uniqueUsers.length > 1 || uniqueUsers.some((name) => userInput.toLowerCase().includes(name.toLowerCase()));
+    const shouldIntervene = mensajeMencionaOtro && Math.random() < (parseFloat(process.env.DUENDE_INTERVENE_PROB) || 0.5);
+    let instruccionesFinal = instrucciones;
+    if (shouldIntervene)
+        instruccionesFinal +=
+            " Están hablando entre ellos. Si crees que puedes aportar algo sarcástico o molesto, hazlo. Si no, ignora la conversación.";
+    instruccionesFinal +=
+        " Regla importante: no repitas literalmente tu última respuesta ni copies frases exactas de mensajes previos. Responde solo una vez y de forma nueva.";
+    instruccionesFinal +=
+        " Si viene a cuento, termina alguna vez (no siempre, no lo fuerces) con una pregunta corta para seguir la conversación en vez de solo soltar una frase y punto.";
+    instruccionesFinal +=
+        " Cuando uses un dato que has consultado (fecha, título, cifra...), no lo sueltes en plan ficha ('X hizo Y el [fecha]') ni en dos bloques pegados ('¡exclamación o insulto! + luego el dato aparte') — teje el dato y el insulto/comentario DENTRO de la misma frase, como si el dato fuera parte de la queja o la burla, no un anexo. Nada de empezar siempre con una interjección tipo '¡Me cago en la puta!' antes del dato: varía cómo empiezas cada respuesta (a veces con el dato, a veces con la pulla, a veces con una pregunta retórica) para que no suene a plantilla repetida mensaje tras mensaje.";
+    instruccionesFinal +=
+        " Regla estricta: si tienes una herramienta que EJECUTA algo real (pedir contenido, comprar, cambiar un dato...), nunca digas en tu respuesta que ya lo has hecho ('ya te lo he pedido', 'hecho', 'ya está') a menos que hayas llamado de verdad a esa herramienta en este mismo turno y haya devuelto éxito. Está prohibido inventarte o dar por hecho el resultado de una acción que no has ejecutado — si dudas si ejecutarla o no, ejecútala (tienes permiso), pero nunca narres una acción como completada sin haberla completado de verdad.";
+    return instruccionesFinal;
+}
+
+// Composición del prompt base
+function construirPartes({
+    lineaPersonalidadActiva,
+    instruccionesFinal,
+    lineaPerfiles,
+    lineaEquivalencias,
+    lineaUsuarioActual,
+    contextParts,
+    imageAttachments,
+}) {
+    return [
+        { text: lineaPersonalidadActiva },
+        { text: instruccionesFinal },
+        ...(lineaPerfiles ? [{ text: lineaPerfiles }] : []),
+        { text: lineaEquivalencias },
+        { text: lineaUsuarioActual },
+        { text: "Conversación reciente (de más antiguo a más nuevo):" },
+        ...contextParts.map((text) => ({ text })),
+        ...(imageAttachments.length
+            ? [{ text: "El usuario ha compartido una imagen adjunta a su último mensaje; coméntala si viene a cuento." }]
+            : []),
+        { text: "Responde ahora al último mensaje del usuario actual en 1-2 frases." },
+    ];
+}
+
+// Un GIF de vez en cuando (DUENDE_GIF_PROB); si falla, la respuesta sale igual sin él.
+async function buscarGifParaRespuesta(text, userInput) {
+    try {
+        if (Math.random() < (parseFloat(process.env.DUENDE_GIF_PROB) || 0.08)) {
+            const gifUrl = await getGifForText(text, userInput);
+            if (gifUrl) log.debug("GIF encontrado: " + gifUrl);
+            else log.debug("No se encontró GIF relevante.");
+            return gifUrl;
+        }
+        log.debug("No se busca GIF esta vez.");
+    } catch (err) {
+        log.error("Error buscando GIF: " + err.message);
+    }
+    return null;
+}
+
+// Ensure message content fits Discord limits (2000 chars). Truncate if needed.
+function recortarParaDiscord(text) {
+    const MAX_DISCORD_CONTENT = 2000;
+    const SAFETY_MARGIN = 20; // leave room for extra text like truncation notice and gif url
+    const effectiveMax = MAX_DISCORD_CONTENT - SAFETY_MARGIN;
+    const sendText = typeof text === "string" ? text : String(text || "");
+    if (sendText.length > effectiveMax) {
+        return sendText.slice(0, effectiveMax) + "\n\n(Respuesta truncada por longitud)";
+    }
+    return sendText;
+}
+
+// Manda el texto (y el GIF y las propuestas). Por voz (/escuchar) no sale nada por aquí.
+async function enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas }) {
+    try {
+        let sentOk = false;
+        if (!interaction?.silentTextReply) {
+            sentOk = await safeEditReply(interaction, sendText);
+        } else {
+            sentOk = true;
+        }
+
+        if (!interaction?.silentTextReply && sentOk && gifUrl) {
+            let gifSent = false;
+            if (interaction.followUp && typeof interaction.followUp === "function") {
+                try {
+                    await interaction.followUp({ content: gifUrl });
+                    gifSent = true;
+                } catch (gifErr) {
+                    log.warn("No se pudo enviar GIF por followUp: " + (gifErr && gifErr.message ? gifErr.message : gifErr));
+                }
+            }
+            if (!gifSent && interaction.channel && typeof interaction.channel.send === "function") {
+                try {
+                    await interaction.channel.send(gifUrl);
+                } catch (gifErr2) {
+                    log.warn("No se pudo enviar GIF por channel.send: " + (gifErr2 && gifErr2.message ? gifErr2.message : gifErr2));
+                }
+            }
+        }
+
+        // Las propuestas del Duende, cada una en su mensaje con ✅ Acepto / ❌ No (paneles/duendeEconomia).
+        if (sentOk && propuestas?.length) {
+            const { mensajePropuesta } = require("../../paneles/duendeEconomia");
+            const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
+            for (const propuesta of propuestas) {
+                try {
+                    await interaction.followUp({ ...mensajePropuesta(propuesta), flags });
+                } catch (e) {
+                    log.warn(`No se pudo enviar la propuesta del Duende (${propuesta.tipo}): ${e.message}`);
+                }
+            }
+        }
+
+        if (!interaction?.silentTextReply && !sentOk) {
+            const fallbackMsg = "⚠️ No he podido enviar la respuesta principal. Inténtalo de nuevo en unos segundos.";
+            if (interaction.followUp && typeof interaction.followUp === "function") {
+                try {
+                    await interaction.followUp({ content: fallbackMsg });
+                    sentOk = true;
+                } catch (e) {
+                    log.debug(`followUp de aviso falló: ${e.message}`);
+                }
+            }
+            if (!sentOk && interaction.channel && typeof interaction.channel.send === "function") {
+                try {
+                    await interaction.channel.send(fallbackMsg);
+                } catch (e) {
+                    log.warn(`No se pudo enviar ni la respuesta ni el aviso de error en ${interaction.channel?.id}: ${e.message}`);
+                }
+            }
+        }
+    } catch (sendErr) {
+        log.error("Error enviando respuesta por texto:", sendErr);
+    }
+}
+
+// Conversación por voz (/escuchar): no hay respuesta por texto, así que si la voz falla (TTS sin audio, sin
+// conexión al canal...) se manda por texto para que el Duende no se quede mudo.
+async function responderPorVoz(client, interaction, textoVoz, sendText) {
+    try {
+        const hablado = tryVoiceReply(client, interaction, textoVoz);
+        if (interaction?.silentTextReply) {
+            if (!(await hablado) && interaction.channel?.send) {
+                log.warn("No se pudo responder por voz: la respuesta va por texto");
+                await interaction.channel.send({ content: `🗣️ ${sendText}`, allowedMentions: { parse: ["users"] } });
+            }
+        } else void hablado;
+    } catch (voiceErr) {
+        log.error("Error lanzando respuesta por voz:", voiceErr);
+    }
+}
+
 // Responder en el chat: lo usan el chat de texto, la voz (/escuchar) y el formulario 💬 Hablar del panel.
 async function hablar(client, interaction) {
     try {
         await interaction.deferReply({});
         const guildCfg = interaction.guildId ? guildSettings.getSettings(interaction.guildId).duende : null;
-        const configuredModel = String(guildCfg?.model || "").trim();
-        const historyLimit = Math.max(1, Number(guildCfg?.history_limit || DUENDE_HISTORY_LIMIT));
-        const temperature = Number.isFinite(Number(guildCfg?.temperature))
-            ? Number(guildCfg.temperature)
-            : Number(process.env.DUENDE_TEMPERATURE || 0.7);
-        const allowedChannel = String(guildCfg?.allowed_channel_id || "").trim();
+        const { configuredModel, historyLimit, temperature, allowedChannel } = leerConfiguracion(guildCfg);
 
         // TALK
         const userInput = interaction.options.getString("texto");
@@ -195,28 +454,7 @@ async function hablar(client, interaction) {
             return;
         }
 
-        // Selección de personalidad: opción en comando > configuración de canal > default
-        const requestedPersonality = interaction.options.getString("personality") || null;
-        let instrucciones = instruccionDefault;
-        let personaObj = null;
-        if (requestedPersonality) personaObj = perfiles.obtenerPersonalidad(requestedPersonality);
-        if (!personaObj) personaObj = perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(channelId));
-        if (personaObj) instrucciones = personaObj.systemInstructions;
-
-        // Los perfiles de las personas SÍ moldean el trato: es contenido escrito a
-        // mano para eso (ver buildPersonProfileText/lineaPerfiles más abajo). Cuando
-        // se hable de alguien, se le da al modelo tanto el perfil de quien pregunta
-        // como el de quien es el tema, para que pueda compararlos/relacionarlos en
-        // la misma respuesta en vez de describir solo al otro de forma aislada.
-        // El recordatorio de "usa las herramientas siempre" ya no va aquí: las
-        // personalidades personalizadas (masiko, javier, sanchez...) sustituyen del
-        // todo `instruccionDefault`, y mezclado en este texto competía con ellas en
-        // igualdad de condiciones. Ahora vive en el systemInstruction real de Gemini
-        // (gemini.js), que no se puede pisar cambiando de personalidad.
-        instrucciones = `${instrucciones} El usuario que te habla es: ${userName}. Si se te dan perfiles de personas, úsalos para decidir tu tono con cada una; si hablas de alguien y también tienes el perfil de quien pregunta, compáralos o relaciónalos en la misma respuesta en vez de describir solo al otro de forma aislada.`;
-        // 🌙 Más borde de madrugada y 👔 más formal en ciertos canales (F-DU-02), encima de la personalidad que toque.
-        const tono = ajusteDeTono(interaction.guildId, channelId);
-        if (tono) instrucciones = `${instrucciones} ${tono}`;
+        const { instrucciones, personaObj } = construirInstrucciones(interaction, channelId, userName);
 
         // Inicializa historial si no existe
         if (!conversationHistory[channelId]) conversationHistory[channelId] = [];
@@ -227,108 +465,23 @@ async function hablar(client, interaction) {
             conversationHistory[channelId] = conversationHistory[channelId].slice(-historyLimit);
         }
 
-        // Perfil completo (sin truncar de forma agresiva, a diferencia de antes que
-        // cortaba a 200 caracteres y encima ignoraba `description` si había `notas`)
-        // para quien habla ahora + quien se mencione por nombre/apodo/mención en el
-        // mensaje. Es lo que le permite al Duende tratar a cada uno según lo que sabe
-        // de él y relacionar a ambos en la misma respuesta.
-        const speakerProfile = perfiles.perfilDe(interaction.user);
-        const mentionedProfiles = detectMentionedPersons(userInput, interaction.guild, interaction.user.id)
-            .filter((p) => !speakerProfile || p.key !== speakerProfile.key)
-            .slice(0, 3);
-
-        // Con pocas notas se dan todas (perfiles.notasRelevantes no llama a Gemini); con
-        // muchas, solo las más relacionadas con lo que se acaba de decir en vez de
-        // siempre las últimas MAX_NOTAS — así no se pierden notas antiguas que sí vienen
-        // a cuento ahora. Si falla la llamada a Gemini, cae a las últimas como antes.
-        const conNotasRelevantes = async (p) => p && { ...p, notas: await perfiles.notasRelevantes(p, userInput) };
-        const [speakerConNotas, ...mentionedConNotas] = await Promise.all([
-            conNotasRelevantes(speakerProfile),
-            ...mentionedProfiles.map(conNotasRelevantes),
-        ]);
-
-        const perfilesDestacados = [];
-        if (speakerConNotas) {
-            perfilesDestacados.push(
-                `${speakerConNotas.name} (quien te habla ahora): ${truncateText(buildPersonProfileText(speakerConNotas), perfiles.MAX_PERFIL_PROMPT)}`,
-            );
-        }
-        for (const p of mentionedConNotas) {
-            perfilesDestacados.push(
-                `${p.name} (mencionado en el mensaje): ${truncateText(buildPersonProfileText(p), perfiles.MAX_PERFIL_PROMPT)}`,
-            );
-        }
-        const lineaPerfiles = perfilesDestacados.length
-            ? "Perfiles a tener en cuenta ahora mismo:\n" + perfilesDestacados.join("\n")
-            : null;
-
-        // Equivalencias ligeras (solo nombre) para el resto de gente conocida, sin
-        // volcar toda su descripción — así no se infla el prompt con perfiles que no
-        // vienen a cuento en este mensaje.
-        // Nombre de cada uno según sus apodos (username de Discord -> nombre principal).
-        const nombrePorUsername = new Map();
-        for (const { discordId, nombre } of apodos.nombres(interaction.guildId)) {
-            const m = interaction.guild?.members?.cache?.get(discordId);
-            if (m) nombrePorUsername.set(m.user.username, nombre);
-        }
-        const personEntries = perfiles
-            .listarPerfiles()
-            .filter((p) => p.username)
-            .map((p) => `"${p.username}" es ${p.name}`);
-        const manualEntries = [...nombrePorUsername].map(([username, nombre]) => `"${username}" es ${nombre}`);
-        const equivalencias = [...manualEntries, ...personEntries].join(", ");
-        const lineaEquivalencias = "Equivalencias de usuarios: " + equivalencias + ".";
+        const lineaPerfiles = await lineaDePerfiles(interaction, userInput);
+        const { nombrePorUsername, lineaEquivalencias, lineaUsuarioActual } = lineasDeUsuarios(interaction, userName);
         const lineaPersonalidadActiva = personaObj
             ? `Personalidad activa: ${personaObj.id} (${personaObj.title || "sin título"})`
             : "Personalidad activa: default";
+        const contextParts = historialParaPrompt(channelId, historyLimit, nombrePorUsername);
+        const instruccionesFinal = instruccionesDelTurno(instrucciones, channelId, userInput);
 
-        // Línea que indica quién envía el mensaje ahora mismo
-        const nombreHablante = apodos.nombreDe(interaction.guildId, interaction.user.id) || nombrePorUsername.get(userName);
-        const lineaUsuarioActual = `Mensaje actual enviado por: ${userName}${nombreHablante ? ` / ${nombreHablante}` : ""}`;
-
-        // Historial con etiquetas claras de quién dijo qué
-        const contextParts = conversationHistory[channelId]
-            .map((msg) => {
-                const nombre = nombrePorUsername.get(msg.name);
-                if (msg.role === "user")
-                    return `Usuario (${msg.name}${nombre ? ` / ${nombre}` : ""}): ${truncateText(msg.text, DUENDE_PROMPT_MSG_MAX_CHARS)}`;
-                return `Duende: ${truncateText(msg.text, DUENDE_PROMPT_MSG_MAX_CHARS)}`;
-            })
-            .slice(-historyLimit);
-
-        // Decide si intervenir (mantengo la lógica previa)
-        const lastMessages = conversationHistory[channelId].slice(-4);
-        const uniqueUsers = [...new Set(lastMessages.filter((m) => m.role === "user").map((m) => m.name))];
-        const mensajeMencionaOtro =
-            uniqueUsers.length > 1 || uniqueUsers.some((name) => userInput.toLowerCase().includes(name.toLowerCase()));
-        const shouldIntervene = mensajeMencionaOtro && Math.random() < (parseFloat(process.env.DUENDE_INTERVENE_PROB) || 0.5);
-        let instruccionesFinal = instrucciones;
-        if (shouldIntervene)
-            instruccionesFinal +=
-                " Están hablando entre ellos. Si crees que puedes aportar algo sarcástico o molesto, hazlo. Si no, ignora la conversación.";
-        instruccionesFinal +=
-            " Regla importante: no repitas literalmente tu última respuesta ni copies frases exactas de mensajes previos. Responde solo una vez y de forma nueva.";
-        instruccionesFinal +=
-            " Si viene a cuento, termina alguna vez (no siempre, no lo fuerces) con una pregunta corta para seguir la conversación en vez de solo soltar una frase y punto.";
-        instruccionesFinal +=
-            " Cuando uses un dato que has consultado (fecha, título, cifra...), no lo sueltes en plan ficha ('X hizo Y el [fecha]') ni en dos bloques pegados ('¡exclamación o insulto! + luego el dato aparte') — teje el dato y el insulto/comentario DENTRO de la misma frase, como si el dato fuera parte de la queja o la burla, no un anexo. Nada de empezar siempre con una interjección tipo '¡Me cago en la puta!' antes del dato: varía cómo empiezas cada respuesta (a veces con el dato, a veces con la pulla, a veces con una pregunta retórica) para que no suene a plantilla repetida mensaje tras mensaje.";
-        instruccionesFinal +=
-            " Regla estricta: si tienes una herramienta que EJECUTA algo real (pedir contenido, comprar, cambiar un dato...), nunca digas en tu respuesta que ya lo has hecho ('ya te lo he pedido', 'hecho', 'ya está') a menos que hayas llamado de verdad a esa herramienta en este mismo turno y haya devuelto éxito. Está prohibido inventarte o dar por hecho el resultado de una acción que no has ejecutado — si dudas si ejecutarla o no, ejecútala (tienes permiso), pero nunca narres una acción como completada sin haberla completado de verdad.";
-
-        // Composición del prompt base
-        const parts = [
-            { text: lineaPersonalidadActiva },
-            { text: instruccionesFinal },
-            ...(lineaPerfiles ? [{ text: lineaPerfiles }] : []),
-            { text: lineaEquivalencias },
-            { text: lineaUsuarioActual },
-            { text: "Conversación reciente (de más antiguo a más nuevo):" },
-            ...contextParts.map((text) => ({ text })),
-            ...(imageAttachments.length
-                ? [{ text: "El usuario ha compartido una imagen adjunta a su último mensaje; coméntala si viene a cuento." }]
-                : []),
-            { text: "Responde ahora al último mensaje del usuario actual en 1-2 frases." },
-        ];
+        const parts = construirPartes({
+            lineaPersonalidadActiva,
+            instruccionesFinal,
+            lineaPerfiles,
+            lineaEquivalencias,
+            lineaUsuarioActual,
+            contextParts,
+            imageAttachments,
+        });
 
         const activeModel = configuredModel || GEMINI_MODEL;
         log.debug(`Prompt enviado a Gemini (${activeModel}): [personalidad, instrucciones, equivalencias, historial reciente]`);
@@ -366,104 +519,14 @@ async function hablar(client, interaction) {
             text = mentionizeKnownNames(text, interaction.guild);
         }
 
-        let gifUrl = null;
-        try {
-            if (Math.random() < (parseFloat(process.env.DUENDE_GIF_PROB) || 0.08)) {
-                gifUrl = await getGifForText(text, userInput);
-                if (gifUrl) log.debug("GIF encontrado: " + gifUrl);
-                else log.debug("No se encontró GIF relevante.");
-            } else log.debug("No se busca GIF esta vez.");
-        } catch (err) {
-            log.error("Error buscando GIF: " + err.message);
-        }
+        const gifUrl = await buscarGifParaRespuesta(text, userInput);
 
         conversationHistory[channelId].push({ role: "duende", name: "Duende", text, timestamp: Date.now() });
         saveHistory();
 
-        // Ensure message content fits Discord limits (2000 chars). Truncate if needed.
-        const MAX_DISCORD_CONTENT = 2000;
-        const SAFETY_MARGIN = 20; // leave room for extra text like truncation notice and gif url
-        const effectiveMax = MAX_DISCORD_CONTENT - SAFETY_MARGIN;
-        let sendText = typeof text === "string" ? text : String(text || "");
-        if (sendText.length > effectiveMax) {
-            sendText = sendText.slice(0, effectiveMax) + "\n\n(Respuesta truncada por longitud)";
-        }
-
-        try {
-            let sentOk = false;
-            if (!interaction?.silentTextReply) {
-                sentOk = await safeEditReply(interaction, sendText);
-            } else {
-                sentOk = true;
-            }
-
-            if (!interaction?.silentTextReply && sentOk && gifUrl) {
-                let gifSent = false;
-                if (interaction.followUp && typeof interaction.followUp === "function") {
-                    try {
-                        await interaction.followUp({ content: gifUrl });
-                        gifSent = true;
-                    } catch (gifErr) {
-                        log.warn("No se pudo enviar GIF por followUp: " + (gifErr && gifErr.message ? gifErr.message : gifErr));
-                    }
-                }
-                if (!gifSent && interaction.channel && typeof interaction.channel.send === "function") {
-                    try {
-                        await interaction.channel.send(gifUrl);
-                    } catch (gifErr2) {
-                        log.warn("No se pudo enviar GIF por channel.send: " + (gifErr2 && gifErr2.message ? gifErr2.message : gifErr2));
-                    }
-                }
-            }
-
-            // Las propuestas del Duende, cada una en su mensaje con ✅ Acepto / ❌ No (paneles/duendeEconomia).
-            if (sentOk && toolContext.propuestas?.length) {
-                const { mensajePropuesta } = require("../../paneles/duendeEconomia");
-                const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
-                for (const propuesta of toolContext.propuestas) {
-                    try {
-                        await interaction.followUp({ ...mensajePropuesta(propuesta), flags });
-                    } catch (e) {
-                        log.warn(`No se pudo enviar la propuesta del Duende (${propuesta.tipo}): ${e.message}`);
-                    }
-                }
-            }
-
-            if (!interaction?.silentTextReply && !sentOk) {
-                const fallbackMsg = "⚠️ No he podido enviar la respuesta principal. Inténtalo de nuevo en unos segundos.";
-                if (interaction.followUp && typeof interaction.followUp === "function") {
-                    try {
-                        await interaction.followUp({ content: fallbackMsg });
-                        sentOk = true;
-                    } catch (e) {
-                        log.debug(`followUp de aviso falló: ${e.message}`);
-                    }
-                }
-                if (!sentOk && interaction.channel && typeof interaction.channel.send === "function") {
-                    try {
-                        await interaction.channel.send(fallbackMsg);
-                    } catch (e) {
-                        log.warn(`No se pudo enviar ni la respuesta ni el aviso de error en ${interaction.channel?.id}: ${e.message}`);
-                    }
-                }
-            }
-        } catch (sendErr) {
-            log.error("Error enviando respuesta por texto:", sendErr);
-        }
-
-        try {
-            const hablado = tryVoiceReply(client, interaction, textoVoz);
-            // Conversación por voz (/escuchar): no hay respuesta por texto, así que si la voz falla (TTS sin audio, sin
-            // conexión al canal...) se manda por texto para que el Duende no se quede mudo.
-            if (interaction?.silentTextReply) {
-                if (!(await hablado) && interaction.channel?.send) {
-                    log.warn("No se pudo responder por voz: la respuesta va por texto");
-                    await interaction.channel.send({ content: `🗣️ ${sendText}`, allowedMentions: { parse: ["users"] } });
-                }
-            } else void hablado;
-        } catch (voiceErr) {
-            log.error("Error lanzando respuesta por voz:", voiceErr);
-        }
+        const sendText = recortarParaDiscord(text);
+        await enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas: toolContext.propuestas });
+        await responderPorVoz(client, interaction, textoVoz, sendText);
     } catch (err) {
         log.error("Error general en el comando:", err);
         try {
