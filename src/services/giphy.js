@@ -25,6 +25,18 @@ const gifKeywords = [
 // Simple in-memory cache for GIF URLs per query to avoid repeated Giphy calls
 const gifCache = new Map();
 const GIF_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+// Tope de entradas: cada texto distinto deja una. Sin tope, la caché crece con cada búsqueda nueva del Duende.
+const GIF_CACHE_MAX = 500;
+
+// Guarda un GIF y limpia lo caducado; si aun así no cabe, saca la entrada más antigua (el Map conserva el orden).
+function guardarGif(key, url) {
+    const ahora = Date.now();
+    for (const [k, v] of gifCache) {
+        if (ahora - v.ts >= GIF_CACHE_TTL) gifCache.delete(k);
+    }
+    if (gifCache.size >= GIF_CACHE_MAX) gifCache.delete(gifCache.keys().next().value);
+    gifCache.set(key, { url, ts: ahora });
+}
 
 function extractKeywords(text) {
     if (!text) return [];
@@ -92,7 +104,7 @@ async function searchGiphy(query) {
             const gif = pickRandom(data.data);
             const gifUrl = gif?.images?.original?.url || gif?.images?.downsized_medium?.url || gif?.images?.fixed_height?.url || null;
             if (gifUrl) {
-                gifCache.set(cacheKey, { url: gifUrl, ts: Date.now() });
+                guardarGif(cacheKey, gifUrl);
                 return gifUrl;
             }
         }
@@ -149,4 +161,4 @@ async function getGifForText(text, userInput = "") {
     return null;
 }
 
-module.exports = { getGifForText };
+module.exports = { getGifForText, __test: { gifCache, guardarGif, GIF_CACHE_MAX, GIF_CACHE_TTL } };

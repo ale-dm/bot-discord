@@ -175,130 +175,140 @@ async function boton(interaction) {
     return false;
 }
 
-async function modal(interaction) {
-    const id = interaction.customId;
-    const guildId = interaction.guildId;
+async function accionAddModal(interaction, id, guildId) {
+    const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
+    if (isNaN(nivel) || nivel < 1) {
+        await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    const row = new ActionRowBuilder().addComponents(
+        new RoleSelectMenuBuilder()
+            .setCustomId(`paneladmin_levels_reward_role_${nivel}`)
+            .setPlaceholder(`Selecciona rol para LVL ${nivel}`)
+            .setMinValues(1)
+            .setMaxValues(1),
+    );
+    await interaction.reply({ content: `Selecciona rol para LVL ${nivel}:`, components: [row], flags: MessageFlags.Ephemeral });
+    return true;
+}
 
-    if (id === "paneladmin_levels_reward_add_modal") {
-        const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-        if (isNaN(nivel) || nivel < 1) {
-            await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        const row = new ActionRowBuilder().addComponents(
-            new RoleSelectMenuBuilder()
-                .setCustomId(`paneladmin_levels_reward_role_${nivel}`)
-                .setPlaceholder(`Selecciona rol para LVL ${nivel}`)
-                .setMinValues(1)
-                .setMaxValues(1),
-        );
-        await interaction.reply({ content: `Selecciona rol para LVL ${nivel}:`, components: [row], flags: MessageFlags.Ephemeral });
+async function accionDescModal(interaction, id, guildId) {
+    const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
+    const roleId = interaction.fields
+        .getTextInputValue("role_id")
+        .trim()
+        .replace(/[<@&>]/g, "");
+    const emoji = interaction.fields.getTextInputValue("emoji").trim().slice(0, 16);
+    const descripcion = interaction.fields.getTextInputValue("descripcion").trim().slice(0, 200);
+    if (!xp.setRewardDescription(guildId, nivel, roleId, descripcion, emoji)) {
+        await interaction.reply({
+            content: `❌ No hay ninguna recompensa con el rol ${roleId} en el nivel ${nivel}.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    adminAudit.logAdminAction({
+        guildId,
+        actorId: interaction.user.id,
+        action: "xp.reward.description",
+        details: { nivel, roleId, emoji, descripcion },
+    });
+    await interaction.reply({
+        content: descripcion
+            ? `✅ LVL ${nivel} · <@&${roleId}> — ${emoji || "🔓"} ${descripcion}`
+            : `✅ Descripción quitada: <@&${roleId}> se muestra como rango.`,
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
+async function accionRemoveModal(interaction, id, guildId) {
+    const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
+    const rawRole = interaction.fields.getTextInputValue("role_id").trim();
+    if (isNaN(nivel) || nivel < 1) {
+        await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
-    if (id === "paneladmin_levels_reward_desc_modal") {
-        const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-        const roleId = interaction.fields
-            .getTextInputValue("role_id")
-            .trim()
-            .replace(/[<@&>]/g, "");
-        const emoji = interaction.fields.getTextInputValue("emoji").trim().slice(0, 16);
-        const descripcion = interaction.fields.getTextInputValue("descripcion").trim().slice(0, 200);
-        if (!xp.setRewardDescription(guildId, nivel, roleId, descripcion, emoji)) {
+    let roleId = null;
+    if (rawRole) {
+        roleId = rawRole.replace(/[<@&>\s]/g, "");
+        if (!/^\d{17,20}$/.test(roleId)) {
             await interaction.reply({
-                content: `❌ No hay ninguna recompensa con el rol ${roleId} en el nivel ${nivel}.`,
+                content: "Rol inválido. Usa mención o ID numérico, o déjalo vacío para quitar todos.",
                 flags: MessageFlags.Ephemeral,
             });
             return true;
         }
-        adminAudit.logAdminAction({
-            guildId,
-            actorId: interaction.user.id,
-            action: "xp.reward.description",
-            details: { nivel, roleId, emoji, descripcion },
-        });
-        await interaction.reply({
-            content: descripcion
-                ? `✅ LVL ${nivel} · <@&${roleId}> — ${emoji || "🔓"} ${descripcion}`
-                : `✅ Descripción quitada: <@&${roleId}> se muestra como rango.`,
-            flags: MessageFlags.Ephemeral,
-        });
+    }
+
+    xp.removeReward(guildId, nivel, roleId);
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.reward.remove", details: { nivel, roleId } });
+    await interaction.reply({
+        content: roleId ? `✅ Recompensa <@&${roleId}> quitada en LVL ${nivel}.` : `✅ Todas las recompensas de LVL ${nivel} quitadas.`,
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
+async function accionSearchModal(interaction, id, guildId) {
+    const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
+    const query = interaction.fields.getTextInputValue("query").trim().toLowerCase();
+    if (isNaN(nivel) || nivel < 1 || !query) {
+        await interaction.reply({ content: "Datos inválidos.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    const roles = [...interaction.guild.roles.cache.values()]
+        .filter((r) => !r.name.startsWith("@"))
+        .sort((a, b) => b.position - a.position)
+        .filter((r) => r.name.toLowerCase().includes(query));
+
+    const key = `${interaction.guildId}:${interaction.user.id}:${nivel}`;
+    rewardSearchSessions.set(key, { query, roleIds: roles.map((r) => r.id), createdAt: Date.now() });
+    await interaction.reply(buildRewardRoleSearchPayload(interaction.guild, interaction.user.id, nivel, 0));
+    return true;
+}
+
+async function accionAddManualModal(interaction, id, guildId) {
+    const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
+    const rawRole = interaction.fields.getTextInputValue("role_id").trim();
+    if (isNaN(nivel) || nivel < 1) {
+        await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
-    if (id === "paneladmin_levels_reward_remove_modal") {
-        const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-        const rawRole = interaction.fields.getTextInputValue("role_id").trim();
-        if (isNaN(nivel) || nivel < 1) {
-            await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-
-        let roleId = null;
-        if (rawRole) {
-            roleId = rawRole.replace(/[<@&>\s]/g, "");
-            if (!/^\d{17,20}$/.test(roleId)) {
-                await interaction.reply({
-                    content: "Rol inválido. Usa mención o ID numérico, o déjalo vacío para quitar todos.",
-                    flags: MessageFlags.Ephemeral,
-                });
-                return true;
-            }
-        }
-
-        xp.removeReward(guildId, nivel, roleId);
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.reward.remove", details: { nivel, roleId } });
-        await interaction.reply({
-            content: roleId ? `✅ Recompensa <@&${roleId}> quitada en LVL ${nivel}.` : `✅ Todas las recompensas de LVL ${nivel} quitadas.`,
-            flags: MessageFlags.Ephemeral,
-        });
+    const roleId = rawRole.replace(/[<@&>\s]/g, "");
+    if (!/^\d{17,20}$/.test(roleId)) {
+        await interaction.reply({ content: "Rol inválido. Usa mención o ID numérico.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
-    if (id === "paneladmin_levels_reward_search_modal") {
-        const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-        const query = interaction.fields.getTextInputValue("query").trim().toLowerCase();
-        if (isNaN(nivel) || nivel < 1 || !query) {
-            await interaction.reply({ content: "Datos inválidos.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        const roles = [...interaction.guild.roles.cache.values()]
-            .filter((r) => !r.name.startsWith("@"))
-            .sort((a, b) => b.position - a.position)
-            .filter((r) => r.name.toLowerCase().includes(query));
-
-        const key = `${interaction.guildId}:${interaction.user.id}:${nivel}`;
-        rewardSearchSessions.set(key, { query, roleIds: roles.map((r) => r.id), createdAt: Date.now() });
-        await interaction.reply(buildRewardRoleSearchPayload(interaction.guild, interaction.user.id, nivel, 0));
+    const role = interaction.guild.roles.cache.get(roleId) || (await interaction.guild.roles.fetch(roleId).catch(() => null));
+    if (!role) {
+        await interaction.reply({ content: "No encontré ese rol en este servidor.", flags: MessageFlags.Ephemeral });
         return true;
     }
 
-    if (id === "paneladmin_levels_reward_add_manual_modal") {
-        const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-        const rawRole = interaction.fields.getTextInputValue("role_id").trim();
-        if (isNaN(nivel) || nivel < 1) {
-            await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
+    xp.setReward(interaction.guildId, nivel, role.id, role.name || "");
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.reward.set", details: { nivel, roleId: role.id } });
+    await interaction.reply({ content: `✅ Recompensa guardada: LVL ${nivel} → <@&${role.id}>`, flags: MessageFlags.Ephemeral });
+    return true;
+}
 
-        const roleId = rawRole.replace(/[<@&>\s]/g, "");
-        if (!/^\d{17,20}$/.test(roleId)) {
-            await interaction.reply({ content: "Rol inválido. Usa mención o ID numérico.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
+const ACCIONES_RECOMPENSAS_MODAL = [
+    [(id) => id === "paneladmin_levels_reward_add_modal", accionAddModal],
+    [(id) => id === "paneladmin_levels_reward_desc_modal", accionDescModal],
+    [(id) => id === "paneladmin_levels_reward_remove_modal", accionRemoveModal],
+    [(id) => id === "paneladmin_levels_reward_search_modal", accionSearchModal],
+    [(id) => id === "paneladmin_levels_reward_add_manual_modal", accionAddManualModal],
+];
 
-        const role = interaction.guild.roles.cache.get(roleId) || (await interaction.guild.roles.fetch(roleId).catch(() => null));
-        if (!role) {
-            await interaction.reply({ content: "No encontré ese rol en este servidor.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-
-        xp.setReward(interaction.guildId, nivel, role.id, role.name || "");
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.reward.set", details: { nivel, roleId: role.id } });
-        await interaction.reply({ content: `✅ Recompensa guardada: LVL ${nivel} → <@&${role.id}>`, flags: MessageFlags.Ephemeral });
-        return true;
+async function modal(interaction) {
+    const id = interaction.customId;
+    const guildId = interaction.guildId;
+    for (const [encaja, accion] of ACCIONES_RECOMPENSAS_MODAL) {
+        if (encaja(id)) return accion(interaction, id, guildId);
     }
-
     return false;
 }
 
