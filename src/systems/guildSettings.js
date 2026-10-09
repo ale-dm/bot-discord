@@ -294,15 +294,29 @@ function flattenToNested(flat) {
     };
 }
 
+// Caché de los ajustes ya leídos de cada servidor (mapa plano, con los valores parseados). Se lee de la BD una vez y
+// luego se sirve de memoria: un mensaje consulta los ajustes varias veces. Se invalida al escribir (setSetting y
+// setManySettings son las únicas escrituras de la tabla, salvo las migraciones, que corren antes de leer nada).
+const cacheAjustes = new Map();
+
 function getFlatSettings(guildId) {
-    const flat = { ...DEFAULT_FLAT };
-    if (!guildId) return flat;
-    const rows = db.prepare("SELECT key, value FROM guild_settings WHERE guildId = ?").all(guildId);
-    for (const row of rows) {
-        if (!(row.key in DEFAULT_FLAT)) continue;
-        flat[row.key] = parseValue(row.key, row.value);
+    if (!guildId) return { ...DEFAULT_FLAT };
+    const id = String(guildId);
+    if (!cacheAjustes.has(id)) {
+        const flat = { ...DEFAULT_FLAT };
+        const rows = db.prepare("SELECT key, value FROM guild_settings WHERE guildId = ?").all(id);
+        for (const row of rows) {
+            if (!(row.key in DEFAULT_FLAT)) continue;
+            flat[row.key] = parseValue(row.key, row.value);
+        }
+        cacheAjustes.set(id, flat);
     }
-    return flat;
+    // Copia: quien llama puede cambiar lo que recibe sin tocar la caché (los valores son primitivos).
+    return { ...cacheAjustes.get(id) };
+}
+
+function invalidarAjustes(guildId) {
+    cacheAjustes.delete(String(guildId));
 }
 
 function getSettings(guildId) {
@@ -330,6 +344,7 @@ function setSetting(guildId, key, value) {
         ON CONFLICT(guildId, key) DO UPDATE SET value = excluded.value
     `,
     ).run(guildId, key, String(parsed));
+    invalidarAjustes(guildId);
     return true;
 }
 
@@ -355,7 +370,9 @@ function setManySettings(guildId, entries) {
         }
         return count;
     });
-    return tx();
+    const n = tx();
+    invalidarAjustes(guildId);
+    return n;
 }
 
 function parseCsvIds(raw) {
@@ -499,6 +516,7 @@ module.exports = {
     parseCsvIds,
     getSettings,
     getFlatSettings,
+    invalidarAjustes,
     setSetting,
     setManySettings,
     getCommandAcl,
