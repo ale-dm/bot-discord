@@ -241,13 +241,13 @@ describe("publicar y cuándo", () => {
         expect(c2.send).not.toHaveBeenCalled();
     });
 
-    test("index.js lo programa cada hora de los lunes (Madrid) y lo comprueba al arrancar", () => {
-        const index = fs.readFileSync(path.join(__dirname, "../src/index.js"), "utf8");
+    test("core/tareas.js lo programa cada hora de los lunes (Madrid) y lo comprueba al arrancar", () => {
+        const index = fs.readFileSync(path.join(__dirname, "../src/core/tareas.js"), "utf8");
         expect(index).toMatch(
             /cron\.schedule\(\s*"0 \* \* \* 1",[\s\S]*?plexRankingSemanal"\)\.enviarSiToca\(client\)[\s\S]*?timezone: "Europe\/Madrid"/,
         );
         expect(index).toMatch(
-            /runJob\("Ranking semanal de Plex \(arranque\)", \(\) => require\("\.\/systems\/plexRankingSemanal"\)\.enviarSiToca\(client\)\)/,
+            /runJob\("Ranking semanal de Plex \(arranque\)", \(\) => require\("\.\.?\/systems\/plexRankingSemanal"\)\.enviarSiToca\(client\)\)/,
         );
     });
 });

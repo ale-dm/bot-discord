@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: src/index.js más corto)
+
+- **`src/index.js` pasa de 642 a 284 líneas**. Sale cada cosa a su sitio:
+  - `core/mensajes.js`: el manejo de mensajes de texto (XP, cuándo responde el Duende) y sus filtros (duplicados y
+    mensajes de bajo esfuerzo).
+  - `core/tareas.js`: los cron y las tareas de arranque (`programarTareas`), con la actualización de la actividad.
+  - `core/cargarModulos.js`: la búsqueda de ficheros `.js` para cargar comandos y componentes.
+  El comportamiento no cambia. (DT-21, [#171](https://github.com/ale-dm/bot-discord/issues/171))
+- Tests: `tests/modulosCore.test.js` carga los módulos nuevos y comprueba los filtros de mensajes. El test de Plex que
+  leía `index.js` ahora lee `core/tareas.js`.
+
 ## 2026-10-09 (auditoría: herramientas del Duende en partes)
 
 - **`services/duende/herramientas.js` (943 líneas) se parte en `services/duende/herramientas/`** por dominio: `base`
