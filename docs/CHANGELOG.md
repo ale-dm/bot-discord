@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (segunda ronda: consultas y duplicados)
+
+- **Consultas fuera de los bucles** (DT-24, [#190](https://github.com/ale-dm/bot-discord/issues/190)): en `plexFichas`
+  (revisar la biblioteca) y `patrimonio` (ciclo semanal) la consulta preparada se hace una vez, no por fila o por persona.
+- **Duplicados** (DT-26, [#192](https://github.com/ale-dm/bot-discord/issues/192)): el bloque repetido de la quiniela
+  pasa a `refrescarEditor`; `registerCommands` usa el recorrido de carpetas de `cargarModulos`.
+- Los issues de la segunda ronda, pendientes: caché de ajustes (DT-23), exports sin uso (DT-25) y funciones de más de
+  100 líneas (DT-27).
+
 ## 2026-10-09 (auditoría: funciones largas, parcial)
 
 - **`liquidarApuestas`** (262 líneas) se parte en `liquidarPartidosSueltos` (96) y `liquidarQuinielas` (113). La función

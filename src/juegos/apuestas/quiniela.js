@@ -63,6 +63,14 @@ function estaBloqueadoPorTiempo(startTime) {
     return diffMs <= QUINIELA_LOCK_MINUTES * 60 * 1000;
 }
 
+// Repinta el editor de la quiniela (embed y botones) con la pantalla del partido actual.
+async function refrescarEditor(interaction, quiniela, quinielaId, partidos, sesion) {
+    const deporte = DEPORTES[quiniela.deporte] || DEPORTES.laliga;
+    const embed = renderQuinielaEditorEmbed(quiniela, deporte, partidos, sesion);
+    const rows = renderQuinielaEditorRows(quinielaId, sesion, partidos.length);
+    await interaction.update({ embeds: [embed], components: rows });
+}
+
 function renderQuinielaEditorEmbed(quiniela, deporte, partidos, sesion) {
     const lineas = partidos
         .map((p, idx) => {
@@ -387,10 +395,7 @@ module.exports = {
             if (sesion.currentIndex < partidos.length - 1) sesion.currentIndex += 1;
             sesion.currentStartTime = partidos[sesion.currentIndex]?.start_time;
 
-            const deporte = DEPORTES[quiniela.deporte] || DEPORTES.laliga;
-            const embed = renderQuinielaEditorEmbed(quiniela, deporte, partidos, sesion);
-            const rows = renderQuinielaEditorRows(quinielaId, sesion, partidos.length);
-            await interaction.update({ embeds: [embed], components: rows });
+            await refrescarEditor(interaction, quiniela, quinielaId, partidos, sesion);
             return;
         }
 
@@ -413,10 +418,7 @@ module.exports = {
             else sesion.pronosticos[sesion.currentIndex] = null;
             sesion.currentStartTime = partidos[sesion.currentIndex]?.start_time;
 
-            const deporte = DEPORTES[quiniela.deporte] || DEPORTES.laliga;
-            const embed = renderQuinielaEditorEmbed(quiniela, deporte, partidos, sesion);
-            const rows = renderQuinielaEditorRows(quinielaId, sesion, partidos.length);
-            await interaction.update({ embeds: [embed], components: rows });
+            await refrescarEditor(interaction, quiniela, quinielaId, partidos, sesion);
             return;
         }
 

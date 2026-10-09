@@ -172,12 +172,13 @@ async function revisarBiblioteca(guildId, pedir) {
             const start = pagina * PAGINA_BIBLIOTECA;
             const { filas } = await pedir(() => tautulli.getLibraryMediaInfo(guildId, lib.id, { start, length: PAGINA_BIBLIOTECA }));
             const antesDeLaPagina = presentes.size;
+            const existeFicha = db.prepare("SELECT 1 FROM plex_fichas WHERE guildId = ? AND rating_key = ?");
             db.transaction(() => {
                 for (const f of filas) {
                     if (!f.rating_key) continue;
                     const key = String(f.rating_key);
                     presentes.add(key);
-                    const antes = db.prepare("SELECT 1 FROM plex_fichas WHERE guildId = ? AND rating_key = ?").get(guildId, key);
+                    const antes = existeFicha.get(guildId, key);
                     insertar.run(guildId, key, f.title || null, Number(f.year) || null, lib.id, lib.nombre);
                     if (!antes) nuevas++;
                 }
