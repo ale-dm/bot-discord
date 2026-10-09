@@ -97,7 +97,8 @@ function ejecutarHerramientas(functionCalls, toolContext, toolsCalledThisTurn) {
         functionCalls.map(async (fc) => {
             let result;
             try {
-                const executor = DUENDE_TOOL_EXECUTORS[fc.name];
+                // Solo los nombres propios del mapa: si no, "constructor" o "__proto__" devolverían algo del prototipo.
+                const executor = Object.hasOwn(DUENDE_TOOL_EXECUTORS, fc.name) ? DUENDE_TOOL_EXECUTORS[fc.name] : null;
                 result = executor ? await executor(fc.args, toolContext) : { error: "Herramienta desconocida." };
             } catch (toolErr) {
                 log.warn(`Error ejecutando herramienta ${fc.name}: ` + (toolErr && toolErr.message));

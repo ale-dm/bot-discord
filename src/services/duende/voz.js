@@ -21,7 +21,12 @@ const DUENDE_TTS_VOICE = process.env.DUENDE_TTS_VOICE || GEMINI_TTS_VOICE;
 const VOICE_IDLE_DISCONNECT_MS = Number(process.env.DUENDE_VOICE_IDLE_DISCONNECT_MS || 5 * 60 * 1000);
 const voiceIdleTimers = new Map(); // guildId -> Timeout
 
-async function getEdgeAudioStream(text, voice = DUENDE_TTS_VOICE) {
+// Tope de una respuesta sonando: si el audio se queda parado sin acabar ni fallar, se corta aquí (si no, la
+// promesa de tryVoiceReply, que /escuchar espera, no se resolvería nunca).
+const VOICE_PLAYBACK_MAX_MS = Number(process.env.DUENDE_VOICE_PLAYBACK_MAX_MS || 2 * 60 * 1000);
+const reproductorActivo = new Map(); // guildId -> AudioPlayer sonando
+
+async function getTtsAudioStream(text, voice = DUENDE_TTS_VOICE) {
     return getGeminiTtsAudioStream(String(text || ""), { voice });
 }
 
@@ -116,7 +121,7 @@ async function audioDeRespuesta(respuesta, guild) {
         return null;
     }
     try {
-        const audioStream = await getEdgeAudioStream(textoHablado, DUENDE_TTS_VOICE);
+        const audioStream = await getTtsAudioStream(textoHablado, DUENDE_TTS_VOICE);
         log("Audio TTS generado con voz:", DUENDE_TTS_VOICE);
         return audioStream;
     } catch (err) {
@@ -202,14 +207,17 @@ function programarSalidaPorInactividad(connection, guild) {
 
 /** Reproduce el audio en la conexión y espera a que acabe o falle. False si no se pudo preparar el recurso. */
 async function reproducirRespuesta(connection, audioStream, guild) {
+    // Si todavía suena una respuesta de este servidor, se corta: la conexión solo puede tener un reproductor suscrito.
+    reproductorActivo.get(guild.id)?.stop(true);
     const player = createAudioPlayer();
+    reproductorActivo.set(guild.id, player);
     let resource;
     try {
         resource = createAudioResource(audioStream, { inputType: StreamType.Arbitrary, inlineVolume: true });
         resource.volume.setVolume(1.0);
         log("Recurso de audio creado y volumen ajustado.");
     } catch (err) {
-        voiceLog.warn("Error preparando el audio el audio TTS:", err);
+        voiceLog.warn("Error preparando el audio TTS:", err);
         return false;
     }
 
@@ -220,15 +228,27 @@ async function reproducirRespuesta(connection, audioStream, guild) {
     log("Reproducción iniciada.");
 
     await new Promise((resolve) => {
-        player.on("idle", () => {
-            log("TTS terminó (evento Idle). Manteniendo conexión por si continúa la conversación.");
+        let terminada = false;
+        const terminar = () => {
+            if (terminada) return;
+            terminada = true;
+            clearTimeout(tope);
+            if (reproductorActivo.get(guild.id) === player) reproductorActivo.delete(guild.id);
             programarSalidaPorInactividad(connection, guild);
             resolve();
+        };
+        const tope = setTimeout(() => {
+            voiceLog.warn(`La respuesta por voz sigue sonando tras ${Math.round(VOICE_PLAYBACK_MAX_MS / 1000)} s: se corta.`);
+            player.stop(true);
+            terminar();
+        }, VOICE_PLAYBACK_MAX_MS);
+        player.on("idle", () => {
+            log("TTS terminó (evento Idle). Manteniendo conexión por si continúa la conversación.");
+            terminar();
         });
         player.on("error", (error) => {
             voiceLog.warn("Error en el reproductor de audio:", error);
-            programarSalidaPorInactividad(connection, guild);
-            resolve();
+            terminar();
         });
     });
     return true;

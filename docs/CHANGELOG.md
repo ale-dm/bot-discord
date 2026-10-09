@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (sexta ronda: avisos de la revisión)
+
+- **Respuesta por voz del Duende** ([#217](https://github.com/ale-dm/bot-discord/issues/217)): la respuesta sonando tiene un tope
+  de tiempo (`DUENDE_VOICE_PLAYBACK_MAX_MS`, 2 min por defecto). Si el audio se queda parado sin acabar ni fallar, se corta y
+  la promesa se resuelve, así que `/escuchar` no se queda esperando. Una respuesta nueva en el mismo servidor corta la que
+  todavía suena, porque la conexión solo tiene un reproductor suscrito.
+- **Herramientas del Duende**: el nombre que pide el modelo solo se busca en las herramientas propias del mapa (no en el prototipo).
+- **Trofeos de director**: la marca de anime se calcula como en las sagas (antes siempre era `false`).
+- **Renombrado** `getEdgeAudioStream` → `getTtsAudioStream` (usa Gemini TTS, no Edge). Un log con el texto duplicado ("el audio el audio") corregido.
+- Pendiente de decisión: la etiqueta de las décadas ([#218](https://github.com/ale-dm/bot-discord/issues/218)).
+
 ## 2026-10-09 (quinta ronda: funciones largas restantes)
 
 - **DT-27 resuelta** ([#193](https://github.com/ale-dm/bot-discord/issues/193)): las cuatro funciones que quedaban por encima de

@@ -268,10 +268,11 @@ function candidatosColecciones(datos, ctx) {
     for (const [k, d] of ctx.directores) {
         const pelis = [...d.peliculas.keys()];
         if (pelis.length < DIRECTOR_MIN_PELICULAS || !pelis.every((p) => datos.vistas.has(p))) continue;
+        const anime = [...d.peliculas.values()].every((p) => plexFichas.esAnime(p, ctx.anime));
         lista.push({
             id: `director:${k}`,
             tipo: "director",
-            anime: false,
+            anime,
             recompensa: RECOMPENSA.director(pelis.length),
             dificultad: DIFICULTAD.director(pelis.length),
             nombre: `Filmografía de ${d.nombre}`,
