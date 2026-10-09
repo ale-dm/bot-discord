@@ -27,7 +27,10 @@ function actualizarActividad(client) {
     }
 }
 
-function programarTareas(client) {
+// Cada grupo registra sus tareas en el mismo orden que antes: algunas se lanzan al arrancar (los "(arranque)"), y ese
+// orden decide qué se publica primero.
+
+function programarBasicas(client) {
     runJob("Alertas pendientes del arranque", () => alertas.iniciar(client));
     actualizarActividad(client);
     setInterval(() => actualizarActividad(client), 5400000);
@@ -36,6 +39,9 @@ function programarTareas(client) {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+}
+
+function programarNovedadesPlex(client) {
     // Novedades de Plex y, después (para que el "Nuevo en Plex" salga antes), el aviso a quien lo pidió en Seerr. Al
     // final, el historial de Plex para los logros (la primera vez importa el historial entero: puede tardar).
     cron.schedule(
@@ -57,6 +63,9 @@ function programarTareas(client) {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Ranking semanal de Plex (arranque)", () => require("../systems/plexRankingSemanal").enviarSiToca(client));
+}
+
+function programarClasificacionSemanal(client) {
     // 🏆 Clasificación semanal con premios (el más rico, el más activo y el mejor apostador): igual, los lunes desde las 10:00.
     cron.schedule(
         "0 * * * 1",
@@ -64,35 +73,53 @@ function programarTareas(client) {
         { timezone: "Europe/Madrid", noOverlap: true },
     );
     runJob("Clasificación semanal (arranque)", () => require("../systems/clasificacionSemanal").publicarSiToca(client));
+}
+
+function programarCuotasEnDirecto(client) {
     // 🔴 Apuestas en directo (#12): refresca cada 10 minutos las cuotas de las competiciones con partidos en juego.
     // Solo con ODDS_DIRECTO=1 (cada refresco gasta créditos de la Odds API).
     cron.schedule("*/10 * * * *", () => runJob("Cuotas en directo", () => require("../services/oddsApi").refrescarEnDirecto()), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+}
+
+function programarWrapped(client) {
     // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
     cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => require("../systems/plexWrapped").enviarSiToca(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
     runJob("Plex Wrapped (arranque)", () => require("../systems/plexWrapped").enviarSiToca(client));
+}
+
+function programarCine(client) {
     // 🎬 Sesiones de cine: el recordatorio de 10 minutos antes, cada 5 minutos.
     cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => require("../systems/cine").enviarRecordatorios(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+}
+
+function programarLigaPronosticos(client) {
     // 🏅 Liga de pronósticos: cada hora y al arrancar; liquida la temporada anterior el 1 de julio desde las 10:00.
     cron.schedule("0 * * * *", () => runJob("Liga de pronósticos", () => require("../systems/apuestas/liga").liquidarSiToca(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
     runJob("Liga de pronósticos (arranque)", () => require("../systems/apuestas/liga").liquidarSiToca(client));
+}
+
+function programarResumenAdmin(client) {
     // 📊 Resumen semanal por DM a quien recibe las alertas: los lunes desde las 09:00 (igual: cada hora y al arrancar).
     cron.schedule("0 * * * 1", () => runJob("Resumen semanal para admins", () => require("../systems/resumenAdmin").enviarSiToca(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
     runJob("Resumen semanal para admins (arranque)", () => require("../systems/resumenAdmin").enviarSiToca(client));
+}
+
+function programarEspontaneos(client) {
     // Mensajes espontáneos del Duende para animar un server parado: de 11:00 a 23:00, con una
     // probabilidad baja cada vez (DUENDE_ESPONTANEO_PROB) y solo si el canal lleva un rato sin
     // mensajes de verdad. Se puede desactivar o elegir el canal en Config Global → Duende.
@@ -101,6 +128,9 @@ function programarTareas(client) {
         () => runJob("Mensajes espontáneos del Duende", () => require("../systems/duende/espontaneo").revisarTodos(client)),
         { timezone: "Europe/Madrid", noOverlap: true },
     );
+}
+
+function programarApuestas(client) {
     // ⭐ Partido destacado del día en el canal de resultados: desde las 10:00 (cada hora por si el bot estaba caído; solo
     // una vez al día), y al arrancar por si no se ha publicado. Sin gastar créditos de la Odds API.
     cron.schedule(
@@ -115,6 +145,9 @@ function programarTareas(client) {
         () => runJob("Recordatorio de partidos", () => require("../systems/apuestas/recordatorios").enviarRecordatorios(client)),
         { noOverlap: true },
     );
+}
+
+function programarRetosYEconomia(client) {
     // ⚔️ Retos colgados: sin aceptar a tiempo, duelos abandonados y porras sin resolver (se devuelven o se resuelven).
     cron.schedule("*/5 * * * *", () => runJob("Retos caducados", () => require("../juegos/retos/retos").revisarRetos(client)), {
         noOverlap: true,
@@ -135,6 +168,9 @@ function programarTareas(client) {
     cron.schedule("0 * * * *", () => runJob("Patrimonio", () => require("../systems/patrimonio").revisar()), {
         noOverlap: true,
     });
+}
+
+function programarLiquidacionApuestas(client) {
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
         "15 * * * *",
@@ -156,6 +192,9 @@ function programarTareas(client) {
             ),
         { timezone: "Europe/Madrid", noOverlap: true },
     );
+}
+
+function programarMantenimiento() {
     // Copia de seguridad diaria de la BD (data/backups, se conservan las últimas 7).
     cron.schedule("30 4 * * *", () => runJob("Backup de la BD", () => require("../systems/backups").hacerBackup()), {
         timezone: "Europe/Madrid",
@@ -170,6 +209,22 @@ function programarTareas(client) {
             }),
         5 * 60 * 1000,
     );
+}
+
+function programarTareas(client) {
+    programarBasicas(client);
+    programarNovedadesPlex(client);
+    programarClasificacionSemanal(client);
+    programarCuotasEnDirecto(client);
+    programarWrapped(client);
+    programarCine(client);
+    programarLigaPronosticos(client);
+    programarResumenAdmin(client);
+    programarEspontaneos(client);
+    programarApuestas(client);
+    programarRetosYEconomia(client);
+    programarLiquidacionApuestas(client);
+    programarMantenimiento();
 }
 
 module.exports = { programarTareas };
