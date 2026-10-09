@@ -1,6 +1,7 @@
 // Configuración de XP por servidor (con sus valores por defecto), títulos de rango, fórmula de
 // coste de cada nivel, multiplicadores por usuario, canales ignorados y la fila de cada usuario.
 const db = require("../../core/db");
+const { CacheLimitada } = require("../../core/cacheLimitada");
 
 const DEFAULT_CONFIG = {
     xp_message_base: "15",
@@ -35,7 +36,7 @@ const DEFAULT_TITLES = [
 // cambie desde el panel. Se hace una vez por servidor y proceso (se llamaba en cada mensaje).
 // (Roles de recompensa, canal de anuncios y multiplicadores ya no se siembran aquí:
 // ver core/migrations/002_xp_valores_por_defecto.js.)
-const seededGuilds = new Set();
+const seededGuilds = new CacheLimitada({ max: 500 });
 
 function ensureGuildDefaults(guildId) {
     if (seededGuilds.has(guildId)) return;
@@ -48,7 +49,7 @@ function ensureGuildDefaults(guildId) {
             for (const t of DEFAULT_TITLES) insertTitle.run(guildId, t.level, t.title, t.emoji);
         }
     })();
-    seededGuilds.add(guildId);
+    seededGuilds.set(guildId, true);
 }
 
 function getConfig(guildId, key) {

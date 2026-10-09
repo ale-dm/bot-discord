@@ -309,106 +309,11 @@ module.exports = {
             }
 
             const jackpot = obtenerJackpot();
+            await animarGiro(interaction, apuesta, jackpot, username);
 
-            try {
-                // Frame inicial de animación
-                await interaction.editReply({
-                    embeds: [crearEmbedAnimacion(0, apuesta, jackpot, username)],
-                    components: [crearBotonesResultado(apuesta, true)],
-                });
-
-                // Animación rápida (solo 2 frames más)
-                for (let i = 1; i <= 2; i++) {
-                    await new Promise((resolve) => setTimeout(resolve, 350));
-                    await interaction.editReply({
-                        embeds: [crearEmbedAnimacion(i, apuesta, jackpot, username)],
-                        components: [crearBotonesResultado(apuesta, true)],
-                    });
-                }
-
-                // Pequeña pausa antes del resultado
-                await new Promise((resolve) => setTimeout(resolve, 300));
-            } catch (error) {
-                logWarn("[TRAGAPERRAS] Error en animación:", error.message);
-            }
-
-            // Girar carretes y calcular resultado
-            const carretes = girarCarretes();
-            const resultado = calcularGanancia(carretes, apuesta);
-
-            // Incrementar jackpot con el 10% de la apuesta
-            const contribucionJackpot = Math.floor(apuesta * 0.1);
-            incrementarJackpot(contribucionJackpot);
-
-            let gananciaReal = 0;
-            let nuevoJackpot = obtenerJackpot();
-
-            // Procesar resultado
-            if (resultado.tipo === "jackpot") {
-                gananciaReal = applyRtp(interaction.guildId, "tragaperras", apuesta, resultado.ganancia);
-                resultado.ganancia = gananciaReal; // mantener el embed de resultado en sync con lo realmente acreditado
-                const exito = procesarGanancia(
-                    userId,
-                    "tragaperras",
-                    apuesta,
-                    gananciaReal,
-                    `🎰 JACKPOT en Tragaperras (+${gananciaReal})`,
-                    {
-                        carretes,
-                        tipo: "JACKPOT",
-                        multiplicador: "JACKPOT",
-                        jackpot: resultado.ganancia,
-                    },
-                );
-
-                if (exito) {
-                    resetearJackpot();
-                    nuevoJackpot = obtenerJackpot();
-                    logInfo(`[TRAGAPERRAS] ¡¡¡JACKPOT!!! Usuario ${username} ganó ${gananciaReal} monedas`);
-                }
-            } else if (resultado.ganancia > 0) {
-                gananciaReal = applyRtp(interaction.guildId, "tragaperras", apuesta, resultado.ganancia);
-                resultado.ganancia = gananciaReal; // mantener el embed de resultado en sync con lo realmente acreditado
-                const exito = procesarGanancia(
-                    userId,
-                    "tragaperras",
-                    apuesta,
-                    gananciaReal,
-                    `🎰 Victoria en Tragaperras (+${gananciaReal - apuesta})`,
-                    {
-                        carretes,
-                        tipo: resultado.tipo,
-                        multiplicador: resultado.multiplicador,
-                    },
-                );
-
-                if (exito) {
-                    logInfo(`[TRAGAPERRAS] Usuario ${username} ganó ${gananciaReal} (${resultado.multiplicador})`);
-                }
-            } else {
-                // Pérdida (ya se descontó la apuesta)
-                procesarPerdida(userId, "tragaperras", apuesta, `🎰 Pérdida en Tragaperras (-${apuesta})`, {
-                    carretes,
-                    tipo: "perdida",
-                    multiplicador: "x0",
-                });
-
-                logInfo(`[TRAGAPERRAS] Usuario ${username} perdió ${apuesta}`);
-            }
-
+            const { carretes, resultado, nuevoJackpot } = liquidarGiro(interaction, apuesta, userId, username);
             const saldoFinal = obtenerSaldo(userId);
-
-            // Mostrar resultado
-            const embedResultado = crearEmbedResultado(carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal);
-
-            const row = crearBotonesResultado(apuesta, false);
-
-            try {
-                await interaction.editReply({ embeds: [embedResultado], components: [row] });
-            } catch (error) {
-                logWarn("[TRAGAPERRAS] Resultado ya liquidado; falló mostrarlo con botones, se reintenta sin ellos:", error.message);
-                await interaction.editReply({ embeds: [embedResultado], components: [] });
-            }
+            await mostrarResultado(interaction, { carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal });
         } finally {
             partidasActivas.delete(userId);
         }
@@ -465,3 +370,103 @@ module.exports = {
 module.exports.__test = {
     calcularGanancia,
 };
+
+// Animación de los carretes: un frame inicial, dos más y una pausa antes del resultado. Si falla, el giro sigue igual.
+async function animarGiro(interaction, apuesta, jackpot, username) {
+    try {
+        // Frame inicial de animación
+        await interaction.editReply({
+            embeds: [crearEmbedAnimacion(0, apuesta, jackpot, username)],
+            components: [crearBotonesResultado(apuesta, true)],
+        });
+
+        // Animación rápida (solo 2 frames más)
+        for (let i = 1; i <= 2; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+            await interaction.editReply({
+                embeds: [crearEmbedAnimacion(i, apuesta, jackpot, username)],
+                components: [crearBotonesResultado(apuesta, true)],
+            });
+        }
+
+        // Pequeña pausa antes del resultado
+        await new Promise((resolve) => setTimeout(resolve, 300));
+    } catch (error) {
+        logWarn("[TRAGAPERRAS] Error en animación:", error.message);
+    }
+}
+
+// Gira los carretes, suma al jackpot y paga (o registra la pérdida). Devuelve el giro y el jackpot ya actualizado.
+function liquidarGiro(interaction, apuesta, userId, username) {
+    // Girar carretes y calcular resultado
+    const carretes = girarCarretes();
+    const resultado = calcularGanancia(carretes, apuesta);
+
+    // Incrementar jackpot con el 10% de la apuesta
+    const contribucionJackpot = Math.floor(apuesta * 0.1);
+    incrementarJackpot(contribucionJackpot);
+
+    let nuevoJackpot = obtenerJackpot();
+
+    // Procesar resultado
+    if (resultado.tipo === "jackpot") {
+        const gananciaReal = applyRtp(interaction.guildId, "tragaperras", apuesta, resultado.ganancia);
+        resultado.ganancia = gananciaReal; // mantener el embed de resultado en sync con lo realmente acreditado
+        const exito = procesarGanancia(userId, "tragaperras", apuesta, gananciaReal, `🎰 JACKPOT en Tragaperras (+${gananciaReal})`, {
+            carretes,
+            tipo: "JACKPOT",
+            multiplicador: "JACKPOT",
+            jackpot: resultado.ganancia,
+        });
+
+        if (exito) {
+            resetearJackpot();
+            nuevoJackpot = obtenerJackpot();
+            logInfo(`[TRAGAPERRAS] ¡¡¡JACKPOT!!! Usuario ${username} ganó ${gananciaReal} monedas`);
+        }
+    } else if (resultado.ganancia > 0) {
+        const gananciaReal = applyRtp(interaction.guildId, "tragaperras", apuesta, resultado.ganancia);
+        resultado.ganancia = gananciaReal; // mantener el embed de resultado en sync con lo realmente acreditado
+        const exito = procesarGanancia(
+            userId,
+            "tragaperras",
+            apuesta,
+            gananciaReal,
+            `🎰 Victoria en Tragaperras (+${gananciaReal - apuesta})`,
+            {
+                carretes,
+                tipo: resultado.tipo,
+                multiplicador: resultado.multiplicador,
+            },
+        );
+
+        if (exito) {
+            logInfo(`[TRAGAPERRAS] Usuario ${username} ganó ${gananciaReal} (${resultado.multiplicador})`);
+        }
+    } else {
+        // Pérdida (ya se descontó la apuesta)
+        procesarPerdida(userId, "tragaperras", apuesta, `🎰 Pérdida en Tragaperras (-${apuesta})`, {
+            carretes,
+            tipo: "perdida",
+            multiplicador: "x0",
+        });
+
+        logInfo(`[TRAGAPERRAS] Usuario ${username} perdió ${apuesta}`);
+    }
+
+    return { carretes, resultado, nuevoJackpot };
+}
+
+// Muestra el resultado con sus botones; si el mensaje ya no admite botones, se reintenta sin ellos.
+async function mostrarResultado(interaction, { carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal }) {
+    const embedResultado = crearEmbedResultado(carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal);
+
+    const row = crearBotonesResultado(apuesta, false);
+
+    try {
+        await interaction.editReply({ embeds: [embedResultado], components: [row] });
+    } catch (error) {
+        logWarn("[TRAGAPERRAS] Resultado ya liquidado; falló mostrarlo con botones, se reintenta sin ellos:", error.message);
+        await interaction.editReply({ embeds: [embedResultado], components: [] });
+    }
+}

@@ -1,16 +1,10 @@
 // /blackjack: cobra y paga, y pinta la partida. Las reglas de cada jugada están en systems/blackjack.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const db = require("../../core/db");
-const {
-    registrarUsuario,
-    descontarApuesta,
-    descontarExtra,
-    procesarGanancia,
-    procesarPerdida,
-    applyRtp,
-} = require("../../systems/casinoTransactions");
+const { registrarUsuario, descontarApuesta, procesarGanancia, procesarPerdida } = require("../../systems/casinoTransactions");
 const activeGames = require("../../systems/activeGames");
 const bj = require("../../systems/blackjack");
+const { liquidarMano, cobrarExtraBJ } = require("../../systems/blackjackCobros");
 const casino = require("../../paneles/casino");
 const { createLogger } = require("../../core/logger");
 
@@ -142,17 +136,6 @@ function embedSiguienteMano(state, estadoAnterior) {
 // --- Dinero ---
 // Liquida una mano: "gana" cobra el doble (2,5× con blackjack) con el RTP aplicado, "empate"
 // devuelve lo apostado y el resto la pierde. Devuelve { exito, cobro }.
-function liquidar(userId, guildId, apuesta, resultado, { blackjack = false, descripcion, detalle }) {
-    if (resultado === "gana") {
-        const cobro = applyRtp(guildId, "blackjack", apuesta, bj.cobroGanador(apuesta, blackjack));
-        return { exito: procesarGanancia(userId, "blackjack", apuesta, cobro, descripcion(cobro), detalle), cobro };
-    }
-    if (resultado === "empate") {
-        return { exito: procesarGanancia(userId, "blackjack", apuesta, apuesta, descripcion(apuesta), detalle), cobro: apuesta };
-    }
-    return { exito: procesarPerdida(userId, "blackjack", apuesta, descripcion(0), detalle), cobro: 0 };
-}
-
 const TEXTO_RESULTADO = {
     gana: (cobro) => `¡Ganaste! Has ganado \`${cobro}\` monedas.`,
     empate: () => "Empate. Recuperas tu apuesta.",
@@ -178,7 +161,7 @@ async function responderNatural(interaction, state, tipo) {
             )
             .setColor(COLOR.empate);
     } else if (tipo === "blackjack") {
-        const r = liquidar(userId, interaction.guildId, apuesta, "gana", {
+        const r = liquidarMano(userId, interaction.guildId, apuesta, "gana", {
             blackjack: true,
             descripcion: (cobro) => `Blackjack: blackjack natural (+${cobro - apuesta})`,
             detalle,
@@ -208,7 +191,7 @@ async function responderNatural(interaction, state, tipo) {
 // Plantarse o doblar: el crupier ya ha jugado; se liquida y se enseña el resultado.
 async function responderFinal(interaction, state, { userVal, botVal, resultado }, { accion, titulo }) {
     const userId = interaction.user.id;
-    const r = liquidar(userId, interaction.guildId, state.apuesta, resultado, {
+    const r = liquidarMano(userId, interaction.guildId, state.apuesta, resultado, {
         descripcion: () => `Blackjack: ${accion} ${TEXTO_HISTORIAL[resultado]}`,
         detalle: {
             tipo: `${SUFIJO_TIPO[resultado]}_${accion === "doblar" ? "doblar" : "stand"}`,
@@ -246,14 +229,14 @@ async function evaluarSplitFinal(interaction, state, userId) {
         let texto, r;
         if (mano.resultado === "pasada") {
             texto = "❌ Se pasó";
-            r = liquidar(userId, interaction.guildId, state.apuesta, "pierde", {
+            r = liquidarMano(userId, interaction.guildId, state.apuesta, "pierde", {
                 descripcion: () => `Blackjack split: mano ${n} se pasó`,
                 detalle: { tipo: "derrota_bust_split", ...detalle },
             });
         } else if (mano.resultado === "gana") {
             const crupierPasado = botVal > 21;
             texto = (mano.blackjack ? "🎯 Blackjack" : "✅ Ganaste") + (crupierPasado ? " (crupier se pasó)" : "");
-            r = liquidar(userId, interaction.guildId, state.apuesta, "gana", {
+            r = liquidarMano(userId, interaction.guildId, state.apuesta, "gana", {
                 blackjack: mano.blackjack,
                 descripcion: () => `Blackjack split: mano ${n} ganó${crupierPasado ? " (crupier se pasó)" : ""}`,
                 detalle: { tipo: mano.blackjack ? "blackjack_split" : "victoria_split", ...detalle },
@@ -261,14 +244,14 @@ async function evaluarSplitFinal(interaction, state, userId) {
             manosGanadas++;
         } else if (mano.resultado === "empate") {
             texto = "🟡 Empate";
-            r = liquidar(userId, interaction.guildId, state.apuesta, "empate", {
+            r = liquidarMano(userId, interaction.guildId, state.apuesta, "empate", {
                 descripcion: () => `Blackjack split: mano ${n} empató`,
                 detalle: { tipo: "empate_split", ...detalle },
             });
             manosEmpate++;
         } else {
             texto = "❌ Perdiste";
-            r = liquidar(userId, interaction.guildId, state.apuesta, "pierde", {
+            r = liquidarMano(userId, interaction.guildId, state.apuesta, "pierde", {
                 descripcion: () => `Blackjack split: mano ${n} perdió`,
                 detalle: { tipo: "derrota_split", ...detalle },
             });
@@ -334,12 +317,11 @@ async function evaluarSplitFinal(interaction, state, userId) {
 
 // Cobra la apuesta extra de doblar o separar (parte de la misma jugada: sin mínimo ni cooldown).
 async function cobrarExtra(interaction, state) {
-    const resultado = descontarExtra(interaction.user.id, state.apuesta, interaction.guildId);
+    const resultado = cobrarExtraBJ(interaction.user.id, interaction.guildId, state.apuesta);
     if (!resultado.exito) {
         await interaction.reply({ content: resultado.mensaje, flags: MessageFlags.Ephemeral });
         return false;
     }
-    activeGames.sumarApuesta(interaction.user.id, "blackjack", state.apuesta);
     return true;
 }
 

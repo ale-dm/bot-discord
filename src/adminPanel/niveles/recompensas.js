@@ -12,8 +12,9 @@ const {
 const xp = require("../../systems/xpSystem");
 const adminAudit = require("../../systems/adminAudit");
 const { simpleModal } = require("../common");
+const { CacheLimitada } = require("../../core/cacheLimitada");
 
-const rewardSearchSessions = new Map();
+const rewardSearchSessions = new CacheLimitada({ max: 200 });
 
 function buildRewardRoleSearchPayload(guild, userId, nivel, page = 0) {
     const key = `${guild.id}:${userId}:${nivel}`;

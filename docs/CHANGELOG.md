@@ -2,6 +2,45 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (novena ronda: funciones largas restantes y reglas fuera de juegos)
+
+- **Ninguna función pasa de 120 líneas** (escaneo con parser). Partidas por partes:
+  - `/juegos` Adivinar: cada ronda y los retiros son funciones con nombre, y una tabla asigna cada botón a su ronda ([#209](https://github.com/ale-dm/bot-discord/issues/209)).
+  - `/juegos` Tragaperras: animación, liquidación del giro y resultado ([#210](https://github.com/ale-dm/bot-discord/issues/210)).
+  - Quinielas: botones como tabla ordenada de acciones; el formulario de apuesta, más corto.
+  - Apuestas: el formulario de apuesta en comprobaciones y confirmación; la pestaña, en consulta a la API, paginación y listado.
+- **Reglas fuera de `src/juegos`** ([#166](https://github.com/ale-dm/bot-discord/issues/166)):
+  - `src/systems/apuestas/quinielas.js`: crear la jornada, el cierre previo al primer partido, los partidos de cada jornada, cobrar la apuesta.
+  - `src/systems/apuestas/apostar.js`: cuota de cada elección, cobro (todo o nada), si ya apostó, listado de partidos abiertos.
+  - `src/systems/blackjackCobros.js`: pagar una mano y cobrar doblar o separar.
+  Los módulos de `src/juegos` se quedan con los botones, los formularios y lo que se muestra.
+- Mensajes del Duende, panel admin y tienda: ver la octava ronda.
+
+## 2026-10-09 (octava ronda: funciones largas del core, panel y tienda)
+
+- **Mensajes del Duende** (`registrarMensajes`, [#215](https://github.com/ale-dm/bot-discord/issues/215)): decidir si contesta, la reacción de bajo esfuerzo, la descarga de imágenes, la interacción que espera el Duende y la respuesta, cada una en su función. Mismo orden de decisiones y de llamadas al azar.
+- **Tareas programadas** (`programarTareas`, #215): agrupadas por tema, en el mismo orden de registro (importa para las tareas que se lanzan al arrancar).
+- **Panel de administración** (`/paneladmin`, [#213](https://github.com/ale-dm/bot-discord/issues/213)): los seis manejadores de componentes comparten un helper (`manejador`). Mismos módulos, mismo orden y mismos textos.
+- **Tienda** (`/tienda`, [#214](https://github.com/ale-dm/bot-discord/issues/214)): los botones son una tabla ordenada de acciones (el primero que encaja gana, como antes).
+
+## 2026-10-09 (séptima ronda: cachés con tope)
+
+- **Cachés de módulo con tope** (#216): `src/core/cacheLimitada.js`, un mapa con tope de entradas (y caducidad opcional).
+  Se usa en las seis cachés que crecían sin límite: filtros de la tienda (5.000), contexto de transacciones del casino (5.000),
+  búsquedas de recompensas del panel (200), escudos de apuestas (1.000), historial de precios cripto (50) y servidores ya sembrados
+  de XP (500). Al pasarse se echa la entrada más antigua. Sin cambios de comportamiento con uso normal.
+
+## 2026-10-09 (sexta ronda: avisos de la revisión)
+
+- **Respuesta por voz del Duende** ([#217](https://github.com/ale-dm/bot-discord/issues/217)): la respuesta sonando tiene un tope
+  de tiempo (`DUENDE_VOICE_PLAYBACK_MAX_MS`, 2 min por defecto). Si el audio se queda parado sin acabar ni fallar, se corta y
+  la promesa se resuelve, así que `/escuchar` no se queda esperando. Una respuesta nueva en el mismo servidor corta la que
+  todavía suena, porque la conexión solo tiene un reproductor suscrito.
+- **Herramientas del Duende**: el nombre que pide el modelo solo se busca en las herramientas propias del mapa (no en el prototipo).
+- **Trofeos de director**: la marca de anime se calcula como en las sagas (antes siempre era `false`).
+- **Renombrado** `getEdgeAudioStream` → `getTtsAudioStream` (usa Gemini TTS, no Edge). Un log con el texto duplicado ("el audio el audio") corregido.
+- Pendiente de decisión: la etiqueta de las décadas ([#218](https://github.com/ale-dm/bot-discord/issues/218)).
+
 ## 2026-10-09 (quinta ronda: funciones largas restantes)
 
 - **DT-27 resuelta** ([#193](https://github.com/ale-dm/bot-discord/issues/193)): las cuatro funciones que quedaban por encima de
