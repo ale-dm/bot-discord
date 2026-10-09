@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (octava ronda: funciones largas del core, panel y tienda)
+
+- **Mensajes del Duende** (`registrarMensajes`, [#215](https://github.com/ale-dm/bot-discord/issues/215)): decidir si contesta, la reacción de bajo esfuerzo, la descarga de imágenes, la interacción que espera el Duende y la respuesta, cada una en su función. Mismo orden de decisiones y de llamadas al azar.
+- **Tareas programadas** (`programarTareas`, #215): agrupadas por tema, en el mismo orden de registro (importa para las tareas que se lanzan al arrancar).
+- **Panel de administración** (`/paneladmin`, [#213](https://github.com/ale-dm/bot-discord/issues/213)): los seis manejadores de componentes comparten un helper (`manejador`). Mismos módulos, mismo orden y mismos textos.
+- **Tienda** (`/tienda`, [#214](https://github.com/ale-dm/bot-discord/issues/214)): los botones son una tabla ordenada de acciones (el primero que encaja gana, como antes).
+
 ## 2026-10-09 (séptima ronda: cachés con tope)
 
 - **Cachés de módulo con tope** (#216): `src/core/cacheLimitada.js`, un mapa con tope de entradas (y caducidad opcional).

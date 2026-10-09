@@ -37,6 +37,32 @@ const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPane
 const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = require("../../adminPanel/sonidos");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 
+/**
+ * Un manejador de componentes del panel. Solo para admins. Si `antes` devuelve true, ya está resuelto. Si no, prueba
+ * los pasos en orden y el primero que reconoce la interacción (devuelve true) gana. Un error se avisa en privado.
+ */
+function manejador(nombre, mensajeError, pasos, antes = null) {
+    return async (client, interaction) => {
+        try {
+            if (!isAdmin(interaction)) {
+                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
+                return;
+            }
+            if (antes && (await antes(client, interaction))) return;
+            for (const paso of pasos) {
+                if (await paso(interaction)) return;
+            }
+        } catch (err) {
+            log.error(`${nombre} falló (${interaction.customId || "/paneladmin"}):`, err);
+            try {
+                await interaction.reply({ content: mensajeError, flags: MessageFlags.Ephemeral });
+            } catch (e) {
+                log.debug(`No se pudo avisar del error: ${e.message}`);
+            }
+        }
+    };
+}
+
 module.exports = {
     componentHandlers: [
         { types: ["button"], prefixes: ["paneladmin_"], method: "handleButton" },
@@ -95,148 +121,71 @@ module.exports = {
         }
     },
 
-    async handleButton(client, interaction) {
-        try {
-            if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
-                return;
-            }
+    handleButton: manejador(
+        "handleButton",
+        "Error al procesar botón.",
+        [
+            handleAuditButton,
+            handleSettingsButton,
+            handleLevelsButton,
+            handlePlexButton,
+            handleSeerrButton,
+            handleBankButton,
+            handleApodosButton,
+            handlePerfilesButton,
+            handleApuestasButton,
+            handleCatalogoButton,
+            handleSistemaButton,
+            handleImpuestosButton,
+            handleClasificacionButton,
+            handleSonidosButton,
+        ],
+        async (client, interaction) => {
+            if (interaction.customId !== "paneladmin_home") return false;
+            await interaction.update({ embeds: [buildMainEmbed(client)], components: buildMainRows() });
+            return true;
+        },
+    ),
 
-            if (interaction.customId === "paneladmin_home") {
-                await interaction.update({ embeds: [buildMainEmbed(client)], components: buildMainRows() });
-                return;
-            }
+    handleModal: manejador("handleModal", "Error al procesar formulario.", [
+        handleLevelsModal,
+        handleSettingsModal,
+        handlePlexModal,
+        handleSonidosModal,
+        handleSeerrModal,
+        handleBankModal,
+        handleApodosModal,
+        handlePerfilesModal,
+        handleCatalogoModal,
+        handleApuestasModal,
+        handleSistemaModal,
+        handleImpuestosModal,
+        handleClasificacionModal,
+    ]),
 
-            if (await handleAuditButton(interaction)) return;
-            if (await handleSettingsButton(interaction)) return;
-            if (await handleLevelsButton(interaction)) return;
-            if (await handlePlexButton(interaction)) return;
-            if (await handleSeerrButton(interaction)) return;
-            if (await handleBankButton(interaction)) return;
-            if (await handleApodosButton(interaction)) return;
-            if (await handlePerfilesButton(interaction)) return;
-            if (await handleApuestasButton(interaction)) return;
-            if (await handleCatalogoButton(interaction)) return;
-            if (await handleSistemaButton(interaction)) return;
-            if (await handleImpuestosButton(interaction)) return;
-            if (await handleClasificacionButton(interaction)) return;
-            if (await handleSonidosButton(interaction)) return;
-        } catch (err) {
-            log.error(`handleButton falló (${interaction.customId || "/paneladmin"}):`, err);
-            try {
-                await interaction.reply({ content: "Error al procesar botón.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                log.debug(`No se pudo avisar del error: ${e.message}`);
-            }
-        }
-    },
+    handleUserSelect: manejador("handleUserSelect", "Error al procesar selector.", [
+        handleBankUserSelect,
+        handlePlexUserSelect,
+        handleApodosUserSelect,
+        handlePerfilesUserSelect,
+    ]),
 
-    async handleModal(client, interaction) {
-        try {
-            if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
-                return;
-            }
-            if (await handleLevelsModal(interaction)) return;
-            if (await handleSettingsModal(interaction)) return;
-            if (await handlePlexModal(interaction)) return;
-            if (await handleSonidosModal(interaction)) return;
-            if (await handleSeerrModal(interaction)) return;
-            if (await handleBankModal(interaction)) return;
-            if (await handleApodosModal(interaction)) return;
-            if (await handlePerfilesModal(interaction)) return;
-            if (await handleCatalogoModal(interaction)) return;
-            if (await handleApuestasModal(interaction)) return;
-            if (await handleSistemaModal(interaction)) return;
-            if (await handleImpuestosModal(interaction)) return;
-            if (await handleClasificacionModal(interaction)) return;
-        } catch (err) {
-            log.error(`handleModal falló (${interaction.customId || "/paneladmin"}):`, err);
-            try {
-                await interaction.reply({ content: "Error al procesar formulario.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                log.debug(`No se pudo avisar del error: ${e.message}`);
-            }
-        }
-    },
+    // El último de cada selector no mira si reconoce la interacción: es el de respaldo.
+    handleRoleSelect: manejador("handleRoleSelect", "Error al procesar roles.", [handlePlexRoleSelect, handleLevelsRoleSelect]),
 
-    async handleUserSelect(client, interaction) {
-        try {
-            if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
-                return;
-            }
-            if (await handleBankUserSelect(interaction)) return;
-            if (await handlePlexUserSelect(interaction)) return;
-            if (await handleApodosUserSelect(interaction)) return;
-            if (await handlePerfilesUserSelect(interaction)) return;
-        } catch (err) {
-            log.error(`handleUserSelect falló (${interaction.customId || "/paneladmin"}):`, err);
-            try {
-                await interaction.reply({ content: "Error al procesar selector.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                log.debug(`No se pudo avisar del error: ${e.message}`);
-            }
-        }
-    },
+    handleChannelSelect: manejador("handleChannelSelect", "Error al procesar canales.", [
+        handleLevelsChannelSelect,
+        handlePlexChannelSelect,
+        handleSeerrChannelSelect,
+        handleApuestasChannelSelect,
+        handleClasificacionChannelSelect,
+    ]),
 
-    async handleRoleSelect(client, interaction) {
-        try {
-            if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
-                return;
-            }
-            if (await handlePlexRoleSelect(interaction)) return;
-            await handleLevelsRoleSelect(interaction);
-        } catch (err) {
-            log.error(`handleRoleSelect falló (${interaction.customId || "/paneladmin"}):`, err);
-            try {
-                await interaction.reply({ content: "Error al procesar roles.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                log.debug(`No se pudo avisar del error: ${e.message}`);
-            }
-        }
-    },
-
-    async handleChannelSelect(client, interaction) {
-        try {
-            if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
-                return;
-            }
-            if (await handleLevelsChannelSelect(interaction)) return;
-            if (await handlePlexChannelSelect(interaction)) return;
-            if (await handleSeerrChannelSelect(interaction)) return;
-            if (await handleApuestasChannelSelect(interaction)) return;
-            if (await handleClasificacionChannelSelect(interaction)) return;
-        } catch (err) {
-            log.error(`handleChannelSelect falló (${interaction.customId || "/paneladmin"}):`, err);
-            try {
-                await interaction.reply({ content: "Error al procesar canales.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                log.debug(`No se pudo avisar del error: ${e.message}`);
-            }
-        }
-    },
-
-    async handleStringSelect(client, interaction) {
-        try {
-            if (!isAdmin(interaction)) {
-                await interaction.reply({ content: "No tienes permisos.", flags: MessageFlags.Ephemeral });
-                return;
-            }
-            if (await handlePerfilesStringSelect(interaction)) return;
-            if (await handleSistemaSelect(interaction)) return;
-            if (await handlePlexStringSelect(interaction)) return;
-            if (await handleSonidosStringSelect(interaction)) return;
-            await handleLevelsStringSelect(interaction);
-        } catch (err) {
-            log.error(`handleStringSelect falló (${interaction.customId || "/paneladmin"}):`, err);
-            try {
-                await interaction.reply({ content: "Error al procesar selector.", flags: MessageFlags.Ephemeral });
-            } catch (e) {
-                log.debug(`No se pudo avisar del error: ${e.message}`);
-            }
-        }
-    },
+    handleStringSelect: manejador("handleStringSelect", "Error al procesar selector.", [
+        handlePerfilesStringSelect,
+        handleSistemaSelect,
+        handlePlexStringSelect,
+        handleSonidosStringSelect,
+        handleLevelsStringSelect,
+    ]),
 };
