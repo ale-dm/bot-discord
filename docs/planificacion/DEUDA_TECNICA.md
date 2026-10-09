@@ -13,7 +13,6 @@ complica el mantenimiento) · 🟢 baja (limpieza). **Esfuerzo:** S (una tarde) 
 | ID | Qué | Área | Prioridad | Esfuerzo |
 |---|---|---|---|---|
 | DT-16 | La capa `src/juegos` mezcla handlers y lógica de negocio. Resuelto el wrapper de 🏅 Liga; pendiente: sacar las reglas de `quiniela.js` (585 líneas), `apuestas.js` (548) y `casino/blackjack.js` (507) a `systems/` ([#166](https://github.com/ale-dm/bot-discord/issues/166)) | Estructura | 🟠 | M |
-| DT-18 | `services/duende/herramientas.js`: 943 líneas y 29 herramientas en un solo fichero ([#168](https://github.com/ale-dm/bot-discord/issues/168)) | Tamaño | 🟠 | M |
 | DT-20 | Paneles de admin de 800 líneas con manejadores de 200 a 300 líneas (`adminPanel/plex.js`, `adminPanel/settings.js`) ([#170](https://github.com/ale-dm/bot-discord/issues/170)) | Tamaño | 🟠 | M |
 | DT-21 | `src/index.js` (642 líneas) mezcla mensajes del Duende, carga de módulos y cron ([#171](https://github.com/ale-dm/bot-discord/issues/171)) | Estructura | 🟠 | M |
 | DT-22 | Funciones muy largas: `liveVoz.empezarConversacion` (376), `duende.hablar` (353), `liquidarApuestas` (262) ([#172](https://github.com/ale-dm/bot-discord/issues/172)) | Tamaño | 🟠 | M |
