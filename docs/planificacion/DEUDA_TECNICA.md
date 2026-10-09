@@ -13,7 +13,7 @@ complica el mantenimiento) · 🟢 baja (limpieza). **Esfuerzo:** S (una tarde) 
 | ID | Qué | Área | Prioridad | Esfuerzo |
 |---|---|---|---|---|
 | DT-16 | La capa `src/juegos` mezcla handlers y lógica de negocio. Resuelto el wrapper de 🏅 Liga; pendiente: sacar las reglas de `quiniela.js` (585 líneas), `apuestas.js` (548) y `casino/blackjack.js` (507) a `systems/` ([#166](https://github.com/ale-dm/bot-discord/issues/166)) | Estructura | 🟠 | M |
-| DT-22 | Funciones muy largas: `liveVoz.empezarConversacion` (376), `duende.hablar` (353), `liquidarApuestas` (262) ([#172](https://github.com/ale-dm/bot-discord/issues/172)) | Tamaño | 🟠 | M |
+| DT-22 | Funciones muy largas que quedan: `liveVoz.empezarConversacion` (376 líneas; necesita probar la voz en Discord antes de tocarla) y `duende.hablar` (~310, tras sacar la llamada a Gemini). `liquidarApuestas` ya está partida ([#172](https://github.com/ale-dm/bot-discord/issues/172)) | Tamaño | 🟠 | M |
 
 Además: [decisiones tomadas](#decisiones-tomadas) que no son deuda pero conviene recordar.
 
