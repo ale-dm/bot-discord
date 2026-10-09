@@ -52,22 +52,17 @@ function resumenCasino(userId) {
         .get(userId);
 }
 
-/**
- * La pestaña Economía. `viewerId` mira, `targetId` es de quien es; si son la misma persona, con acciones.
- * @returns {Promise<object>} payload
- */
-async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = null, aviso = null }) {
-    const propio = viewerId === targetId;
-    const c = dinero.cuenta(targetId);
-    const { ganado, perdido } = resumenCasino(targetId);
-    let cartera = { lineas: [], total: 0 };
+/** La cartera cripto valorada. Si el mercado falla, sale sin valorar. */
+async function carteraDe(targetId, guildId) {
     try {
-        cartera = await require("../systems/cripto/mercado").valorarCartera(targetId, guildId);
+        return await require("../systems/cripto/mercado").valorarCartera(targetId, guildId);
     } catch {
         // Si el mercado falla, la cartera sale sin valorar.
+        return { lineas: [], total: 0 };
     }
-    const objetos = db.prepare("SELECT COUNT(*) AS n FROM inventario WHERE userId = ?").get(targetId).n;
+}
 
+function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo, diario }) {
     const embed = new EmbedBuilder()
         .setTitle(`💰 Economía · ${nombre}`)
         .setDescription(
@@ -98,7 +93,6 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
         });
     }
     // 🧙 Préstamo del Duende (F-DU-03), si tiene uno sin devolver.
-    const prestamo = require("../systems/prestamos").abierto(targetId);
     if (prestamo) {
         const vence = Math.floor(prestamo.vence_en / 1000);
         embed.addFields({
@@ -109,7 +103,6 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
                     : `Devuelve **${fmtNumero(prestamo.falta)}** 🪙 antes del <t:${vence}:f> (<t:${vence}:R>). Si no, se cobra solo.`,
         });
     }
-    const diario = propio ? require("../systems/diario").estado(guildId, targetId) : null;
     if (diario?.activo) {
         embed.addFields({
             name: "🎁 Recompensa diaria",
@@ -118,7 +111,12 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
                 : `Cobrada hoy. Mañana: **${fmtNumero(diario.cantidad)}** 🪙 si mantienes la racha.`,
         });
     }
+    return embed;
+}
 
+// Las filas de botones: acciones de dinero (solo en la propia cuenta), movimientos, y el préstamo y los negocios
+// en su fila: la de acciones ya puede tener 5 botones.
+function filasEconomia({ viewerId, targetId, propio, c, prestamo, diario }) {
     const movimientos = new ButtonBuilder()
         .setCustomId(`dinero_mov_todo_0_${targetId}`)
         .setLabel("📜 Movimientos")
@@ -153,7 +151,6 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
               ...botonDiario,
           )
         : new ActionRowBuilder().addComponents(movimientos);
-    // En su fila: la de acciones ya puede tener 5 botones.
     const devolver =
         propio && prestamo
             ? [
@@ -172,11 +169,25 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
               ),
           ]
         : [];
-    return {
-        content: "",
-        embeds: [embed],
-        components: [acciones, ...devolver, ...negocios, filaPestanasPerfil(viewerId, targetId, "eco")],
-    };
+    return [acciones, ...devolver, ...negocios, filaPestanasPerfil(viewerId, targetId, "eco")];
+}
+
+/**
+ * La pestaña Economía. `viewerId` mira, `targetId` es de quien es; si son la misma persona, con acciones.
+ * @returns {Promise<object>} payload
+ */
+async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = null, aviso = null }) {
+    const propio = viewerId === targetId;
+    const c = dinero.cuenta(targetId);
+    const { ganado, perdido } = resumenCasino(targetId);
+    const cartera = await carteraDe(targetId, guildId);
+    const objetos = db.prepare("SELECT COUNT(*) AS n FROM inventario WHERE userId = ?").get(targetId).n;
+    const prestamo = require("../systems/prestamos").abierto(targetId);
+    const diario = propio ? require("../systems/diario").estado(guildId, targetId) : null;
+
+    const embed = embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo, diario });
+    const components = filasEconomia({ viewerId, targetId, propio, c, prestamo, diario });
+    return { content: "", embeds: [embed], components };
 }
 
 /** Historial de movimientos de `targetId` con filtro por tipo (`todo` = sin filtro) y páginas. */
