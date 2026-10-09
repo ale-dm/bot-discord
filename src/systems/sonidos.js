@@ -221,9 +221,7 @@ class ReproductorFalso extends EventEmitter {
 module.exports = {
     MAX_SONIDOS,
     sonando,
-    MAX_BYTES,
-    EXTENSIONES,
-    NOMBRE_MAX,
+
     validarNombre,
     listar,
     obtener,

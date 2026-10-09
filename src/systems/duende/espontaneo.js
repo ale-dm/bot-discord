@@ -97,4 +97,4 @@ async function revisarTodos(client) {
     }
 }
 
-module.exports = { revisarTodos, revisarGuild, elegirGancho, generarMensaje, canalEnCalma, GANCHOS, PROB, QUIET_MS };
+module.exports = { revisarTodos, revisarGuild, elegirGancho, generarMensaje, canalEnCalma, GANCHOS, QUIET_MS };

@@ -47,7 +47,6 @@ const PPT = {
     tijera: { emoji: "✂️", gana_a: "papel" },
 };
 const ELECCIONES = ["home", "draw", "away"];
-const FINALES = ["resuelto", "devuelto"];
 const SIN_EFECTIVO = "❌ No te llega el efectivo. Saca dinero del banco en `/perfil` → 💰 Economía → 💵 Sacar.";
 
 let rng = Math.random;
@@ -805,16 +804,15 @@ module.exports = {
     MIN,
     MAX,
     MAX_PENDIENTES,
-    ESPERA_ACEPTAR_MS,
+
     ABANDONO_MS,
     PORRA_DIAS,
     PORRA_MAX_OPCIONES,
     JUEGOS,
     PPT,
-    FINALES,
-    ELECCIONES,
+
     DUENDE,
-    TOPE_DUENDE,
+
     buscarPartido,
     eleccionPara,
     motivoNoContraDuende,

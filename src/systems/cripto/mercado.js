@@ -20,14 +20,6 @@ const TTCL = {
 
 const ALL_CRYPTOS = [TTCL];
 
-// Opciones para el selector de rango de gráfico
-const RANGE_OPTIONS = [
-    { label: "24 horas", value: "1", days: 1 },
-    { label: "7 días", value: "7", days: 7 },
-    { label: "30 días", value: "30", days: 30 },
-    { label: "Todo", value: "365", days: 365 },
-];
-
 // ─── PRECIO TTCL (pool de liquidez) ──────────────────────────────────────────
 // Las reservas están en cripto_pool: monedas y TTCL. El precio es monedas / TTCL, y cada operación se cobra
 // contra el pool manteniendo monedas × TTCL constante (x·y = k): compras grandes mueven el precio más que las
@@ -333,7 +325,7 @@ function topTenedoresTtcl(limite = 5) {
 module.exports = {
     TTCL,
     ALL_CRYPTOS,
-    RANGE_OPTIONS,
+
     leerPool,
     ttclCirculacion,
     getTtclPrecio,
@@ -348,7 +340,7 @@ module.exports = {
     formatCryptoAmt,
     getUserSaldo,
     getUserCarteras,
-    cryptoInfoBySymbol,
+
     valorarCartera,
     ejecutarCompra,
     ejecutarVenta,

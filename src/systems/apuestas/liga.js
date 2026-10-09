@@ -162,7 +162,7 @@ async function liquidarTodos(client, ahora) {
 module.exports = {
     HORA,
     temporadaDe,
-    temporadaAnterior,
+
     rangoISO,
     clasificacion,
     premiosDe,

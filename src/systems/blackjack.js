@@ -188,7 +188,7 @@ module.exports = {
     esBlackjack,
     nuevaPartida,
     naturales,
-    jugarCrupier,
+
     resolver,
     cobroGanador,
     pedir,

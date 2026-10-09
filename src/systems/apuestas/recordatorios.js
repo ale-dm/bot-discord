@@ -78,4 +78,4 @@ async function enviarRecordatorios(client, { ahora = Date.now() } = {}) {
     return enviados;
 }
 
-module.exports = { enviarRecordatorios, pendientesDeRecordar };
+module.exports = { enviarRecordatorios };

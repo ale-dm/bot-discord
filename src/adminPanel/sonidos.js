@@ -134,4 +134,4 @@ async function handleSonidosStringSelect(interaction) {
     return true;
 }
 
-module.exports = { buildSonidosHome, buildBorrar, modalSubir, handleSonidosButton, handleSonidosModal, handleSonidosStringSelect };
+module.exports = { buildSonidosHome, modalSubir, handleSonidosButton, handleSonidosModal, handleSonidosStringSelect };

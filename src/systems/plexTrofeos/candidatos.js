@@ -342,4 +342,4 @@ function titulos(peliculas) {
     return t.slice(0, 8).join(", ") + (t.length > 8 ? "…" : "");
 }
 
-module.exports = { cacheCatalogo, aLogro, catalogo, trofeos, contexto, datosUsuario, estadisticasEntre, candidatos, titulos };
+module.exports = { cacheCatalogo, catalogo, trofeos, contexto, datosUsuario, estadisticasEntre, candidatos, titulos };

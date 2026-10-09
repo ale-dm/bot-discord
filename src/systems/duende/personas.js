@@ -116,4 +116,4 @@ function detectMentionedPersons(text, guild, excludeUserId) {
     return [...found.values()];
 }
 
-module.exports = { mentionizeKnownNames, normalizeName, resolveNameToDiscordId, buildPersonProfileText, detectMentionedPersons };
+module.exports = { mentionizeKnownNames, resolveNameToDiscordId, buildPersonProfileText, detectMentionedPersons };

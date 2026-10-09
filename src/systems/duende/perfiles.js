@@ -307,10 +307,6 @@ function guardarDescripcion({ discordId, username = null, nombre, descripcion })
     ).run(String(discordId), username, nombre, texto, Date.now());
 }
 
-function borrarPerfil(discordId) {
-    return db.prepare("DELETE FROM duende_perfiles WHERE discord_id = ?").run(String(discordId)).changes > 0;
-}
-
 /**
  * Vincula a su Discord ID los perfiles que solo tienen username, buscándolos entre los miembros
  * del servidor que ya estén en caché. Se llama al arrancar, justo después del backfill de roles, que
@@ -436,7 +432,7 @@ module.exports = {
     olvidarNotas,
     notasRelevantes,
     guardarDescripcion,
-    borrarPerfil,
+
     vincularPerfiles,
     importarJsonSiExiste,
 };

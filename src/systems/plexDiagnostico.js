@@ -238,4 +238,4 @@ async function comprobar(guildId, { muestra = 40, bibliotecasAnime = "" } = {}) 
     return pasos;
 }
 
-module.exports = { idiomasGuardados, noReconocidos, nombresCrudos, comprobar };
+module.exports = { idiomasGuardados, noReconocidos, comprobar };

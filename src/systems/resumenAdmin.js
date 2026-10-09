@@ -193,4 +193,4 @@ function _reiniciar() {
     geminiAnterior = null;
 }
 
-module.exports = { HORA, lineasDesde, errores, comandos, usoGemini, construir, enviarSiToca, _reiniciar };
+module.exports = { HORA, errores, comandos, usoGemini, construir, enviarSiToca, _reiniciar };

@@ -79,4 +79,4 @@ function getUsage() {
     return { ...usage };
 }
 
-module.exports = { getGenAI, generateContentWithTimeout, getUsage, isQuotaError };
+module.exports = { getGenAI, generateContentWithTimeout, getUsage };

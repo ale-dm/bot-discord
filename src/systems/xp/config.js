@@ -175,7 +175,6 @@ function getTitles(guildId) {
 }
 
 module.exports = {
-    DEFAULT_CONFIG,
     ensureGuildDefaults,
     getConfig,
     getAllConfig,

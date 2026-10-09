@@ -28,4 +28,4 @@ async function paisesDePelicula(tmdbId) {
     return (data.production_countries || []).map((c) => nombreDePais(c.iso_3166_1) || c.name).filter(Boolean);
 }
 
-module.exports = { paisesDePelicula, nombreDePais };
+module.exports = { paisesDePelicula };

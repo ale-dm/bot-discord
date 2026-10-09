@@ -118,4 +118,4 @@ async function renombrar(guildId, max, yaPedidos = new Set()) {
 
 // ─── Trofeos sociales (F-PX-12) ──────────────────────────────────────────────
 
-module.exports = { limpiarNombre, nombrarConIA, crear, TIPOS_CON_IA, renombrar };
+module.exports = { limpiarNombre, crear, renombrar };
