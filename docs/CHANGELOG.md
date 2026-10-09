@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: catálogo de logros aparte)
+
+- **`systems/logros/catalogo.js`**: el catálogo de logros (511 líneas de datos) sale de `achievementsSystem.js`, que pasa
+  de 881 a 372 líneas. Mismos logros, mismos ids y recompensas. (DT-19, [#169](https://github.com/ale-dm/bot-discord/issues/169))
+- Se descarta DT-15 (ruleta y ppt): no están muertos. Ver [#165](https://github.com/ale-dm/bot-discord/issues/165).
+- Tests: `npm run check` en verde (1004 tests).
+
 ## 2026-10-08 (✉️ `/mensaje`)
 
 - **`/mensaje usuario`**: un admin elige a quién y escribe el texto en un formulario; el bot lo manda por DM tal cual,
