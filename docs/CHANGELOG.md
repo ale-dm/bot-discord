@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: 🏅 Liga sin wrapper)
+
+- **`juegos/apuestas/liga.js` desaparece**: el botón 🏅 Liga lo atiende `juegos/apuestas/apuestas.js` (mismo id, mismo
+  resultado). DT-16 queda parcial: falta sacar las reglas de quiniela, apuestas y blackjack a `systems/`
+  ([#166](https://github.com/ale-dm/bot-discord/issues/166)).
+
 ## 2026-10-09 (auditoría: helpers compartidos)
 
 - **Un solo sitio para los helpers repetidos** (DT-14, [#164](https://github.com/ale-dm/bot-discord/issues/164)):
