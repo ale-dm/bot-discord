@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: herramientas del Duende en partes)
+
+- **`services/duende/herramientas.js` (943 líneas) se parte en `services/duende/herramientas/`** por dominio: `base`
+  (ayudas y `proponer`), `plex` (16 herramientas), `seerr`, `core` (recuerdos, perfil, casino…) y `economia`. Cada
+  parte tiene sus declaraciones y sus ejecutores. El fichero original queda como fachada con la misma API, y
+  `DUENDE_TOOL_EXECUTORS` sigue siendo un solo objeto. (DT-18, [#168](https://github.com/ale-dm/bot-discord/issues/168))
+- Tests: `npm run check` en verde (1.004 tests) y ESLint sin avisos.
+
 ## 2026-10-09 (auditoría: trofeos de Plex en partes)
 
 - **`systems/plexTrofeos.js` (1.113 líneas) se parte en `systems/plexTrofeos/`** por responsabilidad: `base` (constantes y
