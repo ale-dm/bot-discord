@@ -209,8 +209,8 @@ function estadisticasEntre(guildId, tautulliUserId, { desde, hasta }) {
 }
 
 // ─── Trofeos automáticos ─────────────────────────────────────────────────────
-/** Los trofeos automáticos que alguien ya tiene (todos completos: objetivo 1), con lo necesario para crearlos. */
-function candidatos(datos, ctx) {
+/** Trofeos de temporada, de serie completa y de serie completa en un idioma. */
+function candidatosSeries(datos) {
     const lista = [];
     for (const s of datos.series) {
         const { ficha, anime } = s;
@@ -259,40 +259,46 @@ function candidatos(datos, ctx) {
             });
         }
     }
+    return lista;
+}
 
-    // "Todas las de…" y sagas: solo con la biblioteca entera conocida (si no, faltarían películas y saldría antes de tiempo).
-    if (ctx.completa) {
-        for (const [k, d] of ctx.directores) {
-            const pelis = [...d.peliculas.keys()];
-            if (pelis.length < DIRECTOR_MIN_PELICULAS || !pelis.every((p) => datos.vistas.has(p))) continue;
-            lista.push({
-                id: `director:${k}`,
-                tipo: "director",
-                anime: false,
-                recompensa: RECOMPENSA.director(pelis.length),
-                dificultad: DIFICULTAD.director(pelis.length),
-                nombre: `Filmografía de ${d.nombre}`,
-                descripcion: `Ve todas las películas de ${d.nombre} que hay en Plex (${pelis.length})`,
-                ia: `Ver todas las películas dirigidas por ${d.nombre}: ${titulos(d.peliculas)}`,
-            });
-        }
-        for (const [k, s] of ctx.sagas) {
-            const pelis = [...s.peliculas.keys()];
-            if (pelis.length < SAGA.min || pelis.length > SAGA.max || !pelis.every((p) => datos.vistas.has(p))) continue;
-            const anime = [...s.peliculas.values()].every((p) => plexFichas.esAnime(p, ctx.anime));
-            lista.push({
-                id: `saga:${k}`,
-                tipo: "saga",
-                anime,
-                recompensa: RECOMPENSA.saga(pelis.length),
-                dificultad: DIFICULTAD.saga(pelis.length),
-                nombre: `Saga completa: ${s.nombre}`,
-                descripcion: `${anime ? "🎌 " : ""}Ve todas las películas de la colección ${s.nombre} (${pelis.length})`,
-                ia: `Ver todas las películas de la saga "${s.nombre}": ${titulos(s.peliculas)}`,
-            });
-        }
+/** "Todas las de…" (director) y sagas. Solo con la biblioteca entera conocida (si no, faltarían películas y saldría antes de tiempo). */
+function candidatosColecciones(datos, ctx) {
+    const lista = [];
+    for (const [k, d] of ctx.directores) {
+        const pelis = [...d.peliculas.keys()];
+        if (pelis.length < DIRECTOR_MIN_PELICULAS || !pelis.every((p) => datos.vistas.has(p))) continue;
+        lista.push({
+            id: `director:${k}`,
+            tipo: "director",
+            anime: false,
+            recompensa: RECOMPENSA.director(pelis.length),
+            dificultad: DIFICULTAD.director(pelis.length),
+            nombre: `Filmografía de ${d.nombre}`,
+            descripcion: `Ve todas las películas de ${d.nombre} que hay en Plex (${pelis.length})`,
+            ia: `Ver todas las películas dirigidas por ${d.nombre}: ${titulos(d.peliculas)}`,
+        });
     }
+    for (const [k, s] of ctx.sagas) {
+        const pelis = [...s.peliculas.keys()];
+        if (pelis.length < SAGA.min || pelis.length > SAGA.max || !pelis.every((p) => datos.vistas.has(p))) continue;
+        const anime = [...s.peliculas.values()].every((p) => plexFichas.esAnime(p, ctx.anime));
+        lista.push({
+            id: `saga:${k}`,
+            tipo: "saga",
+            anime,
+            recompensa: RECOMPENSA.saga(pelis.length),
+            dificultad: DIFICULTAD.saga(pelis.length),
+            nombre: `Saga completa: ${s.nombre}`,
+            descripcion: `${anime ? "🎌 " : ""}Ve todas las películas de la colección ${s.nombre} (${pelis.length})`,
+            ia: `Ver todas las películas de la saga "${s.nombre}": ${titulos(s.peliculas)}`,
+        });
+    }
+    return lista;
+}
 
+function candidatosGeneros(datos) {
+    const lista = [];
     for (const [k, g] of datos.porGenero) {
         for (const u of UMBRALES_GENERO) {
             if (g.n < u) continue;
@@ -308,6 +314,11 @@ function candidatos(datos, ctx) {
             });
         }
     }
+    return lista;
+}
+
+function candidatosPaises(datos) {
+    const lista = [];
     for (const [k, p] of datos.porPais) {
         for (const u of UMBRALES_PAIS) {
             if (p.n < u) continue;
@@ -322,6 +333,11 @@ function candidatos(datos, ctx) {
             });
         }
     }
+    return lista;
+}
+
+function candidatosDecadas(datos) {
+    const lista = [];
     for (const [d, n] of datos.porDecada) {
         if (d >= DECADA.antesDe || n < DECADA.peliculas) continue;
         const dd = String(d).slice(2);
@@ -337,6 +353,18 @@ function candidatos(datos, ctx) {
     }
     return lista;
 }
+
+/** Los trofeos automáticos que alguien ya tiene (todos completos: objetivo 1), con lo necesario para crearlos. */
+function candidatos(datos, ctx) {
+    return [
+        ...candidatosSeries(datos),
+        ...(ctx.completa ? candidatosColecciones(datos, ctx) : []),
+        ...candidatosGeneros(datos),
+        ...candidatosPaises(datos),
+        ...candidatosDecadas(datos),
+    ];
+}
+
 function titulos(peliculas) {
     const t = [...peliculas.values()].map((p) => `${p.titulo}${p.anio ? ` (${p.anio})` : ""}`);
     return t.slice(0, 8).join(", ") + (t.length > 8 ? "…" : "");

@@ -36,11 +36,11 @@ const DUENDE_MAX_TOOL_ROUNDS = 4;
 // mano para que el reintento con prompt seguro (isGeminiProhibitedContentError) siga funcionando.
 const GEMINI_BLOCK_FINISH_REASONS = new Set(["SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION", "IMAGE_SAFETY"]);
 
-async function generarConGemini(parts, options = {}) {
-    const prompt = buildPromptFromParts(parts);
-    if (!prompt) throw new Error("Prompt vacío para Gemini");
-    if (!GEMINI_API_KEY) throw new Error("Falta GOOGLE_API_KEY en variables de entorno");
-
+/**
+ * Configuración de la llamada: el systemInstruction, los ajustes de generación y, si hay contexto de herramientas,
+ * las declaraciones que de verdad se pueden usar en este canal (Plex y Seerr solo donde están permitidos).
+ */
+function configuracionBase(options) {
     // La parte de "usa las herramientas siempre" vive aquí, en el systemInstruction real
     // de Gemini, no mezclada dentro del texto de personalidad (ver duende.js): así una
     // personalidad nueva que no la mencione no puede hacer que el modelo se la salte.
@@ -78,14 +78,58 @@ async function generarConGemini(parts, options = {}) {
         ];
         baseConfig.tools = [{ functionDeclarations: declarations }];
     }
+    return baseConfig;
+}
 
+/** El primer turno del usuario: el texto del prompt y, si las hay, las imágenes adjuntas. */
+function turnoInicial(prompt, images) {
     const contentParts = [{ text: prompt }];
-    for (const img of options.images || []) {
+    for (const img of images || []) {
         if (!img || !img.buffer) continue;
         contentParts.push({ inlineData: { mimeType: img.mime || "image/png", data: img.buffer.toString("base64") } });
     }
+    return [{ role: "user", parts: contentParts }];
+}
 
-    const contents = [{ role: "user", parts: contentParts }];
+/** Ejecuta en paralelo las herramientas que pidió Gemini en esta vuelta y devuelve sus respuestas. */
+function ejecutarHerramientas(functionCalls, toolContext, toolsCalledThisTurn) {
+    return Promise.all(
+        functionCalls.map(async (fc) => {
+            let result;
+            try {
+                const executor = DUENDE_TOOL_EXECUTORS[fc.name];
+                result = executor ? await executor(fc.args, toolContext) : { error: "Herramienta desconocida." };
+            } catch (toolErr) {
+                log.warn(`Error ejecutando herramienta ${fc.name}: ` + (toolErr && toolErr.message));
+                result = { error: "No se pudo obtener el dato." };
+            }
+            log.info(`Herramienta usada: ${fc.name}(${JSON.stringify(fc.args || {})}) -> ${JSON.stringify(result)}`);
+            toolsCalledThisTurn.add(fc.name);
+            return { functionResponse: { id: fc.id, name: fc.name, response: result } };
+        }),
+    );
+}
+
+/** Detector de alucinación de acción: si el texto suena a "ya lo he pedido/hecho" pero la herramienta de escritura nunca se llamó de verdad en este turno, queda registrado. */
+function avisarSiAlucina(text, toolsCalledThisTurn) {
+    if (
+        text &&
+        /\bya\s+(te\s+|se\s+|le\s+)?(lo\s+|la\s+)?he\s+pedido\b|\bya\s+est[aá]\s+pedid[oa]\b|\bpedido\s+ya\b/i.test(text) &&
+        !toolsCalledThisTurn.has("solicitar_contenido_seerr")
+    ) {
+        log.warn(
+            `Posible alucinación: el texto afirma haber pedido algo en Seerr pero 'solicitar_contenido_seerr' no se llamó en este turno. Texto: "${text}"`,
+        );
+    }
+}
+
+async function generarConGemini(parts, options = {}) {
+    const prompt = buildPromptFromParts(parts);
+    if (!prompt) throw new Error("Prompt vacío para Gemini");
+    if (!GEMINI_API_KEY) throw new Error("Falta GOOGLE_API_KEY en variables de entorno");
+
+    const baseConfig = configuracionBase(options);
+    const contents = turnoInicial(prompt, options.images);
     const toolsCalledThisTurn = new Set();
 
     for (let round = 0; round <= DUENDE_MAX_TOOL_ROUNDS; round++) {
@@ -119,21 +163,7 @@ async function generarConGemini(parts, options = {}) {
             };
             contents.push(modelContent);
 
-            const functionResponseParts = await Promise.all(
-                functionCalls.map(async (fc) => {
-                    let result;
-                    try {
-                        const executor = DUENDE_TOOL_EXECUTORS[fc.name];
-                        result = executor ? await executor(fc.args, options.toolContext) : { error: "Herramienta desconocida." };
-                    } catch (toolErr) {
-                        log.warn(`Error ejecutando herramienta ${fc.name}: ` + (toolErr && toolErr.message));
-                        result = { error: "No se pudo obtener el dato." };
-                    }
-                    log.info(`Herramienta usada: ${fc.name}(${JSON.stringify(fc.args || {})}) -> ${JSON.stringify(result)}`);
-                    toolsCalledThisTurn.add(fc.name);
-                    return { functionResponse: { id: fc.id, name: fc.name, response: result } };
-                }),
-            );
+            const functionResponseParts = await ejecutarHerramientas(functionCalls, options.toolContext, toolsCalledThisTurn);
             // En @google/genai las respuestas de herramientas van con rol "user" (el SDK viejo usaba "function").
             contents.push({ role: "user", parts: functionResponseParts });
             continue;
@@ -147,19 +177,8 @@ async function generarConGemini(parts, options = {}) {
             log.warn(`Respuesta cortada por MAX_TOKENS (maxOutputTokens=${baseConfig.maxOutputTokens}). Texto entregado: "${text}"`);
         }
 
-        // Detector de alucinación de acción: si el texto suena a "ya lo he pedido/hecho"
-        // pero la herramienta de escritura nunca se llamó de verdad en este turno, el
-        // modelo se está inventando el resultado de una acción real. No se puede arreglar
-        // el texto ya generado, pero queda registrado para poder pillarlo en el momento.
-        if (
-            text &&
-            /\bya\s+(te\s+|se\s+|le\s+)?(lo\s+|la\s+)?he\s+pedido\b|\bya\s+est[aá]\s+pedid[oa]\b|\bpedido\s+ya\b/i.test(text) &&
-            !toolsCalledThisTurn.has("solicitar_contenido_seerr")
-        ) {
-            log.warn(
-                `Posible alucinación: el texto afirma haber pedido algo en Seerr pero 'solicitar_contenido_seerr' no se llamó en este turno. Texto: "${text}"`,
-            );
-        }
+        // No se puede arreglar el texto ya generado, pero el posible invento queda registrado para poder pillarlo.
+        avisarSiAlucina(text, toolsCalledThisTurn);
 
         if (!text || typeof text !== "string") throw new Error("Respuesta vacía de Gemini");
         return text;
