@@ -2,6 +2,18 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (quinta ronda: funciones largas restantes)
+
+- **DT-27 resuelta** ([#193](https://github.com/ale-dm/bot-discord/issues/193)): las cuatro funciones que quedaban por encima de
+  100 líneas se parten en pasos con nombre, y ninguna pasa ya de 120.
+  - `tryVoiceReply` (voz del Duende, 174 → varias funciones): el guild, el canal, la decisión de hablar, los permisos,
+    el audio TTS, la conexión (reutilizando la viva), y la reproducción con la salida por inactividad.
+  - `generarConGemini`: la configuración, el primer turno con imágenes, la ejecución de herramientas y el aviso de alucinación. El bucle se queda igual.
+  - `candidatos` de trofeos: una función por tipo (series, colecciones, géneros, países, décadas). El orden de salida no cambia.
+  - `buildEconomia` (panel de economía): el embed y las filas de botones van aparte. El orden de las lecturas no cambia.
+- Verificado: ninguna cadena de texto cambia en estos ficheros (comparación de literales con la versión anterior).
+  Pendiente de probar en Discord: la respuesta por voz del Duende y la pestaña 💰 Economía.
+
 ## 2026-10-09 (cuarta ronda: voz en directo y Duende)
 
 - **`hablar` del Duende** (el chat, la voz y el panel 💬) partida en pasos con nombre: configuración, personalidad y tono,
