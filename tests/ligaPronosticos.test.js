@@ -5,7 +5,7 @@ const dinero = require("../src/systems/dinero");
 const guildSettings = require("../src/systems/guildSettings");
 const liga = require("../src/systems/apuestas/liga");
 const { pantallaLiga } = require("../src/paneles/liga");
-const boton = require("../src/juegos/apuestas/liga");
+const boton = require("../src/juegos/apuestas/apuestas");
 
 const G = "g-liga";
 const CANAL = "c-liga";
@@ -128,7 +128,7 @@ test("el panel enseña los campeones de las temporadas anteriores", () => {
 
 test("el botón 🏅 Liga actualiza el mensaje con la pantalla de la liga", async () => {
     let payload = null;
-    await boton.handleButton(null, {
+    await boton.handleLiga(null, {
         customId: "liga_ver",
         guildId: G,
         user: { id: "luis" },

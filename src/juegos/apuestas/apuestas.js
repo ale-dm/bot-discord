@@ -18,6 +18,7 @@ const limites = require("../../systems/apuestas/limites");
 const { logInfo, logError, logWarn } = require("../../core/logger");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas");
+const { pantallaLiga } = require("../../paneles/liga");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
 const { trozos } = require("../../paneles/filas");
 
@@ -51,6 +52,7 @@ module.exports = {
             method: "handleButton",
             acl: "juegos",
         },
+        { types: ["button"], ids: ["liga_ver"], method: "handleLiga", acl: "juegos" },
         { types: ["modal"], prefixes: ["apuestas_modal_"], method: "handleModal", acl: "juegos" },
     ],
 
@@ -196,6 +198,11 @@ module.exports = {
     },
 
     // Handler para el select menu
+    // 🏅 Liga: la clasificación de la temporada (paneles/liga), desde el botón de ⚽ Apuestas.
+    async handleLiga(client, interaction) {
+        return interaction.update(pantallaLiga(interaction.guildId, interaction.user.id));
+    },
+
     async handleSelectMenu(client, interaction) {
         if (interaction.customId !== "apuestas_select_partido") return;
 
