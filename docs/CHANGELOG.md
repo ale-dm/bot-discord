@@ -2,6 +2,20 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (novena ronda: funciones largas restantes y reglas fuera de juegos)
+
+- **Ninguna función pasa de 120 líneas** (escaneo con parser). Partidas por partes:
+  - `/juegos` Adivinar: cada ronda y los retiros son funciones con nombre, y una tabla asigna cada botón a su ronda ([#209](https://github.com/ale-dm/bot-discord/issues/209)).
+  - `/juegos` Tragaperras: animación, liquidación del giro y resultado ([#210](https://github.com/ale-dm/bot-discord/issues/210)).
+  - Quinielas: botones como tabla ordenada de acciones; el formulario de apuesta, más corto.
+  - Apuestas: el formulario de apuesta en comprobaciones y confirmación; la pestaña, en consulta a la API, paginación y listado.
+- **Reglas fuera de `src/juegos`** ([#166](https://github.com/ale-dm/bot-discord/issues/166)):
+  - `src/systems/apuestas/quinielas.js`: crear la jornada, el cierre previo al primer partido, los partidos de cada jornada, cobrar la apuesta.
+  - `src/systems/apuestas/apostar.js`: cuota de cada elección, cobro (todo o nada), si ya apostó, listado de partidos abiertos.
+  - `src/systems/blackjackCobros.js`: pagar una mano y cobrar doblar o separar.
+  Los módulos de `src/juegos` se quedan con los botones, los formularios y lo que se muestra.
+- Mensajes del Duende, panel admin y tienda: ver la octava ronda.
+
 ## 2026-10-09 (octava ronda: funciones largas del core, panel y tienda)
 
 - **Mensajes del Duende** (`registrarMensajes`, [#215](https://github.com/ale-dm/bot-discord/issues/215)): decidir si contesta, la reacción de bajo esfuerzo, la descarga de imágenes, la interacción que espera el Duende y la respuesta, cada una en su función. Mismo orden de decisiones y de llamadas al azar.
