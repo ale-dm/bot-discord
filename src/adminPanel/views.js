@@ -1,7 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const db = require("../core/db");
 const xp = require("../systems/xpSystem");
-const { fmt } = require("./common");
+const { fmtNumero } = require("../core/formato");
 
 function buildMainRows() {
     const row1 = new ActionRowBuilder().addComponents(
@@ -46,10 +46,10 @@ function buildMainEmbed(client) {
                 "• Apuestas: liquidar ahora y crear quinielas · Catálogo: objetos y lo que está a la venta · Sistema: diagnóstico y logs.",
         )
         .addFields(
-            { name: "👥 Usuarios banco", value: fmt(totalUsuarios), inline: true },
-            { name: "🏦 Total banco", value: `${fmt(totalBanco)} monedas`, inline: true },
-            { name: "💵 Total en efectivo", value: `${fmt(totalEnMano)} monedas`, inline: true },
-            { name: "📜 Movimientos", value: fmt(movimientos), inline: true },
+            { name: "👥 Usuarios banco", value: fmtNumero(totalUsuarios), inline: true },
+            { name: "🏦 Total banco", value: `${fmtNumero(totalBanco)} monedas`, inline: true },
+            { name: "💵 Total en efectivo", value: `${fmtNumero(totalEnMano)} monedas`, inline: true },
+            { name: "📜 Movimientos", value: fmtNumero(movimientos), inline: true },
         )
         .setColor(0x3498db)
         .setFooter({ text: "Solo admins", iconURL: client.user.displayAvatarURL() })

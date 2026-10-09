@@ -7,6 +7,7 @@ const db = require("../../core/db");
 const dinero = require("../dinero");
 const guildSettings = require("../guildSettings");
 const { createLogger } = require("../../core/logger");
+const { fmtNumero } = require("../../core/formato");
 
 const log = createLogger("Liga");
 
@@ -77,8 +78,6 @@ function campeonesAnteriores(guildId, limite = 3) {
         .map((r) => ({ temporada: r.temporada, campeones: JSON.parse(r.campeones) }));
 }
 
-const fmt = (n) => Number(n).toLocaleString("es");
-
 /** El mensaje con la clasificación final (con aviso a los premiados). */
 function mensaje(temporada, top, premios) {
     const cabecera = `🏅 **Liga de pronósticos ${temporada}** · clasificación final`;
@@ -88,7 +87,7 @@ function mensaje(temporada, top, premios) {
             `${MEDALLAS[i]} <@${r.userId}> · **${r.puntos}** ${r.puntos === 1 ? "punto" : "puntos"} ` +
             `(${r.quinielas} ${r.quinielas === 1 ? "quiniela" : "quinielas"})`,
     );
-    const pagos = top.map((r, i) => `${MEDALLAS[i]} ${fmt(premios[i])} 🪙`).join(" · ");
+    const pagos = top.map((r, i) => `${MEDALLAS[i]} ${fmtNumero(premios[i])} 🪙`).join(" · ");
     return {
         content: `${cabecera}\n\n${lineas.join("\n")}\n\nPremios al efectivo: ${pagos}`,
         allowedMentions: { users: top.map((r) => String(r.userId)) },

@@ -2,7 +2,8 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
 const impuestos = require("../systems/impuestos");
-const { simpleModal, fmt } = require("./common");
+const { simpleModal } = require("./common");
+const { fmtNumero } = require("../core/formato");
 
 function navRow() {
     return new ActionRowBuilder().addComponents(
@@ -60,7 +61,7 @@ function buildConfigHome(guildId) {
             {
                 name: "🏆 Clasificación semanal",
                 value: cfg.clasificacion.canal
-                    ? `Lunes en <#${cfg.clasificacion.canal}>\nPremio: **${fmt(cfg.clasificacion.premio)}**`
+                    ? `Lunes en <#${cfg.clasificacion.canal}>\nPremio: **${fmtNumero(cfg.clasificacion.premio)}**`
                     : "Sin canal (no se publica)",
                 inline: true,
             },
@@ -77,7 +78,7 @@ function buildConfigHome(guildId) {
             },
             {
                 name: "🏛️ Impuestos",
-                value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmt(impuestos.boteTotal(guildId))}**`,
+                value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmtNumero(impuestos.boteTotal(guildId))}**`,
                 inline: true,
             },
         )
@@ -312,14 +313,14 @@ function buildEventosPanel(guildId) {
             {
                 name: "⚡ Happy hour de XP",
                 value: xp.activo
-                    ? `Cada día de ${hora(xp.desde)} a ${hora(xp.hasta)}: XP **×${fmt(xp.mult)}**${ahora(xp)}\n` +
+                    ? `Cada día de ${hora(xp.desde)} a ${hora(xp.hasta)}: XP **×${fmtNumero(xp.mult)}**${ahora(xp)}\n` +
                       "Encima del multiplicador global y antes del bonus de racha."
                     : "Desactivada",
             },
             {
                 name: "🎰 Fin de semana del casino",
                 value: casino.activo
-                    ? `Sábado y domingo: premio neto de cada victoria al **${fmt(casino.pct)} %**${ahora(casino)}\n` +
+                    ? `Sábado y domingo: premio neto de cada victoria al **${fmtNumero(casino.pct)} %**${ahora(casino)}\n` +
                       "Encima del RTP de cada juego (blackjack, tragaperras, ruleta y adivinar)."
                     : "Desactivado",
             },

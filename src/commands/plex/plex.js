@@ -18,8 +18,8 @@ const { pantallaSesion } = require("../../paneles/cine");
 const { pantallaRecomendaciones } = require("../../paneles/recomendar");
 const { pantallaPlex } = require("../../paneles/plex");
 const perfilPaneles = require("../../paneles/perfil");
-
-const efimero = (payload) => ({ ...payload, flags: MessageFlags.Ephemeral });
+const { efimero } = require("../../core/respuestas");
+const { tienePermiso } = require("../../core/permisos");
 
 function formularioCine() {
     return new ModalBuilder()
@@ -132,7 +132,8 @@ async function handleCineBoton(interaction, accion, id) {
         return interaction.update(pantallaSesion(id));
     }
     if (accion === "cancelar") {
-        const esAdmin = Boolean(interaction.memberPermissions?.has?.("ManageGuild"));
+        // ManageGuild y no Administrator: quien gestiona el servidor también puede cancelar sesiones de otros.
+        const esAdmin = tienePermiso(interaction, "ManageGuild");
         const r = cine.cancelar(id, userId, esAdmin);
         if (!r.ok) return interaction.reply(efimero({ content: r.mensaje }));
         return interaction.update(pantallaSesion(id));

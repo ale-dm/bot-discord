@@ -3,8 +3,7 @@
 const { EmbedBuilder, ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, MessageFlags } = require("discord.js");
 const combinadas = require("../../systems/apuestas/combinadas");
 const { pantallaCombinada } = require("../../paneles/combinada");
-
-const efimero = (payload) => ({ ...payload, flags: MessageFlags.Ephemeral });
+const { efimero } = require("../../core/respuestas");
 
 module.exports = {
     componentHandlers: [

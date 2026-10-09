@@ -13,6 +13,7 @@ const dinero = require("./dinero");
 const guildSettings = require("./guildSettings");
 const rankingApuestas = require("./apuestas/ranking");
 const { createLogger } = require("../core/logger");
+const { fmtNumero } = require("../core/formato");
 
 const log = createLogger("Clasificación");
 
@@ -36,7 +37,6 @@ const aFecha = (dia) => new Date(`${dia}T00:00:00Z`);
 const sumarDias = (dia, n) => new Date(aFecha(dia).getTime() + n * 86400 * 1000).toISOString().slice(0, 10);
 /** 1 = lunes … 7 = domingo. */
 const diaSemana = (dia) => aFecha(dia).getUTCDay() || 7;
-const fmt = (n) => Number(n).toLocaleString("es");
 
 /** La semana anterior completa (lunes y domingo, AAAA-MM-DD, en hora de Madrid) respecto a `ahora`. */
 function semanaAnterior(ahora = Date.now()) {
@@ -71,19 +71,19 @@ function fechas({ lunes, domingo }) {
 /** El mensaje de la clasificación (con aviso a los premiados). */
 function mensaje(g, semana, premio) {
     const lineas = [];
-    if (g.rico) lineas.push(`💰 **El más rico**: <@${g.rico.userId}> (${fmt(g.rico.total)} 🪙 entre efectivo y banco)`);
-    if (g.activo) lineas.push(`💬 **El más activo**: <@${g.activo.userId}> (+${fmt(g.activo.xp)} XP esta semana)`);
+    if (g.rico) lineas.push(`💰 **El más rico**: <@${g.rico.userId}> (${fmtNumero(g.rico.total)} 🪙 entre efectivo y banco)`);
+    if (g.activo) lineas.push(`💬 **El más activo**: <@${g.activo.userId}> (+${fmtNumero(g.activo.xp)} XP esta semana)`);
     if (g.apostador) {
         const n = g.apostador.resueltas;
         lineas.push(
-            `⚽ **El mejor apostador**: <@${g.apostador.userId}> (+${fmt(g.apostador.beneficio)} 🪙 en ${n} ${n === 1 ? "apuesta" : "apuestas"})`,
+            `⚽ **El mejor apostador**: <@${g.apostador.userId}> (+${fmtNumero(g.apostador.beneficio)} 🪙 en ${n} ${n === 1 ? "apuesta" : "apuestas"})`,
         );
     }
     const cabecera = `🏆 **Clasificación semanal** · ${fechas(semana)}`;
     if (!lineas.length) return { content: `${cabecera}\n\nEsta semana no hay a quién premiar. 😴`, allowedMentions: { parse: [] } };
     const premiados = [...new Set([g.rico, g.activo, g.apostador].filter(Boolean).map((x) => String(x.userId)))];
     return {
-        content: `${cabecera}\n\n${lineas.join("\n")}\n\nCada premio: **${fmt(premio)}** 🪙 al efectivo.`,
+        content: `${cabecera}\n\n${lineas.join("\n")}\n\nCada premio: **${fmtNumero(premio)}** 🪙 al efectivo.`,
         allowedMentions: { users: premiados },
     };
 }

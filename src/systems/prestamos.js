@@ -9,6 +9,7 @@
 const db = require("../core/db");
 const dinero = require("./dinero");
 const { createLogger } = require("../core/logger");
+const { fmtNumero } = require("../core/formato");
 
 const log = createLogger("Prestamos");
 
@@ -18,8 +19,6 @@ const MAX = 1000;
 const INTERES = 10;
 const PLAZO_DIAS = 7;
 const DIA_MS = 24 * 3600 * 1000;
-
-const fmt = (n) => Number(n || 0).toLocaleString("es");
 
 /** Lo que hay que devolver por un préstamo de `cantidad` (con el interés, redondeado hacia arriba). */
 const totalDe = (cantidad) => Math.ceil((cantidad * (100 + INTERES)) / 100);
@@ -38,11 +37,11 @@ const enDeuda = (userId) => abierto(userId)?.estado === "deuda";
 /** Por qué no se le pueden prestar `cantidad` monedas a alguien, o null si se puede. */
 function motivoNoPrestar(userId, cantidad) {
     if (!Number.isInteger(cantidad) || cantidad < MIN || cantidad > MAX) {
-        return `La cantidad tiene que ser un número entero entre ${MIN} y ${fmt(MAX)}.`;
+        return `La cantidad tiene que ser un número entero entre ${MIN} y ${fmtNumero(MAX)}.`;
     }
     const p = abierto(userId);
-    if (p?.estado === "deuda") return `Debes **${fmt(p.falta)}** 🪙 de un préstamo vencido: hasta saldarlo no hay otro.`;
-    if (p) return `Ya tienes un préstamo: devuelve los **${fmt(p.falta)}** 🪙 antes de pedir otro.`;
+    if (p?.estado === "deuda") return `Debes **${fmtNumero(p.falta)}** 🪙 de un préstamo vencido: hasta saldarlo no hay otro.`;
+    if (p) return `Ya tienes un préstamo: devuelve los **${fmtNumero(p.falta)}** 🪙 antes de pedir otro.`;
     return null;
 }
 
@@ -61,7 +60,7 @@ function aceptar(userId, cantidad, guildId = null, ahora = Date.now()) {
             ahora + PLAZO_DIAS * DIA_MS,
         );
         dinero.pagar(userId, cantidad);
-        dinero.apuntar(userId, "prestamo", `Préstamo del Duende (devuelves ${fmt(total)})`, cantidad);
+        dinero.apuntar(userId, "prestamo", `Préstamo del Duende (devuelves ${fmtNumero(total)})`, cantidad);
         log.info(`${userId} acepta un préstamo de ${cantidad} (devuelve ${total})`);
         return { ok: true, prestamo: abierto(userId) };
     })();
@@ -87,13 +86,13 @@ function devolver(userId, ahora = Date.now()) {
         if (!dinero.cobrar(userId, p.falta)) {
             return {
                 ok: false,
-                mensaje: `❌ Para devolver los **${fmt(p.falta)}** 🪙 te faltan **${fmt(p.falta - dinero.efectivo(userId))}** 🪙 de efectivo. Saca del banco primero.`,
+                mensaje: `❌ Para devolver los **${fmtNumero(p.falta)}** 🪙 te faltan **${fmtNumero(p.falta - dinero.efectivo(userId))}** 🪙 de efectivo. Saca del banco primero.`,
             };
         }
         dinero.apuntar(userId, "prestamo", "Devolución del préstamo del Duende", -p.falta);
         registrarPago(p, p.falta, ahora);
         log.info(`${userId} devuelve su préstamo (${p.falta})`);
-        return { ok: true, mensaje: `🧙 Has devuelto el préstamo del Duende: **${fmt(p.falta)}** 🪙.` };
+        return { ok: true, mensaje: `🧙 Has devuelto el préstamo del Duende: **${fmtNumero(p.falta)}** 🪙.` };
     })();
 }
 

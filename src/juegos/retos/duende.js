@@ -8,11 +8,11 @@ const prestamos = require("../../systems/prestamos");
 const paneles = require("../../paneles/retos");
 const propuestas = require("../../paneles/duendeEconomia");
 const { createLogger } = require("../../core/logger");
+const { fmtNumero } = require("../../core/formato");
 
 const log = createLogger("Duende");
 
 const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
-const fmt = (n) => Number(n || 0).toLocaleString("es");
 
 /** Cron: cobra los préstamos vencidos y avisa a cada uno por DM (best-effort). */
 async function revisarPrestamos(client) {
@@ -20,9 +20,9 @@ async function revisarPrestamos(client) {
     for (const c of cobros) {
         const texto =
             c.falta > 0
-                ? `🧙 Tu préstamo del Duende ha vencido: te he cobrado **${fmt(c.cobrado)}** 🪙 y aún debes **${fmt(c.falta)}** 🪙. ` +
+                ? `🧙 Tu préstamo del Duende ha vencido: te he cobrado **${fmtNumero(c.cobrado)}** 🪙 y aún debes **${fmtNumero(c.falta)}** 🪙. ` +
                   "Se irá cobrando de lo que ganes, y hasta saldarlo no hay otro préstamo ni apuestas conmigo."
-                : `🧙 Tu préstamo del Duende ha vencido y te he cobrado los **${fmt(c.cobrado)}** 🪙 que faltaban. Estamos en paz.`;
+                : `🧙 Tu préstamo del Duende ha vencido y te he cobrado los **${fmtNumero(c.cobrado)}** 🪙 que faltaban. Estamos en paz.`;
         try {
             const usuario = await client.users.fetch(c.userId);
             await usuario.send(texto);

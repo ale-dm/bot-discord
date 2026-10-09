@@ -6,11 +6,11 @@
 // - Máximo por partido: lo que cada uno puede tener apostado a un mismo partido, sumando todas sus apuestas a él.
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
+const { fmtNumero } = require("../../core/formato");
 
 const ZONA = "Europe/Madrid";
 const formatoDia = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit", day: "2-digit" });
 const diaDe = (fecha) => formatoDia.format(new Date(fecha));
-const fmt = (n) => Number(n).toLocaleString("es");
 
 /** Lo que ha apostado hoy (hora de Madrid) en partidos y quinielas. */
 function apostadoHoy(userId, ahora = Date.now()) {
@@ -47,8 +47,8 @@ function comprobar(guildId, userId, cantidad, { matchId = null, ahora = Date.now
         if (hoy + cantidad > topeDiario) {
             const queda = Math.max(0, topeDiario - hoy);
             return (
-                `Hoy ya has apostado **${fmt(hoy)}** 🪙 y el tope diario es de **${fmt(topeDiario)}** 🪙: ` +
-                (queda ? `como mucho puedes apostar **${fmt(queda)}** 🪙 más hasta mañana.` : "hasta mañana no puedes apostar más.")
+                `Hoy ya has apostado **${fmtNumero(hoy)}** 🪙 y el tope diario es de **${fmtNumero(topeDiario)}** 🪙: ` +
+                (queda ? `como mucho puedes apostar **${fmtNumero(queda)}** 🪙 más hasta mañana.` : "hasta mañana no puedes apostar más.")
             );
         }
     }
@@ -57,9 +57,9 @@ function comprobar(guildId, userId, cantidad, { matchId = null, ahora = Date.now
         if (enPartido + cantidad > maxPartido) {
             const queda = Math.max(0, maxPartido - enPartido);
             return (
-                `El máximo por partido es de **${fmt(maxPartido)}** 🪙` +
-                (enPartido ? ` y en este ya tienes **${fmt(enPartido)}** 🪙` : "") +
-                (queda ? `: como mucho puedes apostar **${fmt(queda)}** 🪙 más.` : ": a este ya no puedes apostar más.")
+                `El máximo por partido es de **${fmtNumero(maxPartido)}** 🪙` +
+                (enPartido ? ` y en este ya tienes **${fmtNumero(enPartido)}** 🪙` : "") +
+                (queda ? `: como mucho puedes apostar **${fmtNumero(queda)}** 🪙 más.` : ": a este ya no puedes apostar más.")
             );
         }
     }

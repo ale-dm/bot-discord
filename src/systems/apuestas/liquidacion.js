@@ -11,6 +11,7 @@ const pase = require("../pase/pase");
 const { logInfo, logWarn, logError, logDebug } = require("../../core/logger");
 
 const { DEPORTES, DIAS_RESULTADOS, deporteValido, obtenerResultados, resultadoDeScore } = require("../../services/oddsApi");
+const { fmtNumero } = require("../../core/formato");
 
 // Un partido de fútbol dura ~2h desde el inicio: antes de eso no merece la pena gastar
 // cuota de la Odds API preguntando por su resultado (lo usa la liquidación automática).
@@ -380,7 +381,6 @@ async function avisarGanadores(client, pagos) {
     }
 }
 
-const fmt = (n) => Number(n || 0).toLocaleString("es");
 // Menciones sin repetir y sin avisar (el mensaje se manda con allowedMentions vacío): se ve quién, sin ping.
 const menciones = (ids, max = 10) => {
     const unicos = [...new Set(ids)];
@@ -399,14 +399,14 @@ function resultadosEmbed(resumen) {
         const comp = DEPORTES[p.deporte]?.name || p.deporte;
         const acertantes = new Set(p.ganadores).size;
         const detalle = p.ganadores.length
-            ? `✅ ${acertantes} de ${p.apostantes} acertaron · **${fmt(p.repartido)}** 🪙 en premios · 🏆 ${menciones(p.ganadores)}`
+            ? `✅ ${acertantes} de ${p.apostantes} acertaron · **${fmtNumero(p.repartido)}** 🪙 en premios · 🏆 ${menciones(p.ganadores)}`
             : `❌ Nadie acertó (${p.apostantes} ${p.apostantes === 1 ? "apuesta" : "apuestas"})`;
         lineas.push(`⚽ **${p.home} ${p.marcador} ${p.away}** · ${comp}\n${detalle}`);
     }
     for (const q of resumen.quinielas || []) {
         const comp = DEPORTES[q.deporte]?.name || q.deporte;
         const detalle = q.ganadores.length
-            ? `🏆 ${q.ganadores.length} ${q.ganadores.length === 1 ? "ganador" : "ganadores"} con ${q.maxAciertos}/${q.partidos} aciertos · **${fmt(q.premioUnitario)}** 🪙 cada uno · ${menciones(q.ganadores)}`
+            ? `🏆 ${q.ganadores.length} ${q.ganadores.length === 1 ? "ganador" : "ganadores"} con ${q.maxAciertos}/${q.partidos} aciertos · **${fmtNumero(q.premioUnitario)}** 🪙 cada uno · ${menciones(q.ganadores)}`
             : `↩️ Nadie llegó a ${q.minimo} aciertos (máximo ${q.maxAciertos}): se devuelve lo apostado a ${q.jugadores} ${q.jugadores === 1 ? "jugador" : "jugadores"}`;
         lineas.push(`🧾 **Quiniela ${q.jornada}** · ${comp}\n${detalle}`);
     }
@@ -414,7 +414,7 @@ function resultadosEmbed(resumen) {
     const { persona } = require("../../paneles/retos");
     for (const r of resumen.retos || []) {
         lineas.push(
-            `⚔️ **Reto** ${persona(r.creador)} vs ${persona(r.rival)} · ${r.partido}\n🏆 Gana ${persona(r.ganador)} y se lleva **${fmt(r.premio)}** 🪙`,
+            `⚔️ **Reto** ${persona(r.creador)} vs ${persona(r.rival)} · ${r.partido}\n🏆 Gana ${persona(r.ganador)} y se lleva **${fmtNumero(r.premio)}** 🪙`,
         );
     }
     if (!lineas.length) return null;

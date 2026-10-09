@@ -4,18 +4,18 @@
 //   puede hacerla (el rival, los dos del duelo, un admin...) en systems/retos.js.
 // Al lanzar un reto, el panel vuelve a la pestaña ⚔️ Retos y el reto se publica en un mensaje nuevo, mencionando al
 // rival. Ese mensaje se edita cuando el reto cambia, también desde el cron (revisarRetos) y la liquidación.
-const { MessageFlags, PermissionFlagsBits } = require("discord.js");
+const { MessageFlags } = require("discord.js");
 const retos = require("../../systems/retos");
 const dinero = require("../../systems/dinero");
 const paneles = require("../../paneles/retos");
 const { avisarGanadores } = require("../../systems/apuestas/liquidacion");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { createLogger } = require("../../core/logger");
+const { esAdmin } = require("../../core/permisos");
 
 const log = createLogger("Retos");
 
 const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
-const esAdmin = (i) => !!i.memberPermissions?.has(PermissionFlagsBits.Administrator);
 // El número de reto va siempre al final del customId.
 const retoDe = (customId) => Number(customId.split("_").at(-1));
 const leerCantidad = (i) => Number(String(i.fields.getTextInputValue("cantidad")).replace(/[.\s]/g, ""));
