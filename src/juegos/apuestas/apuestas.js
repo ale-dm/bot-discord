@@ -393,28 +393,15 @@ module.exports = {
         const cantidadStr = interaction.fields.getTextInputValue("cantidad");
         const cantidad = parseInt(cantidadStr, 10);
 
-        // 🎯 Marcador exacto (F-AP-10): los goles de cada equipo; la elección se guarda como "exacto_2-1".
         if (eleccion === "exacto") {
-            const golesLocal = marcadorExacto.golesValidos(interaction.fields.getTextInputValue("goles_local"));
-            const golesVisitante = marcadorExacto.golesValidos(interaction.fields.getTextInputValue("goles_visitante"));
-            if (golesLocal === null || golesVisitante === null) {
-                const errorEmbed = new EmbedBuilder()
-                    .setColor(0xe74c3c)
-                    .setTitle("❌ Error")
-                    .setDescription(`Los goles tienen que ser números enteros de 0 a ${marcadorExacto.MAX_GOLES}.`);
-                await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
-                return;
-            }
-            eleccion = marcadorExacto.eleccion(golesLocal, golesVisitante);
+            const eleccionExacta = await eleccionMarcadorExacto(interaction);
+            if (eleccionExacta === null) return;
+            eleccion = eleccionExacta;
         }
 
         // Antes solo se comprobaba un mínimo fijo de 10: el máximo de MAX_BET_AMOUNT no se aplicaba.
         if (isNaN(cantidad) || cantidad < MIN_BET_AMOUNT || cantidad > MAX_BET_AMOUNT) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("❌ Error")
-                .setDescription(`La cantidad debe estar entre ${MIN_BET_AMOUNT} y ${MAX_BET_AMOUNT} monedas.`);
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await avisoError(interaction, "❌ Error", `La cantidad debe estar entre ${MIN_BET_AMOUNT} y ${MAX_BET_AMOUNT} monedas.`);
             return;
         }
 
@@ -423,21 +410,13 @@ module.exports = {
         // "saldo insuficiente" hasta que usara otro comando que le creara la cuenta.
         // Se apuesta con el 💵 efectivo + 🥷 dinero negro (systems/dinero, F-EC-06b: se gasta igual).
         if (dinero.saldoGastable(userId) < cantidad) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("❌ No te llega el efectivo")
-                .setDescription("Saca dinero del banco (💵 Sacar) para hacer esta apuesta.");
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await sinEfectivo(interaction);
             return;
         }
 
         const match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
         if (!match) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("❌ Error")
-                .setDescription("No se encontró el partido seleccionado.");
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await avisoError(interaction, "❌ Error", "No se encontró el partido seleccionado.");
             return;
         }
 
@@ -447,29 +426,20 @@ module.exports = {
             logInfo(
                 `[Apuestas] Apuesta rechazada de ${interaction.user.tag}: ${match.home_team} vs ${match.away_team} ya empezó (${match.start_time}, ${match.estado})`,
             );
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("⏱️ Apuestas cerradas")
-                .setDescription(`**${match.home_team}** vs **${match.away_team}** ya ha empezado: no se admiten más apuestas.`);
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await avisoError(
+                interaction,
+                "⏱️ Apuestas cerradas",
+                `**${match.home_team}** vs **${match.away_team}** ya ha empezado: no se admiten más apuestas.`,
+            );
             return;
         }
 
-        let cuota = null;
-        if (eleccion === "home") cuota = match.cuota_home;
-        else if (eleccion === "draw") cuota = match.cuota_draw;
-        else if (eleccion === "away") cuota = match.cuota_away;
-        else if (marcadorExacto.marcadorDe(eleccion)) cuota = marcadorExacto.PREMIO;
-        else if (mercados.esMercado(eleccion)) cuota = mercados.cuotaDe(match, eleccion);
         // La línea de la apuesta queda guardada: si la API la cambia después, esta apuesta se liquida con la suya.
+        const cuota = cuotaDeEleccion(eleccion, match);
         const linea = mercados.esMercado(eleccion) ? mercados.lineaDe(match, eleccion) : null;
 
         if (!cuota || cuota < 1) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("❌ Error")
-                .setDescription("La cuota para este resultado no es válida.");
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await avisoError(interaction, "❌ Error", "La cuota para este resultado no es válida.");
             return;
         }
 
@@ -483,15 +453,13 @@ module.exports = {
             .get(userId, match_id, eleccion);
 
         if (yaApostado) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("❌ Ya has apostado")
-                .setDescription(
-                    marcadorExacto.marcadorDe(eleccion)
-                        ? "Ya tienes una apuesta a ese marcador en este partido."
-                        : "Ya tienes una apuesta activa para este partido y resultado.",
-                );
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await avisoError(
+                interaction,
+                "❌ Ya has apostado",
+                marcadorExacto.marcadorDe(eleccion)
+                    ? "Ya tienes una apuesta a ese marcador en este partido."
+                    : "Ya tienes una apuesta activa para este partido y resultado.",
+            );
             return;
         }
 
@@ -500,57 +468,90 @@ module.exports = {
         const limite = limites.comprobar(interaction.guildId, userId, cantidad, { matchId: match_id });
         if (limite) {
             logInfo(`[Apuestas] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
-            const errorEmbed = new EmbedBuilder().setColor(0xe74c3c).setTitle("🚦 Límite de apuestas").setDescription(limite);
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+            await avisoError(interaction, "🚦 Límite de apuestas", limite);
             return;
         }
 
-        // Descontar saldo y registrar la apuesta, todo o nada (antes eran dos escrituras sueltas:
-        // si fallaba la segunda, se cobraba una apuesta que no existía).
-        const cobrada = db.transaction(() => {
-            if (!dinero.cobrarCombinado(userId, cantidad)) return false;
-            db.prepare(
-                `
-                INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota, linea)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `,
-            ).run(userId, match_id, eleccion, cantidad, cuota, linea);
-            // Antes solo se apuntaba el premio al ganar: en /banco historial no aparecía lo apostado
-            // y el "ganado/perdido" de /nivel contaba el premio entero como ganancia.
-            dinero.apuntar(userId, "apuestas", `Apuesta: ${match.home_team} vs ${match.away_team}`, -cantidad);
-            return true;
-        })();
-        if (!cobrada) {
-            const errorEmbed = new EmbedBuilder()
-                .setColor(0xe74c3c)
-                .setTitle("❌ No te llega el efectivo")
-                .setDescription("Saca dinero del banco (💵 Sacar) para hacer esta apuesta.");
-            await interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+        if (!cobrarApuesta({ userId, match_id, match, eleccion, cantidad, cuota, linea })) {
+            await sinEfectivo(interaction);
             return;
         }
         logInfo(
             `[Apuestas] ${interaction.user.tag} (${userId}) apostó ${cantidad} a "${eleccion}" en ${match.home_team} vs ${match.away_team} (cuota ${cuota})`,
         );
 
-        const saldoActual = dinero.efectivo(userId);
-        const resultadoTxt = marcadorExacto.marcadorDe(eleccion)
-            ? `Marcador exacto ${match.home_team} ${marcadorExacto.marcadorDe(eleccion)} ${match.away_team}`
-            : mercados.textoEleccion({ eleccion, linea, home_team: match.home_team, away_team: match.away_team });
-        const embed = new EmbedBuilder()
-            .setTitle("✅ ¡Apuesta registrada!")
-            .setDescription(
-                `**Partido:** ${match.home_team} vs ${match.away_team}\n` +
-                    `**Opción:** ${resultadoTxt}\n` +
-                    `**Cantidad:** \`${cantidad}\` monedas\n` +
-                    `**Cuota:** \`${cuota}\`\n\n` +
-                    `💵 **Tu efectivo:** \`${saldoActual}\` monedas\n\n` +
-                    "¡Suerte!",
-            )
-            .setColor(0x27ae60);
-
-        await interaction.reply({
-            embeds: [embed],
-            components: [filaTrasApostar(userId, { deporte: match.deporte || "laliga" })],
-        });
+        await confirmarApuesta(interaction, { userId, match, eleccion, linea, cantidad, cuota });
     },
 };
+
+// Aviso de error en privado, con el mismo formato en todas las comprobaciones de la apuesta.
+function avisoError(interaction, titulo, descripcion) {
+    const errorEmbed = new EmbedBuilder().setColor(0xe74c3c).setTitle(titulo).setDescription(descripcion);
+    return interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
+}
+
+function sinEfectivo(interaction) {
+    return avisoError(interaction, "❌ No te llega el efectivo", "Saca dinero del banco (💵 Sacar) para hacer esta apuesta.");
+}
+
+// 🎯 Marcador exacto (F-AP-10): los goles de cada equipo; la elección se guarda como "exacto_2-1". Null si los goles no
+// son válidos (ya se ha avisado).
+async function eleccionMarcadorExacto(interaction) {
+    const golesLocal = marcadorExacto.golesValidos(interaction.fields.getTextInputValue("goles_local"));
+    const golesVisitante = marcadorExacto.golesValidos(interaction.fields.getTextInputValue("goles_visitante"));
+    if (golesLocal === null || golesVisitante === null) {
+        await avisoError(interaction, "❌ Error", `Los goles tienen que ser números enteros de 0 a ${marcadorExacto.MAX_GOLES}.`);
+        return null;
+    }
+    return marcadorExacto.eleccion(golesLocal, golesVisitante);
+}
+
+function cuotaDeEleccion(eleccion, match) {
+    if (eleccion === "home") return match.cuota_home;
+    if (eleccion === "draw") return match.cuota_draw;
+    if (eleccion === "away") return match.cuota_away;
+    if (marcadorExacto.marcadorDe(eleccion)) return marcadorExacto.PREMIO;
+    if (mercados.esMercado(eleccion)) return mercados.cuotaDe(match, eleccion);
+    return null;
+}
+
+// Descuenta el saldo y registra la apuesta, todo o nada (antes eran dos escrituras sueltas: si fallaba la segunda,
+// se cobraba una apuesta que no existía). Devuelve false si no había efectivo suficiente.
+function cobrarApuesta({ userId, match_id, match, eleccion, cantidad, cuota, linea }) {
+    return db.transaction(() => {
+        if (!dinero.cobrarCombinado(userId, cantidad)) return false;
+        db.prepare(
+            `
+            INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota, linea)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        ).run(userId, match_id, eleccion, cantidad, cuota, linea);
+        // Antes solo se apuntaba el premio al ganar: en /banco historial no aparecía lo apostado
+        // y el "ganado/perdido" de /nivel contaba el premio entero como ganancia.
+        dinero.apuntar(userId, "apuestas", `Apuesta: ${match.home_team} vs ${match.away_team}`, -cantidad);
+        return true;
+    })();
+}
+
+async function confirmarApuesta(interaction, { userId, match, eleccion, linea, cantidad, cuota }) {
+    const saldoActual = dinero.efectivo(userId);
+    const resultadoTxt = marcadorExacto.marcadorDe(eleccion)
+        ? `Marcador exacto ${match.home_team} ${marcadorExacto.marcadorDe(eleccion)} ${match.away_team}`
+        : mercados.textoEleccion({ eleccion, linea, home_team: match.home_team, away_team: match.away_team });
+    const embed = new EmbedBuilder()
+        .setTitle("✅ ¡Apuesta registrada!")
+        .setDescription(
+            `**Partido:** ${match.home_team} vs ${match.away_team}\n` +
+                `**Opción:** ${resultadoTxt}\n` +
+                `**Cantidad:** \`${cantidad}\` monedas\n` +
+                `**Cuota:** \`${cuota}\`\n\n` +
+                `💵 **Tu efectivo:** \`${saldoActual}\` monedas\n\n` +
+                "¡Suerte!",
+        )
+        .setColor(0x27ae60);
+
+    await interaction.reply({
+        embeds: [embed],
+        components: [filaTrasApostar(userId, { deporte: match.deporte || "laliga" })],
+    });
+}
