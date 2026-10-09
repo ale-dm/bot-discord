@@ -90,9 +90,10 @@ function revisar(ahora = Date.now()) {
     const cfg = configuracion();
     const periodo = cfg.dias * DIA_MS;
     const total = { ciclos: 0, interes: 0, cobrado: 0 };
+    const ultimoCiclo = db.prepare("SELECT ultimo_ciclo FROM patrimonio_usuario WHERE userId = ?");
     for (const { userId } of db.prepare("SELECT userId FROM banco").all()) {
         db.transaction(() => {
-            const fila = db.prepare("SELECT ultimo_ciclo FROM patrimonio_usuario WHERE userId = ?").get(userId);
+            const fila = ultimoCiclo.get(userId);
             if (!fila) {
                 db.prepare("INSERT INTO patrimonio_usuario (userId, ultimo_ciclo) VALUES (?, ?)").run(userId, ahora);
                 return;
