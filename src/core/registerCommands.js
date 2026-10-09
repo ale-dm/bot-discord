@@ -1,29 +1,15 @@
-const fs = require("fs");
 const path = require("path");
 const { REST, Routes } = require("discord.js");
 require("dotenv").config(); // Cargar el archivo .env
 const { createLogger, flushLogs } = require("./logger");
 const { ROOT, COMMANDS_DIR } = require("./paths");
+const { getAllJsFiles } = require("./cargarModulos");
 
 const log = createLogger("Registro de comandos");
 
 const guildCommands = [];
 
 // Registra en Discord todos los slash commands de src/commands (se ejecuta antes de arrancar el bot).
-function getAllJsFiles(dir) {
-    let results = [];
-    fs.readdirSync(dir).forEach((file) => {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
-        if (stat && stat.isDirectory()) {
-            results = results.concat(getAllJsFiles(filePath));
-        } else if (file.endsWith(".js")) {
-            results.push(filePath);
-        }
-    });
-    return results;
-}
-
 const slashCommandsFiles = getAllJsFiles(COMMANDS_DIR);
 
 for (const file of slashCommandsFiles) {
