@@ -6,6 +6,7 @@ const db = require("../core/db");
 const dinero = require("./dinero");
 const { madridDateStr } = require("./xp/rachas");
 const { createLogger } = require("../core/logger");
+const { fmtNumero } = require("../core/formato");
 
 const log = createLogger("Negocios");
 
@@ -20,7 +21,6 @@ const CATALOGO = {
     taco: { nombre: "Taco Ticklers", emoji: "🌮", precio: 190000, blanqueoDia: 30000, ingresoDia: 800 },
 };
 
-const fmt = (n) => Number(n || 0).toLocaleString("es");
 const diaDe = (ahora) => madridDateStr(new Date(ahora));
 
 function negociosDe(userId) {
@@ -55,7 +55,7 @@ function comprar(userId, guildId, tipo, ahora = Date.now()) {
         if (!dinero.cobrarBanco(userId, n.precio)) {
             return {
                 ok: false,
-                mensaje: `❌ Para comprar ${n.nombre} necesitas **${fmt(n.precio)}** 🪙 en el banco. Ingresa antes (🏦 Ingresar).`,
+                mensaje: `❌ Para comprar ${n.nombre} necesitas **${fmtNumero(n.precio)}** 🪙 en el banco. Ingresa antes (🏦 Ingresar).`,
             };
         }
         dinero.apuntar(userId, "negocio", `Compra: ${n.nombre}`, -n.precio);
@@ -64,7 +64,7 @@ function comprar(userId, guildId, tipo, ahora = Date.now()) {
             "INSERT INTO negocios_usuario (userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia) VALUES (?, ?, ?, ?, ?, ?)",
         ).run(String(userId), tipo, guildId, n.precio, ahora, diaDe(ahora));
         log.info(`${userId} compra ${tipo} por ${n.precio}`);
-        return { ok: true, mensaje: `🏪 Has comprado **${n.nombre}** por **${fmt(n.precio)}** 🪙 del banco.` };
+        return { ok: true, mensaje: `🏪 Has comprado **${n.nombre}** por **${fmtNumero(n.precio)}** 🪙 del banco.` };
     })();
 }
 
@@ -79,7 +79,7 @@ function vender(userId, tipo) {
         dinero.pagarBanco(userId, devuelto);
         dinero.apuntar(userId, "negocio", `Venta: ${n.nombre} (${VENTA_PCT} %)`, devuelto);
         log.info(`${userId} vende ${tipo} por ${devuelto}`);
-        return { ok: true, mensaje: `🏪 Has vendido **${n.nombre}**: recuperas **${fmt(devuelto)}** 🪙 en el banco.` };
+        return { ok: true, mensaje: `🏪 Has vendido **${n.nombre}**: recuperas **${fmtNumero(devuelto)}** 🪙 en el banco.` };
     })();
 }
 
@@ -94,13 +94,13 @@ function depositar(userId, guildId, cantidad, ahora = Date.now()) {
         return {
             ok: false,
             mensaje: libre
-                ? `❌ Hoy solo te queda capacidad para **${fmt(libre)}** 🪙 (se reinicia a las 00:00, hora de Madrid).`
+                ? `❌ Hoy solo te queda capacidad para **${fmtNumero(libre)}** 🪙 (se reinicia a las 00:00, hora de Madrid).`
                 : "❌ Hoy ya has usado toda la capacidad de tus negocios (se reinicia a las 00:00, hora de Madrid).",
         };
     }
     return db.transaction(() => {
         if (!dinero.cobrarNegro(userId, cantidad)) {
-            return { ok: false, mensaje: `❌ No tienes tanto dinero negro. Tienes **${fmt(dinero.negro(userId))}** 🪙.` };
+            return { ok: false, mensaje: `❌ No tienes tanto dinero negro. Tienes **${fmtNumero(dinero.negro(userId))}** 🪙.` };
         }
         dinero.apuntar(userId, "blanqueo", "Dinero negro a limpiar en los negocios", -cantidad);
         db.prepare("INSERT INTO blanqueo_lotes (userId, guildId, cantidad, liberado, inicio, fin) VALUES (?, ?, ?, 0, ?, ?)").run(
@@ -115,7 +115,7 @@ function depositar(userId, guildId, cantidad, ahora = Date.now()) {
         ).run(String(userId), diaDe(ahora), cantidad);
         return {
             ok: true,
-            mensaje: `🧼 Has depositado **${fmt(cantidad)}** 🪙 de dinero negro. Se limpiará en 24 h, repartido a lo largo del día.`,
+            mensaje: `🧼 Has depositado **${fmtNumero(cantidad)}** 🪙 de dinero negro. Se limpiará en 24 h, repartido a lo largo del día.`,
         };
     })();
 }

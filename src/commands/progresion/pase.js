@@ -1,9 +1,8 @@
 // 🛡️ /pase: el pase de batalla de la temporada (#36). Solo lo ves tú (efímero). Ver systems/pase/pase.js.
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const pase = require("../../systems/pase/pase");
 const { pantallaPase } = require("../../paneles/pase");
-
-const efimero = (payload) => ({ ...payload, flags: MessageFlags.Ephemeral });
+const { efimero } = require("../../core/respuestas");
 
 module.exports = {
     componentHandlers: [{ types: ["button"], prefixes: ["pase_"], method: "handleButton", acl: "pase" }],

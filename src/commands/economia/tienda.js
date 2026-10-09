@@ -3,15 +3,7 @@
 // persona. La gestión (objetos, precios, stock) está en /paneladmin → 🛒 Catálogo, y la configuración (activa, límites,
 // canal de avisos) en /paneladmin → Config Global → Tienda. Los datos y el cobro están en systems/tienda y los mensajes
 // en paneles/tienda.
-const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    MessageFlags,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-    ActionRowBuilder,
-} = require("discord.js");
+const { SlashCommandBuilder, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
 const db = require("../../core/db");
 const guildSettings = require("../../systems/guildSettings");
 const achievements = require("../../systems/achievementsSystem");
@@ -19,13 +11,13 @@ const tienda = require("../../systems/tienda");
 const pase = require("../../systems/pase/pase");
 const paneles = require("../../paneles/tienda");
 const { createLogger } = require("../../core/logger");
+const { esAdmin } = require("../../core/permisos");
 
 const log = createLogger("Tienda");
 
 const purchaseLocks = new Map();
 // Filtros del panel de cada persona (categoría, rareza y búsqueda). En memoria: si el bot se reinicia, se quitan.
 const filtrosPorUsuario = new Map();
-const esAdmin = (interaction) => interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 const privado = (payload) => ({ ...(typeof payload === "string" ? { content: payload } : payload), flags: MessageFlags.Ephemeral });
 const sustituir = (content) => ({ content, embeds: [], components: [] });
 

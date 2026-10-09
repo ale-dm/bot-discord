@@ -3,13 +3,14 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const dinero = require("../systems/dinero");
 const negocios = require("../systems/negocios");
-
-const fmt = (n) => Number(n || 0).toLocaleString("es");
+const { fmtNumero } = require("../core/formato");
 
 function buildNegocios(userId, aviso = null) {
     const e = negocios.estado(userId);
     const lineas = e.negocios.length
-        ? e.negocios.map((n) => `${n.emoji} **${n.nombre}** · +${fmt(n.ingresoDia)} 🪙/día · blanquea ${fmt(n.blanqueoDia)}/día`)
+        ? e.negocios.map(
+              (n) => `${n.emoji} **${n.nombre}** · +${fmtNumero(n.ingresoDia)} 🪙/día · blanquea ${fmtNumero(n.blanqueoDia)}/día`,
+          )
         : "Todavía no tienes ningún negocio.";
 
     const embed = new EmbedBuilder()
@@ -22,12 +23,12 @@ function buildNegocios(userId, aviso = null) {
                 lineas,
         )
         .addFields(
-            { name: "🥷 Dinero negro", value: `**${fmt(dinero.negro(userId))}** 🪙`, inline: true },
-            { name: "🏦 Banco", value: `**${fmt(dinero.banco(userId))}** 🪙`, inline: true },
-            { name: "🧼 En limpieza", value: `**${fmt(e.enLimpieza)}** 🪙`, inline: true },
+            { name: "🥷 Dinero negro", value: `**${fmtNumero(dinero.negro(userId))}** 🪙`, inline: true },
+            { name: "🏦 Banco", value: `**${fmtNumero(dinero.banco(userId))}** 🪙`, inline: true },
+            { name: "🧼 En limpieza", value: `**${fmtNumero(e.enLimpieza)}** 🪙`, inline: true },
             {
                 name: "📅 Capacidad de hoy",
-                value: `Usada **${fmt(e.usadoHoy)}** de **${fmt(e.capacidad)}** 🪙 · quedan **${fmt(e.disponibleHoy)}**\n(se reinicia a las 00:00, hora de Madrid)`,
+                value: `Usada **${fmtNumero(e.usadoHoy)}** de **${fmtNumero(e.capacidad)}** 🪙 · quedan **${fmtNumero(e.disponibleHoy)}**\n(se reinicia a las 00:00, hora de Madrid)`,
             },
         )
         .setColor(0x16a085)
@@ -38,12 +39,12 @@ function buildNegocios(userId, aviso = null) {
         return suyo
             ? {
                   label: `Vender ${c.emoji} ${c.nombre}`.slice(0, 100),
-                  description: `Recuperas ${fmt(Math.floor((suyo.pagado * negocios.VENTA_PCT) / 100))} 🪙 en el banco`,
+                  description: `Recuperas ${fmtNumero(Math.floor((suyo.pagado * negocios.VENTA_PCT) / 100))} 🪙 en el banco`,
                   value: `vender_${tipo}`,
               }
             : {
                   label: `Comprar ${c.emoji} ${c.nombre}`.slice(0, 100),
-                  description: `${fmt(c.precio)} 🪙 del banco · blanquea ${fmt(c.blanqueoDia)}/día`.slice(0, 100),
+                  description: `${fmtNumero(c.precio)} 🪙 del banco · blanquea ${fmtNumero(c.blanqueoDia)}/día`.slice(0, 100),
                   value: `comprar_${tipo}`,
               };
     });

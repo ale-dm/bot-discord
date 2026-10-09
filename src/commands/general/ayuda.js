@@ -1,15 +1,8 @@
-const {
-    SlashCommandBuilder,
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    PermissionFlagsBits,
-    MessageFlags,
-} = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const guildSettings = require("../../systems/guildSettings");
 const { CATALOG } = require("../../systems/achievementsSystem");
 const log = require("../../core/logger").createLogger("ayuda");
+const { esAdmin } = require("../../core/permisos");
 
 // Guía del bot dentro de Discord. El contenido sigue a docs/FUNCIONALIDADES.md: si se
 // añade o cambia un comando, actualizar las dos cosas.
@@ -138,10 +131,6 @@ const SECCIONES = {
         ],
     },
 };
-
-function esAdmin(interaction) {
-    return !!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
-}
 
 function seccionesVisibles(interaction) {
     return Object.entries(SECCIONES).filter(([, s]) => !s.soloAdmin || esAdmin(interaction));

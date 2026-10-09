@@ -17,6 +17,7 @@ const { sendDm } = require("./xp/rachas");
 const { createLogger, getLogStats } = require("../core/logger");
 const { getUsage } = require("../services/geminiClient");
 const { creditosRestantes, CREDITOS_AVISO } = require("../services/oddsApi");
+const { fmtNumero } = require("../core/formato");
 
 const log = createLogger("Resumen");
 
@@ -108,8 +109,6 @@ function usoGemini(arranque = Date.now() - process.uptime() * 1000) {
     return { ...resta, desdeArranque: !geminiAnterior, arranque };
 }
 
-const fmt = (n) => Number(n || 0).toLocaleString("es");
-
 /** El resumen de los últimos 7 días, como embed. */
 function construir(ahora = Date.now(), { dir } = {}) {
     const desde = ahora - DIAS * DIA_MS;
@@ -123,26 +122,26 @@ function construir(ahora = Date.now(), { dir } = {}) {
         .setDescription(`Lo de los últimos ${DIAS} días (desde <t:${Math.floor(desde / 1000)}:f>).`)
         .addFields(
             {
-                name: `❌ Errores: ${fmt(e.total)}`,
+                name: `❌ Errores: ${fmtNumero(e.total)}`,
                 value: (e.total
                     ? lineasErrores.join("\n") + (e.lista.length > 5 ? `\n…y ${e.lista.length - 5} distintos más` : "")
                     : "Ninguno. 🎉"
                 ).slice(0, 1024),
             },
             {
-                name: `⌨️ Comandos más usados: ${fmt(c.total)} en total`,
+                name: `⌨️ Comandos más usados: ${fmtNumero(c.total)} en total`,
                 value: c.total
                     ? c.lista
                           .slice(0, 5)
-                          .map((x, i) => `${i + 1}. \`/${x.comando}\` · ${fmt(x.veces)}`)
+                          .map((x, i) => `${i + 1}. \`/${x.comando}\` · ${fmtNumero(x.veces)}`)
                           .join("\n")
                     : "Ninguno.",
             },
             {
                 name: "🤖 Gemini",
                 value:
-                    `${fmt(g.llamadas)} llamadas · ${fmt(g.errores)} errores (${fmt(g.cuotaAgotada)} por cuota) · tokens ` +
-                    `${fmt(g.tokensEntrada)} de entrada / ${fmt(g.tokensSalida)} de salida` +
+                    `${fmtNumero(g.llamadas)} llamadas · ${fmtNumero(g.errores)} errores (${fmtNumero(g.cuotaAgotada)} por cuota) · tokens ` +
+                    `${fmtNumero(g.tokensEntrada)} de entrada / ${fmtNumero(g.tokensSalida)} de salida` +
                     (g.desdeArranque ? `\n_Desde el arranque del bot, <t:${Math.floor(g.arranque / 1000)}:R>._` : ""),
             },
             {
@@ -150,7 +149,7 @@ function construir(ahora = Date.now(), { dir } = {}) {
                 value:
                     odds.restantes === null
                         ? "Sin consultar desde el arranque."
-                        : `**${fmt(odds.restantes)}** créditos restantes este mes${odds.restantes < CREDITOS_AVISO ? " ⚠️" : ""} (<t:${Math.floor(odds.at / 1000)}:R>)`,
+                        : `**${fmtNumero(odds.restantes)}** créditos restantes este mes${odds.restantes < CREDITOS_AVISO ? " ⚠️" : ""} (<t:${Math.floor(odds.at / 1000)}:R>)`,
             },
         )
         .setColor(e.total ? 0xe67e22 : 0x2ecc71)

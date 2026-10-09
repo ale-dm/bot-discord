@@ -5,7 +5,8 @@ const impuestos = require("../systems/impuestos");
 const dinero = require("../systems/dinero");
 const adminAudit = require("../systems/adminAudit");
 const patrimonio = require("../systems/patrimonio");
-const { simpleModal, fmt } = require("./common");
+const { simpleModal } = require("./common");
+const { fmtNumero } = require("../core/formato");
 
 function lineaRegla(r) {
     const ambito =
@@ -28,7 +29,7 @@ function buildImpuestosHome(guildId) {
             "Reglas de impuesto del servidor: sobre **ingresos** (general, o limitada a un tipo concreto) o sobre **compras** " +
                 "en la tienda. Si hay una regla general de ingreso y otra específica para el mismo tipo, gana la específica.\n\n" +
                 lines +
-                `\n\n💰 Bote acumulado: **${fmt(impuestos.boteTotal(guildId))}**`,
+                `\n\n💰 Bote acumulado: **${fmtNumero(impuestos.boteTotal(guildId))}**`,
         )
         .setColor(0x1abc9c)
         .setTimestamp();
@@ -58,7 +59,7 @@ function buildPatrimonio() {
                 "Lo que no se pueda pagar del banco no se cobra.",
         )
         .addFields(
-            { name: "Umbral", value: fmt(c.umbral) + " 🪙", inline: true },
+            { name: "Umbral", value: fmtNumero(c.umbral) + " 🪙", inline: true },
             { name: "Impuesto", value: c.porcentaje + " % sobre el exceso", inline: true },
             { name: "Interés", value: c.interes + " % sobre el banco", inline: true },
             { name: "Cada", value: c.dias + " días", inline: true },

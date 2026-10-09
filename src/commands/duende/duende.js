@@ -25,6 +25,7 @@ const recuerdosAuto = require("../../systems/duende/recuerdosAuto");
 const { tryVoiceReply } = require("../../services/duende/voz");
 const { getGifForText } = require("../../services/giphy");
 const paneles = require("../../paneles/duende");
+const { esAdmin } = require("../../core/permisos");
 
 const log = createLogger("Duende");
 
@@ -459,7 +460,6 @@ async function hablar(client, interaction) {
     }
 }
 
-const esAdminDe = (interaction) => !!interaction.member?.permissions?.has?.("Administrator");
 const noOtra = (interaction) =>
     interaction.reply({
         content: "Solo puedes gestionar lo que recuerdo de ti. Para lo de otra persona, pídeselo a un admin.",
@@ -485,16 +485,15 @@ const vistaInicio = (interaction, aviso = null) => {
     const personalidad = perfiles.personalidadDeCanal(interaction.channelId)
         ? perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(interaction.channelId))
         : null;
-    const payload = paneles.buildInicio({ esAdmin: esAdminDe(interaction), personalidad });
+    const payload = paneles.buildInicio({ esAdmin: esAdmin(interaction), personalidad });
     if (aviso) payload.embeds[0].setDescription(`${aviso}\n\n${payload.embeds[0].data.description}`);
     return payload;
 };
-const vistaRecuerdos = (interaction, objetivo, aviso = null) =>
-    paneles.buildRecuerdos({ esAdmin: esAdminDe(interaction), objetivo, aviso });
+const vistaRecuerdos = (interaction, objetivo, aviso = null) => paneles.buildRecuerdos({ esAdmin: esAdmin(interaction), objetivo, aviso });
 const vistaPersonalidad = (interaction, aviso = null) => {
     const actualId = perfiles.personalidadDeCanal(interaction.channelId);
     return paneles.buildPersonalidad({
-        esAdmin: esAdminDe(interaction),
+        esAdmin: esAdmin(interaction),
         canal: interaction.channelId,
         personalidades: perfiles.listarPersonalidades(),
         actual: actualId ? perfiles.obtenerPersonalidad(actualId) : null,
@@ -533,7 +532,7 @@ module.exports = {
 
     async handleButton(client, interaction) {
         const id = interaction.customId;
-        const admin = esAdminDe(interaction);
+        const admin = esAdmin(interaction);
         if (id === "duendepanel_inicio") return interaction.update(vistaInicio(interaction));
         if (id === "duendepanel_hablar") {
             const modal = new ModalBuilder().setCustomId("duendepanel_modal_hablar").setTitle("💬 Hablar con el Duende");
@@ -627,7 +626,7 @@ module.exports = {
 
     // Menús de personalidad del canal (duendepanel_canal) y de quitar una (duendepanel_quitar_select).
     async handleSelect(client, interaction) {
-        if (!esAdminDe(interaction)) return noPermitido(interaction);
+        if (!esAdmin(interaction)) return noPermitido(interaction);
         const valor = interaction.values[0];
         if (interaction.customId === "duendepanel_canal") {
             if (!perfiles.obtenerPersonalidad(valor))
@@ -656,7 +655,7 @@ module.exports = {
 
     // Selector de persona (solo admins): sus recuerdos.
     async handleUserSelect(client, interaction) {
-        if (!esAdminDe(interaction)) return noPermitido(interaction);
+        if (!esAdmin(interaction)) return noPermitido(interaction);
         const objetivo = interaction.users.first();
         return interaction.update(vistaRecuerdos(interaction, objetivo));
     },
@@ -669,7 +668,7 @@ module.exports = {
         }
         if (id.startsWith("duendepanel_modal_anotar_")) {
             const objetivoId = id.replace("duendepanel_modal_anotar_", "");
-            if (objetivoId !== interaction.user.id && !esAdminDe(interaction)) return noOtra(interaction);
+            if (objetivoId !== interaction.user.id && !esAdmin(interaction)) return noOtra(interaction);
             const objetivo =
                 objetivoId === interaction.user.id ? interaction.user : await interaction.client.users.fetch(objetivoId).catch(() => null);
             if (!objetivo) return interaction.reply({ content: "❌ No encuentro a esa persona.", flags: MessageFlags.Ephemeral });
@@ -680,7 +679,7 @@ module.exports = {
             return responder(interaction, vistaRecuerdos(interaction, objetivo, `📝 Anotado sobre **${objetivo.username}**: "${nota}"`));
         }
         if (id === "duendepanel_modal_add") {
-            if (!esAdminDe(interaction)) return noPermitido(interaction);
+            if (!esAdmin(interaction)) return noPermitido(interaction);
             const pid = interaction.fields.getTextInputValue("id").trim();
             const title = interaction.fields.getTextInputValue("title").trim();
             const si = interaction.fields.getTextInputValue("systeminstructions").trim();

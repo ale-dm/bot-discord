@@ -1,20 +1,17 @@
 const { ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
 
 const { createLogger } = require("../core/logger");
+const { esAdmin } = require("../core/permisos");
 
 const log = createLogger("PanelAdmin");
 
 function isAdmin(interaction) {
-    const ok = !!interaction.member?.permissions?.has("Administrator");
+    const ok = esAdmin(interaction);
     if (!ok)
         log.warn(
             `Intento de usar el panel de admin sin permisos: ${interaction.user?.tag} (${interaction.user?.id}) · ${interaction.customId || interaction.commandName || "?"}`,
         );
     return ok;
-}
-
-function fmt(n) {
-    return Number(n || 0).toLocaleString("es");
 }
 
 function simpleModal(customId, title, inputs) {
@@ -35,4 +32,4 @@ function simpleModal(customId, title, inputs) {
     return modal;
 }
 
-module.exports = { isAdmin, fmt, simpleModal };
+module.exports = { isAdmin, simpleModal };

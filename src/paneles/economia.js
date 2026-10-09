@@ -18,10 +18,10 @@ const {
 const db = require("../core/db");
 const dinero = require("../systems/dinero");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
+const { fmtNumero } = require("../core/formato");
 
 const POR_PAGINA = 10;
-const fmt = (n) => Number(n || 0).toLocaleString("es");
-const signo = (n) => `${n > 0 ? "+" : ""}${fmt(n)}`;
+const signo = (n) => `${n > 0 ? "+" : ""}${fmtNumero(n)}`;
 
 function botonVolver(viewerId, targetId) {
     return new ButtonBuilder().setCustomId(`perfil_eco_${viewerId}_${targetId}`).setLabel("◀ Economía").setStyle(ButtonStyle.Secondary);
@@ -38,7 +38,7 @@ function botonSacar(volver) {
 /** "💵 Efectivo: X · 🏦 Banco: Y" para las pantallas donde se gasta. */
 function lineaDinero(userId) {
     const c = dinero.cuenta(userId);
-    return `💵 Efectivo: **${fmt(c.efectivo)}** 🪙 · 🏦 Banco: **${fmt(c.banco)}** 🪙`;
+    return `💵 Efectivo: **${fmtNumero(c.efectivo)}** 🪙 · 🏦 Banco: **${fmtNumero(c.banco)}** 🪙`;
 }
 
 // Ganado y perdido en el casino, de la tabla `casino` (resultado neto de cada partida).
@@ -78,21 +78,24 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
                 "pero no se puede meter en el banco ni cuenta como patrimonio hasta blanquearse.",
         )
         .addFields(
-            { name: "💵 Efectivo", value: `**${fmt(c.efectivo)}** 🪙`, inline: true },
-            { name: "🏦 Banco", value: `**${fmt(c.banco)}** 🪙`, inline: true },
-            { name: "💰 Total", value: `**${fmt(c.total)}** 🪙`, inline: true },
-            { name: "🥷 Dinero negro", value: `**${fmt(c.negro)}** 🪙`, inline: true },
-            { name: "📈 Ganado en casino", value: `+${fmt(ganado)}`, inline: true },
-            { name: "📉 Perdido en casino", value: `-${fmt(perdido)}`, inline: true },
-            { name: "🎒 Objetos", value: fmt(objetos), inline: true },
+            { name: "💵 Efectivo", value: `**${fmtNumero(c.efectivo)}** 🪙`, inline: true },
+            { name: "🏦 Banco", value: `**${fmtNumero(c.banco)}** 🪙`, inline: true },
+            { name: "💰 Total", value: `**${fmtNumero(c.total)}** 🪙`, inline: true },
+            { name: "🥷 Dinero negro", value: `**${fmtNumero(c.negro)}** 🪙`, inline: true },
+            { name: "📈 Ganado en casino", value: `+${fmtNumero(ganado)}`, inline: true },
+            { name: "📉 Perdido en casino", value: `-${fmtNumero(perdido)}`, inline: true },
+            { name: "🎒 Objetos", value: fmtNumero(objetos), inline: true },
         )
         .setColor(0xf1c40f)
         .setTimestamp();
     if (cartera.lineas.length) {
         const lineas = cartera.lineas.map(
-            (l) => `${l.info?.emoji || "💰"} **${l.cantidad.toFixed(4)} ${l.cripto}** ≈ ${fmt(Math.floor(l.valor))} 🪙`,
+            (l) => `${l.info?.emoji || "💰"} **${l.cantidad.toFixed(4)} ${l.cripto}** ≈ ${fmtNumero(Math.floor(l.valor))} 🪙`,
         );
-        embed.addFields({ name: "💹 Cartera cripto", value: `${lineas.join("\n")}\nTotal ≈ **${fmt(Math.floor(cartera.total))}** 🪙` });
+        embed.addFields({
+            name: "💹 Cartera cripto",
+            value: `${lineas.join("\n")}\nTotal ≈ **${fmtNumero(Math.floor(cartera.total))}** 🪙`,
+        });
     }
     // 🧙 Préstamo del Duende (F-DU-03), si tiene uno sin devolver.
     const prestamo = require("../systems/prestamos").abierto(targetId);
@@ -102,8 +105,8 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
             name: "🧙 Préstamo del Duende",
             value:
                 prestamo.estado === "deuda"
-                    ? `Debe **${fmt(prestamo.falta)}** 🪙: venció <t:${vence}:R> y se va cobrando de lo que gane. Hasta saldarlo, ni otro préstamo ni apuestas con el Duende.`
-                    : `Devuelve **${fmt(prestamo.falta)}** 🪙 antes del <t:${vence}:f> (<t:${vence}:R>). Si no, se cobra solo.`,
+                    ? `Debe **${fmtNumero(prestamo.falta)}** 🪙: venció <t:${vence}:R> y se va cobrando de lo que gane. Hasta saldarlo, ni otro préstamo ni apuestas con el Duende.`
+                    : `Devuelve **${fmtNumero(prestamo.falta)}** 🪙 antes del <t:${vence}:f> (<t:${vence}:R>). Si no, se cobra solo.`,
         });
     }
     const diario = propio ? require("../systems/diario").estado(guildId, targetId) : null;
@@ -111,8 +114,8 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
         embed.addFields({
             name: "🎁 Recompensa diaria",
             value: diario.disponible
-                ? `Disponible: **${fmt(diario.cantidad)}** 🪙${diario.racha ? ` (racha de ${diario.racha} días)` : ""}`
-                : `Cobrada hoy. Mañana: **${fmt(diario.cantidad)}** 🪙 si mantienes la racha.`,
+                ? `Disponible: **${fmtNumero(diario.cantidad)}** 🪙${diario.racha ? ` (racha de ${diario.racha} días)` : ""}`
+                : `Cobrada hoy. Mañana: **${fmtNumero(diario.cantidad)}** 🪙 si mantienes la racha.`,
         });
     }
 
@@ -157,7 +160,7 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
                   new ActionRowBuilder().addComponents(
                       new ButtonBuilder()
                           .setCustomId("dinero_prestamo_devolver")
-                          .setLabel(`🧙 Devolver ${fmt(prestamo.falta)} al Duende`)
+                          .setLabel(`🧙 Devolver ${fmtNumero(prestamo.falta)} al Duende`)
                           .setStyle(ButtonStyle.Success),
                   ),
               ]
@@ -224,7 +227,7 @@ function lineasRicos(limite = 10) {
         .masRicos(limite)
         .map(
             (r, i) =>
-                `${medallas[i] || `**${i + 1}.**`} <@${r.userId}> — **${fmt(r.total)}** 🪙 (💵 ${fmt(r.efectivo)} · 🏦 ${fmt(r.banco)})`,
+                `${medallas[i] || `**${i + 1}.**`} <@${r.userId}> — **${fmtNumero(r.total)}** 🪙 (💵 ${fmtNumero(r.efectivo)} · 🏦 ${fmtNumero(r.banco)})`,
         );
 }
 
@@ -258,7 +261,7 @@ function modalCantidad(customId, titulo, disponible) {
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("cantidad")
-                    .setLabel(`Cantidad (tienes ${fmt(disponible)})`.slice(0, 45))
+                    .setLabel(`Cantidad (tienes ${fmtNumero(disponible)})`.slice(0, 45))
                     .setStyle(TextInputStyle.Short)
                     .setPlaceholder(String(disponible))
                     .setMinLength(1)

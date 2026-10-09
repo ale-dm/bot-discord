@@ -16,8 +16,8 @@ const retos = require("../systems/retos");
 const dinero = require("../systems/dinero");
 const { DEPORTES } = require("../services/oddsApi");
 const { filaPestanas } = require("./pestanasJuegos");
+const { fmtNumero } = require("../core/formato");
 
-const fmt = (n) => Number(n || 0).toLocaleString("es");
 const ts = (ms, estilo = "R") => `<t:${Math.floor(ms / 1000)}:${estilo}>`;
 const corto = (texto, max) => (texto.length > max ? `${texto.slice(0, max - 1)}…` : texto);
 // Discord corta los campos en 1.024 caracteres.
@@ -59,13 +59,13 @@ function resumenCorto(reto) {
     if (reto.tipo === "partido") {
         const p = retos.partidoDe(reto.match_id);
         const partido = p ? `${p.home_team} vs ${p.away_team}` : "partido";
-        return `⚽ ${partido} · ${persona(reto.creador)} vs ${persona(reto.rival)} · ${fmt(reto.cantidad)} 🪙`;
+        return `⚽ ${partido} · ${persona(reto.creador)} vs ${persona(reto.rival)} · ${fmtNumero(reto.cantidad)} 🪙`;
     }
     if (reto.tipo === "duelo") {
         const j = retos.JUEGOS[reto.juego];
-        return `${j.emoji} ${j.nombre} · ${persona(reto.creador)} vs ${persona(reto.rival)} · ${fmt(reto.cantidad)} 🪙`;
+        return `${j.emoji} ${j.nombre} · ${persona(reto.creador)} vs ${persona(reto.rival)} · ${fmtNumero(reto.cantidad)} 🪙`;
     }
-    return `🗳️ ${corto(reto.pregunta, 50)} · ${fmt(reto.cantidad)} 🪙 · ${reto.participantes.length} dentro`;
+    return `🗳️ ${corto(reto.pregunta, 50)} · ${fmtNumero(reto.cantidad)} 🪙 · ${reto.participantes.length} dentro`;
 }
 
 /** Cómo le fue a `userId` en un reto cerrado. */
@@ -73,9 +73,9 @@ function resultadoPara(reto, userId) {
     const p = reto.participantes.find((x) => x.userId === String(userId));
     if (!p) return "";
     if (reto.estado === "devuelto") return "↩️ devuelto";
-    if (p.premio > p.cantidad) return `🏆 +${fmt(p.premio - p.cantidad)}`;
+    if (p.premio > p.cantidad) return `🏆 +${fmtNumero(p.premio - p.cantidad)}`;
     if (p.premio === p.cantidad) return "🤝 ±0";
-    return `❌ −${fmt(p.cantidad)}`;
+    return `❌ −${fmtNumero(p.cantidad)}`;
 }
 
 // ─── Pestaña ⚔️ Retos ────────────────────────────────────────────────────────
@@ -92,7 +92,7 @@ function buildRetos(userId, aviso = null) {
                 "• ⚽ **Partido**: «te apuesto 500 a que gana el Betis»; el otro va con lo contrario.\n" +
                 "• 🎲 **Duelo**: piedra, papel o tijera, dados o blackjack contra alguien.\n" +
                 "• 🗳️ **Porra**: una pregunta con opciones; entra quien quiera y un admin decide qué pasó.\n\n" +
-                `💵 Efectivo: **${fmt(c.efectivo)}** 🪙 · 🏦 Banco: **${fmt(c.banco)}** 🪙`,
+                `💵 Efectivo: **${fmtNumero(c.efectivo)}** 🪙 · 🏦 Banco: **${fmtNumero(c.banco)}** 🪙`,
         )
         .addFields(
             { name: `📨 Te han retado (${recibidos.length})`, value: lista(recibidos, "Nadie, de momento.") },
@@ -216,9 +216,9 @@ function modalCantidad(customId, titulo, efectivo) {
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId("cantidad")
-                    .setLabel(`Cuánto pone cada uno (${retos.MIN}-${fmt(retos.MAX)})`)
+                    .setLabel(`Cuánto pone cada uno (${retos.MIN}-${fmtNumero(retos.MAX)})`)
                     .setStyle(TextInputStyle.Short)
-                    .setPlaceholder(`Tienes ${fmt(efectivo)} en efectivo`)
+                    .setPlaceholder(`Tienes ${fmtNumero(efectivo)} en efectivo`)
                     .setMaxLength(7)
                     .setRequired(true),
             ),
@@ -238,7 +238,7 @@ function modalPorra() {
             input("opciones", `Opciones (una por línea, de 2 a ${retos.PORRA_MAX_OPCIONES})`, TextInputStyle.Paragraph, (b) =>
                 b.setPlaceholder("Sí\nNo").setMaxLength(300).setRequired(false),
             ),
-            input("cantidad", `Entrada para cada uno (${retos.MIN}-${fmt(retos.MAX)})`, TextInputStyle.Short, (b) =>
+            input("cantidad", `Entrada para cada uno (${retos.MIN}-${fmtNumero(retos.MAX)})`, TextInputStyle.Short, (b) =>
                 b.setPlaceholder("100").setMaxLength(7).setRequired(true),
             ),
         );
@@ -255,9 +255,9 @@ function lineaFinal(reto) {
     const g = ganadores(reto);
     if (reto.tipo === "porra") {
         const bote = reto.participantes.reduce((s, p) => s + p.cantidad, 0);
-        return `🏆 ${reto.resultado}: ${menciones(g)} ${g.length === 1 ? "se lleva" : "se reparten"} **${fmt(bote)}** 🪙.`;
+        return `🏆 ${reto.resultado}: ${menciones(g)} ${g.length === 1 ? "se lleva" : "se reparten"} **${fmtNumero(bote)}** 🪙.`;
     }
-    return `${reto.resultado}\n🏆 Gana ${persona(g[0])} y se lleva **${fmt(premioDe(reto, g[0]))}** 🪙.`;
+    return `${reto.resultado}\n🏆 Gana ${persona(g[0])} y se lleva **${fmtNumero(premioDe(reto, g[0]))}** 🪙.`;
 }
 
 const espera = (reto) => `⏳ Esperando a ${persona(reto.rival)} · caduca ${ts(reto.expira_en)}`;
@@ -277,10 +277,10 @@ function mensajePartido(reto, embed) {
         .setTitle("⚔️ Reto a un partido")
         .setDescription(
             (p
-                ? `${persona(reto.creador)} apuesta **${fmt(reto.cantidad)}** 🪙 a que **${ladoTexto(p, reto.eleccion)}** en **${partido}** (${ts(Date.parse(p.start_time), "f")}).\n` +
+                ? `${persona(reto.creador)} apuesta **${fmtNumero(reto.cantidad)}** 🪙 a que **${ladoTexto(p, reto.eleccion)}** en **${partido}** (${ts(Date.parse(p.start_time), "f")}).\n` +
                   `${persona(reto.rival)} va con lo contrario: **${contrarioTexto(p, reto.eleccion)}**.\n`
-                : `${persona(reto.creador)} contra ${persona(reto.rival)}, **${fmt(reto.cantidad)}** 🪙 cada uno.\n`) +
-                `El que acierte se lleva **${fmt(reto.cantidad * 2)}** 🪙.\n\n` +
+                : `${persona(reto.creador)} contra ${persona(reto.rival)}, **${fmtNumero(reto.cantidad)}** 🪙 cada uno.\n`) +
+                `El que acierte se lleva **${fmtNumero(reto.cantidad * 2)}** 🪙.\n\n` +
                 (reto.estado === "pendiente"
                     ? espera(reto)
                     : reto.estado === "en_juego"
@@ -338,7 +338,7 @@ function mensajeDuelo(reto, embed) {
     embed
         .setTitle(`⚔️ Duelo de ${j.emoji} ${j.nombre}`)
         .setDescription(
-            `${persona(reto.creador)} reta a ${persona(reto.rival)} por **${fmt(reto.cantidad)}** 🪙 cada uno. El que gane se lleva **${fmt(reto.cantidad * 2)}** 🪙.\n\n${estado}`,
+            `${persona(reto.creador)} reta a ${persona(reto.rival)} por **${fmtNumero(reto.cantidad)}** 🪙 cada uno. El que gane se lleva **${fmtNumero(reto.cantidad * 2)}** 🪙.\n\n${estado}`,
         );
     return components;
 }
@@ -355,7 +355,7 @@ function mensajePorra(reto, embed) {
     embed
         .setTitle(corto(`🗳️ ${reto.pregunta}`, 256))
         .setDescription(
-            `Porra de ${persona(reto.creador)} · entrada **${fmt(reto.cantidad)}** 🪙 · bote **${fmt(bote)}** 🪙 · ${reto.participantes.length} dentro\n\n${estado}`,
+            `Porra de ${persona(reto.creador)} · entrada **${fmtNumero(reto.cantidad)}** 🪙 · bote **${fmtNumero(bote)}** 🪙 · ${reto.participantes.length} dentro\n\n${estado}`,
         )
         .addFields(
             reto.opciones.map((opcion, n) => {

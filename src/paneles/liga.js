@@ -1,8 +1,8 @@
 // 🏅 Liga de pronósticos (F-AP-12, #8): la clasificación de la temporada actual, tu posición y los campeones anteriores.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const liga = require("../systems/apuestas/liga");
+const { fmtNumero } = require("../core/formato");
 
-const fmt = (n) => Number(n).toLocaleString("es");
 const TOP = 10;
 
 /** La pantalla de la liga (la temporada de ahora). Vuelve a ⚽ Apuestas con un botón. */
@@ -17,7 +17,7 @@ function pantallaLiga(guildId, viewerId, ahora = Date.now()) {
         .setTitle(`🏅 Liga de pronósticos · ${temporada}`)
         .setDescription(
             `Cada acierto en una quiniela suma **1 punto**. La temporada va de julio a junio. ` +
-                `Al acabar se paga al efectivo a los tres primeros: ${premios.map((p) => `**${fmt(p)}** 🪙`).join(" · ")}.`,
+                `Al acabar se paga al efectivo a los tres primeros: ${premios.map((p) => `**${fmtNumero(p)}** 🪙`).join(" · ")}.`,
         )
         .addFields(
             {
@@ -35,7 +35,10 @@ function pantallaLiga(guildId, viewerId, ahora = Date.now()) {
             },
             {
                 name: "📍 Tu posición",
-                value: pos >= 0 ? `${pos + 1}.º con **${fmt(todos[pos].puntos)}** puntos` : "Todavía no has sumado puntos esta temporada.",
+                value:
+                    pos >= 0
+                        ? `${pos + 1}.º con **${fmtNumero(todos[pos].puntos)}** puntos`
+                        : "Todavía no has sumado puntos esta temporada.",
                 inline: false,
             },
             {
