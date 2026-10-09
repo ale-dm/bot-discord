@@ -22,6 +22,13 @@ const { pantallaLiga } = require("../../paneles/liga");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
 const { trozos } = require("../../paneles/filas");
 const { CacheLimitada } = require("../../core/cacheLimitada");
+const {
+    cuotaDeEleccion,
+    cobrarApuesta,
+    partidosDePagina,
+    yaApostadoApuesta,
+    PARTIDOS_POR_PAGINA,
+} = require("../../systems/apuestas/apostar");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
@@ -339,13 +346,7 @@ module.exports = {
         }
 
         // Prevención de apuestas duplicadas
-        const yaApostado = db
-            .prepare(
-                `
-            SELECT 1 FROM apuestas_usuario WHERE user_id = ? AND match_id = ? AND eleccion = ?
-        `,
-            )
-            .get(userId, match_id, eleccion);
+        const yaApostado = yaApostadoApuesta(userId, match_id, eleccion);
 
         if (yaApostado) {
             await avisoError(
@@ -401,33 +402,6 @@ async function eleccionMarcadorExacto(interaction) {
     return marcadorExacto.eleccion(golesLocal, golesVisitante);
 }
 
-function cuotaDeEleccion(eleccion, match) {
-    if (eleccion === "home") return match.cuota_home;
-    if (eleccion === "draw") return match.cuota_draw;
-    if (eleccion === "away") return match.cuota_away;
-    if (marcadorExacto.marcadorDe(eleccion)) return marcadorExacto.PREMIO;
-    if (mercados.esMercado(eleccion)) return mercados.cuotaDe(match, eleccion);
-    return null;
-}
-
-// Descuenta el saldo y registra la apuesta, todo o nada (antes eran dos escrituras sueltas: si fallaba la segunda,
-// se cobraba una apuesta que no existía). Devuelve false si no había efectivo suficiente.
-function cobrarApuesta({ userId, match_id, match, eleccion, cantidad, cuota, linea }) {
-    return db.transaction(() => {
-        if (!dinero.cobrarCombinado(userId, cantidad)) return false;
-        db.prepare(
-            `
-            INSERT INTO apuestas_usuario (user_id, match_id, eleccion, cantidad, cuota, linea)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `,
-        ).run(userId, match_id, eleccion, cantidad, cuota, linea);
-        // Antes solo se apuntaba el premio al ganar: en /banco historial no aparecía lo apostado
-        // y el "ganado/perdido" de /nivel contaba el premio entero como ganancia.
-        dinero.apuntar(userId, "apuestas", `Apuesta: ${match.home_team} vs ${match.away_team}`, -cantidad);
-        return true;
-    })();
-}
-
 async function confirmarApuesta(interaction, { userId, match, eleccion, linea, cantidad, cuota }) {
     const saldoActual = dinero.efectivo(userId);
     const resultadoTxt = marcadorExacto.marcadorDe(eleccion)
@@ -451,8 +425,6 @@ async function confirmarApuesta(interaction, { userId, match, eleccion, linea, c
     });
 }
 
-const PARTIDOS_POR_PAGINA = 25;
-
 // Pide a la API los partidos y cuotas del deporte. False si no hay ninguno o falla (ya se ha avisado).
 async function hayPartidosEnLaApi(interaction, deporteSeleccionado, deporte) {
     try {
@@ -471,45 +443,6 @@ async function hayPartidosEnLaApi(interaction, deporteSeleccionado, deporte) {
         await interaction.reply({ content: "❌ No se pudo obtener la información de la API.", flags: MessageFlags.Ephemeral });
         return false;
     }
-}
-
-// Una página de partidos abiertos con cuotas, y el total (para saber si hay página siguiente).
-function partidosDePagina(deporteSeleccionado, page) {
-    const offset = (page - 1) * PARTIDOS_POR_PAGINA;
-    const ahora = new Date().toISOString();
-    const inicioListado = directo.inicioListado(); // con ODDS_DIRECTO=1, también los partidos en juego
-    const partidos = db
-        .prepare(
-            `
-            SELECT * FROM apuestas_partidos
-            WHERE estado = 'abierto'
-                AND deporte = ?
-                AND cuota_home IS NOT NULL
-                AND cuota_draw IS NOT NULL
-                AND cuota_away IS NOT NULL
-                AND start_time > ?
-            ORDER BY start_time
-            LIMIT ? OFFSET ?
-        `,
-        )
-        .all(deporteSeleccionado, inicioListado, PARTIDOS_POR_PAGINA, offset);
-
-    logInfo(`[APUESTAS] Consultando partidos desde ${ahora}, encontrados: ${partidos.length}`);
-
-    const totalPartidos = db
-        .prepare(
-            `
-            SELECT COUNT(*) as total FROM apuestas_partidos
-            WHERE estado = 'abierto'
-                AND deporte = ?
-                AND cuota_home IS NOT NULL
-                AND cuota_draw IS NOT NULL
-                AND cuota_away IS NOT NULL
-                AND start_time > ?
-        `,
-        )
-        .get(deporteSeleccionado, inicioListado).total;
-    return { partidos, offset, totalPartidos };
 }
 
 // Las filas del listado: el selector de partido, la paginación, las competiciones (la actual resaltada, con su
