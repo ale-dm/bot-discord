@@ -12,12 +12,13 @@ const pase = require("../../systems/pase/pase");
 const paneles = require("../../paneles/tienda");
 const { createLogger } = require("../../core/logger");
 const { esAdmin } = require("../../core/permisos");
+const { CacheLimitada } = require("../../core/cacheLimitada");
 
 const log = createLogger("Tienda");
 
 const purchaseLocks = new Map();
 // Filtros del panel de cada persona (categoría, rareza y búsqueda). En memoria: si el bot se reinicia, se quitan.
-const filtrosPorUsuario = new Map();
+const filtrosPorUsuario = new CacheLimitada({ max: 5000 });
 const privado = (payload) => ({ ...(typeof payload === "string" ? { content: payload } : payload), flags: MessageFlags.Ephemeral });
 const sustituir = (content) => ({ content, embeds: [], components: [] });
 

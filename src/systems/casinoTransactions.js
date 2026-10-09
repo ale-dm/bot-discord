@@ -9,7 +9,8 @@ const log = createLogger("Casino");
 const guildSettings = require("./guildSettings");
 const eventos = require("./eventos");
 const achievements = require("./achievementsSystem");
-const userGuildContext = new Map();
+const { CacheLimitada } = require("../core/cacheLimitada");
+const userGuildContext = new CacheLimitada({ max: 5000 });
 
 /**
  * Función para realizar transacciones seguras con rollback automático
