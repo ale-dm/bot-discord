@@ -121,6 +121,86 @@ async function comprar(interaction, tiendaCfg) {
     }
 }
 
+// Acciones de los botones de la tienda. handleButton busca la primera cuyo predicado encaja con el id (en este orden).
+async function accionConfirmar(interaction, id, tiendaCfg) {
+    const item = tienda.itemTienda(parseInt(id.replace("tienda_confirmar_", "")));
+    if (!item) {
+        await interaction.update(sustituir("❌ Objeto no encontrado."));
+        return;
+    }
+    await interaction.update(paneles.buildConfirmacion(item, tienda.saldoDe(interaction.user.id), tiendaCfg, interaction.user.id));
+}
+
+// Volver al catálogo, cancelar o cambiar de página (los filtros se mantienen).
+async function accionVolver(interaction, id) {
+    const pagina = id === "tienda_cancelar" ? 1 : parseInt(id.replace(/^tienda_(volver|page)_/, "")) || 1;
+    await interaction.update(vistaCatalogo(interaction, pagina));
+}
+
+// 🎒 Inventario: tienda_inv_{página}, o inv_* de mensajes de /inventario.
+async function accionInventario(interaction, id) {
+    const [, accion, paginaTxt] = id.split("_");
+    const pagina = (parseInt(paginaTxt, 10) || 1) + (accion === "next" ? 1 : accion === "prev" ? -1 : 0);
+    await interaction.update(vistaInventario(interaction, pagina));
+}
+
+// Usar un objeto (tienda_usar_{objeto}_{página}, o inv_usar_… de mensajes de /inventario).
+async function accionUsar(interaction, id) {
+    const [, , objetoTxt, paginaTxt] = id.split("_");
+    const r = await require("../../systems/objetos").usarObjeto(
+        interaction.user.id,
+        parseInt(objetoTxt, 10),
+        interaction.member,
+        interaction.guild,
+        interaction.user.tag,
+    );
+    const aviso = `${r.ok ? "✅" : "❌"} ${r.obj ? `**${r.obj.nombre}**: ` : ""}${r.mensaje}`;
+    await interaction.update(vistaInventario(interaction, parseInt(paginaTxt, 10) || 1, aviso));
+}
+
+// 🔍 Buscar por nombre o tipo: abre el formulario; quitar la búsqueda, vuelve a la lista sin ella.
+async function accionBuscar(interaction, id) {
+    const tab = id.replace("tienda_buscar_", "");
+    const modal = new ModalBuilder().setCustomId(`tienda_modal_buscar_${tab}`).setTitle("🔍 Buscar en la tienda");
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("busqueda")
+                .setLabel("Nombre o tipo del objeto")
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder("espada, consumible…")
+                .setMaxLength(40)
+                .setRequired(false)
+                .setValue(filtrosDe(interaction.user.id).busqueda || ""),
+        ),
+    );
+    await interaction.showModal(modal);
+}
+
+async function accionNoBuscar(interaction, id) {
+    const tab = id.replace("tienda_nobuscar_", "");
+    fijarFiltros(interaction.user.id, { busqueda: null });
+    await interaction.update(vistaDePestana(interaction, tab));
+}
+
+// 🧾 Mis compras: historial_{ver|prev|next}_{página}.
+async function accionHistorial(interaction, id) {
+    const [, accion, paginaStr] = id.split("_");
+    const pagina = parseInt(paginaStr) + (accion === "next" ? 1 : accion === "prev" ? -1 : 0);
+    await interaction.update(paneles.buildHistorialCompras(tienda.historialCompras(interaction.user.id), pagina));
+}
+
+const ACCIONES_BOTON = [
+    [(id) => id.startsWith("tienda_confirmar_"), accionConfirmar],
+    [(id) => id.startsWith("tienda_comprar_"), (interaction, id, tiendaCfg) => comprar(interaction, tiendaCfg)],
+    [(id) => id.startsWith("tienda_volver_") || id === "tienda_cancelar" || id.startsWith("tienda_page_"), accionVolver],
+    [(id) => id.startsWith("tienda_inv_") || id.startsWith("inv_prev_") || id.startsWith("inv_next_"), accionInventario],
+    [(id) => id.startsWith("tienda_usar_") || id.startsWith("inv_usar_"), accionUsar],
+    [(id) => id.startsWith("tienda_buscar_"), accionBuscar],
+    [(id) => id.startsWith("tienda_nobuscar_"), accionNoBuscar],
+    [(id, interaction) => interaction.isButton() && id.startsWith("historial_"), accionHistorial],
+];
+
 module.exports = {
     componentHandlers: [
         // inv_: botones de mensajes de /inventario (ya no existe), que llevan a la pestaña Inventario.
@@ -166,85 +246,8 @@ module.exports = {
                 await interaction.reply(privado("⛔ La tienda está deshabilitada en este servidor."));
                 return;
             }
-
-            if (id.startsWith("tienda_confirmar_")) {
-                const item = tienda.itemTienda(parseInt(id.replace("tienda_confirmar_", "")));
-                if (!item) {
-                    await interaction.update(sustituir("❌ Objeto no encontrado."));
-                    return;
-                }
-                await interaction.update(
-                    paneles.buildConfirmacion(item, tienda.saldoDe(interaction.user.id), tiendaCfg, interaction.user.id),
-                );
-                return;
-            }
-
-            if (id.startsWith("tienda_comprar_")) {
-                await comprar(interaction, tiendaCfg);
-                return;
-            }
-
-            // Volver al catálogo, cancelar o cambiar de página (los filtros se mantienen).
-            if (id.startsWith("tienda_volver_") || id === "tienda_cancelar" || id.startsWith("tienda_page_")) {
-                const pagina = id === "tienda_cancelar" ? 1 : parseInt(id.replace(/^tienda_(volver|page)_/, "")) || 1;
-                await interaction.update(vistaCatalogo(interaction, pagina));
-                return;
-            }
-
-            // 🎒 Inventario: tienda_inv_{página}, o inv_* de mensajes de /inventario.
-            if (id.startsWith("tienda_inv_") || id.startsWith("inv_prev_") || id.startsWith("inv_next_")) {
-                const [, accion, paginaTxt] = id.split("_");
-                const pagina = (parseInt(paginaTxt, 10) || 1) + (accion === "next" ? 1 : accion === "prev" ? -1 : 0);
-                await interaction.update(vistaInventario(interaction, pagina));
-                return;
-            }
-            // Usar un objeto (tienda_usar_{objeto}_{página}, o inv_usar_… de mensajes de /inventario).
-            if (id.startsWith("tienda_usar_") || id.startsWith("inv_usar_")) {
-                const [, , objetoTxt, paginaTxt] = id.split("_");
-                const r = await require("../../systems/objetos").usarObjeto(
-                    interaction.user.id,
-                    parseInt(objetoTxt, 10),
-                    interaction.member,
-                    interaction.guild,
-                    interaction.user.tag,
-                );
-                const aviso = `${r.ok ? "✅" : "❌"} ${r.obj ? `**${r.obj.nombre}**: ` : ""}${r.mensaje}`;
-                await interaction.update(vistaInventario(interaction, parseInt(paginaTxt, 10) || 1, aviso));
-                return;
-            }
-
-            // 🔍 Buscar por nombre o tipo: abre el formulario; quitar la búsqueda, vuelve a la lista sin ella.
-            if (id.startsWith("tienda_buscar_")) {
-                const tab = id.replace("tienda_buscar_", "");
-                const modal = new ModalBuilder().setCustomId(`tienda_modal_buscar_${tab}`).setTitle("🔍 Buscar en la tienda");
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder()
-                            .setCustomId("busqueda")
-                            .setLabel("Nombre o tipo del objeto")
-                            .setStyle(TextInputStyle.Short)
-                            .setPlaceholder("espada, consumible…")
-                            .setMaxLength(40)
-                            .setRequired(false)
-                            .setValue(filtrosDe(interaction.user.id).busqueda || ""),
-                    ),
-                );
-                await interaction.showModal(modal);
-                return;
-            }
-            if (id.startsWith("tienda_nobuscar_")) {
-                const tab = id.replace("tienda_nobuscar_", "");
-                fijarFiltros(interaction.user.id, { busqueda: null });
-                await interaction.update(vistaDePestana(interaction, tab));
-                return;
-            }
-
-            // 🧾 Mis compras: historial_{ver|prev|next}_{página}.
-            if (interaction.isButton() && id.startsWith("historial_")) {
-                const [, accion, paginaStr] = id.split("_");
-                const pagina = parseInt(paginaStr) + (accion === "next" ? 1 : accion === "prev" ? -1 : 0);
-                await interaction.update(paneles.buildHistorialCompras(tienda.historialCompras(interaction.user.id), pagina));
-            }
+            const accion = ACCIONES_BOTON.find(([encaja]) => encaja(id, interaction));
+            if (accion) await accion[1](interaction, id, tiendaCfg);
         } catch (err) {
             purchaseLocks.delete(`${interaction.guildId}:${interaction.user.id}`);
             log.error(`Error en el botón ${id} de la tienda:`, err);
