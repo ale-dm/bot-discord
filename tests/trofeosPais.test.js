@@ -2,7 +2,6 @@
 // clave no se pide nada; un error para en la siguiente vez) y los trofeos "Viajero de …" a partir de 5 y 10 películas del
 // país. TMDB se simula: no se hace ninguna petición real.
 const db = require("../src/core/db");
-const guildSettings = require("../src/systems/guildSettings");
 const plexFichas = require("../src/systems/plexFichas");
 const tmdbClient = require("../src/services/tmdbClient");
 const plexTrofeos = require("../src/systems/plexTrofeos");

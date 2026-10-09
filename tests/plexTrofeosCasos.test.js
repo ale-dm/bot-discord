@@ -251,7 +251,7 @@ describe("películas", () => {
         }
         expect(await trofeosDe(g)).toEqual(["plext:decada:1920"]);
         expect(catalogo(g).get("plext:decada:1920")).toMatchObject({
-            name: "Máquina del tiempo: los 20",
+            name: "Máquina del tiempo: los años 1920",
             desc: "Ve 10 películas de los años 1920",
         });
     });

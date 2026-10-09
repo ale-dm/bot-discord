@@ -341,15 +341,14 @@ function candidatosDecadas(datos) {
     const lista = [];
     for (const [d, n] of datos.porDecada) {
         if (d >= DECADA.antesDe || n < DECADA.peliculas) continue;
-        const dd = String(d).slice(2);
         lista.push({
             id: `decada:${d}`,
             tipo: "decada",
             anime: false,
             recompensa: RECOMPENSA.decada,
             dificultad: DIFICULTAD.decada(),
-            nombre: `Máquina del tiempo: los ${dd}`,
-            descripcion: `Ve ${DECADA.peliculas} películas de los años ${d < 1930 ? d : dd}`,
+            nombre: `Máquina del tiempo: los años ${d}`,
+            descripcion: `Ve ${DECADA.peliculas} películas de los años ${d}`,
         });
     }
     return lista;
