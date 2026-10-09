@@ -11,56 +11,28 @@ const {
 const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
 const limites = require("../../systems/apuestas/limites");
-const { logInfo, logError } = require("../../core/logger");
-const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
+const { logInfo } = require("../../core/logger");
+const { DEPORTES } = require("../../services/oddsApi");
 const { minimoAciertosQuiniela } = require("../../systems/apuestas/liquidacion");
 const misJugadas = require("../../systems/apuestas/misJugadas");
 const { lineaQuiniela, filaTrasApostar } = require("../../paneles/misJugadas");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
 const { esAdmin } = require("../../core/permisos");
+const {
+    QUINIELA_LOCK_MINUTES,
+    obtenerPartidosQuiniela,
+    estaBloqueadoPorTiempo,
+    yaApostoQuiniela,
+    apostarQuiniela,
+    crearQuiniela,
+} = require("../../systems/apuestas/quinielas");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
-const QUINIELA_MATCH_COUNT = 10;
-const QUINIELA_LOCK_MINUTES = Number(process.env.QUINIELA_LOCK_MINUTES || 15);
 const sesionesQuiniela = new Map();
-
-function obtenerSemanaISO(fecha) {
-    const date = new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
-    const dayNum = date.getUTCDay() || 7;
-    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-    const week = Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
-    return { year: date.getUTCFullYear(), week };
-}
-
-function construirNombreJornadaSemanal(deporteSeleccionado, partidos) {
-    const ahora = new Date();
-    const { week } = obtenerSemanaISO(ahora);
-    return `Jornada ${week}`;
-}
 
 function getSesionKey(userId, quinielaId) {
     return `${userId}:${quinielaId}`;
-}
-
-function obtenerPartidosQuiniela(quinielaId) {
-    return db
-        .prepare(
-            `
-        SELECT * FROM quiniela_partidos
-        WHERE quiniela_id = ?
-        ORDER BY orden ASC
-    `,
-        )
-        .all(quinielaId);
-}
-
-function estaBloqueadoPorTiempo(startTime) {
-    const inicio = new Date(startTime).getTime();
-    const ahora = Date.now();
-    const diffMs = inicio - ahora;
-    return diffMs <= QUINIELA_LOCK_MINUTES * 60 * 1000;
 }
 
 // Repinta el editor de la quiniela (embed y botones) con la pantalla del partido actual.
@@ -152,49 +124,6 @@ function renderQuinielaEditorRows(quinielaId, sesion, totalPartidos) {
  * Crea la quiniela de la jornada de una competición con sus próximos 10 partidos (mínimo 5). La usan el botón
  * 🛠️ Crear quiniela de la quiniela y el panel de admin → ⚽ Apuestas. @returns {{ ok: boolean, mensaje: string }}
  */
-async function crearQuiniela(deporteSeleccionado, creadorId) {
-    if (!DEPORTES[deporteSeleccionado]) return { ok: false, mensaje: "❌ Competición no válida." };
-    const abierta = db.prepare(`SELECT id FROM quinielas WHERE estado = 'abierta' AND deporte = ? LIMIT 1`).get(deporteSeleccionado);
-    if (abierta) return { ok: false, mensaje: "⚠️ Ya existe una quiniela activa para esta competición." };
-
-    try {
-        await sincronizarPartidos(deporteSeleccionado);
-    } catch (e) {
-        logError(`[Quiniela] No se pudieron sincronizar partidos de ${deporteSeleccionado}:`, e);
-        return { ok: false, mensaje: `❌ No se pudo actualizar partidos: ${e.message}` };
-    }
-
-    const ahora = new Date().toISOString();
-    const partidos = db
-        .prepare(
-            `SELECT * FROM apuestas_partidos WHERE deporte = ? AND estado = 'abierto' AND start_time > ? ORDER BY start_time ASC LIMIT ?`,
-        )
-        .all(deporteSeleccionado, ahora, QUINIELA_MATCH_COUNT);
-    if (partidos.length < 5) return { ok: false, mensaje: "❌ No hay suficientes partidos próximos para crear quiniela (mínimo 5)." };
-
-    const jornada = construirNombreJornadaSemanal(deporteSeleccionado, partidos);
-    const mismaSemana = db
-        .prepare(`SELECT id FROM quinielas WHERE deporte = ? AND jornada = ? ORDER BY id DESC LIMIT 1`)
-        .get(deporteSeleccionado, jornada);
-    if (mismaSemana) return { ok: false, mensaje: `⚠️ Ya existe una quiniela para ${jornada}.` };
-
-    const quinielaId = db.transaction(() => {
-        const res = db
-            .prepare(`INSERT INTO quinielas (deporte, jornada, estado, creador_id, creada_en) VALUES (?, ?, 'abierta', ?, ?)`)
-            .run(deporteSeleccionado, jornada, creadorId, ahora);
-        const insertPartido = db.prepare(
-            `INSERT INTO quiniela_partidos (quiniela_id, match_id, orden, home_team, away_team, start_time) VALUES (?, ?, ?, ?, ?, ?)`,
-        );
-        partidos.forEach((p, idx) => insertPartido.run(res.lastInsertRowid, p.match_id, idx + 1, p.home_team, p.away_team, p.start_time));
-        return res.lastInsertRowid;
-    })();
-    logInfo(`[QUINIELA] Creada quiniela ${quinielaId} (${jornada}, ${deporteSeleccionado}) por ${creadorId}`);
-    return {
-        ok: true,
-        mensaje: `✅ Quiniela **${jornada}** creada (${DEPORTES[deporteSeleccionado].name}) con ${partidos.length} partidos.`,
-    };
-}
-
 module.exports = {
     crearQuiniela,
     componentHandlers: [
@@ -391,8 +320,7 @@ module.exports = {
             return;
         }
 
-        const yaApostado = db.prepare(`SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?`).get(quinielaId, userId);
-        if (yaApostado) {
+        if (yaApostoQuiniela(quinielaId, userId)) {
             await interaction.reply({ content: "⚠️ Ya has apostado esta quiniela.", flags: MessageFlags.Ephemeral });
             return;
         }
@@ -405,19 +333,7 @@ module.exports = {
             return;
         }
 
-        const tx = db.transaction(() => {
-            if (!dinero.cobrarCombinado(userId, cantidad)) throw new Error("Sin efectivo");
-            db.prepare(
-                `
-                INSERT INTO quiniela_apuestas (quiniela_id, user_id, predicciones, cantidad, creada_en)
-                VALUES (?, ?, ?, ?, ?)
-            `,
-            ).run(quinielaId, userId, pronosticos, cantidad, new Date().toISOString());
-            dinero.apuntar(userId, "apuestas", "Quiniela: apuesta", -cantidad);
-        });
-        try {
-            tx();
-        } catch {
+        if (!apostarQuiniela({ userId, quinielaId, pronosticos, cantidad })) {
             await interaction.reply({
                 content: "❌ No te llega el efectivo. Saca dinero del banco (💵 Sacar).",
                 flags: MessageFlags.Ephemeral,
