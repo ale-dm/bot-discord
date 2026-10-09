@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: funciones largas, parcial)
+
+- **`liquidarApuestas`** (262 líneas) se parte en `liquidarPartidosSueltos` (96) y `liquidarQuinielas` (113). La función
+  principal solo prepara el resumen, las fechas y los scores, y llama a las dos. Mismo comportamiento: la liquidación
+  de partidos, retos y quinielas se prueba con los tests de liquidación (34 en verde).
+- **`duende.hablar`**: la llamada a Gemini (con su reintento de prompt seguro) pasa a `pedirRespuestaGemini`.
+- DT-22 queda abierto: falta `liveVoz.empezarConversacion` (376 líneas), que hay que probar con voz en Discord, y seguir
+  partiendo `hablar`. ([#172](https://github.com/ale-dm/bot-discord/issues/172))
+
 ## 2026-10-09 (auditoría: paneles de admin de Plex y ajustes en partes)
 
 - **`adminPanel/plex.js` y `adminPanel/settings.js` se parten por sección** (`adminPanel/plex/` y `adminPanel/settings/`):

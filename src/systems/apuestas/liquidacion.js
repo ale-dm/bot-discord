@@ -102,6 +102,216 @@ let liquidacionEnCurso = false;
  * @param {string} [opts.origen] - para los logs
  * @returns {Promise<object|null>} resumen, o null si ya había una liquidación en marcha
  */
+// Apuestas a partidos sueltos del corte: cierra cada partido con resultado y paga o cobra sus apuestas (y los retos).
+async function liquidarPartidosSueltos({ corte, limite, resumen, scoresDe, origen }) {
+    const partidos = db
+        .prepare(
+            `
+        SELECT * FROM apuestas_partidos
+        WHERE estado = 'abierto' AND start_time < ? AND start_time >= ?
+          -- Solo los que tienen apuestas, patas de combinadas o retos pendientes: preguntar por el resto gasta cuota para nada.
+          AND (EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
+               OR EXISTS (SELECT 1 FROM combinada_patas pa JOIN combinadas c ON c.id = pa.combinada_id
+                          WHERE pa.match_id = apuestas_partidos.match_id AND pa.resultado = 'pendiente' AND c.estado = 'abierta')
+               OR EXISTS (SELECT 1 FROM retos r WHERE r.match_id = apuestas_partidos.match_id AND r.estado IN ('pendiente', 'en_juego')))
+    `,
+        )
+        .all(corte, limite);
+    (partidos.length ? logInfo : logDebug)(`[PAGARAPUESTAS] (${origen}) ${partidos.length} partidos pendientes de cierre`);
+
+    const cerrarPartido = db.transaction((partido, resultado, marcador) => {
+        db.prepare("UPDATE apuestas_partidos SET estado = 'finalizado', resultado = ? WHERE match_id = ?").run(resultado, partido.match_id);
+        const apuestas = db
+            .prepare(
+                `
+            SELECT * FROM apuestas_usuario
+            WHERE match_id = ? AND pagado = 0
+        `,
+            )
+            .all(partido.match_id);
+        const cierre = { apostantes: apuestas.length, ganadores: [], repartido: 0 };
+        for (const ap of apuestas) {
+            resumen.total++;
+            // Las de marcador exacto (F-AP-10) aciertan con el marcador; las demás, con el resultado.
+            const gana = mercados.acierta(ap.eleccion, resultado, marcador, ap.linea);
+            pase.registrarEnTodos(ap.user_id, "apuesta");
+            if (gana) {
+                const premio = Math.round(ap.cantidad * ap.cuota);
+                dinero.pagar(ap.user_id, premio);
+                dinero.apuntar(ap.user_id, "apuestas", `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`, premio);
+                cierre.ganadores.push(ap.user_id);
+                cierre.repartido += premio;
+                resumen.pagadas++;
+                resumen.pagos.push({ userId: ap.user_id, premio, descripcion: `${partido.home_team} vs ${partido.away_team}` });
+                logInfo(`[PAGARAPUESTAS] Pagado ${premio} monedas a usuario ${ap.user_id} (apostó ${ap.cantidad} con cuota ${ap.cuota})`);
+            } else {
+                resumen.fallidas++;
+                logInfo(
+                    `[PAGARAPUESTAS] Apuesta perdida: usuario ${ap.user_id} perdió ${ap.cantidad} monedas (apostó ${ap.eleccion}, ganó ${resultado}, ${marcador})`,
+                );
+            }
+            db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(
+                gana ? Math.round(ap.cantidad * ap.cuota) : 0,
+                ap.id,
+            );
+        }
+        // Combinadas con una pata en este partido: una pata fallida pierde el boleto; con todas acertadas, se paga.
+        resumen.pagos.push(...combinadas.resolverPartido(partido.match_id, resultado, marcador));
+        // Retos 1 contra 1 al partido: el ganador se lleva lo de los dos (los que nadie aceptó se devuelven).
+        const deRetos = retos.resolverPartido(partido.match_id, resultado, marcador);
+        resumen.pagos.push(...deRetos.pagos);
+        for (const r of deRetos.cerrados) {
+            resumen.retosCerrados.push(r.id);
+            const ganador = r.participantes.find((p) => p.premio > 0 && r.estado === "resuelto");
+            if (ganador) {
+                resumen.retos.push({
+                    creador: r.creador,
+                    rival: r.rival,
+                    ganador: ganador.userId,
+                    premio: ganador.premio,
+                    partido: r.resultado,
+                });
+            }
+        }
+        return cierre;
+    });
+
+    for (const partido of partidos) {
+        const deporteKey = deporteValido(partido.deporte);
+        const scores = await scoresDe(deporteKey);
+        if (!scores) continue;
+
+        const r = resultadoDeScore(scores.find((s) => s.id === partido.match_id));
+        if (!r) {
+            logDebug(`[PAGARAPUESTAS] Partido ${partido.home_team} vs ${partido.away_team} aún sin resultado final`);
+            continue;
+        }
+        logInfo(`[PAGARAPUESTAS] ${partido.home_team} ${r.home.score}-${r.away.score} ${partido.away_team} -> ${r.resultado}`);
+        const marcador = `${r.home.score}-${r.away.score}`;
+        const cierre = cerrarPartido(partido, r.resultado, marcador);
+        // Un partido con solo retos no sale como "nadie acertó (0 apuestas)": sus retos van aparte.
+        if (cierre.apostantes) {
+            resumen.partidos.push({ deporte: deporteKey, home: partido.home_team, away: partido.away_team, marcador, ...cierre });
+        }
+        resumen.partidosProcesados[deporteKey] = (resumen.partidosProcesados[deporteKey] || 0) + 1;
+    }
+}
+
+// Quinielas abiertas: guarda los resultados que ya se conocen y cierra y paga las jornadas que han acabado.
+async function liquidarQuinielas({ corte, resumen, scoresDe, origen }) {
+    // Cada resultado se guarda en cuanto se conoce (quiniela_partidos.resultado_final): una
+    // jornada dura de viernes a lunes, y cuando acaba el último partido el primero ya no está
+    // en la ventana de la API. Antes solo se guardaban si estaban los 10 a la vez, y así una
+    // jornada larga no se podía completar nunca.
+    const quinielasAbiertas = db.prepare(`SELECT * FROM quinielas WHERE estado = 'abierta'`).all();
+
+    for (const q of quinielasAbiertas) {
+        const deporteKey = deporteValido(q.deporte);
+        let partidosQ = db
+            .prepare(
+                `
+            SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC
+        `,
+            )
+            .all(q.id);
+        if (!partidosQ.length) continue;
+
+        // Una quiniela sin jugadores no se consulta (caducará sola sin nada que devolver).
+        const tieneJugadores = !!db.prepare("SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0").get(q.id);
+        const consultables = tieneJugadores ? partidosQ.filter((p) => !p.resultado_final && p.start_time < corte) : [];
+        if (consultables.length) {
+            const scores = await scoresDe(deporteKey);
+            if (!scores) continue;
+            for (const p of consultables) {
+                const r = resultadoDeScore(scores.find((s) => s.id === p.match_id));
+                if (r) db.prepare(`UPDATE quiniela_partidos SET resultado_final = ? WHERE id = ?`).run(r.resultado, p.id);
+            }
+            partidosQ = db.prepare(`SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC`).all(q.id);
+        }
+        if (partidosQ.some((p) => !p.resultado_final)) continue;
+
+        const resultados = partidosQ.map((p) => ({ partidoId: p.id, resultado: p.resultado_final }));
+        const apuestasQ = db
+            .prepare(
+                `
+            SELECT * FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0
+        `,
+            )
+            .all(q.id);
+
+        const apuestasConAciertos = apuestasQ.map((ap) => {
+            const pred = (ap.predicciones || "").toUpperCase();
+            let aciertos = 0;
+            resultados.forEach((r, i) => {
+                const esperado = r.resultado === "home" ? "1" : r.resultado === "draw" ? "X" : "2";
+                if (pred[i] === esperado) aciertos++;
+            });
+            return { ...ap, aciertos };
+        });
+
+        // Para cobrar hay que acertar al menos la mitad de los partidos (5 de 10). Si nadie llega,
+        // se devuelve lo apostado: antes el 90 % se repartía entre los que más acertaran aunque
+        // fallaran todo, y un jugador solo recuperaba el 90 % sin acertar nada.
+        const minimo = minimoAciertosQuiniela(partidosQ.length);
+        const maxAciertos = apuestasConAciertos.length ? Math.max(...apuestasConAciertos.map((a) => a.aciertos)) : 0;
+        const hayGanadores = maxAciertos >= minimo;
+        const ganadoras = hayGanadores ? apuestasConAciertos.filter((a) => a.aciertos === maxAciertos) : [];
+        const bote = apuestasConAciertos.reduce((acc, a) => acc + a.cantidad, 0);
+        const fondoPremios = Math.floor(bote * 0.9);
+        const premioUnitario = ganadoras.length > 0 ? Math.floor(fondoPremios / ganadoras.length) : 0;
+
+        db.transaction(() => {
+            for (const a of apuestasConAciertos) {
+                // Sin ganadores, "premio" es lo que se le devuelve (como en las caducadas).
+                const premio = hayGanadores ? (a.aciertos === maxAciertos ? premioUnitario : 0) : a.cantidad;
+                if (premio > 0) {
+                    const descripcion = hayGanadores
+                        ? `Quiniela ganada: ${q.jornada}`
+                        : `Reembolso: quiniela ${q.jornada}, nadie llegó a ${minimo} aciertos`;
+                    dinero.pagar(a.user_id, premio);
+                    dinero.apuntar(a.user_id, "apuestas", descripcion, premio);
+                    resumen.pagos.push(
+                        hayGanadores
+                            ? { userId: a.user_id, premio, descripcion: `Quiniela ${q.jornada}` }
+                            : { userId: a.user_id, premio, descripcion, reembolso: true },
+                    );
+                }
+                db.prepare(
+                    `
+                    UPDATE quiniela_apuestas
+                    SET pagado = 1, aciertos = ?, premio = ?
+                    WHERE id = ?
+                `,
+                ).run(a.aciertos, hayGanadores ? premio : 0, a.id);
+            }
+            db.prepare(`UPDATE quinielas SET estado = 'cerrada', cerrada_en = ? WHERE id = ?`).run(new Date().toISOString(), q.id);
+        })();
+
+        if (!hayGanadores) resumen.reembolsos += apuestasConAciertos.length;
+        resumen.quinielasCerradas++;
+        resumen.premiosQuiniela += premioUnitario * ganadoras.length;
+        resumen.quinielas.push({
+            deporte: deporteKey,
+            jornada: q.jornada,
+            jugadores: apuestasConAciertos.length,
+            partidos: partidosQ.length,
+            minimo,
+            maxAciertos,
+            ganadores: ganadoras.map((a) => a.user_id),
+            premioUnitario,
+        });
+        logInfo(
+            hayGanadores
+                ? `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: ${ganadoras.length} ganadores con ${maxAciertos} aciertos, premio unitario ${premioUnitario}`
+                : `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: nadie llegó a ${minimo} aciertos (máx. ${maxAciertos}), ${apuestasConAciertos.length} apuestas reembolsadas`,
+        );
+    }
+
+    (resumen.total || resumen.quinielasCerradas || resumen.caducados ? logInfo : logDebug)(
+        `[PAGARAPUESTAS] (${origen}) Completado: ${resumen.pagadas} ganadoras, ${resumen.fallidas} perdedoras, ${resumen.total} total, ${resumen.quinielasCerradas} quinielas, ${resumen.caducados} caducados`,
+    );
+}
+
 async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } = {}) {
     if (liquidacionEnCurso) return null;
     if (!process.env.ODDS_API_KEY) throw new Error("Falta ODDS_API_KEY en .env");
@@ -149,216 +359,10 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
             return cacheScores.get(deporteKey);
         };
 
-        // --- Apuestas a partidos sueltos ---
-        const partidos = db
-            .prepare(
-                `
-            SELECT * FROM apuestas_partidos
-            WHERE estado = 'abierto' AND start_time < ? AND start_time >= ?
-              -- Solo los que tienen apuestas, patas de combinadas o retos pendientes: preguntar por el resto gasta cuota para nada.
-              AND (EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
-                   OR EXISTS (SELECT 1 FROM combinada_patas pa JOIN combinadas c ON c.id = pa.combinada_id
-                              WHERE pa.match_id = apuestas_partidos.match_id AND pa.resultado = 'pendiente' AND c.estado = 'abierta')
-                   OR EXISTS (SELECT 1 FROM retos r WHERE r.match_id = apuestas_partidos.match_id AND r.estado IN ('pendiente', 'en_juego')))
-        `,
-            )
-            .all(corte, limite);
-        (partidos.length ? logInfo : logDebug)(`[PAGARAPUESTAS] (${origen}) ${partidos.length} partidos pendientes de cierre`);
+        await liquidarPartidosSueltos({ corte, limite, resumen, scoresDe, origen });
 
-        const cerrarPartido = db.transaction((partido, resultado, marcador) => {
-            db.prepare("UPDATE apuestas_partidos SET estado = 'finalizado', resultado = ? WHERE match_id = ?").run(
-                resultado,
-                partido.match_id,
-            );
-            const apuestas = db
-                .prepare(
-                    `
-                SELECT * FROM apuestas_usuario
-                WHERE match_id = ? AND pagado = 0
-            `,
-                )
-                .all(partido.match_id);
-            const cierre = { apostantes: apuestas.length, ganadores: [], repartido: 0 };
-            for (const ap of apuestas) {
-                resumen.total++;
-                // Las de marcador exacto (F-AP-10) aciertan con el marcador; las demás, con el resultado.
-                const gana = mercados.acierta(ap.eleccion, resultado, marcador, ap.linea);
-                pase.registrarEnTodos(ap.user_id, "apuesta");
-                if (gana) {
-                    const premio = Math.round(ap.cantidad * ap.cuota);
-                    dinero.pagar(ap.user_id, premio);
-                    dinero.apuntar(ap.user_id, "apuestas", `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`, premio);
-                    cierre.ganadores.push(ap.user_id);
-                    cierre.repartido += premio;
-                    resumen.pagadas++;
-                    resumen.pagos.push({ userId: ap.user_id, premio, descripcion: `${partido.home_team} vs ${partido.away_team}` });
-                    logInfo(
-                        `[PAGARAPUESTAS] Pagado ${premio} monedas a usuario ${ap.user_id} (apostó ${ap.cantidad} con cuota ${ap.cuota})`,
-                    );
-                } else {
-                    resumen.fallidas++;
-                    logInfo(
-                        `[PAGARAPUESTAS] Apuesta perdida: usuario ${ap.user_id} perdió ${ap.cantidad} monedas (apostó ${ap.eleccion}, ganó ${resultado}, ${marcador})`,
-                    );
-                }
-                db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(
-                    gana ? Math.round(ap.cantidad * ap.cuota) : 0,
-                    ap.id,
-                );
-            }
-            // Combinadas con una pata en este partido: una pata fallida pierde el boleto; con todas acertadas, se paga.
-            resumen.pagos.push(...combinadas.resolverPartido(partido.match_id, resultado, marcador));
-            // Retos 1 contra 1 al partido: el ganador se lleva lo de los dos (los que nadie aceptó se devuelven).
-            const deRetos = retos.resolverPartido(partido.match_id, resultado, marcador);
-            resumen.pagos.push(...deRetos.pagos);
-            for (const r of deRetos.cerrados) {
-                resumen.retosCerrados.push(r.id);
-                const ganador = r.participantes.find((p) => p.premio > 0 && r.estado === "resuelto");
-                if (ganador) {
-                    resumen.retos.push({
-                        creador: r.creador,
-                        rival: r.rival,
-                        ganador: ganador.userId,
-                        premio: ganador.premio,
-                        partido: r.resultado,
-                    });
-                }
-            }
-            return cierre;
-        });
+        await liquidarQuinielas({ corte, resumen, scoresDe, origen });
 
-        for (const partido of partidos) {
-            const deporteKey = deporteValido(partido.deporte);
-            const scores = await scoresDe(deporteKey);
-            if (!scores) continue;
-
-            const r = resultadoDeScore(scores.find((s) => s.id === partido.match_id));
-            if (!r) {
-                logDebug(`[PAGARAPUESTAS] Partido ${partido.home_team} vs ${partido.away_team} aún sin resultado final`);
-                continue;
-            }
-            logInfo(`[PAGARAPUESTAS] ${partido.home_team} ${r.home.score}-${r.away.score} ${partido.away_team} -> ${r.resultado}`);
-            const marcador = `${r.home.score}-${r.away.score}`;
-            const cierre = cerrarPartido(partido, r.resultado, marcador);
-            // Un partido con solo retos no sale como "nadie acertó (0 apuestas)": sus retos van aparte.
-            if (cierre.apostantes) {
-                resumen.partidos.push({ deporte: deporteKey, home: partido.home_team, away: partido.away_team, marcador, ...cierre });
-            }
-            resumen.partidosProcesados[deporteKey] = (resumen.partidosProcesados[deporteKey] || 0) + 1;
-        }
-
-        // --- Quinielas ---
-        // Cada resultado se guarda en cuanto se conoce (quiniela_partidos.resultado_final): una
-        // jornada dura de viernes a lunes, y cuando acaba el último partido el primero ya no está
-        // en la ventana de la API. Antes solo se guardaban si estaban los 10 a la vez, y así una
-        // jornada larga no se podía completar nunca.
-        const quinielasAbiertas = db.prepare(`SELECT * FROM quinielas WHERE estado = 'abierta'`).all();
-
-        for (const q of quinielasAbiertas) {
-            const deporteKey = deporteValido(q.deporte);
-            let partidosQ = db
-                .prepare(
-                    `
-                SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC
-            `,
-                )
-                .all(q.id);
-            if (!partidosQ.length) continue;
-
-            // Una quiniela sin jugadores no se consulta (caducará sola sin nada que devolver).
-            const tieneJugadores = !!db.prepare("SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0").get(q.id);
-            const consultables = tieneJugadores ? partidosQ.filter((p) => !p.resultado_final && p.start_time < corte) : [];
-            if (consultables.length) {
-                const scores = await scoresDe(deporteKey);
-                if (!scores) continue;
-                for (const p of consultables) {
-                    const r = resultadoDeScore(scores.find((s) => s.id === p.match_id));
-                    if (r) db.prepare(`UPDATE quiniela_partidos SET resultado_final = ? WHERE id = ?`).run(r.resultado, p.id);
-                }
-                partidosQ = db.prepare(`SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC`).all(q.id);
-            }
-            if (partidosQ.some((p) => !p.resultado_final)) continue;
-
-            const resultados = partidosQ.map((p) => ({ partidoId: p.id, resultado: p.resultado_final }));
-            const apuestasQ = db
-                .prepare(
-                    `
-                SELECT * FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0
-            `,
-                )
-                .all(q.id);
-
-            const apuestasConAciertos = apuestasQ.map((ap) => {
-                const pred = (ap.predicciones || "").toUpperCase();
-                let aciertos = 0;
-                resultados.forEach((r, i) => {
-                    const esperado = r.resultado === "home" ? "1" : r.resultado === "draw" ? "X" : "2";
-                    if (pred[i] === esperado) aciertos++;
-                });
-                return { ...ap, aciertos };
-            });
-
-            // Para cobrar hay que acertar al menos la mitad de los partidos (5 de 10). Si nadie llega,
-            // se devuelve lo apostado: antes el 90 % se repartía entre los que más acertaran aunque
-            // fallaran todo, y un jugador solo recuperaba el 90 % sin acertar nada.
-            const minimo = minimoAciertosQuiniela(partidosQ.length);
-            const maxAciertos = apuestasConAciertos.length ? Math.max(...apuestasConAciertos.map((a) => a.aciertos)) : 0;
-            const hayGanadores = maxAciertos >= minimo;
-            const ganadoras = hayGanadores ? apuestasConAciertos.filter((a) => a.aciertos === maxAciertos) : [];
-            const bote = apuestasConAciertos.reduce((acc, a) => acc + a.cantidad, 0);
-            const fondoPremios = Math.floor(bote * 0.9);
-            const premioUnitario = ganadoras.length > 0 ? Math.floor(fondoPremios / ganadoras.length) : 0;
-
-            db.transaction(() => {
-                for (const a of apuestasConAciertos) {
-                    // Sin ganadores, "premio" es lo que se le devuelve (como en las caducadas).
-                    const premio = hayGanadores ? (a.aciertos === maxAciertos ? premioUnitario : 0) : a.cantidad;
-                    if (premio > 0) {
-                        const descripcion = hayGanadores
-                            ? `Quiniela ganada: ${q.jornada}`
-                            : `Reembolso: quiniela ${q.jornada}, nadie llegó a ${minimo} aciertos`;
-                        dinero.pagar(a.user_id, premio);
-                        dinero.apuntar(a.user_id, "apuestas", descripcion, premio);
-                        resumen.pagos.push(
-                            hayGanadores
-                                ? { userId: a.user_id, premio, descripcion: `Quiniela ${q.jornada}` }
-                                : { userId: a.user_id, premio, descripcion, reembolso: true },
-                        );
-                    }
-                    db.prepare(
-                        `
-                        UPDATE quiniela_apuestas
-                        SET pagado = 1, aciertos = ?, premio = ?
-                        WHERE id = ?
-                    `,
-                    ).run(a.aciertos, hayGanadores ? premio : 0, a.id);
-                }
-                db.prepare(`UPDATE quinielas SET estado = 'cerrada', cerrada_en = ? WHERE id = ?`).run(new Date().toISOString(), q.id);
-            })();
-
-            if (!hayGanadores) resumen.reembolsos += apuestasConAciertos.length;
-            resumen.quinielasCerradas++;
-            resumen.premiosQuiniela += premioUnitario * ganadoras.length;
-            resumen.quinielas.push({
-                deporte: deporteKey,
-                jornada: q.jornada,
-                jugadores: apuestasConAciertos.length,
-                partidos: partidosQ.length,
-                minimo,
-                maxAciertos,
-                ganadores: ganadoras.map((a) => a.user_id),
-                premioUnitario,
-            });
-            logInfo(
-                hayGanadores
-                    ? `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: ${ganadoras.length} ganadores con ${maxAciertos} aciertos, premio unitario ${premioUnitario}`
-                    : `[PAGARAPUESTAS] Quiniela cerrada ${q.id}: nadie llegó a ${minimo} aciertos (máx. ${maxAciertos}), ${apuestasConAciertos.length} apuestas reembolsadas`,
-            );
-        }
-
-        (resumen.total || resumen.quinielasCerradas || resumen.caducados ? logInfo : logDebug)(
-            `[PAGARAPUESTAS] (${origen}) Completado: ${resumen.pagadas} ganadoras, ${resumen.fallidas} perdedoras, ${resumen.total} total, ${resumen.quinielasCerradas} quinielas, ${resumen.caducados} caducados`,
-        );
         return resumen;
     } finally {
         liquidacionEnCurso = false;
