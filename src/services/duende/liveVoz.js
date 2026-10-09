@@ -166,41 +166,37 @@ function pararConversacion(guildId, motivo) {
 }
 
 /**
- * Empieza una conversación de voz en directo en el canal de quien invoca.
- * @returns {Promise<{ok: true, voiceChannel: object} | {ok: false, error: string}>}
+ * Comprueba que se puede empezar una conversación en el canal de quien invoca.
+ * @returns {{voiceChannel: object} | {error: string}}
  */
-async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true, soloEscuchaA = null, tertulia = false } = {}) {
+function comprobarInicio(interaction, { tertulia, soloEscuchaA }) {
     if (tertulia && soloEscuchaA) {
-        return { ok: false, error: "La tertulia escucha a todo el canal: no se puede combinar con «con»." };
+        return { error: "La tertulia escucha a todo el canal: no se puede combinar con «con»." };
     }
-    const guildId = interaction.guildId;
-    if (sesiones.has(guildId)) {
-        return { ok: false, error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
+    if (sesiones.has(interaction.guildId)) {
+        return { error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
     }
 
     const voiceChannel = interaction.member?.voice?.channel;
-    if (!voiceChannel) return { ok: false, error: "¡Debes estar en un canal de voz!" };
+    if (!voiceChannel) return { error: "¡Debes estar en un canal de voz!" };
 
     const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
     if (!permissions || !permissions.has("Connect") || !permissions.has("Speak")) {
-        return { ok: false, error: "Me faltan permisos para conectar o hablar en ese canal." };
+        return { error: "Me faltan permisos para conectar o hablar en ese canal." };
     }
+    return { voiceChannel };
+}
 
-    // El canal de TEXTO desde donde se pide, igual que con las herramientas del chat normal.
-    const channelId = interaction.channelId;
-    const toolContext = { guildId, userId: interaction.user.id, guild: interaction.guild, channelId };
-    const declaraciones = construirDeclaracionesHerramientas(guildId, channelId);
-    const systemInstruction = construirInstruccionesSistema(channelId, { tertulia });
-
-    // sesion.permitirAudioSalida empieza en true para que el saludo inicial siempre se oiga;
-    // con soloSiLeLlaman, onSpeakingStart lo pone en false hasta que la transcripción de ese
-    // turno contenga PALABRA_LLAMADA (ver más abajo). hablanteActivo: userId de quien tiene el
-    // turno abierto ahora mismo (null = nadie); mientras esté puesto, se ignora a cualquier otra
-    // persona que empiece a hablar — por turnos, sin mezclar a dos personas en el mismo turno.
-    // soloEscuchaA: con mucha gente en el canal, escuchar a cualquiera se vuelve un caos (todos
-    // interrumpiéndose); con esto puesto, solo esa persona puede abrir turno, el resto se ignora
-    // igual que antes de soportar varias personas.
-    const sesion = {
+// sesion.permitirAudioSalida empieza en true para que el saludo inicial siempre se oiga;
+// con soloSiLeLlaman, onSpeakingStart lo pone en false hasta que la transcripción de ese
+// turno contenga PALABRA_LLAMADA (ver más abajo). hablanteActivo: userId de quien tiene el
+// turno abierto ahora mismo (null = nadie); mientras esté puesto, se ignora a cualquier otra
+// persona que empiece a hablar — por turnos, sin mezclar a dos personas en el mismo turno.
+// soloEscuchaA: con mucha gente en el canal, escuchar a cualquiera se vuelve un caos (todos
+// interrumpiéndose); con esto puesto, solo esa persona puede abrir turno, el resto se ignora
+// igual que antes de soportar varias personas.
+function crearSesion({ onTerminada, soloSiLeLlaman, soloEscuchaA, tertulia }) {
+    return {
         ultimaActividad: Date.now(),
         onTerminada,
         soloSiLeLlaman,
@@ -215,328 +211,372 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         mezclador: tertulia ? new Mezclador() : null,
         suscripciones: new Map(),
     };
+}
+
+function marcarActividad(sesion) {
+    sesion.ultimaActividad = Date.now();
+}
+
+/** Conecta al canal de voz (o reutiliza la conexión si ya está ahí) y espera a que esté lista. */
+async function conectarVoz(interaction, voiceChannel) {
+    const guildId = interaction.guildId;
+    let connection = getVoiceConnection(guildId);
+    if (!connection || connection.joinConfig.channelId !== voiceChannel.id) {
+        if (connection) {
+            try {
+                connection.destroy();
+            } catch {
+                /* ya estaba muerta */
+            }
+        }
+        log.info(`Uniéndose al canal de voz ${voiceChannel.name} (${guildId})...`);
+        connection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId,
+            adapterCreator: interaction.guild.voiceAdapterCreator,
+            selfDeaf: false,
+        });
+        await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+        log.info(`Conexión de voz lista en ${voiceChannel.name}.`);
+    }
+    connection.on("stateChange", (oldS, newS) => log.debug(`Voz: estado de conexión ${oldS.status} -> ${newS.status}`));
+    connection.on("error", (e) => log.warn(`Error en la conexión de voz: ${e.message}`));
+    return connection;
+}
+
+/**
+ * Salida: un ffmpeg para toda la llamada, del PCM 24kHz mono que manda Gemini al
+ * 48kHz estéreo que espera @discordjs/voice en crudo (StreamType.Raw). prism-media
+ * añade "pipe:1" él solo al final de args (ver su FFmpeg.create): ponerlo aquí también
+ * lo duplicaba y rompía el comando.
+ */
+function conectarSalida(connection, sesion) {
+    const ffmpegArgs = ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2"];
+    log.debug(`Lanzando ffmpeg para la salida de voz en directo: ${ffmpegArgs.join(" ")}`);
+    const ffmpeg = new prism.FFmpeg({ args: ffmpegArgs });
+    ffmpeg.on("error", (e) => log.warn(`Error en ffmpeg (salida de voz en directo): ${e.message}`));
+    let bytesSalidaFfmpeg = 0;
+    ffmpeg.on("data", (chunk) => {
+        bytesSalidaFfmpeg += chunk.length;
+        if (bytesSalidaFfmpeg === chunk.length) {
+            log.info(`ffmpeg ha generado los primeros ${chunk.length} bytes de audio (ya convertidos a 48kHz estéreo).`);
+        }
+    });
+    sesion.ffmpeg = ffmpeg;
+    // maxMissedFrames por defecto es 5 (100ms sin datos) y da la conversación por acabada,
+    // destruyendo el stream — letal aquí: entre turnos es normal que Gemini no mande audio
+    // durante segundos (esperando a que hables). El corte de verdad lo hacen los timers de
+    // inactividad/duración de más abajo, no el reproductor.
+    const player = createAudioPlayer({ behaviors: { maxMissedFrames: Infinity } });
+    player.on("error", (e) => log.warn(`Error en el reproductor de voz en directo: ${e.message}`));
+    player.on("stateChange", (oldS, newS) => log.info(`Reproductor de voz en directo: ${oldS.status} -> ${newS.status}`));
+    const resource = createAudioResource(ffmpeg, { inputType: StreamType.Raw, inlineVolume: true });
+    const subscription = connection.subscribe(player);
+    log.debug(`connection.subscribe(player) -> ${subscription ? "ok" : "undefined (¿la conexión no estaba lista?)"}`);
+    player.play(resource);
+}
+
+/** Abre la sesión de Gemini Live (herramientas y callbacks incluidos) y la devuelve. */
+async function conectarGemini(interaction, voiceChannel, sesion, { systemInstruction, declaraciones, toolContext }) {
+    const guildId = interaction.guildId;
+    const genAI = getGenAI();
+    const liveSession = await genAI.live.connect({
+        model: LIVE_MODEL,
+        config: {
+            responseModalities: [Modality.AUDIO],
+            systemInstruction,
+            tools: [{ functionDeclarations: declaraciones }],
+            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: LIVE_VOICE } } },
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
+            // Desactivamos la detección de actividad automática de Gemini (basada en
+            // silencios dentro del propio audio) y avisamos nosotros con activityStart/End:
+            // Discord no manda paquetes de audio durante los silencios (no hay "silencio
+            // codificado" que analizar), así que Gemini nunca veía el final del turno y se
+            // quedaba esperando audio para siempre tras la primera frase del usuario. El
+            // "speaking start/end" de Discord (basado en paquetes de verdad) es una señal
+            // de turno mucho más fiable que intentar que Gemini la adivine del audio.
+            realtimeInputConfig: { automaticActivityDetection: { disabled: true } },
+        },
+        callbacks: {
+            onopen: () => log.info(`Conversación en directo abierta en ${voiceChannel.name} (${interaction.guild.name})`),
+            onmessage: (message) => {
+                marcarActividad(sesion);
+                log.debug(`Mensaje de Gemini Live: ${Object.keys(message).join(", ") || "(vacío)"}`);
+                if (message.toolCall) {
+                    const llamadas = message.toolCall.functionCalls || [];
+                    const colgar = llamadas.find((fc) => fc.name === "colgar_llamada");
+                    if (colgar) {
+                        liveSession.sendToolResponse({
+                            functionResponses: [{ id: colgar.id, name: colgar.name, response: { ok: true } }],
+                        });
+                        log.info(`Colgando la llamada en el servidor ${guildId}: pedido por voz.`);
+                        pararConversacion(guildId, "pedido por voz");
+                    }
+                    const resto = llamadas.filter((fc) => fc.name !== "colgar_llamada");
+                    if (resto.length) {
+                        responderLlamadasHerramientas(liveSession, { ...message.toolCall, functionCalls: resto }, toolContext).catch((e) =>
+                            log.warn(`Error respondiendo herramientas en voz en directo: ${e.message}`),
+                        );
+                    }
+                }
+                if (message.data) {
+                    const buf = Buffer.from(message.data, "base64");
+                    if (!sesion.permitirAudioSalida) {
+                        if (!sesion.avisoIgnoradoEsteTurno) {
+                            sesion.avisoIgnoradoEsteTurno = true;
+                            log.debug(`Se ignora la respuesta de Gemini: no le han dicho "duende" en este turno (modo solo si le llaman).`);
+                        }
+                        return;
+                    }
+                    sesion.chunksAudioSalida = (sesion.chunksAudioSalida || 0) + 1;
+                    if (sesion.chunksAudioSalida === 1) {
+                        log.info(`Primer trozo de audio de Gemini recibido (${buf.length} bytes) — pasándolo a ffmpeg.`);
+                    }
+                    try {
+                        // La clase FFmpeg de prism-media pone write/end directamente en la
+                        // instancia (copiados del stdin interno): no existe .stdin.
+                        sesion.ffmpeg.write(buf);
+                    } catch (e) {
+                        log.warn(`Error pasando el audio de Gemini a ffmpeg: ${e.message}`);
+                    }
+                }
+                if (message.serverContent?.outputTranscription?.text) {
+                    log.debug(`Duende (voz en directo): ${message.serverContent.outputTranscription.text}`);
+                }
+                if (message.serverContent?.inputTranscription?.text) {
+                    const texto = message.serverContent.inputTranscription.text;
+                    log.debug(`Usuario (voz en directo): ${texto}`);
+                    sesion.turnoTranscripcion += texto;
+                    // En cuanto se oye la palabra de llamada en este turno, se deja pasar la
+                    // respuesta — no hace falta esperar a que acabe de hablar para decidirlo.
+                    if (sesion.soloSiLeLlaman && PALABRA_LLAMADA.test(sesion.turnoTranscripcion)) {
+                        sesion.permitirAudioSalida = true;
+                    }
+                }
+            },
+            onerror: (e) => log.warn(`Error en la conversación en directo: ${e?.message || JSON.stringify(e)}`),
+            onclose: (e) =>
+                log.warn(
+                    `Conversación en directo cerrada (socket) en el servidor ${guildId}${e ? `: ${e.reason || e.code || JSON.stringify(e)}` : ""}`,
+                ),
+        },
+    });
+    return liveSession;
+}
+
+/**
+ * Saludo inicial: además de quedar más natural, confirma que la salida de audio
+ * funciona nada más conectar, sin esperar a que alguien hable primero.
+ */
+function saludar(liveSession) {
+    try {
+        liveSession.sendClientContent({
+            turns: "Acabas de entrar a una llamada de voz en directo. Saluda muy brevemente, en tu personalidad.",
+            turnComplete: true,
+        });
+    } catch (e) {
+        log.warn(`Error pidiendo el saludo inicial: ${e.message}`);
+    }
+}
+
+/**
+ * Suscribe la captura de audio de una persona y pasa cada trozo PCM (16kHz mono) a alTrozo.
+ * EndBehaviorType.Manual no corta sola, así que una sola suscripción por persona vale para toda la llamada.
+ */
+function suscribirCaptura(receiver, sesion, userId, alTrozo) {
+    const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
+    opusStream.on("error", (e) => log.warn(`Error leyendo el audio entrante (opus) de ${userId}: ${e.message}`));
+    sesion.suscripciones.set(userId, opusStream);
+    const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
+    pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
+    pcmStream.on("data", (chunk) => {
+        marcarActividad(sesion);
+        alTrozo(chunk);
+    });
+}
+
+// Quién es, para decírselo a Gemini antes de su turno (igual que el chat de texto, que
+// resuelve el perfil de quien habla con cada mensaje) — mismo sistema de perfiles/apodos
+// que usa consultar_perfil_persona.
+function identificarHablante(interaction, userId) {
+    const member = interaction.guild.members.cache.get(userId);
+    const perfil = perfiles.perfilDe(member ? member.user : { id: userId });
+    const nombre = perfil?.name || member?.displayName || member?.user?.username || "alguien";
+    return { nombre, perfilTexto: perfil ? buildPersonProfileText(perfil) : null };
+}
+
+// Tertulia: se abre un turno para todos a la vez y el audio de cada persona entra en el mezclador. El turno se
+// cierra cuando nadie ha hablado durante FIN_TURNO_TERTULIA_MS.
+function alEmpezarHablarTertulia({ liveSession, receiver, sesion }, userId) {
+    sesion.hablantes.add(userId);
+    clearTimeout(sesion.finTurnoTimer);
+    if (!sesion.enTurno) {
+        sesion.enTurno = true;
+        sesion.turnoTranscripcion = "";
+        sesion.avisoIgnoradoEsteTurno = false;
+        sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
+        try {
+            liveSession.sendRealtimeInput({ activityStart: {} });
+        } catch (e) {
+            log.warn(`Error avisando a Gemini del turno de la tertulia: ${e.message}`);
+        }
+    }
+    if (sesion.suscripciones.has(userId)) return;
+    suscribirCaptura(receiver, sesion, userId, (chunk) => sesion.mezclador.empujar(userId, chunk));
+}
+
+function alDejarDeHablarTertulia({ liveSession, sesion }, userId) {
+    sesion.hablantes.delete(userId);
+    if (sesion.hablantes.size) return;
+    clearTimeout(sesion.finTurnoTimer);
+    sesion.finTurnoTimer = setTimeout(() => {
+        if (sesion.hablantes.size || !sesion.enTurno) return;
+        sesion.enTurno = false;
+        try {
+            liveSession.sendRealtimeInput({ activityEnd: {} });
+        } catch (e) {
+            log.warn(`Error avisando a Gemini del fin del turno de la tertulia: ${e.message}`);
+        }
+    }, FIN_TURNO_TERTULIA_MS);
+}
+
+// Cualquiera del canal puede hablarle, no solo quien pidió /conversación — pero de uno
+// en uno: mientras sesion.hablanteActivo esté puesto, se ignora a quien más empiece a
+// hablar (no hay forma de mezclar a dos personas en el mismo turno de Gemini).
+function alEmpezarHablar({ interaction, liveSession, receiver, sesion }, userId) {
+    if (sesion.soloEscuchaA && userId !== sesion.soloEscuchaA) return;
+    if (sesion.hablanteActivo) return;
+    sesion.hablanteActivo = userId;
+    // Nuevo turno: hasta que no se oiga la palabra de llamada (si el modo la exige), se
+    // ignora la respuesta. El saludo inicial ya se reprodujo con permitirAudioSalida en
+    // true desde el principio, así que esto solo afecta a partir de que alguien habla.
+    sesion.turnoTranscripcion = "";
+    sesion.avisoIgnoradoEsteTurno = false;
+    sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
+
+    const { nombre, perfilTexto } = identificarHablante(interaction, userId);
+    try {
+        // turnComplete: false para que esto no dispare una respuesta por sí solo — solo
+        // deja constancia de quién habla antes de que llegue su audio de verdad. Mezclar
+        // sendClientContent con audio en tiempo real dentro del mismo turno no está 100%
+        // garantizado por la Live API, pero es la única forma de decirle quién habla.
+        liveSession.sendClientContent({
+            turns: `(Quien va a hablar ahora es ${nombre}${perfilTexto ? `. Esto es lo que sabes de ${nombre}: ${perfilTexto}` : ""}.)`,
+            turnComplete: false,
+        });
+    } catch (e) {
+        log.warn(`Error identificando a ${userId} ante Gemini: ${e.message}`);
+    }
+    // Esto es lo que le dice a Gemini que empieza el turno — se manda cada vez que
+    // alguien habla, no solo la primera.
+    try {
+        liveSession.sendRealtimeInput({ activityStart: {} });
+    } catch (e) {
+        log.warn(`Error avisando a Gemini de que ${userId} ha empezado a hablar: ${e.message}`);
+    }
+
+    if (sesion.suscripciones.has(userId)) return;
+    log.info(`${userId} (${nombre}) ha empezado a hablar: suscribiendo captura de audio.`);
+    suscribirCaptura(receiver, sesion, userId, (chunk) => {
+        // Trozo sobrante fuera de su activityStart/activityEnd (del decoder, con el
+        // stream ya "parado"), o de alguien que no tiene el turno: no se manda.
+        if (sesion.hablanteActivo !== userId) return;
+        sesion.chunksAudioEntrada = (sesion.chunksAudioEntrada || 0) + 1;
+        if (sesion.chunksAudioEntrada === 1) {
+            log.info(`Primer trozo de audio de ${userId} capturado (${chunk.length} bytes) — mandándolo a Gemini.`);
+        }
+        try {
+            // El campo es "audio" (stream de audio en tiempo real de verdad), no el
+            // genérico "media" — con la detección manual de actividad puesta, el server
+            // necesita el audio por ese campo para poder casarlo con activityStart/End;
+            // por "media" llegaba igual pero sin ese seguimiento, y cortaba la sesión
+            // con "Precondition check failed" a los pocos segundos de hablar.
+            liveSession.sendRealtimeInput({ audio: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
+        } catch (e) {
+            log.warn(`Error enviando audio a Gemini Live: ${e.message}`);
+        }
+    });
+}
+
+/** Entrada: cualquiera del canal puede hablarle; cada persona se suscribe al primer "empieza a hablar". */
+function escucharHablantes(interaction, sesion) {
+    const liveSession = sesion.liveSession;
+    const receiver = sesion.connection.receiver;
+    const ctx = { interaction, sesion, liveSession, receiver };
+
+    const onSpeakingStart = (userId) => (sesion.tertulia ? alEmpezarHablarTertulia(ctx, userId) : alEmpezarHablar(ctx, userId));
+    // El "end" de Discord llega ~100ms después del último paquete de voz real — mucho más
+    // fiable como señal de fin de turno que esperar a que Gemini la adivine de un audio con
+    // huecos (sin paquetes durante los silencios, no hay "silencio" que analizar).
+    const onSpeakingEnd = (userId) => {
+        if (sesion.tertulia) return alDejarDeHablarTertulia(ctx, userId);
+        if (sesion.hablanteActivo !== userId) return;
+        sesion.hablanteActivo = null;
+        try {
+            liveSession.sendRealtimeInput({ activityEnd: {} });
+        } catch (e) {
+            log.warn(`Error avisando a Gemini de que ${userId} ha dejado de hablar: ${e.message}`);
+        }
+    };
+    receiver.speaking.on("start", onSpeakingStart);
+    receiver.speaking.on("end", onSpeakingEnd);
+    if (sesion.tertulia) {
+        // Cada FRAME_MS, lo que se haya mezclado de todos sale hacia Gemini en tiempo real.
+        sesion.mezcladorTimer = setInterval(() => {
+            const trozo = sesion.mezclador.tick();
+            if (!trozo) return;
+            try {
+                liveSession.sendRealtimeInput({ audio: { data: trozo.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
+            } catch (e) {
+                log.warn(`Error enviando la tertulia a Gemini Live: ${e.message}`);
+            }
+        }, FRAME_MS);
+    }
+    sesion.receiver = receiver;
+    sesion.onSpeakingStart = onSpeakingStart;
+    sesion.onSpeakingEnd = onSpeakingEnd;
+}
+
+/** Corta la conversación por inactividad o por tope de duración. */
+function programarLimites(sesion, guildId) {
+    sesion.idleCheckInterval = setInterval(() => {
+        if (Date.now() - sesion.ultimaActividad > IDLE_DISCONNECT_MS) {
+            pararConversacion(guildId, `${Math.round(IDLE_DISCONNECT_MS / 60000)} min sin actividad`);
+        }
+    }, IDLE_CHECK_INTERVAL_MS);
+    sesion.maxDurationTimer = setTimeout(() => {
+        pararConversacion(guildId, `tope de ${Math.round(MAX_DURATION_MS / 60000)} min de duración`);
+    }, MAX_DURATION_MS);
+}
+
+/**
+ * Empieza una conversación de voz en directo en el canal de quien invoca.
+ * @returns {Promise<{ok: true, voiceChannel: object} | {ok: false, error: string}>}
+ */
+async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true, soloEscuchaA = null, tertulia = false } = {}) {
+    const comprobacion = comprobarInicio(interaction, { tertulia, soloEscuchaA });
+    if (comprobacion.error) return { ok: false, error: comprobacion.error };
+    const { voiceChannel } = comprobacion;
+
+    const guildId = interaction.guildId;
+    // El canal de TEXTO desde donde se pide, igual que con las herramientas del chat normal.
+    const channelId = interaction.channelId;
+    const toolContext = { guildId, userId: interaction.user.id, guild: interaction.guild, channelId };
+    const declaraciones = construirDeclaracionesHerramientas(guildId, channelId);
+    const systemInstruction = construirInstruccionesSistema(channelId, { tertulia });
+
+    const sesion = crearSesion({ onTerminada, soloSiLeLlaman, soloEscuchaA, tertulia });
     sesiones.set(guildId, sesion);
 
     try {
-        let connection = getVoiceConnection(guildId);
-        if (!connection || connection.joinConfig.channelId !== voiceChannel.id) {
-            if (connection) {
-                try {
-                    connection.destroy();
-                } catch {
-                    /* ya estaba muerta */
-                }
-            }
-            log.info(`Uniéndose al canal de voz ${voiceChannel.name} (${guildId})...`);
-            connection = joinVoiceChannel({
-                channelId: voiceChannel.id,
-                guildId,
-                adapterCreator: interaction.guild.voiceAdapterCreator,
-                selfDeaf: false,
-            });
-            await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
-            log.info(`Conexión de voz lista en ${voiceChannel.name}.`);
-        }
-        connection.on("stateChange", (oldS, newS) => log.debug(`Voz: estado de conexión ${oldS.status} -> ${newS.status}`));
-        connection.on("error", (e) => log.warn(`Error en la conexión de voz: ${e.message}`));
-        sesion.connection = connection;
-
-        // Salida: un ffmpeg para toda la llamada, del PCM 24kHz mono que manda Gemini al
-        // 48kHz estéreo que espera @discordjs/voice en crudo (StreamType.Raw). prism-media
-        // añade "pipe:1" él solo al final de args (ver su FFmpeg.create): ponerlo aquí también
-        // lo duplicaba y rompía el comando.
-        const ffmpegArgs = ["-f", "s16le", "-ar", "24000", "-ac", "1", "-i", "pipe:0", "-f", "s16le", "-ar", "48000", "-ac", "2"];
-        log.debug(`Lanzando ffmpeg para la salida de voz en directo: ${ffmpegArgs.join(" ")}`);
-        const ffmpeg = new prism.FFmpeg({ args: ffmpegArgs });
-        ffmpeg.on("error", (e) => log.warn(`Error en ffmpeg (salida de voz en directo): ${e.message}`));
-        let bytesSalidaFfmpeg = 0;
-        ffmpeg.on("data", (chunk) => {
-            bytesSalidaFfmpeg += chunk.length;
-            if (bytesSalidaFfmpeg === chunk.length) {
-                log.info(`ffmpeg ha generado los primeros ${chunk.length} bytes de audio (ya convertidos a 48kHz estéreo).`);
-            }
-        });
-        sesion.ffmpeg = ffmpeg;
-        // maxMissedFrames por defecto es 5 (100ms sin datos) y da la conversación por acabada,
-        // destruyendo el stream — letal aquí: entre turnos es normal que Gemini no mande audio
-        // durante segundos (esperando a que hables). El corte de verdad lo hacen los timers de
-        // inactividad/duración de más abajo, no el reproductor.
-        const player = createAudioPlayer({ behaviors: { maxMissedFrames: Infinity } });
-        player.on("error", (e) => log.warn(`Error en el reproductor de voz en directo: ${e.message}`));
-        player.on("stateChange", (oldS, newS) => log.info(`Reproductor de voz en directo: ${oldS.status} -> ${newS.status}`));
-        const resource = createAudioResource(ffmpeg, { inputType: StreamType.Raw, inlineVolume: true });
-        const subscription = connection.subscribe(player);
-        log.debug(`connection.subscribe(player) -> ${subscription ? "ok" : "undefined (¿la conexión no estaba lista?)"}`);
-        player.play(resource);
-
-        const marcarActividad = () => {
-            sesion.ultimaActividad = Date.now();
-        };
-
-        const genAI = getGenAI();
-        const liveSession = await genAI.live.connect({
-            model: LIVE_MODEL,
-            config: {
-                responseModalities: [Modality.AUDIO],
-                systemInstruction,
-                tools: [{ functionDeclarations: declaraciones }],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: LIVE_VOICE } } },
-                inputAudioTranscription: {},
-                outputAudioTranscription: {},
-                // Desactivamos la detección de actividad automática de Gemini (basada en
-                // silencios dentro del propio audio) y avisamos nosotros con activityStart/End:
-                // Discord no manda paquetes de audio durante los silencios (no hay "silencio
-                // codificado" que analizar), así que Gemini nunca veía el final del turno y se
-                // quedaba esperando audio para siempre tras la primera frase del usuario. El
-                // "speaking start/end" de Discord (basado en paquetes de verdad) es una señal
-                // de turno mucho más fiable que intentar que Gemini la adivine del audio.
-                realtimeInputConfig: { automaticActivityDetection: { disabled: true } },
-            },
-            callbacks: {
-                onopen: () => log.info(`Conversación en directo abierta en ${voiceChannel.name} (${interaction.guild.name})`),
-                onmessage: (message) => {
-                    marcarActividad();
-                    log.debug(`Mensaje de Gemini Live: ${Object.keys(message).join(", ") || "(vacío)"}`);
-                    if (message.toolCall) {
-                        const llamadas = message.toolCall.functionCalls || [];
-                        const colgar = llamadas.find((fc) => fc.name === "colgar_llamada");
-                        if (colgar) {
-                            liveSession.sendToolResponse({
-                                functionResponses: [{ id: colgar.id, name: colgar.name, response: { ok: true } }],
-                            });
-                            log.info(`Colgando la llamada en el servidor ${guildId}: pedido por voz.`);
-                            pararConversacion(guildId, "pedido por voz");
-                        }
-                        const resto = llamadas.filter((fc) => fc.name !== "colgar_llamada");
-                        if (resto.length) {
-                            responderLlamadasHerramientas(liveSession, { ...message.toolCall, functionCalls: resto }, toolContext).catch(
-                                (e) => log.warn(`Error respondiendo herramientas en voz en directo: ${e.message}`),
-                            );
-                        }
-                    }
-                    if (message.data) {
-                        const buf = Buffer.from(message.data, "base64");
-                        if (!sesion.permitirAudioSalida) {
-                            if (!sesion.avisoIgnoradoEsteTurno) {
-                                sesion.avisoIgnoradoEsteTurno = true;
-                                log.debug(
-                                    `Se ignora la respuesta de Gemini: no le han dicho "duende" en este turno (modo solo si le llaman).`,
-                                );
-                            }
-                            return;
-                        }
-                        sesion.chunksAudioSalida = (sesion.chunksAudioSalida || 0) + 1;
-                        if (sesion.chunksAudioSalida === 1) {
-                            log.info(`Primer trozo de audio de Gemini recibido (${buf.length} bytes) — pasándolo a ffmpeg.`);
-                        }
-                        try {
-                            // La clase FFmpeg de prism-media pone write/end directamente en la
-                            // instancia (copiados del stdin interno): no existe .stdin.
-                            ffmpeg.write(buf);
-                        } catch (e) {
-                            log.warn(`Error pasando el audio de Gemini a ffmpeg: ${e.message}`);
-                        }
-                    }
-                    if (message.serverContent?.outputTranscription?.text) {
-                        log.debug(`Duende (voz en directo): ${message.serverContent.outputTranscription.text}`);
-                    }
-                    if (message.serverContent?.inputTranscription?.text) {
-                        const texto = message.serverContent.inputTranscription.text;
-                        log.debug(`Usuario (voz en directo): ${texto}`);
-                        sesion.turnoTranscripcion += texto;
-                        // En cuanto se oye la palabra de llamada en este turno, se deja pasar la
-                        // respuesta — no hace falta esperar a que acabe de hablar para decidirlo.
-                        if (sesion.soloSiLeLlaman && PALABRA_LLAMADA.test(sesion.turnoTranscripcion)) {
-                            sesion.permitirAudioSalida = true;
-                        }
-                    }
-                },
-                onerror: (e) => log.warn(`Error en la conversación en directo: ${e?.message || JSON.stringify(e)}`),
-                onclose: (e) =>
-                    log.warn(
-                        `Conversación en directo cerrada (socket) en el servidor ${guildId}${e ? `: ${e.reason || e.code || JSON.stringify(e)}` : ""}`,
-                    ),
-            },
-        });
-        sesion.liveSession = liveSession;
+        sesion.connection = await conectarVoz(interaction, voiceChannel);
+        conectarSalida(sesion.connection, sesion);
+        sesion.liveSession = await conectarGemini(interaction, voiceChannel, sesion, { systemInstruction, declaraciones, toolContext });
         log.info(`Sesión de Gemini Live conectada (modelo ${LIVE_MODEL}, voz ${LIVE_VOICE}).`);
-
-        // Saludo inicial: además de quedar más natural, confirma que la salida de audio
-        // funciona nada más conectar, sin esperar a que alguien hable primero.
-        try {
-            liveSession.sendClientContent({
-                turns: "Acabas de entrar a una llamada de voz en directo. Saluda muy brevemente, en tu personalidad.",
-                turnComplete: true,
-            });
-        } catch (e) {
-            log.warn(`Error pidiendo el saludo inicial: ${e.message}`);
-        }
-
-        // Entrada: cualquiera del canal puede hablarle, no solo quien pidió /conversación. Cada
-        // persona se suscribe reactivamente al primer "empieza a hablar" (igual que
-        // services/stt.js), no al conectar: suscribirse antes de que Discord asocie el audio a
-        // ese usuario no captura nada (visto en producción: la sesión se abría pero nunca
-        // recibía audio). EndBehaviorType.Manual no corta sola, así que una sola suscripción por
-        // persona vale para toda la llamada, aunque haya silencios entre frases.
-        const receiver = connection.receiver;
-
-        // Quién es, para decírselo a Gemini antes de su turno (igual que el chat de texto, que
-        // resuelve el perfil de quien habla con cada mensaje) — mismo sistema de perfiles/apodos
-        // que usa consultar_perfil_persona.
-        function identificarHablante(userId) {
-            const member = interaction.guild.members.cache.get(userId);
-            const perfil = perfiles.perfilDe(member ? member.user : { id: userId });
-            const nombre = perfil?.name || member?.displayName || member?.user?.username || "alguien";
-            return { nombre, perfilTexto: perfil ? buildPersonProfileText(perfil) : null };
-        }
-
-        // Cualquiera del canal puede hablarle, no solo quien pidió /conversación — pero de uno
-        // en uno: mientras sesion.hablanteActivo esté puesto, se ignora a quien más empiece a
-        // hablar (no hay forma de mezclar a dos personas en el mismo turno de Gemini).
-        // Tertulia: se abre un turno para todos a la vez y el audio de cada persona entra en el mezclador. El turno se
-        // cierra cuando nadie ha hablado durante FIN_TURNO_TERTULIA_MS.
-        function alEmpezarHablarTertulia(userId) {
-            sesion.hablantes.add(userId);
-            clearTimeout(sesion.finTurnoTimer);
-            if (!sesion.enTurno) {
-                sesion.enTurno = true;
-                sesion.turnoTranscripcion = "";
-                sesion.avisoIgnoradoEsteTurno = false;
-                sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
-                try {
-                    liveSession.sendRealtimeInput({ activityStart: {} });
-                } catch (e) {
-                    log.warn(`Error avisando a Gemini del turno de la tertulia: ${e.message}`);
-                }
-            }
-            if (sesion.suscripciones.has(userId)) return;
-            const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
-            opusStream.on("error", (e) => log.warn(`Error leyendo el audio entrante (opus) de ${userId}: ${e.message}`));
-            sesion.suscripciones.set(userId, opusStream);
-            const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
-            pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
-            pcmStream.on("data", (chunk) => {
-                marcarActividad();
-                sesion.mezclador.empujar(userId, chunk);
-            });
-        }
-
-        function alDejarDeHablarTertulia(userId) {
-            sesion.hablantes.delete(userId);
-            if (sesion.hablantes.size) return;
-            clearTimeout(sesion.finTurnoTimer);
-            sesion.finTurnoTimer = setTimeout(() => {
-                if (sesion.hablantes.size || !sesion.enTurno) return;
-                sesion.enTurno = false;
-                try {
-                    liveSession.sendRealtimeInput({ activityEnd: {} });
-                } catch (e) {
-                    log.warn(`Error avisando a Gemini del fin del turno de la tertulia: ${e.message}`);
-                }
-            }, FIN_TURNO_TERTULIA_MS);
-        }
-
-        const onSpeakingStart = (userId) => {
-            if (sesion.tertulia) return alEmpezarHablarTertulia(userId);
-            if (sesion.soloEscuchaA && userId !== sesion.soloEscuchaA) return;
-            if (sesion.hablanteActivo) return;
-            sesion.hablanteActivo = userId;
-            // Nuevo turno: hasta que no se oiga la palabra de llamada (si el modo la exige), se
-            // ignora la respuesta. El saludo inicial ya se reprodujo con permitirAudioSalida en
-            // true desde el principio, así que esto solo afecta a partir de que alguien habla.
-            sesion.turnoTranscripcion = "";
-            sesion.avisoIgnoradoEsteTurno = false;
-            sesion.permitirAudioSalida = !sesion.soloSiLeLlaman;
-
-            const { nombre, perfilTexto } = identificarHablante(userId);
-            try {
-                // turnComplete: false para que esto no dispare una respuesta por sí solo — solo
-                // deja constancia de quién habla antes de que llegue su audio de verdad. Mezclar
-                // sendClientContent con audio en tiempo real dentro del mismo turno no está 100%
-                // garantizado por la Live API, pero es la única forma de decirle quién habla.
-                liveSession.sendClientContent({
-                    turns: `(Quien va a hablar ahora es ${nombre}${perfilTexto ? `. Esto es lo que sabes de ${nombre}: ${perfilTexto}` : ""}.)`,
-                    turnComplete: false,
-                });
-            } catch (e) {
-                log.warn(`Error identificando a ${userId} ante Gemini: ${e.message}`);
-            }
-            // Esto es lo que le dice a Gemini que empieza el turno — se manda cada vez que
-            // alguien habla, no solo la primera.
-            try {
-                liveSession.sendRealtimeInput({ activityStart: {} });
-            } catch (e) {
-                log.warn(`Error avisando a Gemini de que ${userId} ha empezado a hablar: ${e.message}`);
-            }
-
-            if (sesion.suscripciones.has(userId)) return;
-            log.info(`${userId} (${nombre}) ha empezado a hablar: suscribiendo captura de audio.`);
-            const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
-            opusStream.on("error", (e) => log.warn(`Error leyendo el audio entrante (opus) de ${userId}: ${e.message}`));
-            sesion.suscripciones.set(userId, opusStream);
-            const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
-            pcmStream.on("error", (e) => log.warn(`Error decodificando el audio entrante de ${userId}: ${e.message}`));
-            pcmStream.on("data", (chunk) => {
-                marcarActividad();
-                // Trozo sobrante fuera de su activityStart/activityEnd (del decoder, con el
-                // stream ya "parado"), o de alguien que no tiene el turno: no se manda.
-                if (sesion.hablanteActivo !== userId) return;
-                sesion.chunksAudioEntrada = (sesion.chunksAudioEntrada || 0) + 1;
-                if (sesion.chunksAudioEntrada === 1) {
-                    log.info(`Primer trozo de audio de ${userId} capturado (${chunk.length} bytes) — mandándolo a Gemini.`);
-                }
-                try {
-                    // El campo es "audio" (stream de audio en tiempo real de verdad), no el
-                    // genérico "media" — con la detección manual de actividad puesta, el server
-                    // necesita el audio por ese campo para poder casarlo con activityStart/End;
-                    // por "media" llegaba igual pero sin ese seguimiento, y cortaba la sesión
-                    // con "Precondition check failed" a los pocos segundos de hablar.
-                    liveSession.sendRealtimeInput({ audio: { data: chunk.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
-                } catch (e) {
-                    log.warn(`Error enviando audio a Gemini Live: ${e.message}`);
-                }
-            });
-        };
-        // El "end" de Discord llega ~100ms después del último paquete de voz real — mucho más
-        // fiable como señal de fin de turno que esperar a que Gemini la adivine de un audio con
-        // huecos (sin paquetes durante los silencios, no hay "silencio" que analizar).
-        const onSpeakingEnd = (userId) => {
-            if (sesion.tertulia) return alDejarDeHablarTertulia(userId);
-            if (sesion.hablanteActivo !== userId) return;
-            sesion.hablanteActivo = null;
-            try {
-                liveSession.sendRealtimeInput({ activityEnd: {} });
-            } catch (e) {
-                log.warn(`Error avisando a Gemini de que ${userId} ha dejado de hablar: ${e.message}`);
-            }
-        };
-        receiver.speaking.on("start", onSpeakingStart);
-        receiver.speaking.on("end", onSpeakingEnd);
-        if (sesion.tertulia) {
-            // Cada FRAME_MS, lo que se haya mezclado de todos sale hacia Gemini en tiempo real.
-            sesion.mezcladorTimer = setInterval(() => {
-                const trozo = sesion.mezclador.tick();
-                if (!trozo) return;
-                try {
-                    liveSession.sendRealtimeInput({ audio: { data: trozo.toString("base64"), mimeType: "audio/pcm;rate=16000" } });
-                } catch (e) {
-                    log.warn(`Error enviando la tertulia a Gemini Live: ${e.message}`);
-                }
-            }, FRAME_MS);
-        }
-        sesion.receiver = receiver;
-        sesion.onSpeakingStart = onSpeakingStart;
-        sesion.onSpeakingEnd = onSpeakingEnd;
-
-        sesion.idleCheckInterval = setInterval(() => {
-            if (Date.now() - sesion.ultimaActividad > IDLE_DISCONNECT_MS) {
-                pararConversacion(guildId, `${Math.round(IDLE_DISCONNECT_MS / 60000)} min sin actividad`);
-            }
-        }, IDLE_CHECK_INTERVAL_MS);
-        sesion.maxDurationTimer = setTimeout(() => {
-            pararConversacion(guildId, `tope de ${Math.round(MAX_DURATION_MS / 60000)} min de duración`);
-        }, MAX_DURATION_MS);
-
+        saludar(sesion.liveSession);
+        escucharHablantes(interaction, sesion);
+        programarLimites(sesion, guildId);
         return { ok: true, voiceChannel };
     } catch (err) {
         sesiones.delete(guildId);
