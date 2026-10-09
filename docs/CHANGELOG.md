@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (cuarta ronda: voz en directo)
+
+- **`empezarConversacion` del Duende en directo** (DT-22, [#172](https://github.com/ale-dm/bot-discord/issues/172)) partida
+  en pasos con nombre: comprobar el inicio, crear la sesión, conectar al canal, la salida de audio (ffmpeg y reproductor),
+  la sesión de Gemini Live, el saludo, la captura de audio por persona (ahora una sola función para la tertulia y para
+  el modo normal) y los límites de inactividad y duración. El comportamiento no cambia; la voz hay que probarla en Discord.
+- Verificado: ninguna cadena de texto cambia (se comparan los literales con la versión anterior; solo desaparecen dos
+  copias idénticas de los manejadores de la captura, que ahora están en una sola función).
+
 ## 2026-10-09 (exports sin uso)
 
 - **130 exports que nadie usa fuera de su fichero** se quitan de los `module.exports` (DT-25, [#191](https://github.com/ale-dm/bot-discord/issues/191)).
