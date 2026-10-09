@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: paneles de admin de Plex y ajustes en partes)
+
+- **`adminPanel/plex.js` y `adminPanel/settings.js` se parten por sección** (`adminPanel/plex/` y `adminPanel/settings/`):
+  vistas, botones, modales y selects. Los dos ficheros originales quedan como fachada con la misma API.
+- **Los manejadores eran cadenas de `if` por botón** (34 en Plex, 36 en ajustes, de hasta 300 líneas). Ahora cada botón o
+  modal es una función con nombre, y un `Map` lo asigna a su id. Ningún manejador pasa de 10 líneas, y ninguna función
+  de acción pasa de 80. El `🔗 Vincular` de Plex (un `startsWith`) es una función propia. El comportamiento no cambia.
+  (DT-20, [#170](https://github.com/ale-dm/bot-discord/issues/170))
+- Excepción: `buildConfigHome` (la pantalla principal de ajustes) mide 91 líneas. Es una vista, no un manejador.
+- Tests: `npm run check` en verde.
+
 ## 2026-10-09 (auditoría: src/index.js más corto)
 
 - **`src/index.js` pasa de 642 a 284 líneas**. Sale cada cosa a su sitio:
