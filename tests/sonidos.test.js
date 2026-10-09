@@ -10,7 +10,6 @@ const { pantallaSonidos } = require("../src/paneles/sonidos");
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sonidos-"));
 process.env.SONIDOS_DIR = dir;
 const G = "g-sonidos";
-let n = 0;
 
 beforeEach(() => {
     db.prepare("DELETE FROM sonidos WHERE guildId = ?").run(G);
@@ -198,12 +197,6 @@ describe("reproducir", () => {
 describe("reproducir bien: el sonido entero, sin dejar nada colgado", () => {
     const { EventEmitter } = require("events");
     const { AudioPlayerStatus } = require("@discordjs/voice");
-    const canalDe = () => ({
-        id: "c1",
-        name: "General",
-        guild: { id: G, voiceAdapterCreator: () => {}, members: { me: {} } },
-        permissionsFor: () => ({ has: () => true }),
-    });
     const sonido = { id: 1, guildId: G, nombre: "Risa", archivo: "1.mp3" };
     /** Un reproductor que se controla desde el test: Playing, Idle y error a mano. */
     function reproductorManual() {
