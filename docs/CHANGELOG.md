@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (auditoría: trofeos de Plex en partes)
+
+- **`systems/plexTrofeos.js` (1.113 líneas) se parte en `systems/plexTrofeos/`** por responsabilidad: `base` (constantes y
+  utilidades), `candidatos` (qué trofeos tiene cada persona), `condiciones` (las de admin), `nombres` (creación y nombres
+  de Gemini), `sociales` (eventos de estreno y sociales) y `gestion` (rarezas, ocultar, panel). Ninguna pasa de 350 líneas.
+  El fichero original queda como fachada con la misma API. (DT-17, [#167](https://github.com/ale-dm/bot-discord/issues/167))
+- Tests: los 164 de trofeos y el `npm run check` completo, en verde.
+
 ## 2026-10-09 (auditoría: 🏅 Liga sin wrapper)
 
 - **`juegos/apuestas/liga.js` desaparece**: el botón 🏅 Liga lo atiende `juegos/apuestas/apuestas.js` (mismo id, mismo
