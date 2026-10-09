@@ -10,6 +10,16 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 - **Cinco definiciones sin uso** quitadas: `getLogLevel` (logger), `RANGE_OPTIONS` (mercado), `borrarPerfil` (perfiles),
   `enDeuda` (préstamos) y `FINALES` (retos).
 
+## 2026-10-09 (tercera ronda: funciones largas y caché de GIF)
+
+- **Cadenas de `if` convertidas en tablas de acciones** en el banco (`handleBankButton`), la configuración de niveles
+  (`boton`) y las recompensas (`modal`). Cada acción es una función con nombre, y la tabla se recorre en orden: el primer
+  predicado que encaja gana, igual que la cadena original.
+- **Diagnóstico de Plex** (`comprobar`): cada supuesto es una función con nombre que recibe un contexto compartido.
+- **Caché de GIF del Duende** (`giphy.js`): se borran las entradas caducadas al guardar y la caché tiene un tope de 500.
+  Antes crecía con cada búsqueda nueva.
+- Verificado: ninguna cadena de texto cambia en `src/` (se comparan los literales con la versión anterior).
+
 ## 2026-10-09 (caché de ajustes del servidor)
 
 - **Ajustes en memoria** (DT-23, [#189](https://github.com/ale-dm/bot-discord/issues/189)): `getSettings` lee la tabla
