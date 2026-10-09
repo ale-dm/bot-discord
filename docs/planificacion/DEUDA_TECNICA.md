@@ -10,10 +10,17 @@ reutilizan: los que faltan (DT-02, DT-04, DT-05, DT-06, DT-09...) ya están resu
 **Prioridad:** 🔴 alta (riesgo real de perder datos o de comportamiento incorrecto) · 🟠 media (molesta o
 complica el mantenimiento) · 🟢 baja (limpieza). **Esfuerzo:** S (una tarde) · M (un par de días) · L (más).
 
-Ahora mismo no queda ninguna.
-
 | ID | Qué | Área | Prioridad | Esfuerzo |
 |---|---|---|---|---|
+| DT-14 | Helpers repetidos: `fmt` (8 copias), `efimero` (6) y 8 versiones de la comprobación de admin, con criterios distintos ([#164](https://github.com/ale-dm/bot-discord/issues/164)) | Código | 🟠 | M |
+| DT-15 | Código muerto en `src/juegos/casino`: `ruleta.js` y `ppt.js` no los usa nadie ([#165](https://github.com/ale-dm/bot-discord/issues/165)) | Código | 🟢 | S |
+| DT-16 | La capa `src/juegos` (3.400 líneas) mezcla handlers, wrappers de 10 líneas y lógica de negocio ([#166](https://github.com/ale-dm/bot-discord/issues/166)) | Estructura | 🟠 | M |
+| DT-17 | `systems/plexTrofeos.js`: 1.113 líneas, el fichero más largo ([#167](https://github.com/ale-dm/bot-discord/issues/167)) | Tamaño | 🟠 | M |
+| DT-18 | `services/duende/herramientas.js`: 943 líneas y 29 herramientas en un solo fichero ([#168](https://github.com/ale-dm/bot-discord/issues/168)) | Tamaño | 🟠 | M |
+| DT-19 | `achievementsSystem.js`: 511 líneas de catálogo dentro del motor ([#169](https://github.com/ale-dm/bot-discord/issues/169)) | Tamaño | 🟢 | S |
+| DT-20 | Paneles de admin de 800 líneas con manejadores de 200 a 300 líneas (`adminPanel/plex.js`, `adminPanel/settings.js`) ([#170](https://github.com/ale-dm/bot-discord/issues/170)) | Tamaño | 🟠 | M |
+| DT-21 | `src/index.js` (642 líneas) mezcla mensajes del Duende, carga de módulos y cron ([#171](https://github.com/ale-dm/bot-discord/issues/171)) | Estructura | 🟠 | M |
+| DT-22 | Funciones muy largas: `liveVoz.empezarConversacion` (376), `duende.hablar` (353), `liquidarApuestas` (262) ([#172](https://github.com/ale-dm/bot-discord/issues/172)) | Tamaño | 🟠 | M |
 
 Además: [decisiones tomadas](#decisiones-tomadas) que no son deuda pero conviene recordar.
 
