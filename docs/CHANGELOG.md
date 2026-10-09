@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (décima ronda: lo que quedaba)
+
+- **Etiqueta de las décadas** ([#218](https://github.com/ale-dm/bot-discord/issues/218)): los trofeos de década dicen el año entero («Máquina del tiempo: los años 1980»; antes «los 80», que con los años 1920 se leía como 2020). Los que ya existían los cambia la migración `039_decadas_nombre` (solo los que creó el código; los de Gemini no se tocan). El id no cambia, así que nadie pierde su trofeo.
+- **Avisos de lint de los tests**: quitadas tres declaraciones sin uso (`mercadosGolesHcap`, `sonidos`, `trofeosPais`). `npm run check` queda sin avisos.
+- Documentación: la última migración es la `039`, y el registro de la sección anterior se queda como histórico (sus rutas antiguas son del momento en que se escribió).
+
 ## 2026-10-09 (novena ronda: funciones largas restantes y reglas fuera de juegos)
 
 - **Ninguna función pasa de 120 líneas** (escaneo con parser). Partidas por partes:

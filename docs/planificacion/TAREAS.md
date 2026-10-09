@@ -270,7 +270,7 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [ ] `/plex` tiene los cuatro botones; el formulario de cine crea la sesión.
 
 **🎞️ Plex Wrapped mensual (#23), por DM**
-- [ ] Al arrancar: `[Migraciones] Aplicada 038_plex_wrapped_enviados`.
+- [ ] Al arrancar: `[Migraciones] Aplicada 038_plex_wrapped_enviados` y `[Migraciones] Aplicada 039_decadas_nombre`.
 - [ ] El día 1 después de las 10:00 (Madrid), cada persona vinculada con actividad recibe por DM su propio resumen (sus horas, sus series). Nada sale en ningún canal.
 - [ ] El resumen no menciona a otras personas. Quien no ha visto nada no recibe DM.
 - [ ] No se repite el mismo mes aunque el bot se reinicie.

@@ -10,8 +10,6 @@ const G = "g-mercados";
 const PARTIDO = "m-goles-hcap";
 let n = 0;
 
-const apuestaCon = (eleccion, linea, cuota) => ({ eleccion, linea, cantidad: 100, cuota });
-
 beforeEach(() => {
     db.prepare("DELETE FROM apuestas_usuario WHERE match_id = ?").run(PARTIDO);
     db.prepare("DELETE FROM apuestas_partidos WHERE match_id = ?").run(PARTIDO);

@@ -253,7 +253,7 @@ describe("trofeos", () => {
         expect(cat.get("plext:serie:bb").name).toBe("Say my name");
         expect(cat.get("plext:director:christopher-nolan").name).toBe("IA director:christopher-nolan");
         expect(cat.get("plext:genero:terror:10")).toMatchObject({ name: "Sin pegar ojo", desc: "Ve 10 películas de Terror" });
-        expect(cat.get("plext:decada:1980").name).toBe("Máquina del tiempo: los 80");
+        expect(cat.get("plext:decada:1980").name).toBe("Máquina del tiempo: los años 1980");
     });
 
     test("se anuncian con de qué son y lo raros que son; un mensaje por persona", () => {
