@@ -21,11 +21,12 @@ const { buildMisJugadas, filaTrasApostar } = require("../../paneles/misJugadas")
 const { pantallaLiga } = require("../../paneles/liga");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
 const { trozos } = require("../../paneles/filas");
+const { CacheLimitada } = require("../../core/cacheLimitada");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
 // --- Utilidad para obtener el escudo del equipo ---
-const cacheEscudos = new Map(); // equipo -> url (o null si no tiene)
+const cacheEscudos = new CacheLimitada({ max: 1000 }); // equipo -> url (o null si no tiene)
 async function getTeamBadge(teamName) {
     if (cacheEscudos.has(teamName)) return cacheEscudos.get(teamName);
     try {

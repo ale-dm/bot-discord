@@ -6,6 +6,7 @@ const guildSettings = require("../guildSettings");
 const achievements = require("../achievementsSystem");
 const dinero = require("../dinero");
 const pase = require("../pase/pase");
+const { CacheLimitada } = require("../../core/cacheLimitada");
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 
@@ -51,7 +52,7 @@ function ttclCirculacion() {
 
 // ─── HISTORIAL DE PRECIOS ─────────────────────────────────────────────────────
 
-const historyCache = new Map();
+const historyCache = new CacheLimitada({ max: 50 });
 const HISTORY_CACHE_TTL = 5 * 60_000;
 
 async function fetchCryptoHistory(cryptoId, days) {

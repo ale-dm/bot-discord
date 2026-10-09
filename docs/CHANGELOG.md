@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (séptima ronda: cachés con tope)
+
+- **Cachés de módulo con tope** (#216): `src/core/cacheLimitada.js`, un mapa con tope de entradas (y caducidad opcional).
+  Se usa en las seis cachés que crecían sin límite: filtros de la tienda (5.000), contexto de transacciones del casino (5.000),
+  búsquedas de recompensas del panel (200), escudos de apuestas (1.000), historial de precios cripto (50) y servidores ya sembrados
+  de XP (500). Al pasarse se echa la entrada más antigua. Sin cambios de comportamiento con uso normal.
+
 ## 2026-10-09 (sexta ronda: avisos de la revisión)
 
 - **Respuesta por voz del Duende** ([#217](https://github.com/ale-dm/bot-discord/issues/217)): la respuesta sonando tiene un tope
