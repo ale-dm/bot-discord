@@ -70,121 +70,16 @@ module.exports = {
 
         logInfo(`[APUESTAS] Usuario consultando ${deporte.name}, página ${page}`);
 
-        // 1. Obtener partidos y cuotas de la API
-        try {
-            const data = await sincronizarPartidos(deporteSeleccionado);
-            logInfo(`[APUESTAS] API devolvió ${data.length || 0} partidos para ${deporte.name}`);
-            if (!Array.isArray(data) || data.length === 0) {
-                await interaction.reply({
-                    content: `❌ No hay partidos disponibles para ${deporte.name} ahora mismo.`,
-                    flags: MessageFlags.Ephemeral,
-                });
-                return;
-            }
-        } catch (e) {
-            logError(`[APUESTAS] Error consultando la Odds API para ${deporte.name}:`, e);
-            await interaction.reply({ content: "❌ No se pudo obtener la información de la API.", flags: MessageFlags.Ephemeral });
-            return;
-        }
+        // 1. Obtener partidos y cuotas de la API. Si no hay, ya se ha avisado.
+        if (!(await hayPartidosEnLaApi(interaction, deporteSeleccionado, deporte))) return;
 
-        // --- Paginación ---
-        const partidosPorPagina = 25;
-        const offset = (page - 1) * partidosPorPagina;
-        const ahora = new Date().toISOString();
-        const inicioListado = directo.inicioListado(); // con ODDS_DIRECTO=1, también los partidos en juego
-        const partidos = db
-            .prepare(
-                `
-            SELECT * FROM apuestas_partidos
-            WHERE estado = 'abierto'
-                AND deporte = ?
-                AND cuota_home IS NOT NULL
-                AND cuota_draw IS NOT NULL
-                AND cuota_away IS NOT NULL
-                AND start_time > ?
-            ORDER BY start_time
-            LIMIT ? OFFSET ?
-        `,
-            )
-            .all(deporteSeleccionado, inicioListado, partidosPorPagina, offset);
-
-        logInfo(`[APUESTAS] Consultando partidos desde ${ahora}, encontrados: ${partidos.length}`);
-
+        const { partidos, offset, totalPartidos } = partidosDePagina(deporteSeleccionado, page);
         if (partidos.length === 0) {
             await interaction.reply({ content: "No hay partidos disponibles para apostar ahora mismo.", flags: MessageFlags.Ephemeral });
             return;
         }
 
-        // Prepara el select menu para elegir partido (máximo 25 opciones por Discord)
-        const options = partidos.map((p) => ({
-            label: `🏠 ${p.home_team} vs 🚩 ${p.away_team}`,
-            description: `🗓️ ${new Date(p.start_time).toLocaleString("es-ES")} | Cuotas: ${p.cuota_home} / ${p.cuota_draw} / ${p.cuota_away}`,
-            value: p.match_id,
-        }));
-
-        const select = new StringSelectMenuBuilder()
-            .setCustomId("apuestas_select_partido")
-            .setPlaceholder("Elige un partido para apostar")
-            .addOptions(options);
-
-        const row = new ActionRowBuilder().addComponents(select);
-
-        // Botones de paginación
-        const totalPartidos = db
-            .prepare(
-                `
-            SELECT COUNT(*) as total FROM apuestas_partidos
-            WHERE estado = 'abierto'
-                AND deporte = ?
-                AND cuota_home IS NOT NULL
-                AND cuota_draw IS NOT NULL
-                AND cuota_away IS NOT NULL
-                AND start_time > ?
-        `,
-            )
-            .get(deporteSeleccionado, inicioListado).total;
-
-        const rowBtns = new ActionRowBuilder();
-        if (page > 1)
-            rowBtns.addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`apuestas_pagina_${deporteSeleccionado}_${page - 1}`)
-                    .setLabel("⬅️ Anterior")
-                    .setStyle(ButtonStyle.Secondary),
-            );
-        if (offset + partidosPorPagina < totalPartidos)
-            rowBtns.addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`apuestas_pagina_${deporteSeleccionado}_${page + 1}`)
-                    .setLabel("Siguiente ➡️")
-                    .setStyle(ButtonStyle.Secondary),
-            );
-
-        // Competiciones (la actual resaltada), la quiniela de esa competición y la liga. Cada fila admite 5 botones,
-        // así que con más competiciones salen en varias filas.
-        const botonesCompeticion = [
-            ...Object.entries(DEPORTES).map(([key, d]) =>
-                new ButtonBuilder()
-                    .setCustomId(`apuestas_pagina_${key}_1`)
-                    .setLabel(`${d.emoji} ${d.name}`.slice(0, 80))
-                    .setStyle(key === deporteSeleccionado ? ButtonStyle.Primary : ButtonStyle.Secondary),
-            ),
-            new ButtonBuilder()
-                .setCustomId(`quiniela_refrescar_${deporteSeleccionado}`)
-                .setLabel("🧾 Quiniela")
-                .setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId("liga_ver").setLabel("🏅 Liga").setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId("combinada_abrir").setLabel("🧩 Combinada").setStyle(ButtonStyle.Secondary),
-        ];
-        const filasCompeticion = trozos(botonesCompeticion).map((grupo) => new ActionRowBuilder().addComponents(...grupo));
-
-        const components = [
-            row,
-            ...(rowBtns.components.length > 0 ? [rowBtns] : []),
-            ...filasCompeticion,
-            filaPestanas(interaction.user.id, "apuestas"),
-        ];
-
+        const components = componentesListado({ interaction, deporteSeleccionado, partidos, page, offset, totalPartidos });
         const embed = new EmbedBuilder()
             .setTitle(`${deporte.emoji} Apuestas deportivas — ${deporte.name}`)
             .setDescription(
@@ -554,4 +449,117 @@ async function confirmarApuesta(interaction, { userId, match, eleccion, linea, c
         embeds: [embed],
         components: [filaTrasApostar(userId, { deporte: match.deporte || "laliga" })],
     });
+}
+
+const PARTIDOS_POR_PAGINA = 25;
+
+// Pide a la API los partidos y cuotas del deporte. False si no hay ninguno o falla (ya se ha avisado).
+async function hayPartidosEnLaApi(interaction, deporteSeleccionado, deporte) {
+    try {
+        const data = await sincronizarPartidos(deporteSeleccionado);
+        logInfo(`[APUESTAS] API devolvió ${data.length || 0} partidos para ${deporte.name}`);
+        if (!Array.isArray(data) || data.length === 0) {
+            await interaction.reply({
+                content: `❌ No hay partidos disponibles para ${deporte.name} ahora mismo.`,
+                flags: MessageFlags.Ephemeral,
+            });
+            return false;
+        }
+        return true;
+    } catch (e) {
+        logError(`[APUESTAS] Error consultando la Odds API para ${deporte.name}:`, e);
+        await interaction.reply({ content: "❌ No se pudo obtener la información de la API.", flags: MessageFlags.Ephemeral });
+        return false;
+    }
+}
+
+// Una página de partidos abiertos con cuotas, y el total (para saber si hay página siguiente).
+function partidosDePagina(deporteSeleccionado, page) {
+    const offset = (page - 1) * PARTIDOS_POR_PAGINA;
+    const ahora = new Date().toISOString();
+    const inicioListado = directo.inicioListado(); // con ODDS_DIRECTO=1, también los partidos en juego
+    const partidos = db
+        .prepare(
+            `
+            SELECT * FROM apuestas_partidos
+            WHERE estado = 'abierto'
+                AND deporte = ?
+                AND cuota_home IS NOT NULL
+                AND cuota_draw IS NOT NULL
+                AND cuota_away IS NOT NULL
+                AND start_time > ?
+            ORDER BY start_time
+            LIMIT ? OFFSET ?
+        `,
+        )
+        .all(deporteSeleccionado, inicioListado, PARTIDOS_POR_PAGINA, offset);
+
+    logInfo(`[APUESTAS] Consultando partidos desde ${ahora}, encontrados: ${partidos.length}`);
+
+    const totalPartidos = db
+        .prepare(
+            `
+            SELECT COUNT(*) as total FROM apuestas_partidos
+            WHERE estado = 'abierto'
+                AND deporte = ?
+                AND cuota_home IS NOT NULL
+                AND cuota_draw IS NOT NULL
+                AND cuota_away IS NOT NULL
+                AND start_time > ?
+        `,
+        )
+        .get(deporteSeleccionado, inicioListado).total;
+    return { partidos, offset, totalPartidos };
+}
+
+// Las filas del listado: el selector de partido, la paginación, las competiciones (la actual resaltada, con su
+// quiniela y la liga y la combinada; cada fila admite 5 botones) y las pestañas.
+function componentesListado({ interaction, deporteSeleccionado, partidos, page, offset, totalPartidos }) {
+    // Prepara el select menu para elegir partido (máximo 25 opciones por Discord)
+    const options = partidos.map((p) => ({
+        label: `🏠 ${p.home_team} vs 🚩 ${p.away_team}`,
+        description: `🗓️ ${new Date(p.start_time).toLocaleString("es-ES")} | Cuotas: ${p.cuota_home} / ${p.cuota_draw} / ${p.cuota_away}`,
+        value: p.match_id,
+    }));
+
+    const select = new StringSelectMenuBuilder()
+        .setCustomId("apuestas_select_partido")
+        .setPlaceholder("Elige un partido para apostar")
+        .addOptions(options);
+
+    const row = new ActionRowBuilder().addComponents(select);
+
+    // Botones de paginación
+    const rowBtns = new ActionRowBuilder();
+    if (page > 1)
+        rowBtns.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`apuestas_pagina_${deporteSeleccionado}_${page - 1}`)
+                .setLabel("⬅️ Anterior")
+                .setStyle(ButtonStyle.Secondary),
+        );
+    if (offset + PARTIDOS_POR_PAGINA < totalPartidos)
+        rowBtns.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`apuestas_pagina_${deporteSeleccionado}_${page + 1}`)
+                .setLabel("Siguiente ➡️")
+                .setStyle(ButtonStyle.Secondary),
+        );
+
+    // Competiciones (la actual resaltada), la quiniela de esa competición y la liga. Cada fila admite 5 botones,
+    // así que con más competiciones salen en varias filas.
+    const botonesCompeticion = [
+        ...Object.entries(DEPORTES).map(([key, d]) =>
+            new ButtonBuilder()
+                .setCustomId(`apuestas_pagina_${key}_1`)
+                .setLabel(`${d.emoji} ${d.name}`.slice(0, 80))
+                .setStyle(key === deporteSeleccionado ? ButtonStyle.Primary : ButtonStyle.Secondary),
+        ),
+        new ButtonBuilder().setCustomId(`quiniela_refrescar_${deporteSeleccionado}`).setLabel("🧾 Quiniela").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("liga_ver").setLabel("🏅 Liga").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("combinada_abrir").setLabel("🧩 Combinada").setStyle(ButtonStyle.Secondary),
+    ];
+    const filasCompeticion = trozos(botonesCompeticion).map((grupo) => new ActionRowBuilder().addComponents(...grupo));
+
+    return [row, ...(rowBtns.components.length > 0 ? [rowBtns] : []), ...filasCompeticion, filaPestanas(interaction.user.id, "apuestas")];
 }
