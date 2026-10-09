@@ -225,17 +225,14 @@ const ORDEN_TIPO = ["serie", "idioma", "saga", "director", "temporada", "admin",
 
 module.exports = {
     CONDICIONES,
-    TIPO_IDIOMA,
+
     AYUDA_FECHAS,
     MESES,
-    inicioDia,
-    diaSiguiente,
-    diaValido,
+
     rangoDe,
-    textoFechas,
+
     parsearCondicion,
-    parsearSinFechas,
-    buscarPorNombre,
+
     evaluarCondicion,
     describirCondicion,
     ORDEN_TIPO,

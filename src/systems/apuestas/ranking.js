@@ -102,4 +102,4 @@ function beneficioEntre(desde, hasta) {
     return [...porUsuario.values()].sort((a, b) => b.beneficio - a.beneficio || b.resueltas - a.resueltas);
 }
 
-module.exports = { MIN_RESUELTAS, mejorRacha, cifras, ranking, beneficioEntre };
+module.exports = { MIN_RESUELTAS, cifras, ranking, beneficioEntre };

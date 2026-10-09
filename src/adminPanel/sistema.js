@@ -324,4 +324,4 @@ async function handleSistemaSelect(interaction) {
     return true;
 }
 
-module.exports = { buildDiagnostico, buildTtcl, buildAlertas, handleSistemaButton, handleSistemaSelect, handleSistemaModal };
+module.exports = { handleSistemaButton, handleSistemaSelect, handleSistemaModal };

@@ -217,13 +217,13 @@ module.exports = {
     MISION_XP,
     NIVEL_MAX,
     CATEGORIAS,
-    MISIONES,
+
     RECOMPENSA,
-    BONUS_FINAL,
+
     xpParaNivel,
     nivelDe,
     temporadaDe,
-    misionesDeHoy,
+
     registrar,
     registrarSeguro,
     registrarEnTodos,

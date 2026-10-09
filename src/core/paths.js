@@ -12,7 +12,7 @@ module.exports = {
     // Logs. En Docker es un volumen.
     LOGS_DIR: process.env.LOG_DIR || path.join(ROOT, "logs"),
     // Modelos de Vosk (STT).
-    MODELS_DIR: path.join(ROOT, "models"),
+
     // Un fichero .js por slash command, agrupados en subcarpetas por tema.
     COMMANDS_DIR: path.join(ROOT, "src", "commands"),
     // Juegos y apuestas: no son comandos (se entra por /juegos), pero sus botones se registran igual.

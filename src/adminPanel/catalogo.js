@@ -211,4 +211,4 @@ async function handleCatalogoModal(interaction) {
     return true;
 }
 
-module.exports = { buildCatalogo, handleCatalogoButton, handleCatalogoModal };
+module.exports = { handleCatalogoButton, handleCatalogoModal };

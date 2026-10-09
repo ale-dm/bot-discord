@@ -313,7 +313,6 @@ async function handlePerfilesModal(interaction) {
 }
 
 module.exports = {
-    buildPerfilesHome,
     handlePerfilesButton: async (i) => (await handleVolver(i)) || handlePerfilesButton(i),
     handlePerfilesStringSelect,
     handlePerfilesUserSelect,

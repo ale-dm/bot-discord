@@ -103,7 +103,6 @@ function boteTotal(guildId) {
 }
 
 module.exports = {
-    PORCENTAJE_POR_DEFECTO,
     TIPOS_EXCLUIDOS,
     listarReglas,
     asegurarReglaPorDefecto,

@@ -120,7 +120,7 @@ module.exports = {
     dificultadGuardada,
     EMOJI,
     slug,
-    GENERO_CANONICO,
+
     canonico,
     NOMBRE_GENERO,
 };

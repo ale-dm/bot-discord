@@ -261,7 +261,7 @@ module.exports = {
     sincronizarPartidos,
     obtenerResultados,
     resultadoDeScore,
-    cuotasH2H,
+
     creditosRestantes,
     CREDITOS_AVISO,
     _limpiarCache: () => cacheCuotas.clear(),

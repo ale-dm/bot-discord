@@ -274,7 +274,7 @@ function modalCantidad(customId, titulo, disponible) {
 module.exports = {
     botonSacar,
     lineaDinero,
-    resumenCasino,
+
     buildEconomia,
     buildMovimientos,
     lineasRicos,

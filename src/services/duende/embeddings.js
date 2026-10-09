@@ -47,4 +47,4 @@ function cosineSimilarity(a, b) {
     return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
-module.exports = { embedTexts, cosineSimilarity, EMBEDDING_MODEL };
+module.exports = { embedTexts, cosineSimilarity };

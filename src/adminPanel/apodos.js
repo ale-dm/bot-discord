@@ -120,4 +120,4 @@ async function handleApodosModal(interaction) {
     return false;
 }
 
-module.exports = { buildApodosHome, handleApodosButton, handleApodosUserSelect, handleApodosModal };
+module.exports = { handleApodosButton, handleApodosUserSelect, handleApodosModal };
