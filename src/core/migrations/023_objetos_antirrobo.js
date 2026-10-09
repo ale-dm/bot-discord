@@ -33,4 +33,4 @@ function up(db) {
     }
 }
 
-module.exports = { up, OBJETOS };
+module.exports = { up };

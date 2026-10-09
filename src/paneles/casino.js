@@ -453,7 +453,7 @@ module.exports = {
     getUserStats,
     filaFinJuego,
     buildPickJugadaPpt,
-    getSaldo,
+
     buildHome,
     buildStats,
     buildHistorial,

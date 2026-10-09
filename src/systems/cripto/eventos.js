@@ -122,4 +122,4 @@ function ultimoEvento() {
     return db.prepare("SELECT * FROM cripto_eventos WHERE aplicado_en IS NOT NULL ORDER BY aplicado_en DESC LIMIT 1").get() || null;
 }
 
-module.exports = { PORCENTAJE, minutoMadrid, revisar, revisarYAvisar, destinatarios, textoAviso, ultimoEvento };
+module.exports = { minutoMadrid, revisar, revisarYAvisar, destinatarios, ultimoEvento };

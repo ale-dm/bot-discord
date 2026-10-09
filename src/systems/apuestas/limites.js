@@ -66,4 +66,4 @@ function comprobar(guildId, userId, cantidad, { matchId = null, ahora = Date.now
     return null;
 }
 
-module.exports = { apostadoHoy, apostadoEnPartido, limites, comprobar };
+module.exports = { apostadoHoy, limites, comprobar };

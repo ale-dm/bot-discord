@@ -275,8 +275,7 @@ module.exports = {
     log,
     navRow,
     buildPlexHome,
-    NOMBRE_TIPO,
-    textoRolesGordos,
+
     buildPlexTrofeos,
     buildRolesGordos,
     buildDiagnosticoIdiomas,

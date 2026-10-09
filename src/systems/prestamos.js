@@ -32,7 +32,6 @@ function abierto(userId) {
 }
 
 /** Si tiene una deuda con el Duende: un préstamo vencido sin pagar entero. */
-const enDeuda = (userId) => abierto(userId)?.estado === "deuda";
 
 /** Por qué no se le pueden prestar `cantidad` monedas a alguien, o null si se puede. */
 function motivoNoPrestar(userId, cantidad) {
@@ -156,7 +155,7 @@ module.exports = {
     PLAZO_DIAS,
     totalDe,
     abierto,
-    enDeuda,
+
     motivoNoPrestar,
     aceptar,
     devolver,

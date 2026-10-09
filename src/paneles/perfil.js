@@ -591,4 +591,4 @@ async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0)
     return { content: "", embeds: [embed], components };
 }
 
-module.exports = { buildPerfil, buildRecompensas, buildLogros, buildRankings, buildProfileEmbed, buildPlex, RANKINGS, FILTROS_LOGROS };
+module.exports = { buildPerfil, buildRecompensas, buildLogros, buildRankings, buildPlex };

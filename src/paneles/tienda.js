@@ -334,7 +334,4 @@ module.exports = {
     buildCompraRealizada,
     buildHistorialCompras,
     buildInventario,
-    filaPestanasTienda,
-    colorPorRareza,
-    emojiPorTipo,
 };

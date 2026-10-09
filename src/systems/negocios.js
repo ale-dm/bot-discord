@@ -183,7 +183,7 @@ function estado(userId, ahora = Date.now()) {
 
 module.exports = {
     CATALOGO,
-    LIMPIEZA_MS,
+
     VENTA_PCT,
     capacidadDiaria,
     disponibleHoy,

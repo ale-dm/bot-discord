@@ -57,4 +57,4 @@ async function handleAuditButton(interaction) {
     return false;
 }
 
-module.exports = { handleAuditButton, buildAuditPayload };
+module.exports = { handleAuditButton };

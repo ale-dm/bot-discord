@@ -512,14 +512,13 @@ function checkAndConsumeLimit(guildId, scope, userId, options = {}) {
 }
 
 module.exports = {
-    DEFAULT_FLAT,
     parseCsvIds,
     getSettings,
-    getFlatSettings,
+
     invalidarAjustes,
     setSetting,
     setManySettings,
-    getCommandAcl,
+
     setCommandAcl,
     listCommandAcl,
     isCommandAllowed,

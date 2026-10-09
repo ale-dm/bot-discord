@@ -210,4 +210,4 @@ async function handleImpuestosModal(interaction) {
     return false;
 }
 
-module.exports = { buildImpuestosHome, handleImpuestosButton, handleImpuestosModal };
+module.exports = { handleImpuestosButton, handleImpuestosModal };

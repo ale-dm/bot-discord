@@ -259,7 +259,7 @@ function masRicos(limite = 10) {
 
 module.exports = {
     INICIAL,
-    LIMITE_OPERACION,
+
     TIPOS,
     asegurarCuenta,
     cuenta,

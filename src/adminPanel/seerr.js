@@ -189,4 +189,4 @@ async function handleSeerrModal(interaction) {
     return false;
 }
 
-module.exports = { buildSeerrHome, handleSeerrButton, handleSeerrChannelSelect, handleSeerrModal };
+module.exports = { handleSeerrButton, handleSeerrChannelSelect, handleSeerrModal };

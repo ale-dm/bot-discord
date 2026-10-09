@@ -260,29 +260,8 @@ async function handleSettingsButton(interaction) {
 }
 
 module.exports = {
-    accionEventos,
-    accionEventosXp,
-    accionEventosCasino,
     accionHome,
-    accionDuende,
-    accionCripto,
-    accionCasino,
-    accionTienda,
-    accionAcl,
-    accionLogros,
-    accionDiario,
-    accionDiarioEdit,
-    accionDuendeEdit,
-    accionDuendeChannel,
-    accionDuendeTono,
-    accionDuendeEspontaneo,
-    accionCriptoMarket,
-    accionCriptoLimits,
-    accionCasinoLimits,
-    accionCasinoRtp,
-    accionTiendaEdit,
-    accionAclEdit,
-    accionLogrosEdit,
+
     ACCIONES_BOTON,
     handleSettingsButton,
 };

@@ -131,4 +131,4 @@ async function eventosDe(guildId, links, statsPorUsuario = new Map()) {
 
 // ─── Rareza, preferencias y admin ────────────────────────────────────────────
 
-module.exports = { EVENTOS_SOCIALES, SIN_SPOILERS_S, ESTRENO_S, sociales, eventosDe };
+module.exports = { EVENTOS_SOCIALES, sociales, eventosDe };

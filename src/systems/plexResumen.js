@@ -161,4 +161,4 @@ function textoFalta(n, u) {
     return `${n} ${n === 1 ? u[0] : u[1]}`;
 }
 
-module.exports = { resumen, repartoIdiomas, seriesAMedias, casiConseguidos, unidad, textoFalta };
+module.exports = { resumen, seriesAMedias, unidad, textoFalta };

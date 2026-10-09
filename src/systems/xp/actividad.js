@@ -142,4 +142,4 @@ async function voiceTick(client) {
     }
 }
 
-module.exports = { handleMessageXp, handleVoiceStateUpdate, voiceTick, isVoiceXpEligible, effectiveMessageLength };
+module.exports = { handleMessageXp, handleVoiceStateUpdate, voiceTick };

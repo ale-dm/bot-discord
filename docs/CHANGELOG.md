@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-09 (exports sin uso)
+
+- **130 exports que nadie usa fuera de su fichero** se quitan de los `module.exports` (DT-25, [#191](https://github.com/ale-dm/bot-discord/issues/191)).
+  Las funciones y constantes siguen en su fichero si se usan dentro. No se tocan los que usan los tests, ni los
+  métodos del router (`componentHandlers`), ni los que se nombran por texto.
+- **Cinco definiciones sin uso** quitadas: `getLogLevel` (logger), `RANGE_OPTIONS` (mercado), `borrarPerfil` (perfiles),
+  `enDeuda` (préstamos) y `FINALES` (retos).
+
 ## 2026-10-09 (caché de ajustes del servidor)
 
 - **Ajustes en memoria** (DT-23, [#189](https://github.com/ale-dm/bot-discord/issues/189)): `getSettings` lee la tabla

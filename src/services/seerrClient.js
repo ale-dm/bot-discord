@@ -274,7 +274,7 @@ module.exports = {
     getRequests,
     getRequestsRaw,
     getMediaTitle,
-    statusLabel,
+
     getAllowedChannels,
     addAllowedChannel,
     removeAllowedChannel,

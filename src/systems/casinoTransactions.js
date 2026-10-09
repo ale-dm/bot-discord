@@ -352,10 +352,8 @@ function obtenerSaldo(userId) {
 }
 
 module.exports = {
-    transaccionSegura,
     registrarUsuario,
-    insertarCasino,
-    insertarHistorial,
+
     validarApuesta,
     procesarGanancia,
     procesarPerdida,
@@ -363,5 +361,4 @@ module.exports = {
     descontarExtra,
     obtenerSaldo,
     applyRtp,
-    getRtpForGame,
 };

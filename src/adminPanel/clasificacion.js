@@ -136,4 +136,4 @@ async function handleClasificacionModal(interaction) {
     return true;
 }
 
-module.exports = { buildClasificacionHome, handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal };
+module.exports = { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal };

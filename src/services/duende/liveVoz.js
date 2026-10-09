@@ -553,8 +553,4 @@ module.exports = {
     construirDeclaracionesHerramientas,
     construirInstruccionesSistema,
     responderLlamadasHerramientas,
-    LIVE_MODEL,
-    LIVE_VOICE,
-    IDLE_DISCONNECT_MS,
-    MAX_DURATION_MS,
 };

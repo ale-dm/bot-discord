@@ -214,7 +214,6 @@ function estadisticasCombinadas(userId) {
 }
 
 module.exports = {
-    SIGNO,
     partidosDe,
     detalleQuiniela,
     quinielasDe,

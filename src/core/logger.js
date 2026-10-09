@@ -282,10 +282,6 @@ function setLogLevel(level) {
     return minLevel;
 }
 
-function getLogLevel() {
-    return minLevel;
-}
-
 function getLogStats() {
     return { ...stats, level: minLevel, consoleLevel: consoleLevel || "off", dir: logsDir };
 }
@@ -307,7 +303,7 @@ module.exports = {
     flushLogs,
     registerSecret,
     setLogLevel,
-    getLogLevel,
+
     getLogStats,
     onError,
     // Para tests

@@ -235,10 +235,9 @@ module.exports = {
     getGeminiTtsAudioStream,
     synthesizeSpeech,
     pcmToWav,
-    extraerAudio,
-    aWav,
+
     GEMINI_TTS_VOICE,
-    GEMINI_TTS_MODEL,
+
     /** El último modelo con el que se generó voz (o null). */
     modeloActual: () => modeloQueFunciona,
     // Para tests: olvidar el modelo que funcionó.

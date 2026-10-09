@@ -146,4 +146,4 @@ function reiniciar() {
     llamadasHoy.clear();
 }
 
-module.exports = { RONDA, MIN_CARACTERES, MAX_LLAMADAS_DIA, observar, analizar, leerRecuerdo, resolver, adminsDe, reiniciar };
+module.exports = { RONDA, MAX_LLAMADAS_DIA, observar, analizar, leerRecuerdo, resolver, reiniciar };

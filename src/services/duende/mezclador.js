@@ -47,4 +47,4 @@ class Mezclador {
     }
 }
 
-module.exports = { Mezclador, FRAME_BYTES, FRAME_MS, SAMPLE_RATE, MAX_COLA_BYTES };
+module.exports = { Mezclador, FRAME_BYTES, FRAME_MS, MAX_COLA_BYTES };

@@ -101,4 +101,4 @@ function pantallaPase(guildId, userId, vista = "resumen", { aviso = null, ahora 
     return { content: "", embeds: [embed], components: filas };
 }
 
-module.exports = { pantallaPase, barra };
+module.exports = { pantallaPase };

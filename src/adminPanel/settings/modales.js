@@ -272,19 +272,6 @@ async function handleSettingsModal(interaction) {
 }
 
 module.exports = {
-    modalDuende,
-    modalDuendeChannel,
-    modalDuendeEspontaneo,
-    modalDuendeTono,
-    modalCriptoMarket,
-    modalCriptoLimits,
-    modalCasinoLimits,
-    modalCasinoRtp,
-    modalTienda,
-    modalAcl,
-    modalLogros,
-    modalDiario,
-    modalEventosXp,
     ACCIONES_MODAL,
     handleSettingsModal,
 };

@@ -202,7 +202,7 @@ module.exports = {
     MAX_APUESTA,
     cuotaTotal,
     premioDe,
-    cuotaDeEleccion,
+
     borrador,
     sumar,
     quitar,
