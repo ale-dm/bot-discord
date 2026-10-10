@@ -49,7 +49,8 @@ async function maybeAnnounceLevelUp(guild, member, newLevel) {
         return;
     }
 
-    const mention = member?.toString?.() || `<@${member.id}>`;
+    // Solo un GuildMember de discord.js trae su mención; un objeto plano { id } heredaría [object Object] de Object.
+    const mention = member?.user ? member.toString() : `<@${member.id}>`;
     const currentTitle = titleForLevel(guild.id, newLevel);
     const upcomingTitle = nextTitle(guild.id, newLevel);
     const nextNeed = xpForNextLevel(newLevel, guild.id, member.id);

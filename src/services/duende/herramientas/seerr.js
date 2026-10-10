@@ -83,7 +83,11 @@ const DUENDE_SEERR_EXECUTORS = {
         // El límite diario protege siempre a quien está hablando con el bot (evita que una
         // sola persona spamee peticiones aunque las reparta "en nombre de" varios amigos).
         const { dailyRequestLimit } = seerrClient.getConfig(ctx.guildId);
-        const limitCheck = guildSettings.checkAndConsumeLimit(ctx.guildId, "seerr_request", ctx.userId, { dailyLimit: dailyRequestLimit });
+        // Solo se comprueba aquí: el cupo se gasta cuando la petición sale de verdad (más abajo).
+        const limitCheck = guildSettings.checkAndConsumeLimit(ctx.guildId, "seerr_request", ctx.userId, {
+            dailyLimit: dailyRequestLimit,
+            consume: false,
+        });
         if (!limitCheck.ok) {
             return { error: "Límite diario de peticiones de contenido alcanzado. Que lo pida mañana." };
         }
@@ -107,6 +111,7 @@ const DUENDE_SEERR_EXECUTORS = {
 
         try {
             await seerrClient.createRequest(ctx.guildId, { mediaType, tmdbId, userId: seerrUser.id });
+            guildSettings.checkAndConsumeLimit(ctx.guildId, "seerr_request", ctx.userId, { dailyLimit: dailyRequestLimit });
             return { pedido: true, titulo: cached.titulo, pedido_por: seerrUser.displayName };
         } catch (e) {
             return { error: `No se pudo pedir: ${e.seerrMessage || e.message}` };

@@ -98,6 +98,7 @@ function setUserCostMultiplier(guildId, userId, multiplier) {
         ON CONFLICT(guildId, userId) DO UPDATE SET costMultiplier = excluded.costMultiplier
     `,
     ).run(guildId, userId, mult);
+    return mult;
 }
 
 function removeUserCostMultiplier(guildId, userId) {

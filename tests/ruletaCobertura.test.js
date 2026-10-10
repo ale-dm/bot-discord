@@ -5,6 +5,11 @@
 const db = require("../src/core/db");
 const dinero = require("../src/systems/dinero");
 const guildSettings = require("../src/systems/guildSettings");
+const cas = require("../src/systems/casinoTransactions");
+// Los espías van antes de cargar ruleta: el módulo desestructura estas funciones al cargarse. Sin mockear devuelven
+// lo real.
+jest.spyOn(cas, "procesarGanancia");
+jest.spyOn(cas, "procesarPerdida");
 const ruleta = require("../src/juegos/casino/ruleta");
 
 const GUILD_RTP = "g-ruleta-rtp";
@@ -318,5 +323,27 @@ describe("botón Repetir", () => {
         expect(i.reply).not.toHaveBeenCalled();
         expect(i.deferUpdate).not.toHaveBeenCalled();
         expect(saldo(u)).toBe(1000);
+    });
+});
+
+describe("si el pago no se registra", () => {
+    test("una ganancia que no se puede cobrar avisa del error y no anuncia un resultado", async () => {
+        const u = jugador(1000);
+        salidaEn(1);
+        cas.procesarGanancia.mockReturnValueOnce(false);
+        const i = await jugar(comando(u, { tipo: "color:rojo" }));
+        const ultimo = i.editReply.mock.calls.at(-1)[0];
+        expect(ultimo.content).toMatch(/No se pudo registrar el resultado/);
+        expect(ultimo.embeds).toEqual([]);
+    });
+
+    test("una pérdida que no se puede cobrar avisa del error y no anuncia un resultado", async () => {
+        const u = jugador(1000);
+        salidaEn(2); // el 2 es negro: pierde quien apostó al rojo
+        cas.procesarPerdida.mockReturnValueOnce(false);
+        const i = await jugar(comando(u, { tipo: "color:rojo" }));
+        const ultimo = i.editReply.mock.calls.at(-1)[0];
+        expect(ultimo.content).toMatch(/No se pudo registrar el resultado/);
+        expect(ultimo.embeds).toEqual([]);
     });
 });

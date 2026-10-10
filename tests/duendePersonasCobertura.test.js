@@ -101,16 +101,12 @@ describe("resolveNameToDiscordId", () => {
         expect(personas.resolveNameToDiscordId("Nadie", servidor(miembro("100000000000000011", "x")))).toBeNull();
     });
 
-    // Hallazgo: la búsqueda por usuario, apodo o nombre visible compara el texto del modelo SIN tildes con el nombre
-    // del miembro TAL CUAL (con tildes). Un miembro cuyo nombre visible es «Raúl» nunca se encuentra escribiendo
-    // «Raúl» ni «raul». Se deja como test.failing hasta que se corrija (systems/duende/personas.js).
-    test.failing(
-        "un miembro con tildes en su nombre visible se encuentra escribiéndolo sin tildes (fallo de producto, personas.js)",
-        () => {
-            const s = servidor(miembro("100000000000000010", "tx9", { displayName: "Tonín" }));
-            expect(personas.resolveNameToDiscordId("Tonin", s)).toBe("100000000000000010");
-        },
-    );
+    // Antes la búsqueda comparaba el texto del modelo sin tildes con el nombre del miembro con tildes, y «Raúl» no
+    // se encontraba. Ahora se normalizan ambos lados (systems/duende/personas.js).
+    test("un miembro con tildes en su nombre visible se encuentra escribiéndolo sin tildes", () => {
+        const s = servidor(miembro("100000000000000010", "tx9", { displayName: "Tonín" }));
+        expect(personas.resolveNameToDiscordId("Tonin", s)).toBe("100000000000000010");
+    });
 });
 
 describe("mentionizeKnownNames", () => {
@@ -148,10 +144,9 @@ describe("mentionizeKnownNames", () => {
         expect(personas.mentionizeKnownNames("Ana María y Ana", s)).toBe("<@100000000000000004> y <@100000000000000001>");
     });
 
-    // Hallazgo: el patrón usa \b de JavaScript sin la bandera «u», y ahí las letras acentuadas no son «palabra».
-    // Un nombre que empieza o termina en vocal acentuada (José) no encuentra límite de palabra y nunca se convierte.
-    // Se deja como test.failing hasta que se corrija (systems/duende/personas.js, mentionizeKnownNames).
-    test.failing("un nombre que termina en tilde («José») también se convierte en mención (fallo de producto, personas.js)", () => {
+    // Antes el patrón usaba \b sin la bandera «u», y las vocales acentuadas no contaban como letra: «José» nunca
+    // se convertía. Ahora el límite de palabra es Unicode (systems/duende/personas.js, mentionizeKnownNames).
+    test("un nombre que termina en tilde («José») también se convierte en mención", () => {
         const s = servidor(miembro("100000000000000005", "jose"));
         expect(personas.mentionizeKnownNames("hola José", s)).toBe("hola <@100000000000000005>");
     });

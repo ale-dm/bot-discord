@@ -20,7 +20,7 @@ module.exports = [
             "no-constant-condition": ["warn", { checkLoops: false }],
             "prefer-const": "warn",
             "no-var": "error",
-            eqeqeq: ["warn", "smart"],
+            eqeqeq: ["error", "always", { null: "ignore" }],
         },
     },
     {

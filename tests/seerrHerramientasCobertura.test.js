@@ -254,10 +254,9 @@ describe("solicitar_contenido_seerr: peticiones", () => {
         expect(spies.createRequest).toHaveBeenCalledTimes(1);
     });
 
-    // Hallazgo: el cupo se consume ANTES de comprobar la persona y ANTES de llamar a Seerr. Una petición que
-    // falla (Seerr rechaza, o no hay vínculo) gasta igualmente el cupo del día. Se deja como test.failing: documenta
-    // el comportamiento esperado y pasa mientras el fallo exista; cuando se corrija, pasará a fallar y se quita el failing.
-    test.failing("una petición fallida no debería gastar el cupo diario (fallo de producto, herramientas/seerr.js)", async () => {
+    // El cupo se gasta solo cuando Seerr acepta la petición. Antes se gastaba antes de llamar a Seerr, así que
+    // una petición que fallaba consumía el cupo del día (herramientas/seerr.js).
+    test("una petición fallida no gasta el cupo diario", async () => {
         spies.getConfig.mockReturnValue({ url: "x", apiKey: "y", dailyRequestLimit: 1 });
         const ctx = contexto();
         await buscarEn(ctx, [MATRIX]);

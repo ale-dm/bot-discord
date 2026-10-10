@@ -120,11 +120,9 @@ describe("pantalla de usuarios", () => {
         }
     });
 
-    // BUG (no corregido, src/adminPanel/niveles/usuarios.js, botón paneladmin_levels_user_mult): la etiqueta del campo
-    // "Multiplicador (1 = normal, 0 quita el override)" tiene 47 caracteres y Discord admite 45 como máximo. discord.js
-    // lanza "Invalid string length" al construir el formulario; el panel responde "Error al procesar botón." y el
-    // multiplicador no se puede cambiar desde el panel. Se deja como test.failing.
-    test.failing("el botón de multiplicador abre su formulario", async () => {
+    // Antes la etiqueta del campo tenía 47 caracteres y Discord admite 45: el formulario no se construía. Ahora
+    // la etiqueta cabe (src/adminPanel/niveles/usuarios.js, botón paneladmin_levels_user_mult).
+    test("el botón de multiplicador abre su formulario", async () => {
         const i = interaccion({ customId: "paneladmin_levels_user_mult" });
 
         await usuarios.boton(i);
@@ -214,10 +212,9 @@ describe("ajustar XP (sumar o restar)", () => {
         expect(canal.send.mock.calls[0][0].embeds[0].data.description).toBe(`<@${u}> alcanzó el **Nivel 1**`);
     });
 
-    // BUG (no corregido, src/systems/xp/roles.js, maybeAnnounceLevelUp): si el miembro no está en caché (aquí
-    // members.fetch no lo encuentra), progreso.js pasa un objeto plano { id }. `member?.toString?.()` devuelve
-    // "[object Object]" y el anuncio muestra eso en vez de la mención. Se deja como test.failing.
-    test.failing("al subir de nivel por ajuste manual, menciona a la persona aunque no esté en caché", async () => {
+    // Antes, si el miembro no estaba en caché, progreso.js pasaba un objeto plano { id } y el anuncio mostraba
+    // "[object Object]". Ahora se usa la mención por id (src/systems/xp/roles.js, maybeAnnounceLevelUp).
+    test("al subir de nivel por ajuste manual, menciona a la persona aunque no esté en caché", async () => {
         const u = uid();
         const canal = { id: "c-anuncios-2", name: "anuncios", isTextBased: () => true, send: jest.fn(async () => {}) };
         xp.setConfig(G, "xp_announce_channel_id", canal.id);

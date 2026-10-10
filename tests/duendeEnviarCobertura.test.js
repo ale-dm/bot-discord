@@ -124,20 +124,19 @@ describe("recortarParaDiscord", () => {
     });
 
     test("un texto en el límite exacto del margen no se corta", () => {
-        const texto = "a".repeat(1980);
+        const texto = "a".repeat(1945);
         expect(enviar.recortarParaDiscord(texto)).toBe(texto);
     });
 
     test("un texto más largo se corta y se marca como truncado", () => {
         const r = enviar.recortarParaDiscord("b".repeat(3000));
-        expect(r.startsWith("b".repeat(1980))).toBe(true);
+        expect(r.startsWith("b".repeat(1945))).toBe(true);
         expect(r.endsWith("(Respuesta truncada por longitud)")).toBe(true);
     });
 
-    // Hallazgo: el margen de 20 caracteres no cuenta el aviso (35 caracteres). Un texto largo sale con 2015
-    // caracteres, por encima del límite de 2000 de Discord. Lo usa /escuchar cuando la voz falla: el mensaje
-    // con 🗣️ se rechaza. Se deja como test.failing hasta que se corrija.
-    test.failing("lo que devuelve recortarParaDiscord cabe en 2000 caracteres (fallo de producto, chat/enviar.js)", () => {
+    // El aviso de truncado (35 caracteres) entra en el margen, así que el resultado nunca supera los 2000 de
+    // Discord. Antes no se contaba y un texto largo salía con 2015 caracteres; lo usa /escuchar cuando la voz falla.
+    test("lo que devuelve recortarParaDiscord cabe en 2000 caracteres, con el aviso incluido", () => {
         expect(enviar.recortarParaDiscord("c".repeat(5000)).length).toBeLessThanOrEqual(2000);
     });
 });
@@ -183,7 +182,7 @@ describe("buscarGifParaRespuesta", () => {
     });
 
     // Hallazgo: DUENDE_GIF_PROB=0 es falsy para «||» y cae al 8 %. Con 0 no debería salir ningún GIF.
-    test.failing("DUENDE_GIF_PROB=0 apaga los GIF (fallo de producto, chat/enviar.js)", async () => {
+    test("DUENDE_GIF_PROB=0 apaga los GIF", async () => {
         process.env.DUENDE_GIF_PROB = "0";
         random.mockReturnValue(0.05);
         await enviar.buscarGifParaRespuesta("r", "");

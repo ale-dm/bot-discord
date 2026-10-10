@@ -88,6 +88,9 @@ function seg(centerIdx, sides = 3) {
     return `◄ ${parts.join("  ")} ►`;
 }
 
+// Si la transacción falla, no se anuncia un resultado que el saldo no refleja.
+const ERROR_PAGO_RULETA = "❌ No se pudo registrar el resultado de la ruleta. Avisa a un admin: tu saldo no refleja esta jugada.";
+
 function buildSpinSteps(startIdx, targetIdx) {
     const loops = 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
     const offset = (targetIdx - startIdx + 37) % 37;
@@ -176,15 +179,25 @@ async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
 
     // 6. Procesar resultado en BD
     const saldoAntes = obtenerSaldo(userId);
+    let pagado;
     if (gananciaNet > 0) {
         gananciaNet = applyRtp(interaction.guildId, "ruleta", apuesta, apuesta + gananciaNet) - apuesta;
-        procesarGanancia(userId, "ruleta", apuesta, apuesta + gananciaNet, `Ruleta: ganaste ${gananciaNet} (${tipo}:${valor})`, {
+        pagado = procesarGanancia(userId, "ruleta", apuesta, apuesta + gananciaNet, `Ruleta: ganaste ${gananciaNet} (${tipo}:${valor})`, {
             n: numeroSalido,
             tipo,
             valor,
         });
     } else {
-        procesarPerdida(userId, "ruleta", apuesta, `Ruleta: perdiste ${apuesta} (${tipo}:${valor})`, { n: numeroSalido, tipo, valor });
+        pagado = procesarPerdida(userId, "ruleta", apuesta, `Ruleta: perdiste ${apuesta} (${tipo}:${valor})`, {
+            n: numeroSalido,
+            tipo,
+            valor,
+        });
+    }
+    if (!pagado) {
+        log.error(`Ruleta: no se pudo registrar el resultado de ${userId} (apuesta ${apuesta})`);
+        await interaction.editReply({ content: ERROR_PAGO_RULETA, embeds: [], components: [] });
+        return;
     }
     const saldoDespues = obtenerSaldo(userId);
 

@@ -37,7 +37,8 @@ function mentionizeKnownNames(text, guild) {
         const id = nameToId.get(nameLower);
         if (!guild.members.cache.has(id)) continue;
         const escaped = nameLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const re = new RegExp(`\\b${escaped}\\b`, "gi");
+        // Límites de palabra con letras Unicode: \b no reconoce «José» ni «Tonín» (la bandera u hace falta para \p{L}).
+        const re = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "giu");
         result = result.replace(re, `<@${id}>`);
     }
     return result;
@@ -68,11 +69,12 @@ function resolveNameToDiscordId(name, guild) {
     }
 
     for (const uname of new Set([nameLower, nameSinArticulo])) {
+        // Se comparan los dos lados sin tildes: «Tonin» tiene que encontrar a «Tonín».
         const member = guild.members.cache.find(
             (m) =>
-                m.user.username.toLowerCase() === uname ||
-                (m.nickname && m.nickname.toLowerCase() === uname) ||
-                (m.displayName && m.displayName.toLowerCase() === uname),
+                normalizeName(m.user.username || "") === uname ||
+                normalizeName(m.nickname || "") === uname ||
+                normalizeName(m.displayName || "") === uname,
         );
         if (member) return member.id;
     }

@@ -462,6 +462,23 @@ describe("aviso automático de novedades", () => {
         expect(canalRecuperado.send).toHaveBeenCalledTimes(1);
     });
 
+    test("sin canal válido las novedades quedan pendientes y salen cuando el canal vuelve", async () => {
+        const { guild, chan } = servidor("g-nov-pendiente", { canal: "c-nov-6" });
+        novedades([serie(100, "Ep 1")]);
+        await tautulli.checkAllGuildsForNewContent(cliente(guild));
+
+        guild.channels.cache.clear();
+        novedades([serie(200, "Ep 2")]);
+        await tautulli.checkAllGuildsForNewContent(cliente(guild));
+        expect(chan.send).not.toHaveBeenCalled();
+
+        guild.channels.cache.set("c-nov-6", chan);
+        novedades([serie(200, "Ep 2")]);
+        await tautulli.checkAllGuildsForNewContent(cliente(guild));
+        expect(chan.send).toHaveBeenCalledTimes(1);
+        expect(chan.send.mock.calls[0][0]).toContain("Ep 2");
+    });
+
     test("si el canal no existe o no es de texto no se envía nada y el resto de servidores sigue", async () => {
         const { guild: sinCanal } = servidor("g-nov-no-existe", { canal: "c-fantasma" });
         sinCanal.channels.cache.clear();
