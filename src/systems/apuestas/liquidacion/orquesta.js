@@ -7,6 +7,14 @@ const { liquidarPartidosSueltos } = require("./partidos");
 const { liquidarQuinielas } = require("./quinielas");
 
 let liquidacionEnCurso = false;
+/**
+ * Cierra los partidos terminados, paga las apuestas ganadoras y liquida las quinielas
+ * completadas. Se usa tanto desde /pagarapuestas como desde el cron de index.js.
+ * @param {object} opts
+ * @param {number} [opts.minHorasDesdeInicio=0] - solo mira partidos empezados hace al menos N horas
+ * @param {string} [opts.origen] - para los logs
+ * @returns {Promise<object|null>} resumen, o null si ya había una liquidación en marcha
+ */
 async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } = {}) {
     if (liquidacionEnCurso) return null;
     if (!process.env.ODDS_API_KEY) throw new Error("Falta ODDS_API_KEY en .env");

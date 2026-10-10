@@ -130,7 +130,7 @@ async function perderPartida(interaction, partida, ronda, carta) {
     terminarPartida(interaction.user.id);
     const embed = new EmbedBuilder()
         .setTitle("❌ Fin del juego")
-        .setDescription(`🃏 **Carta final:** ${carta.valor}${carta.palo}\n\n` + "😢 **¡Incorrecto! Pierdes tu apuesta.")
+        .setDescription(`🃏 **Carta final:** ${carta.valor}${carta.palo}\n\n` + "😢 **¡Incorrecto! Pierdes tu apuesta.**")
         .setColor(0xe74c3c)
         .setThumbnail("https://cdn-icons-png.flaticon.com/512/1828/1828843.png")
         .setFooter({ text: "Adivinar la carta" });

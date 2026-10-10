@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (pendientes: ranking, textos y verificación)
+
+- **Ranking de apostadores más rápido** (#285, en curso): `ranking()` pasa de una consulta por apostador a dos consultas agrupadas (estadísticas de todos) y calcula la racha solo para los que se devuelven. Mismo resultado que antes: un test compara el ranking con las cifras de cada persona sobre datos aleatorios. Medido en esta máquina con 49.251 apostadores y 210.000 apuestas: 1.379 ms → 690 ms. **No llega a los 200 ms del criterio**: el coste que queda es SQLite leyendo todas las apuestas. Para bajar más hace falta una tabla con los totales por apostador, que se actualice al liquidar; es una decisión de diseño pendiente.
+- **Textos**: el aviso de derrota de `/adivinar` cierra bien la negrita, y el JSDoc de `liquidarApuestas` vuelve a su función (estaba encima de `liquidarPartidosSueltos`).
+- **Test de imagen intermitente**: no se ha reproducido ni con doce ejecuciones en paralelo. Queda anotado; si vuelve a fallar, el sitio probable es el tiempo de espera real de 80 ms en `tests/imagenComandoCobertura.test.js`.
+
 ## 2026-10-10 (tamaño: funciones, ficheros y reglas fuera de juegos/)
 
 - **Ninguna función de más de 60 líneas ni fichero de más de 400 en `src/`** (#278, #279). El catálogo de logros queda fuera por ser datos. Los paneles, el Duende, la voz, el casino, el Plex, la quiniela y la administración se partieron en módulos con la ruta original como fachada, así que los imports y los tests no cambian.
