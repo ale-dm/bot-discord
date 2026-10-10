@@ -95,6 +95,28 @@ async function entregarRespuesta(client, interaction, { text, userInput, channel
     await responderPorVoz(client, interaction, textoVoz, sendText);
 }
 
+/**
+ * Comprueba que el Duende puede responder aquí: canal permitido y límite diario. Si no puede, avisa y devuelve false.
+ */
+async function puedeResponder(interaction, { channelId, userName, userInput, allowedChannel }) {
+    if (interaction.guildId && allowedChannel && channelId !== allowedChannel) {
+        await safeEditReply(interaction, `⛔ Duende está restringido a <#${allowedChannel}>.`);
+        return false;
+    }
+
+    log.debug(
+        `Mensaje recibido de ${userName} (${channelId})${interaction.id ? ` [msg ${interaction.id}]` : ""}: ${userInput ? userInput.length : 0} chars`,
+    );
+
+    // Comprueba límite diario
+    if (!checkAndIncrementDailyLimit()) {
+        log.warn(`Límite diario alcanzado (${DUENDE_DAILY_LIMIT} respuestas). Mensaje ignorado.`);
+        await safeEditReply(interaction, `He alcanzado mi límite de respuestas por hoy (${DUENDE_DAILY_LIMIT}). ¡Hasta mañana!`);
+        return false;
+    }
+    return true;
+}
+
 // Responder en el chat: lo usan el chat de texto, la voz (/escuchar) y el formulario 💬 Hablar del panel.
 async function hablar(client, interaction) {
     try {
@@ -108,21 +130,7 @@ async function hablar(client, interaction) {
         const userName = interaction.user.username;
         const channelId = interaction.channel.id;
 
-        if (interaction.guildId && allowedChannel && channelId !== allowedChannel) {
-            await safeEditReply(interaction, `⛔ Duende está restringido a <#${allowedChannel}>.`);
-            return;
-        }
-
-        log.debug(
-            `Mensaje recibido de ${userName} (${channelId})${interaction.id ? ` [msg ${interaction.id}]` : ""}: ${userInput ? userInput.length : 0} chars`,
-        );
-
-        // Comprueba límite diario
-        if (!checkAndIncrementDailyLimit()) {
-            log.warn(`Límite diario alcanzado (${DUENDE_DAILY_LIMIT} respuestas). Mensaje ignorado.`);
-            await safeEditReply(interaction, `He alcanzado mi límite de respuestas por hoy (${DUENDE_DAILY_LIMIT}). ¡Hasta mañana!`);
-            return;
-        }
+        if (!(await puedeResponder(interaction, { channelId, userName, userInput, allowedChannel }))) return;
 
         const { instrucciones, personaObj } = construirInstrucciones(interaction, channelId, userName);
         registrarMensajeUsuario(channelId, userName, userInput, historyLimit);
