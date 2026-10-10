@@ -86,6 +86,60 @@ function recortarParaDiscord(text) {
     return sendText;
 }
 
+// El GIF va en un mensaje aparte: primero como followUp y, si no se puede, directamente al canal.
+async function enviarGif(interaction, gifUrl) {
+    let gifSent = false;
+    if (interaction.followUp && typeof interaction.followUp === "function") {
+        try {
+            await interaction.followUp({ content: gifUrl });
+            gifSent = true;
+        } catch (gifErr) {
+            log.warn("No se pudo enviar GIF por followUp: " + (gifErr && gifErr.message ? gifErr.message : gifErr));
+        }
+    }
+    if (!gifSent && interaction.channel && typeof interaction.channel.send === "function") {
+        try {
+            await interaction.channel.send(gifUrl);
+        } catch (gifErr2) {
+            log.warn("No se pudo enviar GIF por channel.send: " + (gifErr2 && gifErr2.message ? gifErr2.message : gifErr2));
+        }
+    }
+}
+
+// Las propuestas del Duende, cada una en su mensaje con ✅ Acepto / ❌ No (paneles/duendeEconomia).
+async function enviarPropuestas(interaction, propuestas) {
+    const { mensajePropuesta } = require("../../../paneles/duendeEconomia");
+    const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
+    for (const propuesta of propuestas) {
+        try {
+            await interaction.followUp({ ...mensajePropuesta(propuesta), flags });
+        } catch (e) {
+            log.warn(`No se pudo enviar la propuesta del Duende (${propuesta.tipo}): ${e.message}`);
+        }
+    }
+}
+
+// La respuesta principal no salió: se avisa con un followUp o, si tampoco, en el canal.
+async function avisarFalloEnvio(interaction) {
+    const fallbackMsg = "⚠️ No he podido enviar la respuesta principal. Inténtalo de nuevo en unos segundos.";
+    let avisado = false;
+    if (interaction.followUp && typeof interaction.followUp === "function") {
+        try {
+            await interaction.followUp({ content: fallbackMsg });
+            avisado = true;
+        } catch (e) {
+            log.debug(`followUp de aviso falló: ${e.message}`);
+        }
+    }
+    if (!avisado && interaction.channel && typeof interaction.channel.send === "function") {
+        try {
+            await interaction.channel.send(fallbackMsg);
+        } catch (e) {
+            log.warn(`No se pudo enviar ni la respuesta ni el aviso de error en ${interaction.channel?.id}: ${e.message}`);
+        }
+    }
+}
+
 // Manda el texto (y el GIF y las propuestas). Por voz (/escuchar) no sale nada por aquí.
 async function enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas }) {
     try {
@@ -96,56 +150,11 @@ async function enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas 
             sentOk = true;
         }
 
-        if (!interaction?.silentTextReply && sentOk && gifUrl) {
-            let gifSent = false;
-            if (interaction.followUp && typeof interaction.followUp === "function") {
-                try {
-                    await interaction.followUp({ content: gifUrl });
-                    gifSent = true;
-                } catch (gifErr) {
-                    log.warn("No se pudo enviar GIF por followUp: " + (gifErr && gifErr.message ? gifErr.message : gifErr));
-                }
-            }
-            if (!gifSent && interaction.channel && typeof interaction.channel.send === "function") {
-                try {
-                    await interaction.channel.send(gifUrl);
-                } catch (gifErr2) {
-                    log.warn("No se pudo enviar GIF por channel.send: " + (gifErr2 && gifErr2.message ? gifErr2.message : gifErr2));
-                }
-            }
-        }
+        if (!interaction?.silentTextReply && sentOk && gifUrl) await enviarGif(interaction, gifUrl);
 
-        // Las propuestas del Duende, cada una en su mensaje con ✅ Acepto / ❌ No (paneles/duendeEconomia).
-        if (sentOk && propuestas?.length) {
-            const { mensajePropuesta } = require("../../../paneles/duendeEconomia");
-            const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
-            for (const propuesta of propuestas) {
-                try {
-                    await interaction.followUp({ ...mensajePropuesta(propuesta), flags });
-                } catch (e) {
-                    log.warn(`No se pudo enviar la propuesta del Duende (${propuesta.tipo}): ${e.message}`);
-                }
-            }
-        }
+        if (sentOk && propuestas?.length) await enviarPropuestas(interaction, propuestas);
 
-        if (!interaction?.silentTextReply && !sentOk) {
-            const fallbackMsg = "⚠️ No he podido enviar la respuesta principal. Inténtalo de nuevo en unos segundos.";
-            if (interaction.followUp && typeof interaction.followUp === "function") {
-                try {
-                    await interaction.followUp({ content: fallbackMsg });
-                    sentOk = true;
-                } catch (e) {
-                    log.debug(`followUp de aviso falló: ${e.message}`);
-                }
-            }
-            if (!sentOk && interaction.channel && typeof interaction.channel.send === "function") {
-                try {
-                    await interaction.channel.send(fallbackMsg);
-                } catch (e) {
-                    log.warn(`No se pudo enviar ni la respuesta ni el aviso de error en ${interaction.channel?.id}: ${e.message}`);
-                }
-            }
-        }
+        if (!interaction?.silentTextReply && !sentOk) await avisarFalloEnvio(interaction);
     } catch (sendErr) {
         log.error("Error enviando respuesta por texto:", sendErr);
     }

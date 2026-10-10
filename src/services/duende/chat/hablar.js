@@ -20,6 +20,81 @@ const { createLogger } = require("../../../core/logger");
 
 const log = createLogger("Duende");
 
+/** Añade el mensaje del usuario al historial del canal (con timestamp), recortado al límite configurado. */
+function registrarMensajeUsuario(channelId, userName, userInput, historyLimit) {
+    // Inicializa historial si no existe
+    if (!conversationHistory[channelId]) conversationHistory[channelId] = [];
+
+    // Añade el mensaje del usuario al historial (con timestamp)
+    conversationHistory[channelId].push({ role: "user", name: userName, text: userInput, timestamp: Date.now() });
+    if (conversationHistory[channelId].length > historyLimit) {
+        conversationHistory[channelId] = conversationHistory[channelId].slice(-historyLimit);
+    }
+}
+
+/** Las partes del prompt de Gemini para este turno: personalidad, instrucciones, perfiles, equivalencias e historial. */
+async function montarPartes(interaction, { channelId, userName, userInput, historyLimit, instrucciones, personaObj, imageAttachments }) {
+    const lineaPerfiles = await lineaDePerfiles(interaction, userInput);
+    const { nombrePorUsername, lineaEquivalencias, lineaUsuarioActual } = lineasDeUsuarios(interaction, userName);
+    const lineaPersonalidadActiva = personaObj
+        ? `Personalidad activa: ${personaObj.id} (${personaObj.title || "sin título"})`
+        : "Personalidad activa: default";
+    const contextParts = historialParaPrompt(channelId, historyLimit, nombrePorUsername);
+    const instruccionesFinal = instruccionesDelTurno(instrucciones, channelId, userInput);
+
+    return construirPartes({
+        lineaPersonalidadActiva,
+        instruccionesFinal,
+        lineaPerfiles,
+        lineaEquivalencias,
+        lineaUsuarioActual,
+        contextParts,
+        imageAttachments,
+    });
+}
+
+/** Registra en el log el prompt que va a Gemini (el completo solo si DUENDE_LOG_FULL_PROMPT). */
+function registrarPrompt(parts, activeModel) {
+    log.debug(`Prompt enviado a Gemini (${activeModel}): [personalidad, instrucciones, equivalencias, historial reciente]`);
+    if (DUENDE_LOG_FULL_PROMPT) {
+        try {
+            log.info(`Prompt completo Gemini:\n${buildPromptFromParts(parts)}`);
+        } catch (promptLogErr) {
+            log.warn("No se pudo registrar el prompt completo: " + (promptLogErr && promptLogErr.message));
+        }
+    }
+}
+
+/** Contexto que reciben las herramientas del Duende; las propuestas solo existen donde hay botones (no en la voz). */
+function contextoDeHerramientas(interaction, channelId) {
+    return {
+        guildId: interaction.guildId || null,
+        userId: interaction.user.id,
+        guild: interaction.guild || null,
+        channelId,
+        // 🧙 Lo que el Duende proponga (un reto, una apuesta, un préstamo: F-DU-03) sale después con botones.
+        // Por voz (/escuchar) no hay dónde pulsarlos: ahí no se ofrecen esas herramientas.
+        ...(interaction?.silentTextReply ? {} : { propuestas: [] }),
+    };
+}
+
+/** Ya con la respuesta de Gemini: la deja en dos frases, la guarda en el historial y la manda por texto, GIF, propuestas y voz. */
+async function entregarRespuesta(client, interaction, { text, userInput, channelId, toolContext }) {
+    const respuesta = limitToSentences(text, 2);
+    // Para la voz, sin las menciones de Discord de debajo (si no, el TTS leería "<@370221…>").
+    const textoVoz = respuesta;
+    const textoChat = interaction.guild ? mentionizeKnownNames(respuesta, interaction.guild) : respuesta;
+
+    const gifUrl = await buscarGifParaRespuesta(textoChat, userInput);
+
+    conversationHistory[channelId].push({ role: "duende", name: "Duende", text: textoChat, timestamp: Date.now() });
+    saveHistory();
+
+    const sendText = recortarParaDiscord(textoChat);
+    await enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas: toolContext.propuestas });
+    await responderPorVoz(client, interaction, textoVoz, sendText);
+}
+
 // Responder en el chat: lo usan el chat de texto, la voz (/escuchar) y el formulario 💬 Hablar del panel.
 async function hablar(client, interaction) {
     try {
@@ -50,55 +125,22 @@ async function hablar(client, interaction) {
         }
 
         const { instrucciones, personaObj } = construirInstrucciones(interaction, channelId, userName);
+        registrarMensajeUsuario(channelId, userName, userInput, historyLimit);
 
-        // Inicializa historial si no existe
-        if (!conversationHistory[channelId]) conversationHistory[channelId] = [];
-
-        // Añade el mensaje del usuario al historial (con timestamp)
-        conversationHistory[channelId].push({ role: "user", name: userName, text: userInput, timestamp: Date.now() });
-        if (conversationHistory[channelId].length > historyLimit) {
-            conversationHistory[channelId] = conversationHistory[channelId].slice(-historyLimit);
-        }
-
-        const lineaPerfiles = await lineaDePerfiles(interaction, userInput);
-        const { nombrePorUsername, lineaEquivalencias, lineaUsuarioActual } = lineasDeUsuarios(interaction, userName);
-        const lineaPersonalidadActiva = personaObj
-            ? `Personalidad activa: ${personaObj.id} (${personaObj.title || "sin título"})`
-            : "Personalidad activa: default";
-        const contextParts = historialParaPrompt(channelId, historyLimit, nombrePorUsername);
-        const instruccionesFinal = instruccionesDelTurno(instrucciones, channelId, userInput);
-
-        const parts = construirPartes({
-            lineaPersonalidadActiva,
-            instruccionesFinal,
-            lineaPerfiles,
-            lineaEquivalencias,
-            lineaUsuarioActual,
-            contextParts,
+        const parts = await montarPartes(interaction, {
+            channelId,
+            userName,
+            userInput,
+            historyLimit,
+            instrucciones,
+            personaObj,
             imageAttachments,
         });
-
         const activeModel = configuredModel || GEMINI_MODEL;
-        log.debug(`Prompt enviado a Gemini (${activeModel}): [personalidad, instrucciones, equivalencias, historial reciente]`);
-        if (DUENDE_LOG_FULL_PROMPT) {
-            try {
-                log.info(`Prompt completo Gemini:\n${buildPromptFromParts(parts)}`);
-            } catch (promptLogErr) {
-                log.warn("No se pudo registrar el prompt completo: " + (promptLogErr && promptLogErr.message));
-            }
-        }
+        registrarPrompt(parts, activeModel);
 
-        const toolContext = {
-            guildId: interaction.guildId || null,
-            userId: interaction.user.id,
-            guild: interaction.guild || null,
-            channelId,
-            // 🧙 Lo que el Duende proponga (un reto, una apuesta, un préstamo: F-DU-03) sale después con botones.
-            // Por voz (/escuchar) no hay dónde pulsarlos: ahí no se ofrecen esas herramientas.
-            ...(interaction?.silentTextReply ? {} : { propuestas: [] }),
-        };
-
-        let text = await pedirRespuestaGemini({
+        const toolContext = contextoDeHerramientas(interaction, channelId);
+        const text = await pedirRespuestaGemini({
             parts,
             activeModel,
             temperature,
@@ -107,21 +149,7 @@ async function hablar(client, interaction) {
             userName,
             userInput,
         });
-        text = limitToSentences(text, 2);
-        // Para la voz, sin las menciones de Discord de debajo (si no, el TTS leería "<@370221…>").
-        const textoVoz = text;
-        if (interaction.guild) {
-            text = mentionizeKnownNames(text, interaction.guild);
-        }
-
-        const gifUrl = await buscarGifParaRespuesta(text, userInput);
-
-        conversationHistory[channelId].push({ role: "duende", name: "Duende", text, timestamp: Date.now() });
-        saveHistory();
-
-        const sendText = recortarParaDiscord(text);
-        await enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas: toolContext.propuestas });
-        await responderPorVoz(client, interaction, textoVoz, sendText);
+        await entregarRespuesta(client, interaction, { text, userInput, channelId, toolContext });
     } catch (err) {
         log.error("Error general en el comando:", err);
         try {
