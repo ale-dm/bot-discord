@@ -4,9 +4,7 @@
 // Si una BD muy antigua no tiene alguna columna de un índice, ese índice se omite (y se avisa): el bot tiene que
 // arrancar igual, y el índice se puede añadir después con una migración nueva.
 
-const { createLogger } = require("../logger");
-
-const log = createLogger("Migraciones");
+const { crearIndices } = require("./indices");
 
 const INDICES = [
     // Listado de partidos para apostar (filtro por deporte y hora de inicio) y liquidación/destacado (estado y hora).
@@ -39,26 +37,8 @@ const INDICES = [
     "CREATE INDEX IF NOT EXISTS idx_cripto_carteras_cripto ON cripto_carteras(cripto, cantidad)",
 ];
 
-// Tabla y columnas de un índice, leídas de su propio SQL.
-function columnasDe(sql) {
-    const m = /ON (\w+)\(([^)]*)\)/.exec(sql);
-    return { tabla: m[1], columnas: m[2].split(",").map((c) => c.trim()) };
-}
-
 function up(db) {
-    for (const sql of INDICES) {
-        const { tabla, columnas } = columnasDe(sql);
-        const existentes = db
-            .prepare(`PRAGMA table_info(${tabla})`)
-            .all()
-            .map((c) => c.name);
-        const faltan = columnas.filter((c) => !existentes.includes(c));
-        if (faltan.length) {
-            log.warn(`Índice omitido en ${tabla}: faltan las columnas ${faltan.join(", ")} (BD antigua)`);
-            continue;
-        }
-        db.exec(sql);
-    }
+    crearIndices(db, INDICES);
 }
 
 module.exports = { up, INDICES };

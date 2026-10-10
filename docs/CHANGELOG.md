@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (base de datos: lo que quedaba de los índices)
+
+- **Índices del resto** (migración `041_indices_resto`): quinielas abiertas por competición, ranking y liga (quinielas cerradas por fecha), rachas diarias de XP e ingresos de los negocios. Los de tablas pequeñas no se notan en el uso normal; estos sí se evitan en cada consulta diaria o de página.
+- **Helper compartido** (`src/core/migrations/indices.js`): la creación de índices que omite los de BD antiguas. Lo usan las migraciones 040 y 041.
+- **Liquidación horaria** medida con datos realistas (la mayoría de partidos ya finalizados, unos pocos abiertos y pasados): 4,28 ms sin índice, 0,84 ms con él.
+
 ## 2026-10-10 (base de datos: índices y ajustes)
 
 - **Índices para las consultas que se repiten** (migración `040_indices_consultas`): el listado de partidos para apostar, «Mis jugadas», las apuestas pendientes del aviso cada cinco minutos, la voz de XP cada minuto, el inventario de cada persona, las quinielas, las combinadas, los retos, el aviso de cine y la TTCL. Medido sobre datos sintéticos de tamaño realista (300.000 apuestas, 150.000 personas con XP, 300.000 objetos de inventario):

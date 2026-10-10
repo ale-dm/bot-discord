@@ -13,7 +13,7 @@ Para entender el proyecto en general: [README](../README.md) (puesta en marcha y
   pronósticos, quinielas, retos), cripto (pool de liquidez, solo TTCL, panel con pestañas), tienda y Duende con panel,
   Plex (`/plex` con botones, trofeos por país, recomendaciones, sesión de cine, Wrapped privado por DM), pase de batalla,
   `/sonidos` y `/conectar`.
-- Migraciones: hasta la `040_indices_consultas`. La siguiente es la `041`.
+- Migraciones: hasta la `041_indices_resto`. La siguiente es la `042`.
 - Los cabos sueltos de la revisión del 2026-10-08 están cerrados: `/ayuda` cubre `/plex`, `/sonidos`, `/conectar` y
   `/pase`; los logros completados dan XP de pase; en `/paneladmin` → ⚽ Apuestas están los premios de la liga; y
   Mis jugadas y Stats muestran las combinadas.

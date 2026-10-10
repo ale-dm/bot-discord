@@ -71,3 +71,23 @@ test("una BD antigua sin una columna omite ese índice y las migraciones siguen"
     const nombres = vieja.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").pluck().all();
     expect(nombres).not.toContain("idx_apuestas_partidos_estado_inicio");
 });
+
+test("el listado de quinielas y el ranking usan índice (migración 041)", () => {
+    const abiertas = plan("SELECT * FROM quinielas WHERE estado = 'abierta' AND deporte = ? ORDER BY id DESC LIMIT 1", "laliga");
+    expect(abiertas).toMatch(/idx_quinielas_estado_deporte/);
+    const cerradas = plan(
+        "SELECT qa.user_id FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id WHERE q.estado = 'cerrada' AND q.cerrada_en >= ? AND q.cerrada_en < ?",
+        "a",
+        "b",
+    );
+    expect(cerradas).toMatch(/idx_quinielas_estado_cerrada/);
+});
+
+test("las rachas diarias de XP y los ingresos de negocios usan índice (migración 041)", () => {
+    expect(plan("SELECT guildId, userId FROM xp_users WHERE streak_dias >= 2 AND streak_last_day = ?", "2026-10-10")).toMatch(
+        /idx_xp_users_racha/,
+    );
+    expect(plan("SELECT * FROM negocios_usuario WHERE ultimo_ingreso_dia IS NULL OR ultimo_ingreso_dia < ?", "2026-10-10")).toMatch(
+        /idx_negocios_usuario_ingreso/,
+    );
+});
