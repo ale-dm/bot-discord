@@ -50,75 +50,94 @@ function textoCreditos() {
     return `**${c.restantes}** créditos restantes este mes (<t:${Math.floor(c.at / 1000)}:R>)${c.restantes < CREDITOS_AVISO ? " ⚠️" : ""}`;
 }
 
-function buildDiagnostico(client, guildId, aviso = "") {
-    const cfg = guildSettings.getSettings(guildId);
-    let dbOk = "OK";
-    let dbUsers = 0;
+// Comprueba que la base de datos responde y cuenta los usuarios del banco.
+function estadoBaseDatos() {
     try {
-        dbUsers = db.prepare("SELECT COUNT(*) as total FROM banco").get()?.total || 0;
+        return { dbOk: "OK", dbUsers: db.prepare("SELECT COUNT(*) as total FROM banco").get()?.total || 0 };
     } catch (e) {
-        dbOk = `ERROR: ${e.message}`;
         log.error("La base de datos no responde:", e);
+        return { dbOk: `ERROR: ${e.message}`, dbUsers: 0 };
     }
-    const logs = getLogStats();
-    const ultimoError = logs.lastError
-        ? `<t:${Math.floor(logs.lastError.at / 1000)}:R> ${logs.lastError.scope ? `[${logs.lastError.scope}] ` : ""}${logs.lastError.message}`.slice(
-              0,
-              1000,
-          )
-        : "ninguno";
+}
+
+function textoUltimoError(logs) {
+    if (!logs.lastError) return "ninguno";
+    const { at, scope, message } = logs.lastError;
+    return `<t:${Math.floor(at / 1000)}:R> ${scope ? `[${scope}] ` : ""}${message}`.slice(0, 1000);
+}
+
+function camposServidor(client, dbOk, dbUsers, logs) {
+    return [
+        { name: "Uptime", value: fmtMs(process.uptime() * 1000), inline: true },
+        { name: "Memoria RSS", value: `${(process.memoryUsage().rss / (1024 * 1024)).toFixed(1)} MB`, inline: true },
+        { name: "Comandos cargados", value: String(client.slashCommands?.size || 0), inline: true },
+        { name: "DB", value: dbOk, inline: true },
+        { name: "Usuarios banco", value: String(dbUsers), inline: true },
+        { name: "Guilds conectadas", value: String(client.guilds?.cache?.size || 0), inline: true },
+        {
+            name: "Logs",
+            value: `nivel=**${logs.level}** · consola=${logs.consoleLevel} · desde el arranque: ${logs.error} errores, ${logs.warn} avisos`,
+            inline: false,
+        },
+        { name: "Último error", value: textoUltimoError(logs), inline: false },
+    ];
+}
+
+// Gemini, Odds API y alertas: lo que depende de servicios externos.
+function camposExternos(cfg) {
     const g = getGeminiUsage();
     const adminsAlerta = guildSettings.parseCsvIds(cfg.alertas.admin_ids);
+    return [
+        {
+            name: "Gemini (desde el arranque)",
+            value: `${g.llamadas} llamadas · ${g.errores} errores (${g.cuotaAgotada} por cuota) · tokens ${g.tokensEntrada.toLocaleString("es")} entrada / ${g.tokensSalida.toLocaleString("es")} salida`,
+            inline: false,
+        },
+        { name: "Odds API", value: textoCreditos(), inline: false },
+        {
+            name: "Alertas por DM",
+            value: cfg.alertas.enabled
+                ? `activas · a ${adminsAlerta.length ? `${adminsAlerta.length} admins` : "el dueño del servidor"}`
+                : "desactivadas",
+            inline: false,
+        },
+    ];
+}
+
+// Ajustes de cada módulo tal cual están guardados.
+function camposAjustes(cfg) {
+    return [
+        {
+            name: "Duende",
+            value: `modelo=${cfg.duende.model || "default"} · canal=${cfg.duende.allowed_channel_id || "*"}`,
+            inline: false,
+        },
+        {
+            name: "Cripto",
+            value: `buyCD=${cfg.cripto.cooldown_buy_sec}s · sellCD=${cfg.cripto.cooldown_sell_sec}s · fee=${cfg.cripto.fee_buy_pct}/${cfg.cripto.fee_sell_pct}%`,
+            inline: false,
+        },
+        {
+            name: "Tienda",
+            value: `enabled=${cfg.tienda.enabled ? "1" : "0"} · cd=${cfg.tienda.buy_cooldown_sec}s · daily=${cfg.tienda.daily_limit || "∞"}`,
+            inline: false,
+        },
+        {
+            name: "Logros",
+            value: `enabled=${cfg.logros?.enabled ? "1" : "0"} · mult=x${cfg.logros?.reward_multiplier || 1} · off=${cfg.logros?.disabled_categories || "none"}`,
+            inline: false,
+        },
+    ];
+}
+
+function buildDiagnostico(client, guildId, aviso = "") {
+    const cfg = guildSettings.getSettings(guildId);
+    const { dbOk, dbUsers } = estadoBaseDatos();
+    const logs = getLogStats();
     const embed = new EmbedBuilder()
         .setTitle("🩺 Diagnóstico del bot")
         .setDescription(aviso || null)
-        .addFields(
-            { name: "Uptime", value: fmtMs(process.uptime() * 1000), inline: true },
-            { name: "Memoria RSS", value: `${(process.memoryUsage().rss / (1024 * 1024)).toFixed(1)} MB`, inline: true },
-            { name: "Comandos cargados", value: String(client.slashCommands?.size || 0), inline: true },
-            { name: "DB", value: dbOk, inline: true },
-            { name: "Usuarios banco", value: String(dbUsers), inline: true },
-            { name: "Guilds conectadas", value: String(client.guilds?.cache?.size || 0), inline: true },
-            {
-                name: "Logs",
-                value: `nivel=**${logs.level}** · consola=${logs.consoleLevel} · desde el arranque: ${logs.error} errores, ${logs.warn} avisos`,
-                inline: false,
-            },
-            { name: "Último error", value: ultimoError, inline: false },
-            {
-                name: "Gemini (desde el arranque)",
-                value: `${g.llamadas} llamadas · ${g.errores} errores (${g.cuotaAgotada} por cuota) · tokens ${g.tokensEntrada.toLocaleString("es")} entrada / ${g.tokensSalida.toLocaleString("es")} salida`,
-                inline: false,
-            },
-            { name: "Odds API", value: textoCreditos(), inline: false },
-            {
-                name: "Alertas por DM",
-                value: cfg.alertas.enabled
-                    ? `activas · a ${adminsAlerta.length ? `${adminsAlerta.length} admins` : "el dueño del servidor"}`
-                    : "desactivadas",
-                inline: false,
-            },
-            {
-                name: "Duende",
-                value: `modelo=${cfg.duende.model || "default"} · canal=${cfg.duende.allowed_channel_id || "*"}`,
-                inline: false,
-            },
-            {
-                name: "Cripto",
-                value: `buyCD=${cfg.cripto.cooldown_buy_sec}s · sellCD=${cfg.cripto.cooldown_sell_sec}s · fee=${cfg.cripto.fee_buy_pct}/${cfg.cripto.fee_sell_pct}%`,
-                inline: false,
-            },
-            {
-                name: "Tienda",
-                value: `enabled=${cfg.tienda.enabled ? "1" : "0"} · cd=${cfg.tienda.buy_cooldown_sec}s · daily=${cfg.tienda.daily_limit || "∞"}`,
-                inline: false,
-            },
-            {
-                name: "Logros",
-                value: `enabled=${cfg.logros?.enabled ? "1" : "0"} · mult=x${cfg.logros?.reward_multiplier || 1} · off=${cfg.logros?.disabled_categories || "none"}`,
-                inline: false,
-            },
-        )
+        .addFields(...camposServidor(client, dbOk, dbUsers, logs), ...camposExternos(cfg), ...camposAjustes(cfg))
         .setColor(dbOk === "OK" && logs.error === 0 ? 0x2ecc71 : dbOk === "OK" ? 0xf1c40f : 0xe74c3c)
         .setTimestamp();
     return { content: "", embeds: [embed], components: filas(logs.level) };
@@ -194,6 +213,48 @@ function buildAlertas(guild, aviso = "") {
     return { content: "", embeds: [embed], components: [fila] };
 }
 
+async function probarAlertas(interaction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const enviadas = await alertas.probar(interaction.user.username);
+    const total = alertas.destinatarios().length;
+    await interaction.editReply({
+        content: total
+            ? `📨 Alerta de prueba enviada a ${enviadas} de ${total}.${enviadas < total ? " Quien no la recibe tiene los DMs cerrados para el bot." : ""}`
+            : "❌ No hay a quién enviarla: las alertas están desactivadas.",
+    });
+    return true;
+}
+
+async function probarGemini(interaction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const { comprobarModelo, modeloDe, textoComprobacion } = require("../services/duende/gemini");
+    const r = await comprobarModelo(modeloDe(interaction.guildId));
+    log.info(`Comprobación del modelo de Gemini por ${interaction.user.tag}: ${r.ok ? "ok" : r.motivo}`);
+    await interaction.editReply({ content: textoComprobacion(r) });
+    return true;
+}
+
+// Genera una frase con Gemini TTS (los mismos modelos y respaldos que /tts y el Duende) y la adjunta para oírla aquí.
+async function probarVoz(interaction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const tts = require("../services/geminiTts");
+    const t0 = Date.now();
+    const tardo = () => `${((Date.now() - t0) / 1000).toFixed(1)} s`;
+    try {
+        const wav = await tts.synthesizeSpeech("Hola, soy el Duende. Si me oyes, la voz funciona.");
+        const segundos = (wav.length - 44) / (wav.readUInt32LE(24) * 2);
+        log.info(`Prueba de voz por ${interaction.user.tag}: ok con ${tts.modeloActual()} (${tardo()})`);
+        await interaction.editReply({
+            content: `✅ Voz generada con **${tts.modeloActual()}** en ${tardo()} (${segundos.toFixed(1)} s de audio). Escúchala aquí; en un canal de voz, con \`/tts\`.`,
+            files: [{ attachment: wav, name: "prueba-voz.wav" }],
+        });
+    } catch (e) {
+        log.warn(`Prueba de voz por ${interaction.user.tag}: ${e.message}`);
+        await interaction.editReply({ content: `❌ No se pudo generar la voz (${tardo()}):\n${e.message.slice(0, 1800)}` });
+    }
+    return true;
+}
+
 async function handleSistemaButton(interaction) {
     const id = interaction.customId;
     if (id === "paneladmin_sis_home") {
@@ -224,17 +285,7 @@ async function handleSistemaButton(interaction) {
         );
         return true;
     }
-    if (id === "paneladmin_sis_alertas_probar") {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        const enviadas = await alertas.probar(interaction.user.username);
-        const total = alertas.destinatarios().length;
-        await interaction.editReply({
-            content: total
-                ? `📨 Alerta de prueba enviada a ${enviadas} de ${total}.${enviadas < total ? " Quien no la recibe tiene los DMs cerrados para el bot." : ""}`
-                : "❌ No hay a quién enviarla: las alertas están desactivadas.",
-        });
-        return true;
-    }
+    if (id === "paneladmin_sis_alertas_probar") return probarAlertas(interaction);
     // 📊 Vista previa del resumen semanal (F-AD-02): lo que llegaría ahora, solo a quien pulsa (no cuenta como enviado).
     if (id === "paneladmin_sis_resumen") {
         const { construir } = require("../systems/resumenAdmin");
@@ -245,34 +296,8 @@ async function handleSistemaButton(interaction) {
         });
         return true;
     }
-    if (id === "paneladmin_sis_gemini") {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        const { comprobarModelo, modeloDe, textoComprobacion } = require("../services/duende/gemini");
-        const r = await comprobarModelo(modeloDe(interaction.guildId));
-        log.info(`Comprobación del modelo de Gemini por ${interaction.user.tag}: ${r.ok ? "ok" : r.motivo}`);
-        await interaction.editReply({ content: textoComprobacion(r) });
-        return true;
-    }
-    // Genera una frase con Gemini TTS (los mismos modelos y respaldos que /tts y el Duende) y la adjunta para oírla aquí.
-    if (id === "paneladmin_sis_voz") {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        const tts = require("../services/geminiTts");
-        const t0 = Date.now();
-        const tardo = () => `${((Date.now() - t0) / 1000).toFixed(1)} s`;
-        try {
-            const wav = await tts.synthesizeSpeech("Hola, soy el Duende. Si me oyes, la voz funciona.");
-            const segundos = (wav.length - 44) / (wav.readUInt32LE(24) * 2);
-            log.info(`Prueba de voz por ${interaction.user.tag}: ok con ${tts.modeloActual()} (${tardo()})`);
-            await interaction.editReply({
-                content: `✅ Voz generada con **${tts.modeloActual()}** en ${tardo()} (${segundos.toFixed(1)} s de audio). Escúchala aquí; en un canal de voz, con \`/tts\`.`,
-                files: [{ attachment: wav, name: "prueba-voz.wav" }],
-            });
-        } catch (e) {
-            log.warn(`Prueba de voz por ${interaction.user.tag}: ${e.message}`);
-            await interaction.editReply({ content: `❌ No se pudo generar la voz (${tardo()}):\n${e.message.slice(0, 1800)}` });
-        }
-        return true;
-    }
+    if (id === "paneladmin_sis_gemini") return probarGemini(interaction);
+    if (id === "paneladmin_sis_voz") return probarVoz(interaction);
     return false;
 }
 
