@@ -195,84 +195,92 @@ async function boton(interaction) {
     return false;
 }
 
+async function modalMensajes(interaction) {
+    const guildId = interaction.guildId;
+    const base = Math.max(1, parseInt(interaction.fields.getTextInputValue("xp_base"), 10));
+    const bonus = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_bonus"), 10));
+    const cd = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_cd"), 10));
+    xp.setConfig(guildId, "xp_message_base", base);
+    xp.setConfig(guildId, "xp_message_len_bonus_max", bonus);
+    xp.setConfig(guildId, "xp_message_cooldown_sec", cd);
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.messages" });
+    await interaction.reply({ content: "✅ Config mensajes actualizada.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function modalVoz(interaction) {
+    const guildId = interaction.guildId;
+    xp.setConfig(guildId, "xp_voice_per_min", Math.max(0, parseFloat(interaction.fields.getTextInputValue("xp_voice"))));
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.voice" });
+    await interaction.reply({ content: "✅ XP voz actualizada.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function modalMultiplicador(interaction) {
+    const guildId = interaction.guildId;
+    const mult = Math.max(0, parseFloat(interaction.fields.getTextInputValue("xp_mult")));
+    xp.setConfig(guildId, "xp_multiplier", mult);
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.multiplier", details: { mult } });
+    await interaction.reply({ content: `✅ Multiplicador x${mult}.`, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function modalFormula(interaction) {
+    const guildId = interaction.guildId;
+    const base = Math.max(1, parseFloat(interaction.fields.getTextInputValue("formula_base")));
+    const exp = Math.max(1, parseFloat(interaction.fields.getTextInputValue("formula_exp")));
+    const costMult = Math.max(1, parseFloat(interaction.fields.getTextInputValue("cost_mult")));
+    const reqMult = Math.max(1, parseFloat(interaction.fields.getTextInputValue("req_mult")));
+    xp.setConfig(guildId, "xp_formula_base", base);
+    xp.setConfig(guildId, "xp_formula_exp", exp);
+    xp.setConfig(guildId, "xp_level_cost_multiplier", costMult);
+    xp.setConfig(guildId, "xp_level_requirement_multiplier", reqMult);
+    adminAudit.logAdminAction({
+        guildId,
+        actorId: interaction.user.id,
+        action: "xp.config.formula",
+        details: { base, exp, costMult, reqMult },
+    });
+    await interaction.reply({
+        content: `✅ Fórmula ${base} × (N+1)^${exp} × ${costMult} × ${reqMult}.`,
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
+async function modalRacha(interaction) {
+    const guildId = interaction.guildId;
+    const enabledRaw = interaction.fields.getTextInputValue("enabled").trim().toLowerCase();
+    const enabled = !["no", "n", "0", "false"].includes(enabledRaw);
+    const pctPerDay = Math.max(0, parseFloat(interaction.fields.getTextInputValue("pct_per_day")));
+    const capPct = Math.max(0, parseFloat(interaction.fields.getTextInputValue("cap_pct")));
+    if (isNaN(pctPerDay) || isNaN(capPct)) {
+        await interaction.reply({ content: "Valores inválidos.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    xp.setConfig(guildId, "streak_enabled", enabled ? "1" : "0");
+    xp.setConfig(guildId, "streak_bonus_pct_per_day", pctPerDay);
+    xp.setConfig(guildId, "streak_bonus_cap_pct", capPct);
+    adminAudit.logAdminAction({
+        guildId,
+        actorId: interaction.user.id,
+        action: "xp.config.streak",
+        details: { enabled, pctPerDay, capPct },
+    });
+    await interaction.reply({
+        content: `✅ Racha ${enabled ? "activada" : "desactivada"}: +${pctPerDay}%/día (máx +${capPct}%).`,
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
 async function modal(interaction) {
     const id = interaction.customId;
-    const guildId = interaction.guildId;
-
-    if (id === "paneladmin_levels_cfg_msg_modal") {
-        const base = Math.max(1, parseInt(interaction.fields.getTextInputValue("xp_base"), 10));
-        const bonus = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_bonus"), 10));
-        const cd = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_cd"), 10));
-        xp.setConfig(guildId, "xp_message_base", base);
-        xp.setConfig(guildId, "xp_message_len_bonus_max", bonus);
-        xp.setConfig(guildId, "xp_message_cooldown_sec", cd);
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.messages" });
-        await interaction.reply({ content: "✅ Config mensajes actualizada.", flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
-    if (id === "paneladmin_levels_cfg_voice_modal") {
-        xp.setConfig(guildId, "xp_voice_per_min", Math.max(0, parseFloat(interaction.fields.getTextInputValue("xp_voice"))));
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.voice" });
-        await interaction.reply({ content: "✅ XP voz actualizada.", flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
-    if (id === "paneladmin_levels_cfg_mult_modal") {
-        const mult = Math.max(0, parseFloat(interaction.fields.getTextInputValue("xp_mult")));
-        xp.setConfig(guildId, "xp_multiplier", mult);
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.multiplier", details: { mult } });
-        await interaction.reply({ content: `✅ Multiplicador x${mult}.`, flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
-    if (id === "paneladmin_levels_cfg_formula_modal") {
-        const base = Math.max(1, parseFloat(interaction.fields.getTextInputValue("formula_base")));
-        const exp = Math.max(1, parseFloat(interaction.fields.getTextInputValue("formula_exp")));
-        const costMult = Math.max(1, parseFloat(interaction.fields.getTextInputValue("cost_mult")));
-        const reqMult = Math.max(1, parseFloat(interaction.fields.getTextInputValue("req_mult")));
-        xp.setConfig(guildId, "xp_formula_base", base);
-        xp.setConfig(guildId, "xp_formula_exp", exp);
-        xp.setConfig(guildId, "xp_level_cost_multiplier", costMult);
-        xp.setConfig(guildId, "xp_level_requirement_multiplier", reqMult);
-        adminAudit.logAdminAction({
-            guildId,
-            actorId: interaction.user.id,
-            action: "xp.config.formula",
-            details: { base, exp, costMult, reqMult },
-        });
-        await interaction.reply({
-            content: `✅ Fórmula ${base} × (N+1)^${exp} × ${costMult} × ${reqMult}.`,
-            flags: MessageFlags.Ephemeral,
-        });
-        return true;
-    }
-
-    if (id === "paneladmin_levels_cfg_streak_modal") {
-        const enabledRaw = interaction.fields.getTextInputValue("enabled").trim().toLowerCase();
-        const enabled = !["no", "n", "0", "false"].includes(enabledRaw);
-        const pctPerDay = Math.max(0, parseFloat(interaction.fields.getTextInputValue("pct_per_day")));
-        const capPct = Math.max(0, parseFloat(interaction.fields.getTextInputValue("cap_pct")));
-        if (isNaN(pctPerDay) || isNaN(capPct)) {
-            await interaction.reply({ content: "Valores inválidos.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        xp.setConfig(guildId, "streak_enabled", enabled ? "1" : "0");
-        xp.setConfig(guildId, "streak_bonus_pct_per_day", pctPerDay);
-        xp.setConfig(guildId, "streak_bonus_cap_pct", capPct);
-        adminAudit.logAdminAction({
-            guildId,
-            actorId: interaction.user.id,
-            action: "xp.config.streak",
-            details: { enabled, pctPerDay, capPct },
-        });
-        await interaction.reply({
-            content: `✅ Racha ${enabled ? "activada" : "desactivada"}: +${pctPerDay}%/día (máx +${capPct}%).`,
-            flags: MessageFlags.Ephemeral,
-        });
-        return true;
-    }
-
+    if (id === "paneladmin_levels_cfg_msg_modal") return modalMensajes(interaction);
+    if (id === "paneladmin_levels_cfg_voice_modal") return modalVoz(interaction);
+    if (id === "paneladmin_levels_cfg_mult_modal") return modalMultiplicador(interaction);
+    if (id === "paneladmin_levels_cfg_formula_modal") return modalFormula(interaction);
+    if (id === "paneladmin_levels_cfg_streak_modal") return modalRacha(interaction);
     return false;
 }
 
