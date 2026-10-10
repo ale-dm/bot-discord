@@ -2,7 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
-## 2026-10-10 (pendientes: ranking, textos y verificación)
+## 2026-10-10 (ranking con resumen por apostador, #285)
+
+- **El ranking lee una tabla de resumen** (`apuestas_resumen`, migración 043): beneficio, resueltas, ganadas y perdidas de cada apostador. La tabla se reconstruye al terminar cada liquidación (`reconstruirResumen`, con una sola consulta de estadísticas por todos), porque lo único que cambia lo resuelto es la liquidación. Resultado: el ranking tarda **3 ms** con 49.251 apostadores, frente a 690 ms de la entrada anterior y 1.379 ms de la original. La reconstrucción cuesta unos 700 ms, en la liquidación, no al abrir el panel. La primera lectura tras desplegar también reconstruye una vez, porque la tabla empieza vacía.
+- Empates: a igualdad de beneficio y acierto, el orden es por id del apostador (antes dependía del orden de inserción).
+- Cierra #285, cuyo criterio era 200 ms.
+- Migraciones: `tests/plexImportacion.test.js` cuenta las migraciones aplicadas (ahora 26).
+
+## 2026-10-10 (pendientes: textos y verificación)
 
 - **Ranking de apostadores más rápido** (#285, en curso): `ranking()` pasa de una consulta por apostador a dos consultas agrupadas (estadísticas de todos) y calcula la racha solo para los que se devuelven. Mismo resultado que antes: un test compara el ranking con las cifras de cada persona sobre datos aleatorios. Medido en esta máquina con 49.251 apostadores y 210.000 apuestas: 1.379 ms → 690 ms. **No llega a los 200 ms del criterio**: el coste que queda es SQLite leyendo todas las apuestas. Para bajar más hace falta una tabla con los totales por apostador, que se actualice al liquidar; es una decisión de diseño pendiente.
 - **Textos**: el aviso de derrota de `/adivinar` cierra bien la negrita, y el JSDoc de `liquidarApuestas` vuelve a su función (estaba encima de `liquidarPartidosSueltos`).
