@@ -74,7 +74,8 @@ el-duende/
 │   │   └── general/          /ayuda /ping
 │   ├── juegos/             Juegos del casino, apuestas y retos: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
-│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/)
+│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/).
+│   │                         Sus reglas están en systems/ (casino/, apuestas/, retos/)
 │   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
 │   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda, /cripto y /duende
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, apuestas, catálogo, sistema, Plex, Seerr, apodos y

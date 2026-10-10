@@ -1,5 +1,7 @@
 # Medición de la BD con volumen realista (#281)
 
+> **Nota (después de la medición, #285):** el ranking ya no recorre las apuestas. Lee `apuestas_resumen` (migración 043), que se reconstruye al terminar cada liquidación, y tarda 3 ms con 49.251 apostadores. Los hallazgos de abajo sobre `ranking()` (7,3 s, 690 ms) son de la versión anterior y se conservan como historia.
+
 Base: e636c84. Esquema y migraciones del propio `src/core/db.js`, así que la medición usa el mismo arranque y la misma caché de sentencias que el bot.
 
 ## Volumen

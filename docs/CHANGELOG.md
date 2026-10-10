@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (documentación al día antes del release a main)
+
+- **SIGUIENTES_PASOS** reescrito en lo que estaba viejo: #243 y #244 están en `main`, T-03 confirmada, la migración siguiente es la `044`, 1994 tests en 168 suites, límites del lint en 60 y 400, y el mapa con los módulos nuevos (ranking y resumen, casino, Duende, Plex, admin).
+- **TAREAS**: T-03 marcada como confirmada. Nueva **T-04**: la lista para probar en Discord los refactors de tamaño, la desaparición de `/ia` y el ranking con resumen.
+- **PUNTUACION**: #285 cerrado en la tabla de Base de datos.
+- **MEDICION_BD**: nota al principio. Los hallazgos sobre `ranking()` son de la versión anterior y ahora está superado.
+- **README**: 21 comandos, sin `/ia`, y la carpeta `juegos/` dice dónde están sus reglas.
+- **DEPLOY**: sección de la migración 043 y de la retirada de `/ia`.
+- **Enlaces**: corregidos tres enlaces rotos (dos a un ancla de SIGUIENTES_PASOS que ya no existe, y una ruta de PLEX_Y_SEERR).
+
 ## 2026-10-10 (sin /ia; timeout de /imagen en el test)
 
 - **Eliminado el comando `/ia`**, con su servicio (`consultaIA`), su catálogo de agentes y su test. `/imagen` queda igual. Los comandos de Discord se sustituyen en cada registro (`registerCommands`), así que `/ia` deja de aparecer al desplegar. Quedan 21 comandos. La documentación de README y FUNCIONALIDADES se actualiza; los documentos de diseño y de línea base se dejan como están.
@@ -59,7 +69,7 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 
 - **Límites de tamaño en el lint** (`eslint.config.js`): en `src/`, 120 líneas por función y 500 por fichero. Son los máximos actuales, no la meta (60 y 400): la regla se baja al bajar cada máximo real. El catálogo de logros queda fuera por ser datos. Comprobado: una función de 127 líneas falla el `npm run check`; el repositorio pasa con 0 avisos.
 - **`TODO` de `commands/duende/ia.js` quitado**: era una idea de interfaz (selector con botones de radio) y el comentario decía 12 opciones, cuando hay 8. La idea pasa a [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (apartado 4).
-- **Documentación al día**: README (22 comandos, carpetas de comandos con `/plex`, `/pase`, `/mensaje`, `/conectar` y `/sonidos`, y los scripts que faltaban), [FUNCIONALIDADES](FUNCIONALIDADES.md) (fecha y seis comandos que faltaban en la tabla de referencia), [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (reescrito: estado de la auditoría, releases pendientes, mapa de los refactors, y recetas corregidas: el número de migración, dónde se añade un ajuste), [PLEX_Y_SEERR](../tecnico/PLEX_Y_SEERR.md) (referencias de código al día, sin tocar el registro histórico), [docs/README](README.md) (FEATURES redirige a los issues), [TAREAS](planificacion/TAREAS.md) (T-03: comprobaciones en Discord de #243 y #244, que bloquean liberar a `main`) y [PUNTUACION](planificacion/PUNTUACION.md) (hallazgos por área para llegar a 10).
+- **Documentación al día**: README (22 comandos, carpetas de comandos con `/plex`, `/pase`, `/mensaje`, `/conectar` y `/sonidos`, y los scripts que faltaban), [FUNCIONALIDADES](FUNCIONALIDADES.md) (fecha y seis comandos que faltaban en la tabla de referencia), [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (reescrito: estado de la auditoría, releases pendientes, mapa de los refactors, y recetas corregidas: el número de migración, dónde se añade un ajuste), [PLEX_Y_SEERR](tecnico/PLEX_Y_SEERR.md) (referencias de código al día, sin tocar el registro histórico), [docs/README](README.md) (FEATURES redirige a los issues), [TAREAS](planificacion/TAREAS.md) (T-03: comprobaciones en Discord de #243 y #244, que bloquean liberar a `main`) y [PUNTUACION](planificacion/PUNTUACION.md) (hallazgos por área para llegar a 10).
 - Puntuación del código: Robustez pasa a 10 (0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`); la media queda en 8,6.
 - Lo que no se ha corregido, a propósito, está escrito en PUNTUACION: un índice para `tienda.objetoId` (migración 042), el recuento de funciones y ficheros grandes, y la política de merge de CONTRIBUTING (squash o merge).
 
@@ -1339,7 +1349,7 @@ logros y trofeos de Plex, menos los trofeos por país (F-PX-02d: Tautulli no da 
   otra cuenta de Plex empieza otra. Cada logro guarda si salió en la importación (`achievements_progress.importado`) y
   se ve en 🏅 Logros, en el menú de reclamar y al reclamarlo ("📼 de la importación").
 - **F-PX-06 · `npm run plex:check`** (`scripts/plex-check.js` y `systems/plexDiagnostico.js`): comprueba contra el
-  Tautulli de verdad, sin tocar la BD, cada supuesto de [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md#3-lo-que-hay-que-comprobar-con-datos-reales):
+  Tautulli de verdad, sin tocar la BD, cada supuesto de [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md):
   bibliotecas y anime, paginación, idiomas (y los nombres que no se reconocen), la ficha de una serie con sus fechas de
   llegada y las horas contra las de Tautulli. Coge la configuración de la BD (solo lectura) o del `.env`.
 - **F-PX-07 · 🔍 Idiomas** en Panel admin → Plex → 🏆 Trofeos: cuántas reproducciones hay de cada audio y subtítulo y

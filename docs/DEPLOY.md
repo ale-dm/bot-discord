@@ -70,6 +70,14 @@ o añadirlos en Panel admin → Config Global → Duende → Apodos.
   (`Perfiles del Duende: N vinculados`). Los que no se encuentren se vinculan cuando esa persona hable.
 - Para volver atrás: restaurar el backup de la BD y quitar el `.importado` a los dos JSON.
 
+### Resumen del ranking y /ia (migración 043, 2026-10-10)
+
+- **043** crea `apuestas_resumen`, la tabla del ranking de apostadores (#285). No hay que copiar nada. Se llena sola: la
+  primera vez que alguien abre el ranking, y después al terminar cada liquidación. Esa primera reconstrucción tarda
+  unos 0,7 s con 50.000 apostadores.
+- **`/ia` se ha eliminado.** Al desplegar, el registro de comandos sustituye la lista entera y el comando desaparece de
+  Discord. No hace falta limpiar nada a mano.
+
 ### Recompensa diaria, avisos y alertas (migración 011, 2026-10-02)
 
 - **011** crea `recompensa_diaria` (🎁 Diario) y `seerr_avisos` (peticiones de Seerr ya avisadas), y añade
