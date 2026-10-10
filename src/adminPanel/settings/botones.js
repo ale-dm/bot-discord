@@ -11,7 +11,6 @@ const {
     buildTiendaPanel,
     buildAclPanel,
     buildLogrosPanel,
-    buildDiarioPanel,
     buildEventosPanel,
 } = require("./vistas");
 
@@ -76,24 +75,6 @@ async function accionAcl(interaction, id, guildId) {
 
 async function accionLogros(interaction, id, guildId) {
     await interaction.update(buildLogrosPanel(guildId));
-    return true;
-}
-
-async function accionDiario(interaction, id, guildId) {
-    await interaction.update(buildDiarioPanel(guildId));
-    return true;
-}
-
-async function accionDiarioEdit(interaction, id, guildId) {
-    const d = guildSettings.getSettings(guildId).diario;
-    await interaction.showModal(
-        modalConCampos("paneladmin_cfg_diario_modal", "Recompensa diaria", [
-            { id: "enabled", label: "Recompensa diaria activa", tipo: "radio", opciones: SI_NO_NUMERICO, valor: d.enabled ? "1" : "0" },
-            { id: "base", label: "Base (monedas con racha 0)", value: String(d.base) },
-            { id: "porDia", label: "Monedas por día de racha", value: String(d.por_dia_racha) },
-            { id: "tope", label: "Tope (máximo al día)", value: String(d.tope) },
-        ]),
-    );
     return true;
 }
 
@@ -252,8 +233,6 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_tienda", accionTienda],
     ["paneladmin_cfg_acl", accionAcl],
     ["paneladmin_cfg_logros", accionLogros],
-    ["paneladmin_cfg_diario", accionDiario],
-    ["paneladmin_cfg_diario_edit", accionDiarioEdit],
     ["paneladmin_cfg_duende_edit", accionDuendeEdit],
     ["paneladmin_cfg_duende_channel", accionDuendeChannel],
     ["paneladmin_cfg_duende_tono", accionDuendeTono],

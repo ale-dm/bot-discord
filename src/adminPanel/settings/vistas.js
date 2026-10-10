@@ -42,16 +42,9 @@ function camposModulos(cfg, acl) {
     ];
 }
 
-// Campos de Config Global de la recompensa diaria, la clasificación, los eventos y los impuestos.
+// Campos de Config Global de la clasificación, los eventos y los impuestos.
 function camposAvanzados(cfg, guildId) {
     return [
-        {
-            name: "🎁 Diario",
-            value: cfg.diario.enabled
-                ? `**${cfg.diario.base}** + **${cfg.diario.por_dia_racha}**/día de racha\nTope: **${cfg.diario.tope}**`
-                : "Desactivado",
-            inline: true,
-        },
         {
             name: "🏆 Clasificación semanal",
             value: cfg.clasificacion.canal
@@ -85,7 +78,6 @@ function filasConfigHome() {
     );
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_semanal_home").setLabel("🏆 Semanal").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
@@ -99,7 +91,7 @@ function buildConfigHome(guildId) {
     const embed = new EmbedBuilder()
         .setTitle("⚙️ Configuración Global")
         .setDescription(
-            "Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria, clasificación semanal, eventos temporales y acceso por comando.",
+            "Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, clasificación semanal, eventos temporales y acceso por comando.",
         )
         .addFields(...camposModulos(cfg, acl), ...camposAvanzados(cfg, guildId))
         .setColor(0x1abc9c)
@@ -277,31 +269,6 @@ function buildLogrosPanel(guildId) {
     return { embeds: [embed], components: [row, navRow()] };
 }
 
-function buildDiarioPanel(guildId) {
-    const d = guildSettings.getSettings(guildId).diario;
-    const { cantidadPara } = require("../../systems/diario");
-    const ejemplos = [0, 5, 10, 20, 30].map((r) => `racha ${r}: **${cantidadPara(d, r)}**`).join(" · ");
-    const embed = new EmbedBuilder()
-        .setTitle("🎁 Recompensa diaria")
-        .setDescription(
-            "Una vez al día (hora de Madrid), en /perfil → 💰 Economía → 🎁 Diario. Va al efectivo y crece con la racha de XP: " +
-                "base + por día de racha, hasta el tope.\n\n" +
-                ejemplos,
-        )
-        .addFields(
-            { name: "Estado", value: d.enabled ? "Activa" : "Desactivada", inline: true },
-            { name: "Base", value: String(d.base), inline: true },
-            { name: "Por día de racha", value: String(d.por_dia_racha), inline: true },
-            { name: "Tope", value: String(d.tope), inline: true },
-        )
-        .setColor(0x2ecc71)
-        .setTimestamp();
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("paneladmin_cfg_diario_edit").setLabel("✏️ Editar diario").setStyle(ButtonStyle.Primary),
-    );
-    return { embeds: [embed], components: [row, navRow()] };
-}
-
 /** 🎉 Eventos temporales (F-EC-02): happy hour de XP y fin de semana del casino, y si están en marcha ahora. */
 
 function buildEventosPanel(guildId) {
@@ -349,6 +316,5 @@ module.exports = {
     buildTiendaPanel,
     buildAclPanel,
     buildLogrosPanel,
-    buildDiarioPanel,
     buildEventosPanel,
 };

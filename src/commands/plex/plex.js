@@ -9,6 +9,8 @@ const {
     TextInputBuilder,
     TextInputStyle,
     AttachmentBuilder,
+    LabelBuilder,
+    StringSelectMenuBuilder,
 } = require("discord.js");
 const cine = require("../../systems/cine");
 const recomendaciones = require("../../systems/recomendaciones");
@@ -20,6 +22,21 @@ const { pantallaPlex } = require("../../paneles/plex");
 const perfilPaneles = require("../../paneles/perfil");
 const { efimero } = require("../../core/respuestas");
 const { tienePermiso } = require("../../core/permisos");
+
+// La hora de la sesión, en dos desplegables (hora, y minuto de 15 en 15): no hay que escribir HH:MM (#310, grupo G6).
+const HORAS_CINE = Array.from({ length: 24 }, (_, h) => {
+    const texto = String(h).padStart(2, "0");
+    return { label: texto, value: texto };
+});
+const MINUTOS_CINE = ["00", "15", "30", "45"].map((m) => ({ label: m, value: m }));
+
+function selectorCine(id, label, opciones) {
+    return new LabelBuilder()
+        .setLabel(label)
+        .setStringSelectMenuComponent(
+            new StringSelectMenuBuilder().setCustomId(id).setRequired(true).setMinValues(1).setMaxValues(1).addOptions(opciones),
+        );
+}
 
 function formularioCine() {
     return new ModalBuilder()
@@ -34,15 +51,8 @@ function formularioCine() {
                     .setMaxLength(100)
                     .setRequired(true),
             ),
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("hora")
-                    .setLabel("Hora (Madrid, HH:MM)")
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder("21:30")
-                    .setMaxLength(5)
-                    .setRequired(true),
-            ),
+            selectorCine("hora", "Hora (Madrid)", HORAS_CINE),
+            selectorCine("minuto", "Minuto", MINUTOS_CINE),
         );
 }
 
@@ -102,8 +112,10 @@ module.exports = {
     async handleModal(client, interaction) {
         if (interaction.customId !== "plex_modal_cine") return;
         const peli = interaction.fields.getTextInputValue("peli").trim();
-        const inicio = cine.proximaHora(interaction.fields.getTextInputValue("hora"));
-        if (!inicio) return interaction.reply(efimero({ content: "❌ La hora tiene que ser HH:MM, en 24 horas (p. ej. 21:30)." }));
+        const hora = interaction.fields.getStringSelectValues("hora", true)[0];
+        const minuto = interaction.fields.getStringSelectValues("minuto", true)[0];
+        const inicio = cine.proximaHora(`${hora}:${minuto}`);
+        if (!inicio) return interaction.reply(efimero({ content: "❌ No se pudo fijar esa hora. Prueba otra." }));
         const id = cine.crear({
             guildId: interaction.guildId,
             canalId: interaction.channelId,

@@ -1,6 +1,7 @@
 // Botones de la quiniela: refrescar, crear, apostar, elegir pronósticos, navegar, cancelar y confirmar.
 
-const { EmbedBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, MessageFlags } = require("discord.js");
+const { EmbedBuilder, ModalBuilder, MessageFlags } = require("discord.js");
+const { filasImporte } = require("../../../paneles/importes");
 const db = require("../../../core/db");
 const { DEPORTES } = require("../../../services/oddsApi");
 const { esAdmin } = require("../../../core/permisos");
@@ -160,16 +161,12 @@ async function botonConfirmar(client, interaction, customId, userId) {
 
     const modal = new ModalBuilder().setCustomId(`quiniela_modal_confirmar_${quinielaId}`).setTitle("Confirmar apuesta quiniela");
 
-    const cantidadInput = new TextInputBuilder()
-        .setCustomId("cantidad")
-        .setLabel(`Cantidad (${MIN_BET_AMOUNT}-${MAX_BET_AMOUNT})`)
-        .setStyle(TextInputStyle.Short)
-        .setMinLength(1)
-        .setMaxLength(7)
-        .setPlaceholder("Ejemplo: 100")
-        .setRequired(true);
-
-    modal.addComponents(new ActionRowBuilder().addComponents(cantidadInput));
+    modal.addComponents(
+        ...filasImporte({
+            textoEtiqueta: `Otra cantidad (${MIN_BET_AMOUNT}-${MAX_BET_AMOUNT})`,
+            placeholder: "Ejemplo: 100",
+        }),
+    );
     await interaction.showModal(modal);
 }
 

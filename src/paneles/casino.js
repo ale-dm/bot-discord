@@ -323,6 +323,7 @@ module.exports = {
     buildPickApuesta,
     buildPickRuleta: ruleta.buildPickRuleta,
     buildPickDocenas: ruleta.buildPickDocenas,
-    modalNumeroRuleta: ruleta.modalNumeroRuleta,
+    buildPickRangoNumero: ruleta.buildPickRangoNumero,
+    buildPickNumeroRuleta: ruleta.buildPickNumeroRuleta,
     buildPickMontoRuleta: ruleta.buildPickMontoRuleta,
 };

@@ -54,8 +54,28 @@ test("jugar al blackjack desde el panel edita el mensaje sin flags", async () =>
     expect(primero(i).embeds[0].data.title).toMatch(/Blackjack/);
 });
 
-test("el número exacto de la ruleta abre un formulario", async () => {
-    const i = boton("casino_pick_ruleta_numero");
-    await juegos.handleButton(null, i);
-    expect(i.showModal.mock.calls[0][0].data.custom_id).toBe("casino_ruleta_numero_modal");
+test("el número exacto de la ruleta se elige en dos pasos: rango y luego número", async () => {
+    // Paso 1: el rango, en botones (0, 1–12, 13–24, 25–36).
+    const rangos = boton("casino_pick_ruleta_numero");
+    await juegos.handleButton(null, rangos);
+    expect(rangos.showModal).not.toHaveBeenCalled();
+    const botonesRango = primero(rangos).components[0].toJSON().components;
+    expect(botonesRango.map((b) => b.custom_id)).toEqual([0, 1, 2, 3].map((g) => `casino_pick_ruleta_rango_${g}`));
+
+    // Paso 2: de 1–12, un desplegable con esos doce números; el 0 va directo al importe.
+    const docena = boton("casino_pick_ruleta_rango_1");
+    await juegos.handleButton(null, docena);
+    const desplegable = primero(docena).components[0].toJSON().components[0];
+    expect(desplegable.custom_id).toBe("casino_ruleta_numero_sel");
+    expect(desplegable.options.map((o) => o.value)).toEqual(Array.from({ length: 12 }, (_, n) => String(n + 1)));
+
+    const cero = boton("casino_pick_ruleta_rango_0");
+    await juegos.handleButton(null, cero);
+    expect(primero(cero).embeds[0].data.description).toMatch(/Número: \*\*0\*\*/);
+});
+
+test("el número del desplegable lleva al importe de ese número", async () => {
+    const i = { ...boton("casino_ruleta_numero_sel"), values: ["17"] };
+    await juegos.handleSelect(null, i);
+    expect(primero(i).embeds[0].data.description).toMatch(/Número: \*\*17\*\*/);
 });

@@ -65,7 +65,8 @@ describe("botones del panel", () => {
         await plex.handleButton({}, i);
         const modal = i.showModal.mock.calls[0][0];
         expect(modal.data.custom_id).toBe("plex_modal_cine");
-        expect(modal.components.map((fila) => fila.components[0].data.custom_id)).toEqual(["peli", "hora"]);
+        const filas = modal.toJSON().components.map((f) => (f.component ? f.component.custom_id : f.components[0].custom_id));
+        expect(filas).toEqual(["peli", "hora", "minuto"]);
     });
 
     test("🎯 Para ti muestra las recomendaciones, o el motivo si no se pueden dar", async () => {
@@ -165,7 +166,7 @@ describe("formulario de la sesión de cine", () => {
         const i = interaccion(null, {
             customId: "plex_modal_cine",
             channelId: "canal-cine",
-            fields: { getTextInputValue: (id) => (id === "peli" ? "  Alien  " : "23:59") },
+            fields: { getTextInputValue: () => "  Alien  ", getStringSelectValues: (id) => ({ hora: ["23"], minuto: ["59"] })[id] },
             fetchReply: jest.fn(async () => ({ id: "msg-7" })),
         });
         await plex.handleModal({}, i);

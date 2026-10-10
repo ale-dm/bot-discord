@@ -9,6 +9,7 @@ const { CacheLimitada } = require("../../core/cacheLimitada");
 const { partidosDePagina, partidoPorMatch } = require("../../systems/apuestas/apostar");
 const { embedPartido, filasPartido, modalApuesta, confirmarApuesta } = require("./partido");
 const { componentesListado } = require("./listado");
+const { importeElegido } = require("../../paneles/importes");
 
 const { MIN_BET_AMOUNT, MAX_BET_AMOUNT } = formulario;
 // --- Utilidad para obtener el escudo del equipo ---
@@ -140,7 +141,7 @@ module.exports = {
         const parts = interaction.customId.split("_");
         let eleccion = parts[2];
         const match_id = parts.slice(3).join("_");
-        const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
+        const cantidad = importeElegido(interaction.fields);
 
         if (eleccion === "exacto") {
             const eleccionExacta = await eleccionMarcadorExacto(interaction);

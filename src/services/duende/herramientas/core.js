@@ -70,12 +70,6 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
         },
     },
     {
-        name: "consultar_recompensa_diaria",
-        description:
-            "Consulta si el usuario que te está hablando ahora mismo puede cobrar hoy la recompensa diaria (🎁 Diario, en /perfil → Economía) y cuánto le daría según su racha. Solo consulta: cobrarla la tiene que hacer él con el botón.",
-        parameters: { type: SchemaType.OBJECT, properties: {} },
-    },
-    {
         name: "consultar_perfil_persona",
         description:
             "Consulta qué sabes de una persona del servidor por su nombre o apodo: su descripción y las notas que tengas sobre ella. Úsala cuando te pregunten quién es alguien, o te hablen de alguien y no la ubiques de memoria — incluida la persona que te está hablando ahora, si pregunta por sí misma.",
@@ -217,18 +211,6 @@ const DUENDE_CORE_EXECUTORS = {
                 .map((p) => ({ juego: p.juego, apostado: p.apuesta, resultado_neto: p.resultado })),
             total_ganado: ganado,
             total_perdido: perdido,
-        };
-    },
-    consultar_recompensa_diaria(args, ctx) {
-        const e = require("../../../systems/diario").estado(ctx.guildId, ctx.userId);
-        if (!e.activo) return { activa: false };
-        return {
-            activa: true,
-            puede_cobrar_hoy: e.disponible,
-            cantidad: e.cantidad,
-            racha_dias: e.racha,
-            veces_cobrada: e.veces,
-            donde: "/perfil → 💰 Economía → 🎁 Diario",
         };
     },
     consultar_perfil_persona(args, ctx) {

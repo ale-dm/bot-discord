@@ -1,4 +1,4 @@
-// Herramientas nuevas del Duende (solo lectura, siempre de quien habla): tienda, inventario, apuestas, casino y diario.
+// Herramientas nuevas del Duende (solo lectura, siempre de quien habla): tienda, inventario, apuestas y casino.
 const db = require("../src/core/db");
 const { DUENDE_CORE_TOOL_DECLARATIONS, DUENDE_TOOL_EXECUTORS: h } = require("../src/services/duende/herramientas");
 
@@ -44,7 +44,6 @@ test("están declaradas para Gemini junto a las básicas", () => {
         "consultar_inventario",
         "consultar_mis_apuestas",
         "consultar_partidas_casino",
-        "consultar_recompensa_diaria",
         "consultar_perfil_persona",
     ]) {
         expect(nombres).toContain(n);
@@ -80,13 +79,6 @@ test("sus últimas partidas del casino y el total ganado y perdido", () => {
         total_ganado: 100,
         total_perdido: 50,
     });
-});
-
-test("la recompensa diaria solo se consulta, no se cobra", () => {
-    const r = h.consultar_recompensa_diaria({}, ctx);
-    expect(r).toMatchObject({ activa: true, puede_cobrar_hoy: true, cantidad: 100 });
-    expect(h.consultar_recompensa_diaria({}, ctx).puede_cobrar_hoy).toBe(true);
-    expect(db.prepare("SELECT COUNT(*) AS n FROM recompensa_diaria").get().n).toBe(0);
 });
 
 function guildConMiembros(miembros) {

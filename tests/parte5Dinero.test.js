@@ -78,7 +78,8 @@ describe("💰 Economía de /perfil (antes /banco)", () => {
         showModal: jest.fn(async () => {}),
         ...extra,
     });
-    const modal = (userId, customId, cantidad) => interaccion(userId, { customId, fields: { getTextInputValue: () => String(cantidad) } });
+    const modal = (userId, customId, cantidad) =>
+        interaccion(userId, { customId, fields: { getStringSelectValues: () => null, getTextInputValue: () => String(cantidad) } });
     const campos = (payload) => Object.fromEntries(payload.embeds[0].data.fields.map((f) => [f.name, f.value]));
     const num = (texto) => Number(texto.replace(/[^\d]/g, ""));
 

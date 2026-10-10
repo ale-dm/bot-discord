@@ -27,7 +27,7 @@ const formulario = (guildId, customId, campos, user = "ana") => ({
     guildId,
     customId,
     user: { id: user, tag: user, username: user },
-    fields: { getTextInputValue: (k) => campos[k] ?? "" },
+    fields: { getStringSelectValues: () => null, getTextInputValue: (k) => campos[k] ?? "" },
     reply: jest.fn(async () => {}),
 });
 const textoRespuesta = (i) => {
@@ -103,7 +103,10 @@ describe("/paneladmin → ⚽ Apuestas → 🚦 Límites", () => {
         ...extra,
     });
     const modal = (campos) =>
-        interaccion({ customId: "paneladmin_apu_limites_modal", fields: { getTextInputValue: (k) => campos[k] ?? "" } });
+        interaccion({
+            customId: "paneladmin_apu_limites_modal",
+            fields: { getStringSelectValues: () => null, getTextInputValue: (k) => campos[k] ?? "" },
+        });
 
     test("el formulario trae los valores actuales y guarda los nuevos", async () => {
         const boton = interaccion({ customId: "paneladmin_apu_limites" });
