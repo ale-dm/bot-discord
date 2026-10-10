@@ -10,6 +10,7 @@ La reorganización de paneles, con los errores E-05 a E-15, va por partes según
 | [T-02](#t-02-desplegar-y-probar-en-discord) | Desplegar y probar en Discord | 🔴 Alta |
 | [T-03](#t-03-comprobar-en-discord-los-refactors-de-la-auditoría) | Comprobar en Discord los refactors de la auditoría (#243, #244). ✅ Confirmada por el usuario y liberada a `main` | ✅ Hecha |
 | [T-04](#t-04-comprobar-en-discord-los-refactors-de-tamaño-y-el-resumen-del-ranking) | Comprobar en Discord los refactors de tamaño (#278 a #281, #286), la eliminación de `/ia` y el ranking con resumen (#285) | 🔴 Alta |
+| [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
 
 ---
 
@@ -510,3 +511,30 @@ resumen (#285). Los tests cubren la lógica, no lo que se ve en Discord. Convien
 
 **Paneles de admin** (`/paneladmin`)
 - [ ] Apuestas, niveles (usuarios y recompensas), Plex, Seerr, ajustes y sistema abren y guardan.
+
+---
+
+## T-05 Revisar modelos de Gemini y dependencias
+
+Revisión del 2026-10-10. Fuentes: [página de retiradas de Gemini](https://ai.google.dev/gemini-api/docs/deprecations)
+(última actualización de la página: 2026-10-09), `npm outdated` y `npm audit --omit=dev`.
+
+**Modelos**
+- [ ] `gemini-2.5-flash` y `gemini-2.5-pro` (valores por defecto del Duende y sus respaldos): sin fecha de retirada en la
+  página oficial. Algunas fuentes de terceros dan el 16 de octubre de 2026; no aparece en Google. Vigilar.
+- [ ] `gemini-2.5-flash-preview-tts`: se retira el 17 de noviembre de 2026. No es el valor por defecto (`gemini-3.8-flash-tts`),
+  pero sigue en `GEMINI_TTS_FALLBACK_MODELS`. Quitarlo de los respaldos antes de esa fecha.
+- [ ] `/imagen`: el valor por defecto, `gemini-2.0-flash-exp-image-generation`, no aparece en la página de retiradas. Probar
+  `/imagen` en Discord. Si falla, fijar `IMAGE_GEN_MODEL` con `gemini-nano-banana-2.1` o `gemini-3.1-flash-lite-image`.
+- [x] Voz en directo: `gemini-3.8-live`, el modelo que usa el código. El 2.5 native-audio se retira el 17 de noviembre de 2026
+  y el código no lo usa.
+
+**Dependencias**
+- [x] Sin vulnerabilidades en producción (`npm audit`).
+- [ ] Actualizar dentro del rango ya fijado: `@google/genai` (2.24 → 2.28, el SDK de Gemini) y `libsodium-wrappers`
+  (0.8.2 → 0.8.4, cifrado de la voz). Probar la voz y el Duende después.
+- [ ] Decidir los saltos de versión mayor: `better-sqlite3` 13 (empaquetado N-API), `dotenv` 18, `eslint` 10 y `opusscript` 0.1.
+  Ninguno es urgente.
+- [ ] `discord.js` 14 sigue; la 15 está en prerelease según [su guía](https://discordjs.guide/v15). Cambios que afectan
+  al bot: `webhookUpdate` pasa a `webhooksUpdate`, `ClientEvents` pasa a `ClientEventTypes`, y `ActionRow.from()` pasa a
+  `ActionRowBuilder.from()`. Revisar cuando salga la versión estable.

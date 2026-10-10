@@ -15,6 +15,7 @@ const retos = require("../systems/retos");
 const { DEPORTES } = require("../services/oddsApi");
 const { fmtNumero } = require("../core/formato");
 const { ts, corto, VOLVER } = require("./retosComun");
+const { filasImporte } = require("./importes");
 
 // ─── Pasos para lanzar un reto ───────────────────────────────────────────────
 
@@ -119,15 +120,10 @@ function modalCantidad(customId, titulo, efectivo) {
         .setCustomId(customId)
         .setTitle(corto(titulo, 45))
         .addComponents(
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("cantidad")
-                    .setLabel(`Cuánto pone cada uno (${retos.MIN}-${fmtNumero(retos.MAX)})`)
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder(`Tienes ${fmtNumero(efectivo)} en efectivo`)
-                    .setMaxLength(7)
-                    .setRequired(true),
-            ),
+            ...filasImporte({
+                textoEtiqueta: `Otra cantidad, cada uno (${retos.MIN}-${fmtNumero(retos.MAX)})`,
+                placeholder: `Tienes ${fmtNumero(efectivo)} en efectivo`,
+            }),
         );
 }
 

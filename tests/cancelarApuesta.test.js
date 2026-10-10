@@ -34,7 +34,10 @@ const menuCancelar = (payload) =>
         .find((c) => c.custom_id === "misapuestas_cancelarsel_ana");
 
 async function apostar(matchId, cantidad) {
-    const i = interaccion({ customId: `apuestas_modal_home_${matchId}`, fields: { getTextInputValue: () => String(cantidad) } });
+    const i = interaccion({
+        customId: `apuestas_modal_home_${matchId}`,
+        fields: { getStringSelectValues: () => null, getTextInputValue: () => String(cantidad) },
+    });
     await apuestas.handleModal(null, i);
     return db.prepare("SELECT id FROM apuestas_usuario WHERE user_id = 'ana' AND match_id = ?").get(matchId).id;
 }

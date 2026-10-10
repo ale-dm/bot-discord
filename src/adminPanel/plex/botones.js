@@ -15,7 +15,7 @@ const achievements = require("../../systems/achievementsSystem");
 const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
-const { simpleModal } = require("../common");
+const { simpleModal, modalConCampos } = require("../common");
 const { log, buildPlexHome, buildPlexTrofeos, buildRolesGordos, buildDiagnosticoIdiomas, buildRankingSemanal } = require("./vistas");
 
 async function accionHome(interaction, id, guildId) {
@@ -294,8 +294,8 @@ async function accionChannelAdd(interaction, id, guildId) {
 
 async function accionChannelRemove(interaction, id, guildId) {
     await interaction.showModal(
-        simpleModal("paneladmin_plex_channel_remove_modal", "Quitar canal permitido", [
-            { id: "channel_id", label: "ID del canal", placeholder: "123..." },
+        modalConCampos("paneladmin_plex_channel_remove_modal", "Quitar canal permitido", [
+            { id: "channel_id", label: "Canal a quitar", tipo: "canal" },
         ]),
     );
     return true;

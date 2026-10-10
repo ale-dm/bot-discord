@@ -56,11 +56,6 @@ const DEFAULT_FLAT = {
     "seerr.daily_request_limit": 5,
     "seerr.avisar_disponible": true,
 
-    "diario.enabled": true,
-    "diario.base": 100,
-    "diario.por_dia_racha": 20,
-    "diario.tope": 500,
-
     "apuestas.canal_resultados": "",
     "apuestas.recordatorio": true,
     "apuestas.recordatorio_min": 30,
@@ -141,11 +136,6 @@ const KEY_TYPES = {
     "seerr.api_key": "string",
     "seerr.daily_request_limit": "number",
     "seerr.avisar_disponible": "boolean",
-
-    "diario.enabled": "boolean",
-    "diario.base": "number",
-    "diario.por_dia_racha": "number",
-    "diario.tope": "number",
 
     "apuestas.canal_resultados": "string",
     "apuestas.recordatorio": "boolean",

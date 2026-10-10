@@ -1,7 +1,14 @@
 const { MessageFlags } = require("discord.js");
+const { canalElegido, canalesElegidos, rolesElegidos, opcionElegida } = require("../common");
+
+// Una hora (0-23) del desplegable; null si no es válida, para que el manejador lo diga.
+function horaElegida(fields, id) {
+    const n = Number(opcionElegida(fields, id));
+    return Number.isInteger(n) && n >= 0 && n <= 23 ? n : null;
+}
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
-const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./vistas");
+const { buildDuendePanel, buildEventosPanel } = require("./vistas");
 
 async function modalDuende(interaction, id, guildId) {
     const modeloAntes = guildSettings.getSettings(guildId).duende.model;
@@ -29,7 +36,7 @@ async function modalDuende(interaction, id, guildId) {
 }
 
 async function modalDuendeChannel(interaction, id, guildId) {
-    const channelId = interaction.fields.getTextInputValue("channel").trim();
+    const channelId = canalElegido(interaction.fields, "channel");
     guildSettings.setSetting(guildId, "duende.allowed_channel_id", channelId);
     adminAudit.logAdminAction({
         guildId,
@@ -42,9 +49,9 @@ async function modalDuendeChannel(interaction, id, guildId) {
 }
 
 async function modalDuendeEspontaneo(interaction, id, guildId) {
-    const channelId = interaction.fields.getTextInputValue("channel").trim();
+    const channelId = canalElegido(interaction.fields, "channel");
     guildSettings.setManySettings(guildId, {
-        "duende.espontaneo_enabled": interaction.fields.getTextInputValue("enabled").trim(),
+        "duende.espontaneo_enabled": interaction.fields.getRadioGroup("enabled"),
         "duende.espontaneo_channel_id": channelId,
     });
     adminAudit.logAdminAction({
@@ -58,10 +65,9 @@ async function modalDuendeEspontaneo(interaction, id, guildId) {
 }
 
 async function modalDuendeTono(interaction, id, guildId) {
-    const campo = (c) => interaction.fields.getTextInputValue(c).trim();
-    const desde = Number(campo("desde"));
-    const hasta = Number(campo("hasta"));
-    const formales = guildSettings.parseCsvIds(campo("formales").replace(/[<#>]/g, ""));
+    const desde = horaElegida(interaction.fields, "desde");
+    const hasta = horaElegida(interaction.fields, "hasta");
+    const formales = canalesElegidos(interaction.fields, "formales");
     if (![desde, hasta].every((h) => Number.isInteger(h) && h >= 0 && h <= 23) || desde === hasta) {
         await interaction.reply({
             content: "❌ Las horas de la madrugada son números enteros de 0 a 23 (y distintos entre sí).",
@@ -78,7 +84,7 @@ async function modalDuendeTono(interaction, id, guildId) {
         return true;
     }
     const valores = {
-        "duende.madrugada_activa": campo("activa"),
+        "duende.madrugada_activa": interaction.fields.getRadioGroup("activa"),
         "duende.madrugada_desde": desde,
         "duende.madrugada_hasta": hasta,
         "duende.canales_formales": formales.join(","),
@@ -139,10 +145,10 @@ async function modalCasinoRtp(interaction, id, guildId) {
 
 async function modalTienda(interaction, id, guildId) {
     guildSettings.setManySettings(guildId, {
-        "tienda.enabled": interaction.fields.getTextInputValue("enabled").trim(),
+        "tienda.enabled": interaction.fields.getRadioGroup("enabled"),
         "tienda.buy_cooldown_sec": interaction.fields.getTextInputValue("buyCd").trim(),
         "tienda.daily_limit": interaction.fields.getTextInputValue("daily").trim(),
-        "tienda.notif_channel_id": interaction.fields.getTextInputValue("channel").trim(),
+        "tienda.notif_channel_id": canalElegido(interaction.fields, "channel"),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.tienda.update" });
     await interaction.reply({ content: "✅ Configuración de tienda actualizada.", flags: MessageFlags.Ephemeral });
@@ -151,9 +157,7 @@ async function modalTienda(interaction, id, guildId) {
 
 async function modalAcl(interaction, id, guildId) {
     const command = interaction.fields.getTextInputValue("command").trim().replace(/^\//, "").toLowerCase();
-    const enabledRaw = interaction.fields.getTextInputValue("enabled").trim().toLowerCase();
-    const channelsRaw = interaction.fields.getTextInputValue("channels").trim();
-    const rolesRaw = interaction.fields.getTextInputValue("roles").trim();
+    const enabledRaw = interaction.fields.getRadioGroup("enabled");
 
     if (!command) {
         await interaction.reply({ content: "❌ Debes indicar un comando.", flags: MessageFlags.Ephemeral });
@@ -162,8 +166,8 @@ async function modalAcl(interaction, id, guildId) {
 
     guildSettings.setCommandAcl(guildId, command, {
         enabled: enabledRaw === "1" || enabledRaw === "true" || enabledRaw === "si",
-        allowedChannels: guildSettings.parseCsvIds(channelsRaw),
-        allowedRoles: guildSettings.parseCsvIds(rolesRaw),
+        allowedChannels: canalesElegidos(interaction.fields, "channels"),
+        allowedRoles: rolesElegidos(interaction.fields, "roles"),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.acl.update", details: { command } });
 
@@ -173,34 +177,13 @@ async function modalAcl(interaction, id, guildId) {
 
 async function modalLogros(interaction, id, guildId) {
     guildSettings.setManySettings(guildId, {
-        "logros.enabled": interaction.fields.getTextInputValue("enabled").trim(),
+        "logros.enabled": interaction.fields.getRadioGroup("enabled"),
         "logros.reward_multiplier": interaction.fields.getTextInputValue("mult").trim(),
-        "logros.notify_channel_id": interaction.fields.getTextInputValue("channel").trim(),
+        "logros.notify_channel_id": canalElegido(interaction.fields, "channel"),
         "logros.disabled_categories": interaction.fields.getTextInputValue("disabled").trim().toLowerCase(),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.logros.update" });
     await interaction.reply({ content: "✅ Configuración de logros actualizada.", flags: MessageFlags.Ephemeral });
-    return true;
-}
-
-async function modalDiario(interaction, id, guildId) {
-    const numeros = { base: "diario.base", porDia: "diario.por_dia_racha", tope: "diario.tope" };
-    const valores = {};
-    for (const [campo, clave] of Object.entries(numeros)) {
-        const n = Number(interaction.fields.getTextInputValue(campo).trim());
-        if (!Number.isInteger(n) || n < 0 || n > 1_000_000) {
-            await interaction.reply({
-                content: "❌ Base, monedas por día y tope tienen que ser números enteros entre 0 y 1.000.000.",
-                flags: MessageFlags.Ephemeral,
-            });
-            return true;
-        }
-        valores[clave] = n;
-    }
-    guildSettings.setManySettings(guildId, { "diario.enabled": interaction.fields.getTextInputValue("enabled").trim(), ...valores });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.diario.update", details: valores });
-    if (interaction.isFromMessage?.()) await interaction.update(buildDiarioPanel(guildId));
-    else await interaction.reply({ content: "✅ Recompensa diaria actualizada.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
@@ -213,8 +196,8 @@ async function modalEventosXp(interaction, id, guildId) {
     let valores;
     if (id === "paneladmin_cfg_eventos_xp_modal") {
         const mult = entero("mult", 1, 5);
-        const desde = entero("desde", 0, 23);
-        const hasta = entero("hasta", 0, 23);
+        const desde = horaElegida(interaction.fields, "desde");
+        const hasta = horaElegida(interaction.fields, "hasta");
         if (mult === null || !Number.isInteger(desde) || !Number.isInteger(hasta) || desde === hasta) {
             await interaction.reply({
                 content: "❌ El multiplicador va de 1 a 5, y las horas son enteras de 0 a 23 (y distintas entre sí).",
@@ -223,7 +206,7 @@ async function modalEventosXp(interaction, id, guildId) {
             return true;
         }
         valores = {
-            "eventos.xp_activo": campo("activo"),
+            "eventos.xp_activo": interaction.fields.getRadioGroup("activo"),
             "eventos.xp_mult": mult,
             "eventos.xp_desde": desde,
             "eventos.xp_hasta": hasta,
@@ -237,7 +220,7 @@ async function modalEventosXp(interaction, id, guildId) {
             });
             return true;
         }
-        valores = { "eventos.casino_activo": campo("activo"), "eventos.casino_pct": pct };
+        valores = { "eventos.casino_activo": interaction.fields.getRadioGroup("activo"), "eventos.casino_pct": pct };
     }
     guildSettings.setManySettings(guildId, valores);
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.eventos.update", details: valores });
@@ -258,7 +241,6 @@ const ACCIONES_MODAL = new Map([
     ["paneladmin_cfg_tienda_modal", modalTienda],
     ["paneladmin_cfg_acl_modal", modalAcl],
     ["paneladmin_cfg_logros_modal", modalLogros],
-    ["paneladmin_cfg_diario_modal", modalDiario],
     ["paneladmin_cfg_eventos_xp_modal", modalEventosXp],
     ["paneladmin_cfg_eventos_casino_modal", modalEventosXp],
 ]);

@@ -1,9 +1,10 @@
 // 🧩 Combinadas (#1): los botones y formularios del boleto. El boleto se arma en un mensaje efímero (solo lo ve quien lo
 // arma): ⚽ Apuestas → 🧩 Combinada lo abre, y 🧩 Sumar a mi combinada (en un partido) añade una pata.
-const { EmbedBuilder, ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, MessageFlags } = require("discord.js");
+const { EmbedBuilder, ModalBuilder, MessageFlags } = require("discord.js");
 const combinadas = require("../../systems/apuestas/combinadas");
 const { pantallaCombinada } = require("../../paneles/combinada");
 const { efimero } = require("../../core/respuestas");
+const { filasImporte, importeElegido } = require("../../paneles/importes");
 
 module.exports = {
     componentHandlers: [
@@ -43,16 +44,10 @@ module.exports = {
                 .setCustomId("combinada_modal_apostar")
                 .setTitle("🧩 Apostar combinada")
                 .addComponents(
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder()
-                            .setCustomId("cantidad")
-                            .setLabel(`Cantidad (${combinadas.MIN_APUESTA}-${combinadas.MAX_APUESTA})`)
-                            .setStyle(TextInputStyle.Short)
-                            .setMinLength(1)
-                            .setMaxLength(7)
-                            .setPlaceholder("Ejemplo: 100")
-                            .setRequired(true),
-                    ),
+                    ...filasImporte({
+                        textoEtiqueta: `Otra cantidad (${combinadas.MIN_APUESTA}-${combinadas.MAX_APUESTA})`,
+                        placeholder: "Ejemplo: 100",
+                    }),
                 );
             return interaction.showModal(modal);
         }
@@ -61,7 +56,7 @@ module.exports = {
     async handleModal(client, interaction) {
         if (interaction.customId !== "combinada_modal_apostar") return;
         const userId = interaction.user.id;
-        const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
+        const cantidad = importeElegido(interaction.fields);
         const r = combinadas.apostar(interaction.guildId, userId, cantidad);
         if (!r.ok) return interaction.reply(efimero(pantallaCombinada(userId, r.mensaje)));
         const embed = new EmbedBuilder()

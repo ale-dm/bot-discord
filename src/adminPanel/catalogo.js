@@ -4,7 +4,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal } = require("./common");
+const { simpleModal, modalConCampos, opcionElegida } = require("./common");
 const { efectoProteccion } = require("../systems/robar");
 
 const POR_PAGINA = 8;
@@ -71,10 +71,16 @@ function buildCatalogo(pagina = 1, aviso = "") {
 
 const MODALES = {
     paneladmin_cat_crear: () =>
-        simpleModal("paneladmin_cat_crear_modal", "Crear objeto", [
+        modalConCampos("paneladmin_cat_crear_modal", "Crear objeto", [
             { id: "nombre", label: "Nombre", maxLength: 100 },
             { id: "descripcion", label: "Descripción", paragraph: true, maxLength: 1000 },
-            { id: "tipo", label: "Tipo: rol, consumible o coleccionable", placeholder: "consumible" },
+            {
+                id: "tipo",
+                label: "Tipo del objeto",
+                tipo: "opciones",
+                opciones: TIPOS.map((t) => ({ label: t, value: t })),
+                valor: "consumible",
+            },
             {
                 id: "extra",
                 label: "Efecto o rol (ID o mención)",
@@ -84,9 +90,9 @@ const MODALES = {
             { id: "imagen", label: "Imagen (URL)", required: false },
         ]),
     paneladmin_cat_editar: () =>
-        simpleModal("paneladmin_cat_editar_modal", "Editar objeto", [
+        modalConCampos("paneladmin_cat_editar_modal", "Editar objeto", [
             { id: "id", label: "ID del objeto", placeholder: "12" },
-            { id: "campo", label: `Campo: ${CAMPOS.join(", ")}`.slice(0, 45), placeholder: "precio no: eso es 🏷️ A la venta" },
+            { id: "campo", label: "Campo a cambiar", tipo: "opciones", opciones: CAMPOS.map((c) => ({ label: c, value: c })) },
             { id: "valor", label: "Valor nuevo (vacío = borrarlo)", paragraph: true, required: false },
         ]),
     paneladmin_cat_eliminar: () => simpleModal("paneladmin_cat_eliminar_modal", "Eliminar objeto", [{ id: "id", label: "ID del objeto" }]),
@@ -131,7 +137,7 @@ function auditar(interaction, action, details) {
 
 function crearObjeto(interaction) {
     const v = (campo) => leerCampo(interaction, campo);
-    const tipo = v("tipo").toLowerCase();
+    const tipo = opcionElegida(interaction.fields, "tipo").toLowerCase();
     if (!TIPOS.includes(tipo)) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
     const extra = v("extra");
     // Los consumibles hacen su efecto al usarlos; los coleccionables, con solo tenerlos (antirrobo/trampa).
@@ -148,7 +154,7 @@ function crearObjeto(interaction) {
 
 function editarObjeto(interaction, obj) {
     const v = (campo) => leerCampo(interaction, campo);
-    const campo = v("campo").toLowerCase();
+    const campo = opcionElegida(interaction.fields, "campo").toLowerCase();
     if (!CAMPOS.includes(campo)) return { error: `Campo desconocido. Puede ser: ${CAMPOS.join(", ")}.` };
     let valor = v("valor") || null;
     if (campo === "tipo" && valor && !TIPOS.includes(valor.toLowerCase())) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };

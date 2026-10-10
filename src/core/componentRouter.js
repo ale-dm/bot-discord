@@ -3,7 +3,7 @@
 //
 //   componentHandlers: [
 //       { types: ["button"], prefixes: ["tienda_"], method: "handleButton", acl: "tienda" },
-//       { types: ["modal"], ids: ["casino_ruleta_numero_modal"], method: "handleModal" },
+//       { types: ["stringSelect"], ids: ["casino_ruleta_numero_sel"], method: "handleSelect", acl: "juegos" },
 //   ]
 //
 // types:    button | stringSelect | userSelect | roleSelect | channelSelect | modal

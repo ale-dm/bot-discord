@@ -68,7 +68,7 @@ test("apostar a un partido en juego: se rechaza sin la variable y se acepta con 
             customId: `apuestas_modal_home_${id}`,
             user: { id: u, tag: u },
             guildId: G,
-            fields: { getTextInputValue: () => "50" },
+            fields: { getStringSelectValues: () => null, getTextInputValue: () => "50" },
             reply,
         });
         return reply.mock.calls[0][0].embeds[0].data.title;

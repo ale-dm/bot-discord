@@ -205,7 +205,7 @@ describe("botones de Seerr", () => {
 
         const modal = ultimo(i.showModal);
         expect(modal.data.custom_id).toBe("paneladmin_seerr_channel_remove_modal");
-        expect(modal.components[0].components[0].data.custom_id).toBe("channel_id");
+        expect(modal.toJSON().components[0].component.custom_id).toBe("channel_id");
     });
 
     test("sin restricción borra todos los canales y lo audita", async () => {
@@ -257,28 +257,28 @@ describe("selector de canal permitido", () => {
 });
 
 describe("formularios de Seerr", () => {
-    test("quitar canal: un ID que no tiene 17 a 19 cifras se rechaza", async () => {
+    test("quitar canal: sin elegir ningún canal se rechaza", async () => {
         const g = servidorConfigurado();
         seerrClient.addAllowedChannel(g, ID_CANAL, "x");
         const i = interaccion({
             guildId: g,
             customId: "paneladmin_seerr_channel_remove_modal",
-            fields: campos({ channel_id: "canal-raro" }),
+            fields: { getSelectedChannels: () => null },
         });
 
         await handleSeerrModal(i);
 
-        expect(ultimo(i.reply).content).toBe("ID de canal inválido.");
+        expect(ultimo(i.reply).content).toBe("Elige un canal.");
         expect(seerrClient.getAllowedChannels(g)).toHaveLength(1);
     });
 
-    test("quitar canal: con un ID válido (con espacios alrededor) lo quita y lo audita", async () => {
+    test("quitar canal: el canal elegido se quita y se audita", async () => {
         const g = servidorConfigurado();
         seerrClient.addAllowedChannel(g, ID_CANAL, "x");
         const i = interaccion({
             guildId: g,
             customId: "paneladmin_seerr_channel_remove_modal",
-            fields: campos({ channel_id: `  ${ID_CANAL} ` }),
+            fields: { getSelectedChannels: () => new Map([[ID_CANAL, {}]]) },
         });
 
         expect(await handleSeerrModal(i)).toBe(true);

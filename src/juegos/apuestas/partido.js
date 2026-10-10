@@ -15,6 +15,7 @@ const marcadorExacto = require("../../systems/apuestas/marcador");
 const mercados = require("../../systems/apuestas/mercados");
 const formulario = require("../../systems/apuestas/formularioApuesta");
 const { filaTrasApostar } = require("../../paneles/misJugadas");
+const { filasImporte } = require("../../paneles/importes");
 
 const { MIN_BET_AMOUNT, MAX_BET_AMOUNT } = formulario;
 
@@ -96,15 +97,6 @@ function filasPartido(partido, match_id) {
 function modalApuesta(eleccion, match) {
     const modal = new ModalBuilder().setCustomId(`apuestas_modal_${eleccion}_${match.match_id}`).setTitle("¿Cuánto quieres apostar?");
 
-    const cantidadInput = new TextInputBuilder()
-        .setCustomId("cantidad")
-        .setLabel(`Cantidad a apostar (${MIN_BET_AMOUNT}-${MAX_BET_AMOUNT})`)
-        .setStyle(TextInputStyle.Short)
-        .setMinLength(1)
-        .setMaxLength(7)
-        .setPlaceholder("Ejemplo: 100")
-        .setRequired(true);
-
     if (eleccion === "exacto") {
         const goles = (id, equipo) =>
             new ActionRowBuilder().addComponents(
@@ -120,7 +112,12 @@ function modalApuesta(eleccion, match) {
         modal.setTitle(`🎯 Marcador exacto (×${marcadorExacto.PREMIO})`);
         modal.addComponents(goles("goles_local", match.home_team), goles("goles_visitante", match.away_team));
     }
-    modal.addComponents(new ActionRowBuilder().addComponents(cantidadInput));
+    modal.addComponents(
+        ...filasImporte({
+            textoEtiqueta: `Otra cantidad (${MIN_BET_AMOUNT}-${MAX_BET_AMOUNT})`,
+            placeholder: "Ejemplo: 100",
+        }),
+    );
     return modal;
 }
 

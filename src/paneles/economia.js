@@ -1,6 +1,6 @@
 // Pestaña 💰 Economía de /perfil: 💵 efectivo (lo que gastas) y 🏦 banco (el sitio seguro), lo ganado y
 // perdido en el casino, la cartera cripto y los objetos; en tu perfil, con Ingresar, Sacar, Transferir,
-// Movimientos (historial con filtro por tipo) y 🎁 Diario (systems/diario), y el 🧙 préstamo del Duende si hay uno (con
+// Movimientos (historial con filtro por tipo) y el 🧙 préstamo del Duende si hay uno (con
 // su botón para devolverlo: systems/prestamos). En el de otro se ve todo, pero sin acciones.
 // También el botón "💵 Sacar del banco" que ponen el casino, la tienda y la cripto cuando no te llega el
 // efectivo. Los datos, en systems/dinero; los botones dinero_* los atiende src/perfil/dinero.
@@ -12,13 +12,12 @@ const {
     StringSelectMenuBuilder,
     UserSelectMenuBuilder,
     ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
 } = require("discord.js");
 const db = require("../core/db");
 const dinero = require("../systems/dinero");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
 const { fmtNumero } = require("../core/formato");
+const { filasImporte } = require("./importes");
 
 const POR_PAGINA = 10;
 const signo = (n) => `${n > 0 ? "+" : ""}${fmtNumero(n)}`;
@@ -62,7 +61,7 @@ async function carteraDe(targetId, guildId) {
     }
 }
 
-function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo, diario }) {
+function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo }) {
     const embed = new EmbedBuilder()
         .setTitle(`💰 Economía · ${nombre}`)
         .setDescription(
@@ -103,33 +102,16 @@ function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, pr
                     : `Devuelve **${fmtNumero(prestamo.falta)}** 🪙 antes del <t:${vence}:f> (<t:${vence}:R>). Si no, se cobra solo.`,
         });
     }
-    if (diario?.activo) {
-        embed.addFields({
-            name: "🎁 Recompensa diaria",
-            value: diario.disponible
-                ? `Disponible: **${fmtNumero(diario.cantidad)}** 🪙${diario.racha ? ` (racha de ${diario.racha} días)` : ""}`
-                : `Cobrada hoy. Mañana: **${fmtNumero(diario.cantidad)}** 🪙 si mantienes la racha.`,
-        });
-    }
     return embed;
 }
 
 // Las filas de botones: acciones de dinero (solo en la propia cuenta), movimientos, y el préstamo y los negocios
 // en su fila: la de acciones ya puede tener 5 botones.
-function filasEconomia({ viewerId, targetId, propio, c, prestamo, diario }) {
+function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
     const movimientos = new ButtonBuilder()
         .setCustomId(`dinero_mov_todo_0_${targetId}`)
         .setLabel("📜 Movimientos")
         .setStyle(ButtonStyle.Secondary);
-    const botonDiario = diario?.activo
-        ? [
-              new ButtonBuilder()
-                  .setCustomId("dinero_diario")
-                  .setLabel(diario.disponible ? "🎁 Diario" : "🎁 Mañana")
-                  .setStyle(ButtonStyle.Success)
-                  .setDisabled(!diario.disponible),
-          ]
-        : [];
     const acciones = propio
         ? new ActionRowBuilder().addComponents(
               new ButtonBuilder()
@@ -148,7 +130,6 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo, diario }) {
                   .setStyle(ButtonStyle.Secondary)
                   .setDisabled(c.efectivo <= 0),
               movimientos,
-              ...botonDiario,
           )
         : new ActionRowBuilder().addComponents(movimientos);
     const devolver =
@@ -183,10 +164,9 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
     const cartera = await carteraDe(targetId, guildId);
     const objetos = db.prepare("SELECT COUNT(*) AS n FROM inventario WHERE userId = ?").get(targetId).n;
     const prestamo = require("../systems/prestamos").abierto(targetId);
-    const diario = propio ? require("../systems/diario").estado(guildId, targetId) : null;
 
-    const embed = embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo, diario });
-    const components = filasEconomia({ viewerId, targetId, propio, c, prestamo, diario });
+    const embed = embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo });
+    const components = filasEconomia({ viewerId, targetId, propio, c, prestamo });
     return { content: "", embeds: [embed], components };
 }
 
@@ -269,16 +249,12 @@ function modalCantidad(customId, titulo, disponible) {
         .setCustomId(customId)
         .setTitle(titulo)
         .addComponents(
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("cantidad")
-                    .setLabel(`Cantidad (tienes ${fmtNumero(disponible)})`.slice(0, 45))
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder(String(disponible))
-                    .setMinLength(1)
-                    .setMaxLength(9)
-                    .setRequired(true),
-            ),
+            ...filasImporte({
+                textoEtiqueta: `Otra cantidad (tienes ${fmtNumero(disponible)})`,
+                placeholder: String(disponible),
+                maxLength: 9,
+                todo: disponible,
+            }),
         );
 }
 

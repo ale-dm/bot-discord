@@ -10,7 +10,7 @@ const {
 const seerrClient = require("../services/seerrClient");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal } = require("./common");
+const { simpleModal, modalConCampos, canalElegido } = require("./common");
 
 function navRow() {
     return new ActionRowBuilder().addComponents(
@@ -124,8 +124,8 @@ async function handleSeerrButton(interaction) {
     if (id === "paneladmin_seerr_channel_add") return selectorCanalPermitido(interaction);
     if (id === "paneladmin_seerr_channel_remove") {
         await interaction.showModal(
-            simpleModal("paneladmin_seerr_channel_remove_modal", "Quitar canal permitido", [
-                { id: "channel_id", label: "ID del canal", placeholder: "123..." },
+            modalConCampos("paneladmin_seerr_channel_remove_modal", "Quitar canal permitido", [
+                { id: "channel_id", label: "Canal a quitar", tipo: "canal" },
             ]),
         );
         return true;
@@ -153,9 +153,9 @@ async function handleSeerrChannelSelect(interaction) {
 
 async function handleSeerrModal(interaction) {
     if (interaction.customId === "paneladmin_seerr_channel_remove_modal") {
-        const channelId = interaction.fields.getTextInputValue("channel_id").trim();
-        if (!/^\d{17,19}$/.test(channelId)) {
-            await interaction.reply({ content: "ID de canal inválido.", flags: MessageFlags.Ephemeral });
+        const channelId = canalElegido(interaction.fields, "channel_id");
+        if (!channelId) {
+            await interaction.reply({ content: "Elige un canal.", flags: MessageFlags.Ephemeral });
             return true;
         }
         seerrClient.removeAllowedChannel(interaction.guildId, channelId);

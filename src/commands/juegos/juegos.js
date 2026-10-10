@@ -12,7 +12,7 @@ const apuestas = require("../../juegos/apuestas/apuestas");
 module.exports = {
     componentHandlers: [
         { types: ["button"], prefixes: ["casino_", "juegos_"], method: "handleButton", acl: "juegos" },
-        { types: ["modal"], ids: ["casino_ruleta_numero_modal"], method: "handleModal", acl: "juegos" },
+        { types: ["stringSelect"], ids: ["casino_ruleta_numero_sel"], method: "handleSelect", acl: "juegos" },
     ],
     data: new SlashCommandBuilder()
         .setName("juegos")
@@ -81,15 +81,10 @@ module.exports = {
         await botonCasino(client, interaction);
     },
 
-    // Número exacto de la ruleta (formulario) → importe.
-    async handleModal(client, interaction) {
-        const n = parseInt(interaction.fields.getTextInputValue("casino_ruleta_numero_input").trim());
-        if (isNaN(n) || n < 0 || n > 36) {
-            await interaction.reply({ content: "❌ El número debe estar entre **0** y **36**.", flags: MessageFlags.Ephemeral });
-            return;
-        }
-        await interaction.deferUpdate();
-        await interaction.editReply(casino.buildPickMontoRuleta(interaction.user.id, "numero", n));
+    // Número exacto de la ruleta (desplegable del rango) → importe.
+    async handleSelect(client, interaction) {
+        const n = Number(interaction.values[0]);
+        await interaction.update(casino.buildPickMontoRuleta(interaction.user.id, "numero", n));
     },
 };
 
@@ -136,8 +131,13 @@ async function botonCasino(client, interaction) {
         await interaction.update(casino.buildStats(userId, interaction.user.username, id.replace("casino_stats_", "")));
         return;
     }
+    // Número exacto: el rango (casino_pick_ruleta_numero), y luego el rango elegido (casino_pick_ruleta_rango_{g}).
     if (id === "casino_pick_ruleta_numero") {
-        await interaction.showModal(casino.modalNumeroRuleta());
+        await interaction.update(casino.buildPickRangoNumero(userId));
+        return;
+    }
+    if (id.startsWith("casino_pick_ruleta_rango_")) {
+        await interaction.update(casino.buildPickNumeroRuleta(userId, Number(id.replace("casino_pick_ruleta_rango_", ""))));
         return;
     }
     // Tipo de ruleta elegido (casino_pick_ruleta_color_rojo, …) → importe.

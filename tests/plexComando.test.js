@@ -38,7 +38,7 @@ test("el formulario crea la sesión de cine y responde con su mensaje público",
         guildId: G,
         channelId: "canal-cine",
         user: { id: "ana" },
-        fields: { getTextInputValue: (id) => (id === "peli" ? "Dune" : "23:59") },
+        fields: { getTextInputValue: () => "Dune", getStringSelectValues: (id) => ({ hora: ["23"], minuto: ["30"] })[id] },
         reply,
         fetchReply,
     };
@@ -49,16 +49,13 @@ test("el formulario crea la sesión de cine y responde con su mensaje público",
     expect(cine.asistentes(sesion.id)).toEqual(["ana"]);
 });
 
-test("una hora que no vale no crea nada, y lo dice en privado", async () => {
-    const reply = jest.fn(async () => {});
-    await plex.handleModal(null, {
-        customId: "plex_modal_cine",
-        guildId: G,
-        channelId: "c",
-        user: { id: "ana" },
-        fields: { getTextInputValue: (id) => (id === "peli" ? "Dune" : "25:00") },
-        reply,
-    });
-    expect(db.prepare("SELECT COUNT(*) AS n FROM cine_sesiones WHERE guildId = ?").get(G).n).toBe(0);
-    expect(reply.mock.calls[0][0].flags).toBeDefined();
+test("la hora sale de dos desplegables: horas (00-23) y minutos de 15 en 15", async () => {
+    const showModal = jest.fn(async () => {});
+    await plex.handleButton(null, { customId: "plex_cine", guildId: G, user: { id: "ana" }, showModal });
+    const json = showModal.mock.calls[0][0].toJSON();
+    const [hora, minuto] = json.components.slice(1).map((f) => f.component);
+    expect(hora.custom_id).toBe("hora");
+    expect(hora.options).toHaveLength(24);
+    expect(minuto.custom_id).toBe("minuto");
+    expect(minuto.options.map((o) => o.value)).toEqual(["00", "15", "30", "45"]);
 });

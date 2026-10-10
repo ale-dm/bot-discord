@@ -114,7 +114,7 @@ describe("formulario de saldo", () => {
     function formulario(u, cantidad, tipo) {
         return interaccion({
             customId: `paneladmin_bank_modificar_modal_${u}`,
-            fields: { getTextInputValue: (c) => (c === "cantidad" ? String(cantidad) : tipo) },
+            fields: { getTextInputValue: (c) => (c === "cantidad" ? String(cantidad) : tipo), getStringSelectValues: () => [tipo] },
         });
     }
 
@@ -142,7 +142,7 @@ describe("formulario de saldo", () => {
         db.prepare("INSERT INTO banco (userId, saldo, enMano, negro) VALUES (?, 777, 111, 22)").run(id);
         const i = interaccion({
             customId: "paneladmin_bank_buscarusuario_modal",
-            fields: { getTextInputValue: () => id },
+            fields: { getSelectedUsers: () => new Map([[id, {}]]) },
         });
         i.guild.members.fetch = jest.fn(async () => ({ id, user: { tag: "x#1", username: "x" } }));
         await handleBankModal(i);
@@ -154,9 +154,9 @@ describe("formulario de saldo", () => {
         db.prepare("INSERT INTO banco (userId, saldo, enMano, negro) VALUES (?, 5, 6, 7)").run(id);
         const i = interaccion({
             customId: "paneladmin_bank_buscarusuario_modal",
-            fields: { getTextInputValue: () => "Alex#1234" },
+            fields: { getSelectedUsers: () => new Map([[id, {}]]) },
         });
-        i.guild.members.cache.find = () => ({ id, user: { tag: "Alex#1234", username: "Alex" } });
+        i.guild.members.fetch = async () => ({ id, user: { tag: "Alex#1234", username: "Alex" } });
         await handleBankModal(i);
         expect(ultimo(i.reply).embeds[0].data.description).toContain("Efectivo: **6**");
     });
@@ -164,8 +164,9 @@ describe("formulario de saldo", () => {
     test("un usuario que no existe avisa", async () => {
         const i = interaccion({
             customId: "paneladmin_bank_buscarusuario_modal",
-            fields: { getTextInputValue: () => "nadie#0000" },
+            fields: { getSelectedUsers: () => new Map([["11111111111111111", {}]]) },
         });
+        i.guild.members.fetch = async () => null;
         await handleBankModal(i);
         expect(ultimo(i.reply).content).toContain("Usuario no encontrado");
     });

@@ -1,5 +1,8 @@
 const guildSettings = require("../../systems/guildSettings");
-const { simpleModal } = require("../common");
+const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
+
+// Las horas de 0 a 23 (Madrid) en un desplegable.
+const HORAS = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, value: String(h) }));
 const {
     buildConfigHome,
     buildDuendePanel,
@@ -8,7 +11,6 @@ const {
     buildTiendaPanel,
     buildAclPanel,
     buildLogrosPanel,
-    buildDiarioPanel,
     buildEventosPanel,
 } = require("./vistas");
 
@@ -20,11 +22,11 @@ async function accionEventos(interaction, id, guildId) {
 async function accionEventosXp(interaction, id, guildId) {
     const { xp } = guildSettings.getSettings(guildId).eventos;
     await interaction.showModal(
-        simpleModal("paneladmin_cfg_eventos_xp_modal", "Happy hour de XP", [
-            { id: "activo", label: "Activa (1/0)", value: xp.activo ? "1" : "0" },
+        modalConCampos("paneladmin_cfg_eventos_xp_modal", "Happy hour de XP", [
+            { id: "activo", label: "Happy hour activa", tipo: "radio", opciones: SI_NO_NUMERICO, valor: xp.activo ? "1" : "0" },
             { id: "mult", label: "Multiplicador de XP (1 a 5, p. ej. 2)", value: String(xp.mult) },
-            { id: "desde", label: "Desde la hora (0-23, Madrid)", value: String(xp.desde) },
-            { id: "hasta", label: "Hasta la hora (0-23, Madrid)", value: String(xp.hasta) },
+            { id: "desde", label: "Desde la hora (Madrid)", tipo: "opciones", opciones: HORAS, valor: String(xp.desde) },
+            { id: "hasta", label: "Hasta la hora (Madrid)", tipo: "opciones", opciones: HORAS, valor: String(xp.hasta) },
         ]),
     );
     return true;
@@ -33,8 +35,8 @@ async function accionEventosXp(interaction, id, guildId) {
 async function accionEventosCasino(interaction, id, guildId) {
     const { casino } = guildSettings.getSettings(guildId).eventos;
     await interaction.showModal(
-        simpleModal("paneladmin_cfg_eventos_casino_modal", "Fin de semana del casino", [
-            { id: "activo", label: "Activo (1/0)", value: casino.activo ? "1" : "0" },
+        modalConCampos("paneladmin_cfg_eventos_casino_modal", "Fin de semana del casino", [
+            { id: "activo", label: "Fin de semana activo", tipo: "radio", opciones: SI_NO_NUMERICO, valor: casino.activo ? "1" : "0" },
             { id: "pct", label: "Premios en % (100 a 300, p. ej. 150)", value: String(casino.pct) },
         ]),
     );
@@ -76,24 +78,6 @@ async function accionLogros(interaction, id, guildId) {
     return true;
 }
 
-async function accionDiario(interaction, id, guildId) {
-    await interaction.update(buildDiarioPanel(guildId));
-    return true;
-}
-
-async function accionDiarioEdit(interaction, id, guildId) {
-    const d = guildSettings.getSettings(guildId).diario;
-    await interaction.showModal(
-        simpleModal("paneladmin_cfg_diario_modal", "Recompensa diaria", [
-            { id: "enabled", label: "Activa (1/0)", value: d.enabled ? "1" : "0" },
-            { id: "base", label: "Base (monedas con racha 0)", value: String(d.base) },
-            { id: "porDia", label: "Monedas por día de racha", value: String(d.por_dia_racha) },
-            { id: "tope", label: "Tope (máximo al día)", value: String(d.tope) },
-        ]),
-    );
-    return true;
-}
-
 async function accionDuendeEdit(interaction, id, guildId) {
     const d = guildSettings.getSettings(guildId).duende;
     const modal = simpleModal("paneladmin_cfg_duende_modal", "Duende IA", [
@@ -107,8 +91,8 @@ async function accionDuendeEdit(interaction, id, guildId) {
 
 async function accionDuendeChannel(interaction, id, guildId) {
     const d = guildSettings.getSettings(guildId).duende;
-    const modal = simpleModal("paneladmin_cfg_duende_channel_modal", "Canal Duende", [
-        { id: "channel", label: "ID de canal (vacío = cualquiera)", required: false, value: d.allowed_channel_id || "" },
+    const modal = modalConCampos("paneladmin_cfg_duende_channel_modal", "Canal Duende", [
+        { id: "channel", label: "Canal permitido (vacío = cualquiera)", tipo: "canal", required: false, valor: d.allowed_channel_id || "" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -117,16 +101,23 @@ async function accionDuendeChannel(interaction, id, guildId) {
 async function accionDuendeTono(interaction, id, guildId) {
     const d = guildSettings.getSettings(guildId).duende;
     await interaction.showModal(
-        simpleModal("paneladmin_cfg_duende_tono_modal", "Tono del Duende", [
-            { id: "activa", label: "Más borde de madrugada (1/0)", value: d.madrugada_activa ? "1" : "0" },
-            { id: "desde", label: "Madrugada desde la hora (0-23, Madrid)", value: String(d.madrugada_desde) },
-            { id: "hasta", label: "Madrugada hasta la hora (0-23, Madrid)", value: String(d.madrugada_hasta) },
+        modalConCampos("paneladmin_cfg_duende_tono_modal", "Tono del Duende", [
+            {
+                id: "activa",
+                label: "Más borde de madrugada",
+                tipo: "radio",
+                opciones: SI_NO_NUMERICO,
+                valor: d.madrugada_activa ? "1" : "0",
+            },
+            { id: "desde", label: "Madrugada desde", tipo: "opciones", opciones: HORAS, valor: String(d.madrugada_desde) },
+            { id: "hasta", label: "Madrugada hasta", tipo: "opciones", opciones: HORAS, valor: String(d.madrugada_hasta) },
             {
                 id: "formales",
-                label: "Canales formales (IDs separados por comas)",
+                label: "Canales formales",
+                tipo: "canal",
+                multiple: true,
                 required: false,
-                placeholder: "Vacío = ninguno",
-                value: d.canales_formales || "",
+                valores: guildSettings.parseCsvIds(d.canales_formales || ""),
             },
         ]),
     );
@@ -135,9 +126,15 @@ async function accionDuendeTono(interaction, id, guildId) {
 
 async function accionDuendeEspontaneo(interaction, id, guildId) {
     const d = guildSettings.getSettings(guildId).duende;
-    const modal = simpleModal("paneladmin_cfg_duende_espontaneo_modal", "Duende: mensajes solos", [
-        { id: "enabled", label: "Activos (1/0)", value: d.espontaneo_enabled ? "1" : "0" },
-        { id: "channel", label: "ID de canal (vacío = no sale ninguno)", required: false, value: d.espontaneo_channel_id || "" },
+    const modal = modalConCampos("paneladmin_cfg_duende_espontaneo_modal", "Duende: mensajes solos", [
+        {
+            id: "enabled",
+            label: "Mensajes solos activos",
+            tipo: "radio",
+            opciones: SI_NO_NUMERICO,
+            valor: d.espontaneo_enabled ? "1" : "0",
+        },
+        { id: "channel", label: "Canal (vacío = no sale ninguno)", tipo: "canal", required: false, valor: d.espontaneo_channel_id || "" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -192,22 +189,22 @@ async function accionCasinoRtp(interaction, id, guildId) {
 
 async function accionTiendaEdit(interaction, id, guildId) {
     const t = guildSettings.getSettings(guildId).tienda;
-    const modal = simpleModal("paneladmin_cfg_tienda_modal", "Tienda", [
-        { id: "enabled", label: "Activa (1/0)", value: t.enabled ? "1" : "0" },
+    const modal = modalConCampos("paneladmin_cfg_tienda_modal", "Tienda", [
+        { id: "enabled", label: "Tienda activa", tipo: "radio", opciones: SI_NO_NUMERICO, valor: t.enabled ? "1" : "0" },
         { id: "buyCd", label: "Cooldown compra (s)", value: String(t.buy_cooldown_sec) },
         { id: "daily", label: "Límite diario (0 sin límite)", value: String(t.daily_limit) },
-        { id: "channel", label: "ID canal notificaciones", required: false, value: t.notif_channel_id || "" },
+        { id: "channel", label: "Canal de notificaciones", tipo: "canal", required: false, valor: t.notif_channel_id || "" },
     ]);
     await interaction.showModal(modal);
     return true;
 }
 
 async function accionAclEdit(interaction, id, guildId) {
-    const modal = simpleModal("paneladmin_cfg_acl_modal", "ACL comando", [
+    const modal = modalConCampos("paneladmin_cfg_acl_modal", "ACL comando", [
         { id: "command", label: "Comando (sin /)", value: "" },
-        { id: "enabled", label: "Habilitado (1/0)", value: "1" },
-        { id: "channels", label: "Canales CSV (IDs)", required: false, value: "" },
-        { id: "roles", label: "Roles CSV (IDs)", required: false, value: "" },
+        { id: "enabled", label: "Comando habilitado", tipo: "radio", opciones: SI_NO_NUMERICO, valor: "1" },
+        { id: "channels", label: "Canales permitidos (vacío = todos)", tipo: "canal", multiple: true, required: false },
+        { id: "roles", label: "Roles permitidos (vacío = todos)", tipo: "rol", multiple: true, required: false },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -215,10 +212,10 @@ async function accionAclEdit(interaction, id, guildId) {
 
 async function accionLogrosEdit(interaction, id, guildId) {
     const l = guildSettings.getSettings(guildId).logros;
-    const modal = simpleModal("paneladmin_cfg_logros_modal", "Logros", [
-        { id: "enabled", label: "Activo (1/0)", value: l.enabled ? "1" : "0" },
+    const modal = modalConCampos("paneladmin_cfg_logros_modal", "Logros", [
+        { id: "enabled", label: "Logros activos", tipo: "radio", opciones: SI_NO_NUMERICO, valor: l.enabled ? "1" : "0" },
         { id: "mult", label: "Multiplicador recompensas", value: String(l.reward_multiplier || 1) },
-        { id: "channel", label: "Canal anuncio (ID)", required: false, value: l.notify_channel_id || "" },
+        { id: "channel", label: "Canal de anuncios", tipo: "canal", required: false, valor: l.notify_channel_id || "" },
         { id: "disabled", label: "Categorías off (csv)", required: false, value: l.disabled_categories || "" },
     ]);
     await interaction.showModal(modal);
@@ -236,8 +233,6 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_tienda", accionTienda],
     ["paneladmin_cfg_acl", accionAcl],
     ["paneladmin_cfg_logros", accionLogros],
-    ["paneladmin_cfg_diario", accionDiario],
-    ["paneladmin_cfg_diario_edit", accionDiarioEdit],
     ["paneladmin_cfg_duende_edit", accionDuendeEdit],
     ["paneladmin_cfg_duende_channel", accionDuendeChannel],
     ["paneladmin_cfg_duende_tono", accionDuendeTono],

@@ -22,12 +22,16 @@ function interaccion(extra = {}) {
 }
 
 function campos(valores) {
-    return { getTextInputValue: (id) => valores[id] ?? "" };
+    return { getTextInputValue: (id) => valores[id] ?? "", getRadioGroup: (id) => valores[id] ?? "" };
 }
 
 const ultimo = (mock) => mock.mock.calls.at(-1)[0];
-const valoresDeModal = (m) =>
-    Object.fromEntries(m.components.map((fila) => [fila.components[0].data.custom_id, fila.components[0].data.value]));
+// Los selectores (radio) van en su etiqueta: se lee su opción marcada.
+const valorDeFila = (fila) =>
+    fila.component
+        ? [fila.component.custom_id, fila.component.options.find((o) => o.default)?.value]
+        : [fila.components[0].custom_id, fila.components[0].value];
+const valoresDeModal = (m) => Object.fromEntries(m.toJSON().components.map(valorDeFila));
 
 describe("vista de configuración", () => {
     test("muestra los parámetros actuales y los botones de cada ajuste", async () => {
@@ -183,7 +187,7 @@ describe("racha diaria", () => {
     test("desactivarla con «no» guarda streak_enabled en 0 y lo confirma", async () => {
         const i = interaccion({
             customId: "paneladmin_levels_cfg_streak_modal",
-            fields: campos({ enabled: " No ", pct_per_day: "2", cap_pct: "14" }),
+            fields: campos({ enabled: "no", pct_per_day: "2", cap_pct: "14" }),
         });
         await modal(i);
         expect(xp.getAllConfig(G).streak_enabled).toBe("0");
@@ -193,7 +197,7 @@ describe("racha diaria", () => {
     test("cualquier respuesta distinta de no/n/0/false la activa", async () => {
         const i = interaccion({
             customId: "paneladmin_levels_cfg_streak_modal",
-            fields: campos({ enabled: "sí", pct_per_day: "1", cap_pct: "5" }),
+            fields: campos({ enabled: "si", pct_per_day: "1", cap_pct: "5" }),
         });
         await modal(i);
         expect(xp.getAllConfig(G).streak_enabled).toBe("1");

@@ -43,7 +43,7 @@ async function apostarMarcador(user, local, visitante, cantidad) {
     const i = interaccion({
         user: { id: user, tag: user },
         customId: "apuestas_modal_exacto_mx-1",
-        fields: { getTextInputValue: (k) => campos[k] },
+        fields: { getStringSelectValues: () => null, getTextInputValue: (k) => campos[k] },
     });
     await apuestas.handleModal(null, i);
     return respuesta(i);
@@ -76,10 +76,14 @@ test("el detalle del partido tiene el botón y abre un formulario con los goles 
     const modal = boton.showModal.mock.calls[0][0].toJSON();
     expect(modal.custom_id).toBe("apuestas_modal_exacto_mx-1");
     expect(modal.title).toBe("🎯 Marcador exacto (×8)");
-    expect(modal.components.map((r) => [r.components[0].custom_id, r.components[0].label])).toEqual([
+    // Los dos goles, el desplegable de importes (un selector va en su etiqueta) y el texto de otra cantidad.
+    expect(
+        modal.components.map((r) => (r.component ? [r.component.custom_id, r.label] : [r.components[0].custom_id, r.components[0].label])),
+    ).toEqual([
         ["goles_local", "Goles de Celta"],
         ["goles_visitante", "Goles de Alavés"],
-        ["cantidad", "Cantidad a apostar (10-1000)"],
+        ["importe", "Importe rápido"],
+        ["cantidad", "Otra cantidad (10-1000)"],
     ]);
 });
 

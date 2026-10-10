@@ -11,6 +11,7 @@ const { minimoAciertosQuiniela } = require("../../systems/apuestas/liquidacion")
 const misJugadas = require("../../systems/apuestas/misJugadas");
 const { lineaQuiniela, filaTrasApostar } = require("../../paneles/misJugadas");
 const { filaPestanas } = require("../../paneles/pestanasJuegos");
+const { importeElegido } = require("../../paneles/importes");
 const { esAdmin } = require("../../core/permisos");
 const {
     QUINIELA_LOCK_MINUTES,
@@ -98,7 +99,7 @@ module.exports = {
         const pronosticos = await pronosticosDelFormulario(interaction, sesion, quinielaId);
         if (pronosticos === null) return;
 
-        const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
+        const cantidad = importeElegido(interaction.fields);
         // Sin await entre las comprobaciones y el cobro: el tope diario y el cobro no pueden pasarse entre dos formularios.
         const aviso = avisoDeFormulario({ interaction, quinielaId, partidos, sesion, pronosticos, cantidad });
         if (aviso) {

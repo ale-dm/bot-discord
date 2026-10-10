@@ -9,7 +9,7 @@ const alertas = require("../systems/alertas");
 const { createLogger, getLogStats, setLogLevel } = require("../core/logger");
 const { getUsage: getGeminiUsage } = require("../services/geminiClient");
 const { creditosRestantes, CREDITOS_AVISO } = require("../services/oddsApi");
-const { simpleModal } = require("./common");
+const { modalConCampos, SI_NO_NUMERICO, usuariosElegidos } = require("./common");
 
 const log = createLogger("Diagnóstico");
 
@@ -272,14 +272,15 @@ async function handleSistemaButton(interaction) {
     if (id === "paneladmin_sis_alertas_editar") {
         const cfg = guildSettings.getSettings(interaction.guildId).alertas;
         await interaction.showModal(
-            simpleModal("paneladmin_sis_alertas_modal", "Alertas por DM", [
-                { id: "activas", label: "Activas (1/0)", value: cfg.enabled ? "1" : "0" },
+            modalConCampos("paneladmin_sis_alertas_modal", "Alertas por DM", [
+                { id: "activas", label: "Alertas activas", tipo: "radio", opciones: SI_NO_NUMERICO, valor: cfg.enabled ? "1" : "0" },
                 {
                     id: "ids",
-                    label: "IDs de Discord, separados por comas",
+                    label: "Quién recibe las alertas",
+                    tipo: "usuario",
+                    multiple: true,
                     required: false,
-                    placeholder: "Vacío = el dueño del servidor",
-                    value: cfg.admin_ids || "",
+                    valores: guildSettings.parseCsvIds(cfg.admin_ids || ""),
                 },
             ]),
         );
@@ -303,8 +304,8 @@ async function handleSistemaButton(interaction) {
 
 async function handleSistemaModal(interaction) {
     if (interaction.customId !== "paneladmin_sis_alertas_modal") return false;
-    const activas = interaction.fields.getTextInputValue("activas").trim();
-    const ids = guildSettings.parseCsvIds(interaction.fields.getTextInputValue("ids"));
+    const activas = interaction.fields.getRadioGroup("activas");
+    const ids = usuariosElegidos(interaction.fields, "ids");
     const malos = ids.filter((id) => !/^\d{17,20}$/.test(id));
     if (malos.length) {
         await interaction.reply({

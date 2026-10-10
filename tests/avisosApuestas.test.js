@@ -179,7 +179,10 @@ describe("/paneladmin → ⚽ Apuestas", () => {
 
     test("el recordatorio se configura con minutos válidos", async () => {
         const formulario = (campos) =>
-            interaccion({ customId: "paneladmin_apu_recordatorio_modal", fields: { getTextInputValue: (k) => campos[k] ?? "" } });
+            interaccion({
+                customId: "paneladmin_apu_recordatorio_modal",
+                fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" },
+            });
         const mal = formulario({ activo: "1", minutos: "2" });
         await paneladmin.handleModal(null, mal);
         expect(mal.reply.mock.calls[0][0].content).toMatch(/entre 5 y 1440/);

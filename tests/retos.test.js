@@ -336,7 +336,9 @@ describe("pestaña ⚔️ Retos y botones", () => {
         await botones.handleSelect(null, rival);
         expect(rival.showModal.mock.calls[0][0].data.custom_id).toBe("retos_modal_d_ppt_ui-b");
 
-        const modal = interaccion("retos_modal_d_ppt_ui-b", { fields: { getTextInputValue: () => "250" } });
+        const modal = interaccion("retos_modal_d_ppt_ui-b", {
+            fields: { getStringSelectValues: () => null, getTextInputValue: () => "250" },
+        });
         await botones.handleModal(null, modal);
         expect(modal.update.mock.calls[0][0].embeds[0].data.description).toMatch(/Reto publicado/);
         const publico = modal.followUp.mock.calls[0][0];
@@ -398,7 +400,7 @@ describe("pestaña ⚔️ Retos y botones", () => {
         expect(modalId).toBe("retos_modal_p_away_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4_123456789012345678");
         expect(modalId.length).toBeLessThanOrEqual(100);
 
-        const modal = interaccion(modalId, { fields: { getTextInputValue: () => "1.000" } });
+        const modal = interaccion(modalId, { fields: { getStringSelectValues: () => null, getTextInputValue: () => "1.000" } });
         await botones.handleModal(null, modal);
         const reto = db.prepare("SELECT * FROM retos WHERE match_id = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4'").get();
         expect(reto).toMatchObject({ creador: "ui-a", rival: "123456789012345678", eleccion: "away", cantidad: 1000, estado: "pendiente" });

@@ -99,7 +99,10 @@ test("/apuestas: Mis jugadas se abre en el mismo mensaje, y tras apostar hay bot
     await apuestas.handleButton({}, ver);
     expect(texto(ver.update.mock.calls[0][0])).toMatch(/Lo que tienes en juego/);
 
-    const modal = interaccion({ customId: "apuestas_modal_away_m-p3", fields: { getTextInputValue: () => "50" } });
+    const modal = interaccion({
+        customId: "apuestas_modal_away_m-p3",
+        fields: { getStringSelectValues: () => null, getTextInputValue: () => "50" },
+    });
     await apuestas.handleModal(null, modal);
     expect(ids(modal.reply.mock.calls[0][0])).toEqual(["misapuestas_activas_ana", "apuestas_pagina_laliga_1"]);
 });
