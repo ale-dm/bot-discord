@@ -22,7 +22,7 @@ async function liquidarPartidosSueltos({ corte, limite, resumen, scoresDe, orige
     const partidos = db
         .prepare(
             `
-        SELECT * FROM apuestas_partidos
+        SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos
         WHERE estado = 'abierto' AND start_time < ? AND start_time >= ?
           -- Solo los que tienen apuestas, patas de combinadas o retos pendientes: preguntar por el resto gasta cuota para nada.
           AND (EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
@@ -39,7 +39,7 @@ async function liquidarPartidosSueltos({ corte, limite, resumen, scoresDe, orige
         const apuestas = db
             .prepare(
                 `
-            SELECT * FROM apuestas_usuario
+            SELECT id, user_id, match_id, eleccion, cantidad, cuota, pagado, premio, recordado, linea FROM apuestas_usuario
             WHERE match_id = ? AND pagado = 0
         `,
             )

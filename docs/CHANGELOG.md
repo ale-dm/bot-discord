@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (para llegar a 10: base de datos, lint y documentación, segunda pasada)
+
+- **Índice de `tienda.objetoId`** (migración `042_indice_tienda`): era la única clave foránea sin índice. Lo usan el catálogo del panel admin y los borrados. `tests/indiceTienda.test.js` comprueba que el índice existe y que las consultas lo usan con un volumen realista (400 objetos).
+- **`SELECT *` sustituido** por columnas explícitas en 68 consultas de `src/` (las del esquema actual; el resultado no cambia). La de la migración 007, que vuelca tablas de esquema desconocido, se queda a propósito. Las siete consultas de partidos repetidas en `juegos/apuestas/apuestas.js` pasan a un solo helper, `partidoPorMatch` (en `systems/apuestas/apostar.js`), para que el fichero siga por debajo de 500 líneas.
+- **Plan de las consultas**: 344 consultas literales de `src/` revisadas con `EXPLAIN QUERY PLAN`. 14 recorren una tabla entera, todas agregados o listas completas (saldos, ranking, cron) o tablas pequeñas de configuración y panel. No hace falta ningún índice nuevo.
+- **Lint**: `no-shadow` activo en `src/`, sin avisos. Se corrigieron los cinco casos renombrando la variable interna (`vistas.js`, `index.js`, `geminiTts.js`, `backups.js`, `plexHistorial.js`), sin cambio de comportamiento.
+- **Cobertura de todo el repositorio medida**: 36 ficheros de `src/` por debajo del 60 % de líneas o del 50 % de ramas, listados en [PUNTUACION](planificacion/PUNTUACION.md).
+- **DEPLOY y comentarios**: `/diagnostico` pasa a ser `/paneladmin` → 🩺 Sistema; el enlace a DT-01 (ya retirado) sale del documento, y la copia de seguridad queda como decisión registrada.
+- **Merges**: a partir de ahora, los PRs de feature a `developer` se hacen con squash, como dice CONTRIBUTING; `developer` → `main`, con merge commit.
+- Puntuación: Base de datos pasa a 9 y la media a 8,7. Lint se queda en 9 hasta decidir qué medida faltaba.
+
 ## 2026-10-10 (para llegar a 10: lint, TODO y documentación)
 
 - **Límites de tamaño en el lint** (`eslint.config.js`): en `src/`, 120 líneas por función y 500 por fichero. Son los máximos actuales, no la meta (60 y 400): la regla se baja al bajar cada máximo real. El catálogo de logros queda fuera por ser datos. Comprobado: una función de 127 líneas falla el `npm run check`; el repositorio pasa con 0 avisos.

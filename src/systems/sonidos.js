@@ -43,7 +43,10 @@ function listar(guildId) {
     return db.prepare("SELECT id, nombre, archivo FROM sonidos WHERE guildId = ? ORDER BY nombre COLLATE NOCASE").all(String(guildId));
 }
 
-const obtener = (guildId, id) => db.prepare("SELECT * FROM sonidos WHERE guildId = ? AND id = ?").get(String(guildId), Number(id)) || null;
+const obtener = (guildId, id) =>
+    db
+        .prepare("SELECT id, guildId, nombre, archivo, creado_por, creado_en FROM sonidos WHERE guildId = ? AND id = ?")
+        .get(String(guildId), Number(id)) || null;
 const rutaDe = (sonido) => path.join(carpetaDe(sonido.guildId), sonido.archivo);
 
 /**

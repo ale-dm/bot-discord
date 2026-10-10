@@ -42,7 +42,7 @@ function estaAbandonada(ultimaAccionTs) {
  * @returns {number} partidas reembolsadas
  */
 function reembolsarPendientes() {
-    const filas = db.prepare("SELECT * FROM casino_partidas_activas").all();
+    const filas = db.prepare("SELECT userId, juego, guildId, apuesta, creada_en FROM casino_partidas_activas").all();
     if (!filas.length) return 0;
     const tx = db.transaction(() => {
         for (const f of filas) {

@@ -300,7 +300,7 @@ function buildDiarioPanel(guildId) {
 
 function buildEventosPanel(guildId) {
     const { xp, casino } = require("../../systems/eventos").estado(guildId);
-    const hora = (h) => `${String(h).padStart(2, "0")}:00`;
+    const horaDelDia = (h) => `${String(h).padStart(2, "0")}:00`;
     const ahora = (e) => (e.enMarcha ? " · 🟢 **en marcha**" : "");
     const embed = new EmbedBuilder()
         .setTitle("🎉 Eventos temporales")
@@ -312,7 +312,7 @@ function buildEventosPanel(guildId) {
             {
                 name: "⚡ Happy hour de XP",
                 value: xp.activo
-                    ? `Cada día de ${hora(xp.desde)} a ${hora(xp.hasta)}: XP **×${fmtNumero(xp.mult)}**${ahora(xp)}\n` +
+                    ? `Cada día de ${horaDelDia(xp.desde)} a ${horaDelDia(xp.hasta)}: XP **×${fmtNumero(xp.mult)}**${ahora(xp)}\n` +
                       "Encima del multiplicador global y antes del bonus de racha."
                     : "Desactivada",
             },

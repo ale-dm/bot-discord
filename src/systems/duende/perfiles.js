@@ -38,12 +38,18 @@ const PERSONALIDADES_INICIALES = [
 const aPersonalidad = (r) => r && { id: r.id, title: r.titulo, systemInstructions: r.instrucciones };
 
 function listarPersonalidades() {
-    return db.prepare("SELECT * FROM duende_personalidades ORDER BY rowid").all().map(aPersonalidad);
+    return db
+        .prepare("SELECT id, titulo, instrucciones, actualizado_en FROM duende_personalidades ORDER BY rowid")
+        .all()
+        .map(aPersonalidad);
 }
 
 function obtenerPersonalidad(id) {
     if (!id) return null;
-    return aPersonalidad(db.prepare("SELECT * FROM duende_personalidades WHERE id = ?").get(id)) || null;
+    return (
+        aPersonalidad(db.prepare("SELECT id, titulo, instrucciones, actualizado_en FROM duende_personalidades WHERE id = ?").get(id)) ||
+        null
+    );
 }
 
 /** @returns {boolean} true si ya existía (se ha actualizado) */
@@ -97,7 +103,11 @@ function aPerfil(r) {
 }
 
 function perfilPorId(id) {
-    return aPerfil(db.prepare("SELECT * FROM duende_perfiles WHERE id = ?").get(Number(id)));
+    return aPerfil(
+        db
+            .prepare("SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles WHERE id = ?")
+            .get(Number(id)),
+    );
 }
 
 /**
@@ -158,14 +168,29 @@ function borrarPerfilPorId(id) {
 }
 
 function listarPerfiles() {
-    return db.prepare("SELECT * FROM duende_perfiles ORDER BY nombre COLLATE NOCASE").all().map(aPerfil);
+    return db
+        .prepare(
+            "SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles ORDER BY nombre COLLATE NOCASE",
+        )
+        .all()
+        .map(aPerfil);
 }
 
 function filaPorUsuario(user) {
     if (!user) return null;
-    const porId = user.id ? db.prepare("SELECT * FROM duende_perfiles WHERE discord_id = ?").get(String(user.id)) : null;
+    const porId = user.id
+        ? db
+              .prepare(
+                  "SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles WHERE discord_id = ?",
+              )
+              .get(String(user.id))
+        : null;
     if (porId || !user.username) return porId;
-    return db.prepare("SELECT * FROM duende_perfiles WHERE discord_id IS NULL AND lower(username) = lower(?)").get(user.username);
+    return db
+        .prepare(
+            "SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles WHERE discord_id IS NULL AND lower(username) = lower(?)",
+        )
+        .get(user.username);
 }
 
 // Si el perfil aún no estaba vinculado (importado por username) se le asigna el ID; y si ya lo
@@ -179,7 +204,9 @@ function vincular(fila, user) {
             fila.id,
         );
         if (!fila.discord_id) log.info(`Perfil de ${fila.nombre} (${fila.username}) vinculado a ${user.id}`);
-        return db.prepare("SELECT * FROM duende_perfiles WHERE id = ?").get(fila.id);
+        return db
+            .prepare("SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles WHERE id = ?")
+            .get(fila.id);
     }
     return fila;
 }
@@ -190,7 +217,13 @@ function perfilDe(user) {
 }
 
 function perfilPorDiscordId(discordId) {
-    return aPerfil(db.prepare("SELECT * FROM duende_perfiles WHERE discord_id = ?").get(String(discordId)));
+    return aPerfil(
+        db
+            .prepare(
+                "SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles WHERE discord_id = ?",
+            )
+            .get(String(discordId)),
+    );
 }
 
 /** Añade una nota (se guardan las MAX_NOTAS más recientes). Crea el perfil si no existía. */
@@ -314,7 +347,11 @@ function guardarDescripcion({ discordId, username = null, nombre, descripcion })
  * @returns {number} perfiles vinculados
  */
 async function vincularPerfiles(guild) {
-    const pendientes = db.prepare("SELECT * FROM duende_perfiles WHERE discord_id IS NULL AND username IS NOT NULL").all();
+    const pendientes = db
+        .prepare(
+            "SELECT id, discord_id, username, nombre, descripcion, notas, actualizado_en FROM duende_perfiles WHERE discord_id IS NULL AND username IS NOT NULL",
+        )
+        .all();
     if (!pendientes.length || !guild) return 0;
     const miembros = guild.members.cache;
     let n = 0;

@@ -34,7 +34,7 @@ function caducarSinResultado(limite, resumen) {
     const partidos = db
         .prepare(
             `
-        SELECT * FROM apuestas_partidos WHERE estado = 'abierto' AND start_time < ?
+        SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos WHERE estado = 'abierto' AND start_time < ?
     `,
         )
         .all(limite);
@@ -51,7 +51,11 @@ function caducarSinResultado(limite, resumen) {
 
     db.transaction(() => {
         for (const p of partidos) {
-            const apuestas = db.prepare("SELECT * FROM apuestas_usuario WHERE match_id = ? AND pagado = 0").all(p.match_id);
+            const apuestas = db
+                .prepare(
+                    "SELECT id, user_id, match_id, eleccion, cantidad, cuota, pagado, premio, recordado, linea FROM apuestas_usuario WHERE match_id = ? AND pagado = 0",
+                )
+                .all(p.match_id);
             for (const ap of apuestas) {
                 reembolsar(ap.user_id, ap.cantidad, `Reembolso: ${p.home_team} vs ${p.away_team} sin resultado disponible`);
                 // premio = cantidad: se le devuelve lo apostado.
@@ -67,7 +71,11 @@ function caducarSinResultado(limite, resumen) {
             db.prepare("UPDATE apuestas_partidos SET estado = 'caducado' WHERE id = ?").run(p.id);
         }
         for (const q of quinielas) {
-            const apuestas = db.prepare("SELECT * FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0").all(q.id);
+            const apuestas = db
+                .prepare(
+                    "SELECT id, quiniela_id, user_id, predicciones, cantidad, aciertos, premio, pagado, creada_en FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0",
+                )
+                .all(q.id);
             for (const ap of apuestas) {
                 reembolsar(ap.user_id, ap.cantidad, `Reembolso: quiniela ${q.jornada} sin todos los resultados`);
                 db.prepare("UPDATE quiniela_apuestas SET pagado = 1, premio = 0 WHERE id = ?").run(ap.id);

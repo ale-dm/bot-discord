@@ -170,7 +170,7 @@ function buildLine(level, scope, text) {
     return head + text.replace(/\r?\n/g, "\n    ") + "\n";
 }
 
-// Contadores desde el arranque (los muestra /diagnostico).
+// Contadores desde el arranque (los muestra /paneladmin → 🩺 Sistema).
 const stats = { warn: 0, error: 0, lastError: null, since: Date.now() };
 
 // Quien quiera enterarse de cada error (las alertas por DM al admin, systems/alertas). Un fallo en un oyente no

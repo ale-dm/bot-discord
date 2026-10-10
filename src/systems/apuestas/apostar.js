@@ -48,7 +48,7 @@ function partidosDePagina(deporteSeleccionado, page) {
     const partidos = db
         .prepare(
             `
-            SELECT * FROM apuestas_partidos
+            SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos
             WHERE estado = 'abierto'
                 AND deporte = ?
                 AND cuota_home IS NOT NULL
@@ -79,10 +79,16 @@ function partidosDePagina(deporteSeleccionado, page) {
     return { partidos, offset, totalPartidos };
 }
 
+// Las columnas que usan las apuestas a un partido, en un solo sitio (antes se repetían en cada consulta).
+const COLUMNAS_PARTIDO =
+    "id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea";
+const partidoPorMatch = (matchId) => db.prepare(`SELECT ${COLUMNAS_PARTIDO} FROM apuestas_partidos WHERE match_id = ?`).get(matchId);
+
 module.exports = {
     PARTIDOS_POR_PAGINA,
     cuotaDeEleccion,
     cobrarApuesta,
     partidosDePagina,
     yaApostadoApuesta,
+    partidoPorMatch,
 };

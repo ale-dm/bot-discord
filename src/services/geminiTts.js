@@ -163,11 +163,11 @@ async function intentar(modelo, texto, voz, key, limiteMs) {
     }
 
     if (!response.ok) {
-        const texto = (await response.text().catch(() => "")).slice(0, 300);
+        const cuerpoError = (await response.text().catch(() => "")).slice(0, 300);
         const s = response.status;
         // 401/403: clave mala o sin permiso (salvo un modelo concreto sin acceso, que dice "model"): no hay nada que hacer.
-        const fatal = (s === 401 || s === 403) && !/model/i.test(texto);
-        throw new ErrorTts(`${modelo}: HTTP ${s}${texto ? ` - ${texto}` : ""}`, { siguienteModelo: !fatal, fatal });
+        const fatal = (s === 401 || s === 403) && !/model/i.test(cuerpoError);
+        throw new ErrorTts(`${modelo}: HTTP ${s}${cuerpoError ? ` - ${cuerpoError}` : ""}`, { siguienteModelo: !fatal, fatal });
     }
     const data = await response.json().catch(() => null);
     const audio = data && extraerAudio(data);
