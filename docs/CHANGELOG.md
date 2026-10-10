@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: errores silenciosos y exports)
+
+- **Errores silenciosos** (#235): los 7 `catch {}` vacíos de voz, copias y tts dejan un `debug` o un `info` con el motivo; el de `logger.js` lleva un comentario (un fichero de log que no existe tiene tamaño 0). Los `console.log` de `index.js` y `registerCommands.js` pasan al logger. Solo cambia el texto de los logs de consola (se quita el ✓ inicial), no lo que ve la gente en Discord.
+- **Exports sin uso** (#236): de los 13 candidatos del escaneo, solo `buildConfirmarCancelar` era un export sin uso fuera de su fichero; se quita. Los otros 12 eran variables locales, claves de opciones de `/imagen` o nombres de un mismo fichero: el escaneo da falsos positivos y hay que comprobar cada uno a mano.
+
 ## 2026-10-10 (#166: los botones llegan a su panel)
 
 - **Mis jugadas** (`/juegos`, antes `/misapuestas`): los botones y el menú de cancelar están en `src/paneles/misJugadas.js`, con el panel. Se borra el envoltorio `src/juegos/apuestas/misapuestas.js`. Para que el panel atienda sus botones, el arranque también carga `src/paneles` (antes solo juegos y perfil).

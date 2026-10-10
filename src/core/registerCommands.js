@@ -40,7 +40,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 // flushLogs antes de salir: los logs se escriben con buffer y process.exit los perdería.
 createSlash()
     .then(async () => {
-        console.log(`✓ ${guildCommands.length} comandos registrados en Discord`);
+        log.info(`${guildCommands.length} comandos registrados en Discord`);
         await flushLogs();
         process.exit(0);
     })

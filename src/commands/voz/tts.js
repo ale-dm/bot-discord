@@ -28,7 +28,9 @@ async function processQueue(guildId, connection) {
         setTimeout(() => {
             try {
                 connection.destroy();
-            } catch {}
+            } catch (e) {
+                logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
+            }
         }, 2000);
         return;
     }
@@ -137,7 +139,9 @@ module.exports = {
         if (connection && connection.state.status !== VoiceConnectionStatus.Ready) {
             try {
                 connection.destroy();
-            } catch {}
+            } catch (e) {
+                logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
+            }
             connection = null;
         }
         if (!connection) {
@@ -154,7 +158,9 @@ module.exports = {
                 logError("[TTS] Error conectando al canal:", err);
                 try {
                     connection?.destroy();
-                } catch {}
+                } catch (e) {
+                    logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
+                }
                 await interaction.editReply({ content: "❌ No pude conectarme al canal de voz." });
                 queues.delete(guildId);
                 return;
