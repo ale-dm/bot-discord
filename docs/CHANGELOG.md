@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (base de datos: índices y ajustes)
+
+- **Índices para las consultas que se repiten** (migración `040_indices_consultas`): el listado de partidos para apostar, «Mis jugadas», las apuestas pendientes del aviso cada cinco minutos, la voz de XP cada minuto, el inventario de cada persona, las quinielas, las combinadas, los retos, el aviso de cine y la TTCL. Medido sobre datos sintéticos de tamaño realista (300.000 apuestas, 150.000 personas con XP, 300.000 objetos de inventario):
+  - listado de partidos: 2,75 ms → 0,13 ms
+  - «Mis jugadas»: 11,5 ms → 0,15 ms
+  - voz de XP: 4,1 ms → 0,04 ms
+  - inventario de una persona: 11,2 ms → menos de 0,01 ms
+  Si una BD antigua no tiene alguna columna de un índice, ese índice se omite y se avisa en el log: el bot arranca igual.
+- **Conexión a la BD** (`src/core/db.js`): `synchronous = NORMAL` (recomendado con WAL: la BD no se corrompe; ante un corte de luz del sistema, pueden perderse las últimas transacciones). Cada escritura suelta (cada mensaje de XP) tardó unas nueve veces menos. Además, caché de 32 MB, tablas temporales en memoria y `PRAGMA optimize` al arrancar.
+- Lo que **no** se ha tocado: no se borra ningún dato. Las tablas que crecen sin límite (partidas de Plex, historial, registro de admin, precios de TTCL) necesitan una decisión de retención, en su propia issue.
+
 ## 2026-10-09 (décima ronda: lo que quedaba)
 
 - **Etiqueta de las décadas** ([#218](https://github.com/ale-dm/bot-discord/issues/218)): los trofeos de década dicen el año entero («Máquina del tiempo: los años 1980»; antes «los 80», que con los años 1920 se leía como 2020). Los que ya existían los cambia la migración `039_decadas_nombre` (solo los que creó el código; los de Gemini no se tocan). El id no cambia, así que nadie pierde su trofeo.
