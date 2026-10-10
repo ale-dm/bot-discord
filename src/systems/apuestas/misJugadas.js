@@ -75,39 +75,64 @@ function quinielaDe(userId, quinielaId) {
     return r ? { ...r, detalle: detalleQuiniela(quinielaId, r.predicciones) } : null;
 }
 
-/**
- * Estadísticas de apuestas: partidos y quinielas por separado. Lo apostado y el beneficio solo cuentan
- * lo ya resuelto; lo pendiente va en `enJuego`. Una quiniela devuelta cuenta como recuperada.
- */
-function estadisticas(userId) {
-    const partidos = db
-        .prepare(
-            `SELECT COUNT(*) AS total,
+// Las columnas de cada tipo de apuesta. estadisticas (una persona) y estadisticasDeTodos (todas a la vez) las usan las
+// dos, para que el ranking no pueda dar cifras distintas de 📊 Stats.
+const COLUMNAS_PARTIDOS = `COUNT(*) AS total,
                 SUM(CASE WHEN p.estado = 'finalizado' AND a.premio > 0 THEN 1 ELSE 0 END) AS ganadas,
                 SUM(CASE WHEN p.estado = 'finalizado' AND a.premio = 0 THEN 1 ELSE 0 END) AS perdidas,
                 SUM(CASE WHEN p.estado = 'abierto' THEN 1 ELSE 0 END) AS pendientes,
                 -- Las liquidadas antes de guardar el premio (premio NULL) no se sabe si se ganaron.
                 COALESCE(SUM(CASE WHEN p.estado = 'finalizado' AND a.premio IS NOT NULL THEN a.cantidad ELSE 0 END), 0) AS apostado,
                 COALESCE(SUM(CASE WHEN p.estado = 'finalizado' THEN COALESCE(a.premio, 0) ELSE 0 END), 0) AS ganado,
-                COALESCE(SUM(CASE WHEN p.estado = 'abierto' THEN a.cantidad ELSE 0 END), 0) AS enJuego
-             FROM apuestas_usuario a JOIN apuestas_partidos p ON a.match_id = p.match_id
-             WHERE a.user_id = ?`,
-        )
-        .get(userId);
-    const quinielas = db
-        .prepare(
-            `SELECT COUNT(*) AS total,
+                COALESCE(SUM(CASE WHEN p.estado = 'abierto' THEN a.cantidad ELSE 0 END), 0) AS enJuego`;
+const COLUMNAS_QUINIELAS = `COUNT(*) AS total,
                 SUM(CASE WHEN q.estado = 'cerrada' AND qa.premio > 0 THEN 1 ELSE 0 END) AS ganadas,
                 SUM(CASE WHEN q.estado = 'abierta' THEN 1 ELSE 0 END) AS pendientes,
                 COALESCE(SUM(CASE WHEN q.estado != 'abierta' THEN qa.cantidad ELSE 0 END), 0) AS apostado,
                 COALESCE(SUM(CASE WHEN q.estado = 'abierta' THEN 0 WHEN ${REEMBOLSADA} THEN qa.cantidad ELSE qa.premio END), 0) AS ganado,
-                COALESCE(SUM(CASE WHEN q.estado = 'abierta' THEN qa.cantidad ELSE 0 END), 0) AS enJuego
-             FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id
-             WHERE qa.user_id = ?`,
-        )
-        .get(userId);
-    const limpiar = (r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, Number(v || 0)]));
+                COALESCE(SUM(CASE WHEN q.estado = 'abierta' THEN qa.cantidad ELSE 0 END), 0) AS enJuego`;
+const DESDE_PARTIDOS = "FROM apuestas_usuario a JOIN apuestas_partidos p ON a.match_id = p.match_id";
+const DESDE_QUINIELAS = "FROM quiniela_apuestas qa JOIN quinielas q ON q.id = qa.quiniela_id";
+const CEROS_PARTIDOS = { total: 0, ganadas: 0, perdidas: 0, pendientes: 0, apostado: 0, ganado: 0, enJuego: 0 };
+const CEROS_QUINIELAS = { total: 0, ganadas: 0, pendientes: 0, apostado: 0, ganado: 0, enJuego: 0 };
+const limpiar = (r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, Number(v || 0)]));
+
+/**
+ * Estadísticas de apuestas: partidos y quinielas por separado. Lo apostado y el beneficio solo cuentan
+ * lo ya resuelto; lo pendiente va en `enJuego`. Una quiniela devuelta cuenta como recuperada.
+ */
+function estadisticas(userId) {
+    const partidos = db.prepare(`SELECT ${COLUMNAS_PARTIDOS} ${DESDE_PARTIDOS} WHERE a.user_id = ?`).get(userId);
+    const quinielas = db.prepare(`SELECT ${COLUMNAS_QUINIELAS} ${DESDE_QUINIELAS} WHERE qa.user_id = ?`).get(userId);
     return { partidos: limpiar(partidos), quinielas: limpiar(quinielas) };
+}
+
+/** Lo mismo que estadisticas para quien no tiene nada resuelto ni en juego. */
+function estadisticasVacias() {
+    return { partidos: { ...CEROS_PARTIDOS }, quinielas: { ...CEROS_QUINIELAS } };
+}
+
+/**
+ * Las estadísticas de todas las personas con alguna apuesta, en un Map por userId. Son dos consultas agrupadas en vez de
+ * dos por persona; quien no tiene filas que cuadren con el JOIN no aparece (usar estadisticasVacias).
+ */
+function estadisticasDeTodos() {
+    const mapa = new Map();
+    const de = (userId) => {
+        if (!mapa.has(userId)) mapa.set(userId, estadisticasVacias());
+        return mapa.get(userId);
+    };
+    for (const { userId, ...cifras } of db
+        .prepare(`SELECT a.user_id AS userId, ${COLUMNAS_PARTIDOS} ${DESDE_PARTIDOS} GROUP BY a.user_id`)
+        .iterate()) {
+        de(userId).partidos = cifras; // cada grupo tiene filas: ninguna suma sale NULL
+    }
+    for (const { userId, ...cifras } of db
+        .prepare(`SELECT qa.user_id AS userId, ${COLUMNAS_QUINIELAS} ${DESDE_QUINIELAS} GROUP BY qa.user_id`)
+        .iterate()) {
+        de(userId).quinielas = cifras;
+    }
+    return mapa;
 }
 
 function ultimasCasino(userId, n = 5) {
@@ -229,6 +254,8 @@ module.exports = {
     quinielasDe,
     quinielaDe,
     estadisticas,
+    estadisticasVacias,
+    estadisticasDeTodos,
     combinadasDe,
     estadisticasCombinadas,
     ultimasCasino,

@@ -50,43 +50,49 @@ function caducarSinResultado(limite, resumen) {
     if (!partidos.length && !quinielas.length) return;
 
     db.transaction(() => {
-        for (const p of partidos) {
-            const apuestas = db
-                .prepare(
-                    "SELECT id, user_id, match_id, eleccion, cantidad, cuota, pagado, premio, recordado, linea FROM apuestas_usuario WHERE match_id = ? AND pagado = 0",
-                )
-                .all(p.match_id);
-            for (const ap of apuestas) {
-                reembolsar(ap.user_id, ap.cantidad, `Reembolso: ${p.home_team} vs ${p.away_team} sin resultado disponible`);
-                // premio = cantidad: se le devuelve lo apostado.
-                db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(ap.cantidad, ap.id);
-            }
-            // Las combinadas con una pata en ese partido se devuelven enteras.
-            combinadas.caducarPartido(p.match_id, (userId, cantidad, descripcion) => reembolsar(userId, cantidad, descripcion));
-            // Los retos 1 contra 1 a ese partido, igual: cada uno recupera lo suyo.
-            const devueltos = retos.devolverPorPartido(p.match_id, "el partido se quedó sin resultado");
-            resumen.reembolsos += devueltos.pagos.length;
-            resumen.pagos.push(...devueltos.pagos);
-            resumen.retosCerrados.push(...devueltos.cerrados.map((r) => r.id));
-            db.prepare("UPDATE apuestas_partidos SET estado = 'caducado' WHERE id = ?").run(p.id);
-        }
-        for (const q of quinielas) {
-            const apuestas = db
-                .prepare(
-                    "SELECT id, quiniela_id, user_id, predicciones, cantidad, aciertos, premio, pagado, creada_en FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0",
-                )
-                .all(q.id);
-            for (const ap of apuestas) {
-                reembolsar(ap.user_id, ap.cantidad, `Reembolso: quiniela ${q.jornada} sin todos los resultados`);
-                db.prepare("UPDATE quiniela_apuestas SET pagado = 1, premio = 0 WHERE id = ?").run(ap.id);
-            }
-            db.prepare("UPDATE quinielas SET estado = 'caducada', cerrada_en = ? WHERE id = ?").run(ahoraIso, q.id);
-        }
+        for (const p of partidos) caducarPartido(p, reembolsar, resumen);
+        for (const q of quinielas) caducarQuiniela(q, ahoraIso, reembolsar);
     })();
     resumen.caducados += partidos.length + quinielas.length;
     logInfo(
         `[PAGARAPUESTAS] Caducados ${partidos.length} partidos y ${quinielas.length} quinielas sin resultado (empezaron hace más de ${DIAS_RESULTADOS} días); ${resumen.reembolsos} apuestas reembolsadas`,
     );
+}
+
+// Un partido sin resultado: se devuelve lo apostado, se devuelven las combinadas con una pata en él y los retos a él.
+function caducarPartido(p, reembolsar, resumen) {
+    const apuestas = db
+        .prepare(
+            "SELECT id, user_id, match_id, eleccion, cantidad, cuota, pagado, premio, recordado, linea FROM apuestas_usuario WHERE match_id = ? AND pagado = 0",
+        )
+        .all(p.match_id);
+    for (const ap of apuestas) {
+        reembolsar(ap.user_id, ap.cantidad, `Reembolso: ${p.home_team} vs ${p.away_team} sin resultado disponible`);
+        // premio = cantidad: se le devuelve lo apostado.
+        db.prepare("UPDATE apuestas_usuario SET pagado = 1, premio = ? WHERE id = ?").run(ap.cantidad, ap.id);
+    }
+    // Las combinadas con una pata en ese partido se devuelven enteras.
+    combinadas.caducarPartido(p.match_id, (userId, cantidad, descripcion) => reembolsar(userId, cantidad, descripcion));
+    // Los retos 1 contra 1 a ese partido, igual: cada uno recupera lo suyo.
+    const devueltos = retos.devolverPorPartido(p.match_id, "el partido se quedó sin resultado");
+    resumen.reembolsos += devueltos.pagos.length;
+    resumen.pagos.push(...devueltos.pagos);
+    resumen.retosCerrados.push(...devueltos.cerrados.map((r) => r.id));
+    db.prepare("UPDATE apuestas_partidos SET estado = 'caducado' WHERE id = ?").run(p.id);
+}
+
+// Una quiniela sin todos sus resultados: se devuelve lo apostado a cada jornada y se marca como caducada.
+function caducarQuiniela(q, ahoraIso, reembolsar) {
+    const apuestas = db
+        .prepare(
+            "SELECT id, quiniela_id, user_id, predicciones, cantidad, aciertos, premio, pagado, creada_en FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0",
+        )
+        .all(q.id);
+    for (const ap of apuestas) {
+        reembolsar(ap.user_id, ap.cantidad, `Reembolso: quiniela ${q.jornada} sin todos los resultados`);
+        db.prepare("UPDATE quiniela_apuestas SET pagado = 1, premio = 0 WHERE id = ?").run(ap.id);
+    }
+    db.prepare("UPDATE quinielas SET estado = 'caducada', cerrada_en = ? WHERE id = ?").run(ahoraIso, q.id);
 }
 
 /** Aciertos necesarios para cobrar una quiniela: la mitad de los partidos, redondeando hacia arriba. */

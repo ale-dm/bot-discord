@@ -57,45 +57,47 @@ function embedRankingPlex(guildId) {
         .setFooter({ text: "Solo quien tiene Plex vinculado. Quien oculta sus logros de Plex no sale en los de logros." });
 }
 
-/** 🏆 Rankings: uno a la vez, elegido en el menú (el de nivel, con páginas). */
-async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0) {
-    let embed;
-    let paginas = null;
+/** El embed de los rankings que no van con páginas (todos menos el de nivel), o null si el tipo es el de nivel. */
+function embedRankingFijo(guild, tipo) {
     if (tipo === "riqueza") {
         const { lineasRicos } = require("../economia");
-        embed = new EmbedBuilder()
+        return new EmbedBuilder()
             .setTitle("💰 Los más ricos")
             .setDescription(lineasRicos(10).join("\n") || "No hay datos todavía.")
             .setFooter({ text: "Efectivo + banco" })
             .setColor(0xf1c40f);
-    } else if (tipo === "casino") {
-        embed = require("../casino").buildRanking().embeds[0];
-    } else if (tipo === "logros") {
+    }
+    if (tipo === "casino") return require("../casino").buildRanking().embeds[0];
+    if (tipo === "logros") {
         const top = achievements.getTopUsers(guild.id, 10);
-        embed = new EmbedBuilder()
+        return new EmbedBuilder()
             .setTitle("🏅 Top logros")
             .setDescription(
                 top.map((u, i) => `${i + 1}. <@${u.userId}> — **${u.completed}** completados (${u.claimed} reclamados)`).join("\n") ||
                     "Sin datos todavía.",
             )
             .setColor(0xf39c12);
-    } else if (tipo === "ttcl") {
+    }
+    if (tipo === "ttcl") {
         const top = require("../../systems/cripto/mercado").topTenedoresTtcl(10);
-        embed = new EmbedBuilder()
+        return new EmbedBuilder()
             .setTitle("📈 Quién tiene más $TTCL")
             .setDescription(
                 top.map((t, i) => `${i + 1}. <@${t.userId}> — **${t.cantidad.toFixed(2)}** TTCL`).join("\n") ||
                     "Nadie tiene $TTCL todavía.",
             )
             .setColor(0x9b59b6);
-    } else if (tipo === "plex") {
-        embed = embedRankingPlex(guild.id);
-    } else if (tipo === "apuestas") {
-        embed = embedRankingApuestas();
-    } else {
-        embed = await buildTopEmbed(guild, page);
-        paginas = { anterior: page > 0, siguiente: xp.getTop(guild.id, 10, (page + 1) * 10).length > 0 };
     }
+    if (tipo === "plex") return embedRankingPlex(guild.id);
+    if (tipo === "apuestas") return embedRankingApuestas();
+    return null;
+}
+
+/** 🏆 Rankings: uno a la vez, elegido en el menú (el de nivel, con páginas). */
+async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0) {
+    const fijo = embedRankingFijo(guild, tipo);
+    const embed = fijo || (await buildTopEmbed(guild, page));
+    const paginas = fijo ? null : { anterior: page > 0, siguiente: xp.getTop(guild.id, 10, (page + 1) * 10).length > 0 };
     const menu = new StringSelectMenuBuilder()
         .setCustomId(`perfil_ranksel_${ownerId}_${targetId}`)
         .setPlaceholder("Qué ranking")

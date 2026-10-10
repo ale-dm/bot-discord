@@ -1,7 +1,7 @@
 // Reglas del blackjack sin nada de Discord ni de dinero: baraja de 4 mazos, valor de una mano (ases
 // como 1 u 11), blackjack natural y cada jugada (pedir, plantarse, doblar, separar), que reciben el
-// estado de la partida y lo modifican. juegos/casino/blackjack cobra/paga y pinta los mensajes; los tests usan
-// una baraja preparada y un `rng` fijo para saber qué carta sale.
+// estado de la partida y lo modifican. systems/blackjackCobros cobra y paga, y juegos/casino/blackjack lleva la
+// partida y pinta los mensajes; los tests usan una baraja preparada y un `rng` fijo para saber qué carta sale.
 
 // --- Baraja real ---
 function crearBaraja(numBarajas = 4) {

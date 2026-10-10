@@ -109,13 +109,13 @@ Estado tras la segunda pasada del 2026-10-10. Un área llega a 10 cuando no le q
 |---|---|---|---|
 | Robustez | 10 | Nada: 0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`/`FIXME`. | — |
 | Lint | 10 | `eqeqeq` pasa de `smart` a `always` (los `== null` siguen permitidos) y `no-shadow` está activo en `src/`. Cero avisos con las dos reglas. Las reglas de complejidad y `require-await` no se activan: darían 27 a 62 avisos, y son decisiones de estilo, no fallos. | — |
-| Tamaño de funciones | 9 | 53 funciones de más de 60 líneas en 42 ficheros (lista en la sección anterior). Ficheros de más de 400 líneas: 8. | Alto |
-| Organización | 8 | `juegos/` mezcla textos, reglas y flujo en `apuestas.js` (499) y en los juegos de casino. Hay que decidir caso por caso qué regla sale a `systems/`. | Medio |
+| Tamaño de funciones | 10 | Hecho (#278, #279): ninguna función de más de 60 líneas ni fichero de más de 400 en `src/`, salvo el catálogo de logros (datos). El lint vigila esos dos límites. | — |
+| Organización | 9 | Hecho en #280: las reglas de quiniela, liquidación, apuestas, ruleta, tragaperras, adivinar y ppt están en `systems/`; `juegos/` tiene textos, handlers y flujo. Blackjack ya tenía sus reglas en `systems/blackjack.js`. Falta revisar fichero a fichero que no quede lógica suelta en `juegos/`. | Bajo |
 | Tests | 10 | Los 11 fallos de producto que encontraron los tests están corregidos (lista abajo, cada test ya comprueba el comportamiento correcto). Totales: líneas 91,1 %, ramas 80,5 %, funciones 92,6 %, en 168 suites y 2010 tests. | — |
-| Base de datos | 9 | Hecho: índice de `tienda.objetoId` (migración 042), 0 claves foráneas sin índice, `SELECT *` sustituido por columnas explícitas en 68 consultas (la de la migración 007 se queda a propósito, porque vuelca tablas de esquema desconocido), y el plan revisado en 344 consultas literales: 14 con `SCAN`, todas agregados o listas completas (saldos, ranking, cron) o tablas pequeñas de configuración y panel. Falta medir con volumen real: las pruebas usan muestras de 400 filas. El coste: esas listas de columnas hay que mantenerlas a mano si cambia el esquema. | Bajo |
+| Base de datos | 10 | Hecho (#281): consultas medidas con 50.000 usuarios y 300.000 apuestas (`docs/tecnico/MEDICION_BD.md`). No hace falta ningún índice nuevo; la decisión sobre las listas de columnas está escrita. El `ranking()` lento va aparte, en #285. | — |
 | Documentación | 8 | Revisado y corregido en esta pasada: README, FUNCIONALIDADES, SIGUIENTES_PASOS, PLEX_Y_SEERR, DEPLOY (sin `/diagnostico`, el enlace a DT-01 retirado y la copia de seguridad como decisión registrada). La política de merge quedó decidida (squash para feature, merge commit para `developer` → `main`). Falta: la sección de configuración de GitHub de CONTRIBUTING no se puede verificar desde aquí, no hay herramienta para la protección de ramas. | Bajo |
 
-Media con la tabla de arriba, tras la cuarta pasada: (10 + 10 + 9 + 8 + 10 + 9 + 8) / 7 = 9,1. Lo que frena el 10 es el tamaño de funciones (53 funciones de más de 60 líneas), la organización de `juegos/` y la base de datos sin medir con volumen real.
+Media tras la quinta pasada: (10 + 10 + 10 + 10 + 9 + 10 + 8) / 7 = 9,6. Lo que queda: Documentación (#282, configuración de GitHub sin verificar) y Organización (revisión de `juegos/` fichero a fichero).
 
 ### Anexo: ficheros de src/ por debajo del objetivo (2026-10-10)
 

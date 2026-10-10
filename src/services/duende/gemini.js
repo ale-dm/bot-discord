@@ -124,6 +124,31 @@ function avisarSiAlucina(text, toolsCalledThisTurn) {
     }
 }
 
+/** Lanza error si Gemini cortó la respuesta por filtros (bloqueo del prompt o motivo de fin en GEMINI_BLOCK_FINISH_REASONS). */
+function comprobarBloqueo(response, finishReason) {
+    const blockReason = response?.promptFeedback?.blockReason;
+    if (blockReason || GEMINI_BLOCK_FINISH_REASONS.has(finishReason)) {
+        throw new Error(`Response was blocked (${blockReason || finishReason})`);
+    }
+}
+
+/** El texto de la última vuelta: avisa si se cortó por MAX_TOKENS o si alucinó una acción, y lanza si viene vacío. */
+function textoFinal(response, finishReason, baseConfig, toolsCalledThisTurn) {
+    const text = response?.text || "";
+
+    if (finishReason === "MAX_TOKENS") {
+        // No se puede recuperar la parte que faltó, pero al menos queda registrado
+        // el porqué en vez de tener que adivinarlo por una frase cortada a medias.
+        log.warn(`Respuesta cortada por MAX_TOKENS (maxOutputTokens=${baseConfig.maxOutputTokens}). Texto entregado: "${text}"`);
+    }
+
+    // No se puede arreglar el texto ya generado, pero el posible invento queda registrado para poder pillarlo.
+    avisarSiAlucina(text, toolsCalledThisTurn);
+
+    if (!text || typeof text !== "string") throw new Error("Respuesta vacía de Gemini");
+    return text;
+}
+
 async function generarConGemini(parts, options = {}) {
     const prompt = buildPromptFromParts(parts);
     if (!prompt) throw new Error("Prompt vacío para Gemini");
@@ -149,11 +174,8 @@ async function generarConGemini(parts, options = {}) {
             "Gemini",
         );
 
-        const blockReason = response?.promptFeedback?.blockReason;
         const finishReason = response?.candidates?.[0]?.finishReason;
-        if (blockReason || GEMINI_BLOCK_FINISH_REASONS.has(finishReason)) {
-            throw new Error(`Response was blocked (${blockReason || finishReason})`);
-        }
+        comprobarBloqueo(response, finishReason);
 
         const functionCalls = response?.functionCalls;
 
@@ -170,19 +192,7 @@ async function generarConGemini(parts, options = {}) {
             continue;
         }
 
-        const text = response?.text || "";
-
-        if (finishReason === "MAX_TOKENS") {
-            // No se puede recuperar la parte que faltó, pero al menos queda registrado
-            // el porqué en vez de tener que adivinarlo por una frase cortada a medias.
-            log.warn(`Respuesta cortada por MAX_TOKENS (maxOutputTokens=${baseConfig.maxOutputTokens}). Texto entregado: "${text}"`);
-        }
-
-        // No se puede arreglar el texto ya generado, pero el posible invento queda registrado para poder pillarlo.
-        avisarSiAlucina(text, toolsCalledThisTurn);
-
-        if (!text || typeof text !== "string") throw new Error("Respuesta vacía de Gemini");
-        return text;
+        return textoFinal(response, finishReason, baseConfig, toolsCalledThisTurn);
     }
 
     throw new Error("Gemini no devolvió respuesta tras usar herramientas");

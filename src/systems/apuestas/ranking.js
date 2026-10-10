@@ -5,7 +5,7 @@
 // El beneficio es el mismo que el de 📊 Stats (partidos y quinielas ya resueltos, ver misJugadas.estadisticas); el
 // acierto y la racha, solo de las apuestas a partidos (una quiniela no se gana o se pierde entera).
 const db = require("../../core/db");
-const { estadisticas } = require("./misJugadas");
+const { estadisticas, estadisticasVacias, estadisticasDeTodos } = require("./misJugadas");
 
 /** Apuestas resueltas (partidos y quinielas) que hacen falta para salir en el ranking. */
 const MIN_RESUELTAS = 5;
@@ -28,9 +28,8 @@ function mejorRacha(userId) {
     return mejor;
 }
 
-/** Las cifras de un apostador: beneficio, apuestas resueltas, acierto (null sin partidos resueltos) y mejor racha. */
-function cifras(userId) {
-    const { partidos: p, quinielas: q } = estadisticas(userId);
+/** Las cifras de un apostador a partir de sus estadísticas (estadisticas), sin la racha. */
+function calcular(userId, { partidos: p, quinielas: q }) {
     const decididas = p.ganadas + p.perdidas;
     return {
         userId,
@@ -39,12 +38,18 @@ function cifras(userId) {
         ganadas: p.ganadas,
         perdidas: p.perdidas,
         acierto: decididas ? (p.ganadas / decididas) * 100 : null,
-        racha: mejorRacha(userId),
     };
+}
+
+/** Las cifras de un apostador: beneficio, apuestas resueltas, acierto (null sin partidos resueltos) y mejor racha. */
+function cifras(userId) {
+    return { ...calcular(userId, estadisticas(userId)), racha: mejorRacha(userId) };
 }
 
 /**
  * Los mejores apostadores por beneficio (a igualdad, más acierto), de quienes tienen al menos `minimo` apuestas resueltas.
+ * Las estadísticas de todos salen de dos consultas agrupadas (estadisticasDeTodos), no de una por apostador, y la racha
+ * solo se calcula para los que se devuelven: no influye en el orden. Con 50.000 apostadores tardaba 7 s y bloqueaba el bot.
  * @returns {{ userId: string, beneficio: number, resueltas: number, ganadas: number, perdidas: number, acierto: number|null, racha: number }[]}
  */
 function ranking({ limite = 10, minimo = MIN_RESUELTAS } = {}) {
@@ -53,11 +58,13 @@ function ranking({ limite = 10, minimo = MIN_RESUELTAS } = {}) {
         .all()
         .map((r) => r.user_id)
         .filter(Boolean);
+    const porUsuario = estadisticasDeTodos();
     return ids
-        .map(cifras)
+        .map((id) => calcular(id, porUsuario.get(id) ?? estadisticasVacias()))
         .filter((c) => c.resueltas >= minimo)
         .sort((a, b) => b.beneficio - a.beneficio || (b.acierto ?? -1) - (a.acierto ?? -1))
-        .slice(0, limite);
+        .slice(0, limite)
+        .map((c) => ({ ...c, racha: mejorRacha(c.userId) }));
 }
 
 const formatoDia = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" });

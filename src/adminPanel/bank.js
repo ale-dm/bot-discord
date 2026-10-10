@@ -160,68 +160,78 @@ async function handleBankButton(interaction) {
     return false;
 }
 
+// Suma la cantidad al destino elegido (efectivo, banco o dinero negro) y lo deja en el historial y en el registro de admin.
+async function modificarSaldo(interaction, userId) {
+    const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
+    const tipo = interaction.fields.getTextInputValue("tipo");
+    // "efectivo" (o el antiguo "enMano"), "banco" o "negro" (dinero negro, F-EC-06b).
+    const destino = tipo.trim().toLowerCase();
+    if (!["banco", "efectivo", "enmano", "negro"].includes(destino)) {
+        await interaction.reply({ content: "Tipo inválido. Usa efectivo, banco o negro.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    require("../systems/dinero").asegurarCuenta(userId);
+    if (destino === "banco") db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, userId);
+    else if (destino === "negro") db.prepare("UPDATE banco SET negro = negro + ? WHERE userId = ?").run(cantidad, userId);
+    else db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, userId);
+    require("../systems/dinero").apuntar(userId, "admin", `Modificación admin (${tipo})`, cantidad);
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "bank.balance.modify",
+        details: { userId, tipo, cantidad },
+    });
+    await interaction.reply({ content: `✅ Saldo actualizado para <@${userId}>.`, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+// Busca por ID (17-19 dígitos) o por tag/usuario, sin distinguir mayúsculas.
+async function buscarMiembro(interaction, query) {
+    if (/^\d{17,19}$/.test(query)) return interaction.guild.members.fetch(query).catch(() => null);
+    const minusculas = query.toLowerCase();
+    return (
+        interaction.guild.members.cache.find(
+            (m) => m.user.tag.toLowerCase() === minusculas || m.user.username.toLowerCase() === minusculas,
+        ) || null
+    );
+}
+
+function textoResumenBanco(memberId) {
+    const datos = db.prepare("SELECT saldo, enMano, negro FROM banco WHERE userId = ?").get(memberId);
+    const historial = db
+        .prepare("SELECT fecha, descripcion, cantidad FROM historial WHERE userId = ? ORDER BY fecha DESC LIMIT 5")
+        .all(memberId);
+    let desc = datos
+        ? `💵 Efectivo: **${datos.enMano}**\n🏦 Banco: **${datos.saldo}**\n🥷 Dinero negro: **${datos.negro || 0}**`
+        : "Sin datos bancarios.";
+    if (historial.length)
+        desc +=
+            "\n\nÚltimos movimientos:\n" +
+            historial.map((h) => `• ${h.descripcion} (${h.cantidad > 0 ? "+" : ""}${h.cantidad})`).join("\n");
+    return desc;
+}
+
+async function buscarUsuario(interaction) {
+    const query = interaction.fields.getTextInputValue("busqueda_usuario").trim();
+    const member = await buscarMiembro(interaction, query);
+    if (!member) {
+        await interaction.reply({ content: "Usuario no encontrado.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    const desc = textoResumenBanco(member.id);
+    await interaction.reply({
+        embeds: [new EmbedBuilder().setTitle(`🔎 ${member.user.tag}`).setDescription(desc).setColor(0x2980b9)],
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
 async function handleBankModal(interaction) {
     const id = interaction.customId;
-
     if (id.startsWith("paneladmin_bank_modificar_modal_")) {
-        const userId = id.replace("paneladmin_bank_modificar_modal_", "");
-        const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
-        const tipo = interaction.fields.getTextInputValue("tipo");
-        // "efectivo" (o el antiguo "enMano"), "banco" o "negro" (dinero negro, F-EC-06b).
-        const destino = tipo.trim().toLowerCase();
-        if (!["banco", "efectivo", "enmano", "negro"].includes(destino)) {
-            await interaction.reply({ content: "Tipo inválido. Usa efectivo, banco o negro.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        require("../systems/dinero").asegurarCuenta(userId);
-        if (destino === "banco") db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, userId);
-        else if (destino === "negro") db.prepare("UPDATE banco SET negro = negro + ? WHERE userId = ?").run(cantidad, userId);
-        else db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, userId);
-        require("../systems/dinero").apuntar(userId, "admin", `Modificación admin (${tipo})`, cantidad);
-        adminAudit.logAdminAction({
-            guildId: interaction.guildId,
-            actorId: interaction.user.id,
-            action: "bank.balance.modify",
-            details: { userId, tipo, cantidad },
-        });
-        await interaction.reply({ content: `✅ Saldo actualizado para <@${userId}>.`, flags: MessageFlags.Ephemeral });
-        return true;
+        return modificarSaldo(interaction, id.replace("paneladmin_bank_modificar_modal_", ""));
     }
-
-    if (id === "paneladmin_bank_buscarusuario_modal") {
-        const query = interaction.fields.getTextInputValue("busqueda_usuario").trim();
-        let member = null;
-        if (/^\d{17,19}$/.test(query)) member = await interaction.guild.members.fetch(query).catch(() => null);
-        else
-            member =
-                interaction.guild.members.cache.find(
-                    (m) => m.user.tag.toLowerCase() === query.toLowerCase() || m.user.username.toLowerCase() === query.toLowerCase(),
-                ) || null;
-
-        if (!member) {
-            await interaction.reply({ content: "Usuario no encontrado.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-
-        const datos = db.prepare("SELECT saldo, enMano, negro FROM banco WHERE userId = ?").get(member.id);
-        const historial = db
-            .prepare("SELECT fecha, descripcion, cantidad FROM historial WHERE userId = ? ORDER BY fecha DESC LIMIT 5")
-            .all(member.id);
-        let desc = datos
-            ? `💵 Efectivo: **${datos.enMano}**\n🏦 Banco: **${datos.saldo}**\n🥷 Dinero negro: **${datos.negro || 0}**`
-            : "Sin datos bancarios.";
-        if (historial.length)
-            desc +=
-                "\n\nÚltimos movimientos:\n" +
-                historial.map((h) => `• ${h.descripcion} (${h.cantidad > 0 ? "+" : ""}${h.cantidad})`).join("\n");
-
-        await interaction.reply({
-            embeds: [new EmbedBuilder().setTitle(`🔎 ${member.user.tag}`).setDescription(desc).setColor(0x2980b9)],
-            flags: MessageFlags.Ephemeral,
-        });
-        return true;
-    }
-
+    if (id === "paneladmin_bank_buscarusuario_modal") return buscarUsuario(interaction);
     return false;
 }
 

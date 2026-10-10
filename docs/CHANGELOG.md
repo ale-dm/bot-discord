@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (pendientes: ranking, textos y verificación)
+
+- **Ranking de apostadores más rápido** (#285, en curso): `ranking()` pasa de una consulta por apostador a dos consultas agrupadas (estadísticas de todos) y calcula la racha solo para los que se devuelven. Mismo resultado que antes: un test compara el ranking con las cifras de cada persona sobre datos aleatorios. Medido en esta máquina con 49.251 apostadores y 210.000 apuestas: 1.379 ms → 690 ms. **No llega a los 200 ms del criterio**: el coste que queda es SQLite leyendo todas las apuestas. Para bajar más hace falta una tabla con los totales por apostador, que se actualice al liquidar; es una decisión de diseño pendiente.
+- **Textos**: el aviso de derrota de `/adivinar` cierra bien la negrita, y el JSDoc de `liquidarApuestas` vuelve a su función (estaba encima de `liquidarPartidosSueltos`).
+- **Test de imagen intermitente**: no se ha reproducido ni con doce ejecuciones en paralelo. Queda anotado; si vuelve a fallar, el sitio probable es el tiempo de espera real de 80 ms en `tests/imagenComandoCobertura.test.js`.
+
+## 2026-10-10 (tamaño: funciones, ficheros y reglas fuera de juegos/)
+
+- **Ninguna función de más de 60 líneas ni fichero de más de 400 en `src/`** (#278, #279). El catálogo de logros queda fuera por ser datos. Los paneles, el Duende, la voz, el casino, el Plex, la quiniela y la administración se partieron en módulos con la ruta original como fachada, así que los imports y los tests no cambian.
+- **Reglas fuera de `juegos/`** (#280): ruleta, tragaperras, adivinar, ppt y apuestas a un partido pasan a `systems/`. Los cobros de blackjack van a `systems/blackjackCobros.js`. `juegos/` queda con textos, handlers y flujo.
+- **Límites del lint al objetivo**: 60 líneas por función y 400 por fichero (antes 120 y 500). Pasan sin avisos.
+- **Base de datos medida con volumen** (#281): 50.000 usuarios, 300.000 apuestas y 200.000 movimientos. Ninguna consulta necesita índice nuevo; las listas de columnas se mantienen. Documento: [MEDICION_BD](tecnico/MEDICION_BD.md).
+- **Nuevo issue**: #285, `ranking()` tarda 7,3 s de forma síncrona con 49.498 apostadores.
+- Puntuación: Tamaño de funciones y Base de datos pasan a 10; la media queda en 9,6. Quedan Documentación (#282) y la revisión de `juegos/`.
+
 ## 2026-10-10 (corrección de los fallos encontrados por los tests)
 
 - **Los once fallos de producto de la cobertura, corregidos** (issues #263 a #277). Lo más importante: la ruleta y el blackjack ya no anuncian un resultado que el saldo no refleja (si falla el cobro, avisan del error; el blackjack además termina la partida). El cupo diario de Seerr solo se gasta cuando Seerr acepta la petición. `DUENDE_GIF_PROB=0` apaga los GIF. `recortarParaDiscord` cuenta el aviso de truncado, así que nunca supera los 2000 caracteres de Discord.

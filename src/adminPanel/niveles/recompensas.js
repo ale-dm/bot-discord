@@ -74,50 +74,43 @@ function buildRewardRoleSearchPayload(guild, userId, nivel, page = 0) {
     };
 }
 
-async function boton(interaction) {
-    const id = interaction.customId;
-    const guildId = interaction.guildId;
+async function vistaRecompensas(interaction) {
+    const rewards = xp.getRewards(interaction.guildId);
+    const lines =
+        rewards
+            .map((r) => `• **LVL ${r.nivel}** → <@&${r.roleId}>${r.descripcion ? ` — ${r.emoji || "🔓"} ${r.descripcion}` : ""}`)
+            .join("\n") || "No hay recompensas configuradas.";
+    const embed = new EmbedBuilder()
+        .setTitle("🎭 Recompensas de niveles")
+        .setDescription(lines)
+        .addFields({
+            name: "No aparece un rol",
+            value: "Usa **Añadir por ID** para asignarlo por mención/ID cuando no salga en el selector.",
+        })
+        .setColor(0x9b59b6);
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_levels_reward_add").setLabel("➕ Añadir/editar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_levels_reward_search").setLabel("🔎 Buscar rol").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_levels_reward_add_manual").setLabel("🆔 Añadir por ID").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_levels_reward_remove").setLabel("🗑️ Quitar").setStyle(ButtonStyle.Danger),
+    );
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_levels_reward_desc").setLabel("📝 Descripción").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_levels_home").setLabel("◀ Niveles").setStyle(ButtonStyle.Secondary),
+    );
+    await interaction.update({ embeds: [embed], components: [row, row2] });
+    return true;
+}
 
-    if (id === "paneladmin_levels_rewards") {
-        const rewards = xp.getRewards(guildId);
-        const lines =
-            rewards
-                .map((r) => `• **LVL ${r.nivel}** → <@&${r.roleId}>${r.descripcion ? ` — ${r.emoji || "🔓"} ${r.descripcion}` : ""}`)
-                .join("\n") || "No hay recompensas configuradas.";
-        const embed = new EmbedBuilder()
-            .setTitle("🎭 Recompensas de niveles")
-            .setDescription(lines)
-            .addFields({
-                name: "No aparece un rol",
-                value: "Usa **Añadir por ID** para asignarlo por mención/ID cuando no salga en el selector.",
-            })
-            .setColor(0x9b59b6);
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("paneladmin_levels_reward_add").setLabel("➕ Añadir/editar").setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId("paneladmin_levels_reward_search").setLabel("🔎 Buscar rol").setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId("paneladmin_levels_reward_add_manual")
-                .setLabel("🆔 Añadir por ID")
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId("paneladmin_levels_reward_remove").setLabel("🗑️ Quitar").setStyle(ButtonStyle.Danger),
-        );
-        const row2 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("paneladmin_levels_reward_desc").setLabel("📝 Descripción").setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId("paneladmin_levels_home").setLabel("◀ Niveles").setStyle(ButtonStyle.Secondary),
-        );
-        await interaction.update({ embeds: [embed], components: [row, row2] });
-        return true;
-    }
-
-    if (id === "paneladmin_levels_reward_add") {
-        await interaction.showModal(
-            simpleModal("paneladmin_levels_reward_add_modal", "Añadir recompensa", [{ id: "nivel", label: "Nivel", placeholder: "30" }]),
-        );
-        return true;
-    }
-
-    if (id === "paneladmin_levels_reward_desc") {
-        await interaction.showModal(
+// Los formularios que abren los botones de la vista de recompensas.
+const MODALES_RECOMPENSAS = new Map([
+    [
+        "paneladmin_levels_reward_add",
+        () => simpleModal("paneladmin_levels_reward_add_modal", "Añadir recompensa", [{ id: "nivel", label: "Nivel", placeholder: "30" }]),
+    ],
+    [
+        "paneladmin_levels_reward_desc",
+        () =>
             simpleModal("paneladmin_levels_reward_desc_modal", "Descripción de una recompensa", [
                 { id: "nivel", label: "Nivel", placeholder: "12" },
                 { id: "role_id", label: "ID del rol", placeholder: "1474049913829462016" },
@@ -129,50 +122,52 @@ async function boton(interaction) {
                     required: false,
                 },
             ]),
-        );
-        return true;
-    }
-
-    if (id === "paneladmin_levels_reward_remove") {
-        await interaction.showModal(
+    ],
+    [
+        "paneladmin_levels_reward_remove",
+        () =>
             simpleModal("paneladmin_levels_reward_remove_modal", "Quitar recompensa", [
                 { id: "nivel", label: "Nivel", placeholder: "30" },
                 { id: "role_id", label: "Rol a quitar (vacío = TODOS en ese nivel)", required: false, placeholder: "<@&123...> o 123..." },
             ]),
-        );
-        return true;
-    }
-
-    if (id === "paneladmin_levels_reward_search") {
-        await interaction.showModal(
+    ],
+    [
+        "paneladmin_levels_reward_search",
+        () =>
             simpleModal("paneladmin_levels_reward_search_modal", "Buscar rol por nombre", [
                 { id: "nivel", label: "Nivel", placeholder: "30" },
                 { id: "query", label: "Texto del rol", placeholder: "moderador" },
             ]),
-        );
-        return true;
-    }
-
-    if (id.startsWith("paneladmin_levels_reward_search_page_")) {
-        const parts = id.split("_");
-        const nivel = parseInt(parts[parts.length - 2], 10);
-        const page = parseInt(parts[parts.length - 1], 10);
-        // Al editar no se mandan los flags (el mensaje ya es privado; lo privado no se puede cambiar).
-        const { flags: _flags, ...payload } = buildRewardRoleSearchPayload(interaction.guild, interaction.user.id, nivel, page);
-        await interaction.update(payload);
-        return true;
-    }
-
-    if (id === "paneladmin_levels_reward_add_manual") {
-        await interaction.showModal(
+    ],
+    [
+        "paneladmin_levels_reward_add_manual",
+        () =>
             simpleModal("paneladmin_levels_reward_add_manual_modal", "Añadir recompensa por ID", [
                 { id: "nivel", label: "Nivel", placeholder: "30" },
                 { id: "role_id", label: "Rol (mención o ID)", placeholder: "<@&123...> o 123..." },
             ]),
-        );
+    ],
+]);
+
+async function paginarBusqueda(interaction, id) {
+    const parts = id.split("_");
+    const nivel = parseInt(parts[parts.length - 2], 10);
+    const page = parseInt(parts[parts.length - 1], 10);
+    // Al editar no se mandan los flags (el mensaje ya es privado; lo privado no se puede cambiar).
+    const { flags: _flags, ...payload } = buildRewardRoleSearchPayload(interaction.guild, interaction.user.id, nivel, page);
+    await interaction.update(payload);
+    return true;
+}
+
+async function boton(interaction) {
+    const id = interaction.customId;
+    if (id === "paneladmin_levels_rewards") return vistaRecompensas(interaction);
+    const crearModal = MODALES_RECOMPENSAS.get(id);
+    if (crearModal) {
+        await interaction.showModal(crearModal());
         return true;
     }
-
+    if (id.startsWith("paneladmin_levels_reward_search_page_")) return paginarBusqueda(interaction, id);
     return false;
 }
 

@@ -116,89 +116,109 @@ async function handleCatalogoButton(interaction) {
     return false;
 }
 
+// Lee un campo del formulario; si el modal no lo tiene, devuelve cadena vacía.
+function leerCampo(interaction, campo) {
+    try {
+        return interaction.fields.getTextInputValue(campo).trim();
+    } catch {
+        return "";
+    }
+}
+
+function auditar(interaction, action, details) {
+    adminAudit.logAdminAction({ guildId: interaction.guildId, actorId: interaction.user.id, action, details });
+}
+
+function crearObjeto(interaction) {
+    const v = (campo) => leerCampo(interaction, campo);
+    const tipo = v("tipo").toLowerCase();
+    if (!TIPOS.includes(tipo)) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
+    const extra = v("extra");
+    // Los consumibles hacen su efecto al usarlos; los coleccionables, con solo tenerlos (antirrobo/trampa).
+    const efecto = tipo === "consumible" || tipo === "coleccionable" ? extra || null : null;
+    const rolId = tipo === "rol" ? idRol(extra) : null;
+    const errorEfecto = validarEfecto(efecto);
+    if (errorEfecto) return { error: errorEfecto };
+    const r = db
+        .prepare("INSERT INTO objeto (nombre, descripcion, imagen, tipo, unico, rolId, efecto) VALUES (?, ?, ?, ?, 0, ?, ?)")
+        .run(v("nombre"), v("descripcion"), v("imagen") || null, tipo, rolId, efecto);
+    auditar(interaction, "objeto.create", { id: r.lastInsertRowid, nombre: v("nombre"), tipo, rolId, efecto });
+    return { aviso: `✅ Objeto **#${r.lastInsertRowid} ${v("nombre")}** creado. Ponlo a la venta con 🏷️.` };
+}
+
+function editarObjeto(interaction, obj) {
+    const v = (campo) => leerCampo(interaction, campo);
+    const campo = v("campo").toLowerCase();
+    if (!CAMPOS.includes(campo)) return { error: `Campo desconocido. Puede ser: ${CAMPOS.join(", ")}.` };
+    let valor = v("valor") || null;
+    if (campo === "tipo" && valor && !TIPOS.includes(valor.toLowerCase())) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
+    if (campo === "efecto" && validarEfecto(valor)) return { error: validarEfecto(valor) };
+    if ((campo === "nombre" || campo === "descripcion") && !valor) return { error: `El ${campo} no puede quedar vacío.` };
+    if (campo === "unico") valor = ["si", "sí", "1", "true"].includes(String(valor).toLowerCase()) ? 1 : 0;
+    if (campo === "rol") valor = idRol(valor);
+    const columna = campo === "rol" ? "rolId" : campo;
+    db.prepare(`UPDATE objeto SET ${columna} = ? WHERE id = ?`).run(valor, obj.id);
+    auditar(interaction, "objeto.edit", { id: obj.id, campo, antes: obj[columna], valor });
+    return { aviso: `✏️ **#${obj.id} ${obj.nombre}**: ${campo} actualizado.` };
+}
+
+function eliminarObjeto(interaction, obj) {
+    if (db.prepare("SELECT 1 FROM inventario WHERE itemId = ? LIMIT 1").get(obj.id))
+        return { error: "No se puede eliminar: alguien lo tiene en su inventario." };
+    if (db.prepare("SELECT 1 FROM tienda WHERE objetoId = ? LIMIT 1").get(obj.id))
+        return { error: "No se puede eliminar: está a la venta (quítalo antes con ❌)." };
+    db.prepare("DELETE FROM objeto WHERE id = ?").run(obj.id);
+    auditar(interaction, "objeto.delete", { id: obj.id, nombre: obj.nombre });
+    return { aviso: `🗑️ Objeto **${obj.nombre}** eliminado.` };
+}
+
+function venderObjeto(interaction, obj) {
+    const v = (campo) => leerCampo(interaction, campo);
+    const precio = parseInt(v("precio"), 10);
+    const stockTxt = v("stock");
+    const stock = stockTxt === "" ? null : parseInt(stockTxt, 10);
+    if (!Number.isInteger(precio) || precio < 0) return { error: "El precio tiene que ser un número (0 o más)." };
+    if (stock !== null && (!Number.isInteger(stock) || stock < 0))
+        return { error: "El stock tiene que ser un número, o vacío para ilimitado." };
+    const enVenta = db.prepare("SELECT id, objetoId, precio, stock FROM tienda WHERE objetoId = ?").get(obj.id);
+    if (enVenta) {
+        db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio, stock, enVenta.id);
+        auditar(interaction, "tienda.item.edit", {
+            tiendaId: enVenta.id,
+            antes: { precio: enVenta.precio, stock: enVenta.stock },
+            precio,
+            stock,
+        });
+    } else {
+        db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, ?, ?)").run(obj.id, precio, stock);
+        auditar(interaction, "tienda.item.add", { objetoId: obj.id, nombre: obj.nombre, precio, stock });
+    }
+    return { aviso: `🏷️ **${obj.nombre}** a la venta por ${precio} 🪙 (stock ${stock ?? "ilimitado"}).` };
+}
+
+function quitarDeVenta(interaction, obj) {
+    const r = db.prepare("DELETE FROM tienda WHERE objetoId = ?").run(obj.id);
+    if (!r.changes) return { error: "Ese objeto no estaba a la venta." };
+    auditar(interaction, "tienda.item.remove", { objetoId: obj.id, nombre: obj.nombre });
+    return { aviso: `❌ **${obj.nombre}** ya no está a la venta.` };
+}
+
 // Aplica el formulario y devuelve el aviso para el panel (o { error }).
 function aplicar(interaction) {
     const id = interaction.customId;
-    const v = (campo) => {
-        try {
-            return interaction.fields.getTextInputValue(campo).trim();
-        } catch {
-            return "";
-        }
-    };
-    const audit = (action, details) =>
-        adminAudit.logAdminAction({ guildId: interaction.guildId, actorId: interaction.user.id, action, details });
-    const objetoId = parseInt(v("id"), 10);
+    const objetoId = parseInt(leerCampo(interaction, "id"), 10);
     const obj = Number.isInteger(objetoId)
         ? db
               .prepare("SELECT id, nombre, descripcion, imagen, tipo, unico, categoria, rareza, rolId, efecto FROM objeto WHERE id = ?")
               .get(objetoId)
         : null;
 
-    if (id === "paneladmin_cat_crear_modal") {
-        const tipo = v("tipo").toLowerCase();
-        if (!TIPOS.includes(tipo)) return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
-        const extra = v("extra");
-        // Los consumibles hacen su efecto al usarlos; los coleccionables, con solo tenerlos (antirrobo/trampa).
-        const efecto = tipo === "consumible" || tipo === "coleccionable" ? extra || null : null;
-        const rolId = tipo === "rol" ? idRol(extra) : null;
-        const errorEfecto = validarEfecto(efecto);
-        if (errorEfecto) return { error: errorEfecto };
-        const r = db
-            .prepare("INSERT INTO objeto (nombre, descripcion, imagen, tipo, unico, rolId, efecto) VALUES (?, ?, ?, ?, 0, ?, ?)")
-            .run(v("nombre"), v("descripcion"), v("imagen") || null, tipo, rolId, efecto);
-        audit("objeto.create", { id: r.lastInsertRowid, nombre: v("nombre"), tipo, rolId, efecto });
-        return { aviso: `✅ Objeto **#${r.lastInsertRowid} ${v("nombre")}** creado. Ponlo a la venta con 🏷️.` };
-    }
+    if (id === "paneladmin_cat_crear_modal") return crearObjeto(interaction);
     if (!obj) return { error: "No existe un objeto con ese ID." };
-
-    if (id === "paneladmin_cat_editar_modal") {
-        const campo = v("campo").toLowerCase();
-        if (!CAMPOS.includes(campo)) return { error: `Campo desconocido. Puede ser: ${CAMPOS.join(", ")}.` };
-        let valor = v("valor") || null;
-        if (campo === "tipo" && valor && !TIPOS.includes(valor.toLowerCase()))
-            return { error: `El tipo tiene que ser ${TIPOS.join(", ")}.` };
-        if (campo === "efecto" && validarEfecto(valor)) return { error: validarEfecto(valor) };
-        if ((campo === "nombre" || campo === "descripcion") && !valor) return { error: `El ${campo} no puede quedar vacío.` };
-        if (campo === "unico") valor = ["si", "sí", "1", "true"].includes(String(valor).toLowerCase()) ? 1 : 0;
-        if (campo === "rol") valor = idRol(valor);
-        const columna = campo === "rol" ? "rolId" : campo;
-        db.prepare(`UPDATE objeto SET ${columna} = ? WHERE id = ?`).run(valor, obj.id);
-        audit("objeto.edit", { id: obj.id, campo, antes: obj[columna], valor });
-        return { aviso: `✏️ **#${obj.id} ${obj.nombre}**: ${campo} actualizado.` };
-    }
-    if (id === "paneladmin_cat_eliminar_modal") {
-        if (db.prepare("SELECT 1 FROM inventario WHERE itemId = ? LIMIT 1").get(obj.id))
-            return { error: "No se puede eliminar: alguien lo tiene en su inventario." };
-        if (db.prepare("SELECT 1 FROM tienda WHERE objetoId = ? LIMIT 1").get(obj.id))
-            return { error: "No se puede eliminar: está a la venta (quítalo antes con ❌)." };
-        db.prepare("DELETE FROM objeto WHERE id = ?").run(obj.id);
-        audit("objeto.delete", { id: obj.id, nombre: obj.nombre });
-        return { aviso: `🗑️ Objeto **${obj.nombre}** eliminado.` };
-    }
-    if (id === "paneladmin_cat_vender_modal") {
-        const precio = parseInt(v("precio"), 10);
-        const stockTxt = v("stock");
-        const stock = stockTxt === "" ? null : parseInt(stockTxt, 10);
-        if (!Number.isInteger(precio) || precio < 0) return { error: "El precio tiene que ser un número (0 o más)." };
-        if (stock !== null && (!Number.isInteger(stock) || stock < 0))
-            return { error: "El stock tiene que ser un número, o vacío para ilimitado." };
-        const enVenta = db.prepare("SELECT id, objetoId, precio, stock FROM tienda WHERE objetoId = ?").get(obj.id);
-        if (enVenta) {
-            db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio, stock, enVenta.id);
-            audit("tienda.item.edit", { tiendaId: enVenta.id, antes: { precio: enVenta.precio, stock: enVenta.stock }, precio, stock });
-        } else {
-            db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, ?, ?)").run(obj.id, precio, stock);
-            audit("tienda.item.add", { objetoId: obj.id, nombre: obj.nombre, precio, stock });
-        }
-        return { aviso: `🏷️ **${obj.nombre}** a la venta por ${precio} 🪙 (stock ${stock ?? "ilimitado"}).` };
-    }
-    if (id === "paneladmin_cat_quitar_modal") {
-        const r = db.prepare("DELETE FROM tienda WHERE objetoId = ?").run(obj.id);
-        if (!r.changes) return { error: "Ese objeto no estaba a la venta." };
-        audit("tienda.item.remove", { objetoId: obj.id, nombre: obj.nombre });
-        return { aviso: `❌ **${obj.nombre}** ya no está a la venta.` };
-    }
+    if (id === "paneladmin_cat_editar_modal") return editarObjeto(interaction, obj);
+    if (id === "paneladmin_cat_eliminar_modal") return eliminarObjeto(interaction, obj);
+    if (id === "paneladmin_cat_vender_modal") return venderObjeto(interaction, obj);
+    if (id === "paneladmin_cat_quitar_modal") return quitarDeVenta(interaction, obj);
     return null;
 }
 

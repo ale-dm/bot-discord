@@ -1,128 +1,15 @@
 const { EmbedBuilder, MessageFlags } = require("discord.js");
-const db = require("../../core/db");
-const {
-    registrarUsuario,
-    descontarApuesta,
-    procesarGanancia,
-    procesarPerdida,
-    obtenerSaldo,
-    applyRtp,
-} = require("../../systems/casinoTransactions");
-const { logInfo, logWarn } = require("../../core/logger");
+const { registrarUsuario, descontarApuesta, obtenerSaldo } = require("../../systems/casinoTransactions");
+const { SIMBOLOS, calcularGanancia, obtenerJackpot, liquidarGiro } = require("../../systems/casino/tragaperras");
+const { logWarn } = require("../../core/logger");
 const casino = require("../../paneles/casino");
-
-// Símbolos y sus valores
-const SIMBOLOS = {
-    "🍒": { valor: 2, peso: 30, nombre: "Cereza" }, // Común
-    "🍋": { valor: 3, peso: 25, nombre: "Limón" }, // Común
-    "🍊": { valor: 4, peso: 20, nombre: "Naranja" }, // Común
-    "🍇": { valor: 5, peso: 15, nombre: "Uvas" }, // Poco común
-    "🔔": { valor: 8, peso: 10, nombre: "Campana" }, // Raro
-    "💎": { valor: 15, peso: 5, nombre: "Diamante" }, // Muy raro
-    "⭐": { valor: 25, peso: 3, nombre: "Estrella" }, // Épico
-    "7️⃣": { valor: 50, peso: 2, nombre: "Siete" }, // Legendario (JACKPOT!)
-};
 
 // Estados de las partidas (para animación)
 const partidasActivas = new Map();
 
-/**
- * Obtener símbolo aleatorio basado en pesos
- */
-function obtenerSimboloAleatorio() {
-    const simbolos = Object.keys(SIMBOLOS);
-    const pesoTotal = Object.values(SIMBOLOS).reduce((sum, s) => sum + s.peso, 0);
-    let random = Math.random() * pesoTotal;
-
-    for (const simbolo of simbolos) {
-        random -= SIMBOLOS[simbolo].peso;
-        if (random <= 0) return simbolo;
-    }
-
-    return simbolos[0]; // Fallback
-}
-
-/**
- * Girar los carretes
- */
-function girarCarretes() {
-    return [obtenerSimboloAleatorio(), obtenerSimboloAleatorio(), obtenerSimboloAleatorio()];
-}
-
 // Al acabar (y, desactivada, mientras gira): 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.
 function crearBotonesResultado(apuesta, disabled = false) {
     return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled });
-}
-
-/**
- * Calcular ganancia basada en los resultados
- */
-function calcularGanancia(carretes, apuesta, jackpotOverride = null) {
-    const [s1, s2, s3] = carretes;
-
-    // JACKPOT: 3 sietes
-    if (s1 === "7️⃣" && s2 === "7️⃣" && s3 === "7️⃣") {
-        const jackpot = jackpotOverride ?? obtenerJackpot();
-        return {
-            multiplicador: "JACKPOT",
-            ganancia: jackpot,
-            tipo: "jackpot",
-            mensaje: `🎰💰 ¡¡¡JACKPOT!!! 💰🎰`,
-        };
-    }
-
-    // Tres iguales
-    if (s1 === s2 && s2 === s3) {
-        const multi = SIMBOLOS[s1].valor;
-        return {
-            multiplicador: `x${multi}`,
-            ganancia: apuesta * multi,
-            tipo: "triple",
-            mensaje: `🎊 ¡TRIPLE ${SIMBOLOS[s1].nombre.toUpperCase()}! 🎊`,
-        };
-    }
-
-    // Dos iguales
-    if (s1 === s2 || s2 === s3 || s1 === s3) {
-        const simboloRepetido = s1 === s2 ? s1 : s2 === s3 ? s2 : s1;
-        const multi = Math.max(1, Math.ceil(SIMBOLOS[simboloRepetido].valor / 3));
-        return {
-            multiplicador: `x${multi}`,
-            ganancia: apuesta * multi,
-            tipo: "doble",
-            mensaje: `🎉 ¡Doble ${SIMBOLOS[simboloRepetido].nombre}! 🎉`,
-        };
-    }
-
-    // Sin premio
-    return {
-        multiplicador: "x0",
-        ganancia: 0,
-        tipo: "perdida",
-        mensaje: "😢 Sin premio esta vez...",
-    };
-}
-
-/**
- * Obtener jackpot actual
- */
-function obtenerJackpot() {
-    const result = db.prepare("SELECT cantidad FROM slots_jackpot WHERE id = 1").get();
-    return result ? result.cantidad : 10000;
-}
-
-/**
- * Incrementar jackpot
- */
-function incrementarJackpot(cantidad) {
-    db.prepare("UPDATE slots_jackpot SET cantidad = cantidad + ? WHERE id = 1").run(cantidad);
-}
-
-/**
- * Resetear jackpot después de ganarlo
- */
-function resetearJackpot() {
-    db.prepare("UPDATE slots_jackpot SET cantidad = 10000 WHERE id = 1").run();
 }
 
 /**
@@ -151,34 +38,41 @@ function crearEmbedAnimacion(frame, apuesta, jackpot, usuario) {
         .setFooter({ text: "¡Buena suerte!" });
 }
 
+// Color, título y banner según el tipo de premio. Un doble que no da ganancia es "recuperas la apuesta".
+function estiloResultado(resultado, resultadoNeto) {
+    if (resultado.tipo === "jackpot") {
+        return {
+            color: 0xf1c40f, // Oro
+            titulo: "🎰 ¡¡¡JACKPOT!!! 🎰",
+            banner: `\n🎉🎊🎉🎊🎉🎊🎉🎊🎉\n**¡¡¡GANASTE EL JACKPOT!!!**\n🎉🎊🎉🎊🎉🎊🎉🎊🎉\n\n`,
+        };
+    }
+    if (resultado.tipo === "triple") {
+        return { color: 0x2ecc71, titulo: "🎊 ¡TRIPLE!", banner: `\n✨ **¡COMBINACIÓN PERFECTA!** ✨\n\n` };
+    }
+    if (resultado.tipo === "doble" && resultadoNeto > 0) {
+        return { color: 0x3498db, titulo: "🎉 ¡DOBLE!", banner: "" }; // Azul
+    }
+    if (resultado.tipo === "doble") {
+        return { color: 0x95a5a6, titulo: "🔁 RECUPERAS APUESTA", banner: "" }; // Gris
+    }
+    return { color: 0xe74c3c, titulo: "😢 SIN PREMIO", banner: "" };
+}
+
+function textoPie(tipo, resultadoNeto) {
+    if (tipo === "jackpot") return "¡FELICIDADES! ¡Ganaste el JACKPOT! 🎉";
+    if (tipo === "triple") return "¡Excelente! ¡Sigue así! 🌟";
+    if (tipo === "doble") return resultadoNeto > 0 ? "¡Bien! ¡Sigue probando! 💪" : "Al menos recuperaste la apuesta 👌";
+    return "¡Prueba de nuevo!";
+}
+
 /**
  * Crear embed de resultado mejorado
  */
 function crearEmbedResultado(carretes, resultado, apuesta, jackpot, usuario, saldoFinal) {
     const [s1, s2, s3] = carretes;
     const resultadoNeto = resultado.ganancia - apuesta;
-
-    let color = 0xe74c3c; // Rojo por defecto (perdida)
-    let titulo = "😢 SIN PREMIO";
-    let banner = "";
-
-    if (resultado.tipo === "jackpot") {
-        color = 0xf1c40f; // Oro
-        titulo = "🎰 ¡¡¡JACKPOT!!! 🎰";
-        banner = `\n🎉🎊🎉🎊🎉🎊🎉🎊🎉\n**¡¡¡GANASTE EL JACKPOT!!!**\n🎉🎊🎉🎊🎉🎊🎉🎊🎉\n\n`;
-    } else if (resultado.tipo === "triple") {
-        color = 0x2ecc71; // Verde
-        titulo = "🎊 ¡TRIPLE!";
-        banner = `\n✨ **¡COMBINACIÓN PERFECTA!** ✨\n\n`;
-    } else if (resultado.tipo === "doble") {
-        if (resultadoNeto > 0) {
-            color = 0x3498db; // Azul
-            titulo = "🎉 ¡DOBLE!";
-        } else {
-            color = 0x95a5a6; // Gris
-            titulo = "🔁 RECUPERAS APUESTA";
-        }
-    }
+    const { color, titulo, banner } = estiloResultado(resultado, resultadoNeto);
 
     const gananciaTexto = resultadoNeto >= 0 ? `+${resultadoNeto.toLocaleString()}` : `-${apuesta}`;
 
@@ -206,21 +100,12 @@ function crearEmbedResultado(carretes, resultado, apuesta, jackpot, usuario, sal
         descripcion += `🏆 Jackpot reiniciado: **${jackpot.toLocaleString()}** monedas`;
     }
 
-    let footerText = "¡Prueba de nuevo!";
-    if (resultado.tipo === "jackpot") {
-        footerText = "¡FELICIDADES! ¡Ganaste el JACKPOT! 🎉";
-    } else if (resultado.tipo === "triple") {
-        footerText = "¡Excelente! ¡Sigue así! 🌟";
-    } else if (resultado.tipo === "doble") {
-        footerText = resultadoNeto > 0 ? "¡Bien! ¡Sigue probando! 💪" : "Al menos recuperaste la apuesta 👌";
-    }
-
     return new EmbedBuilder()
         .setTitle(titulo)
         .setDescription(descripcion)
         .setColor(color)
         .setAuthor({ name: `Jugador: ${usuario}` })
-        .setFooter({ text: footerText })
+        .setFooter({ text: textoPie(resultado.tipo, resultadoNeto) })
         .setTimestamp();
 }
 
@@ -311,7 +196,7 @@ module.exports = {
             const jackpot = obtenerJackpot();
             await animarGiro(interaction, apuesta, jackpot, username);
 
-            const { carretes, resultado, nuevoJackpot } = liquidarGiro(interaction, apuesta, userId, username);
+            const { carretes, resultado, nuevoJackpot } = liquidarGiro(userId, interaction.guildId, username, apuesta);
             const saldoFinal = obtenerSaldo(userId);
             await mostrarResultado(interaction, { carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal });
         } finally {
@@ -394,67 +279,6 @@ async function animarGiro(interaction, apuesta, jackpot, username) {
     } catch (error) {
         logWarn("[TRAGAPERRAS] Error en animación:", error.message);
     }
-}
-
-// Gira los carretes, suma al jackpot y paga (o registra la pérdida). Devuelve el giro y el jackpot ya actualizado.
-function liquidarGiro(interaction, apuesta, userId, username) {
-    // Girar carretes y calcular resultado
-    const carretes = girarCarretes();
-    const resultado = calcularGanancia(carretes, apuesta);
-
-    // Incrementar jackpot con el 10% de la apuesta
-    const contribucionJackpot = Math.floor(apuesta * 0.1);
-    incrementarJackpot(contribucionJackpot);
-
-    let nuevoJackpot = obtenerJackpot();
-
-    // Procesar resultado
-    if (resultado.tipo === "jackpot") {
-        const gananciaReal = applyRtp(interaction.guildId, "tragaperras", apuesta, resultado.ganancia);
-        resultado.ganancia = gananciaReal; // mantener el embed de resultado en sync con lo realmente acreditado
-        const exito = procesarGanancia(userId, "tragaperras", apuesta, gananciaReal, `🎰 JACKPOT en Tragaperras (+${gananciaReal})`, {
-            carretes,
-            tipo: "JACKPOT",
-            multiplicador: "JACKPOT",
-            jackpot: resultado.ganancia,
-        });
-
-        if (exito) {
-            resetearJackpot();
-            nuevoJackpot = obtenerJackpot();
-            logInfo(`[TRAGAPERRAS] ¡¡¡JACKPOT!!! Usuario ${username} ganó ${gananciaReal} monedas`);
-        }
-    } else if (resultado.ganancia > 0) {
-        const gananciaReal = applyRtp(interaction.guildId, "tragaperras", apuesta, resultado.ganancia);
-        resultado.ganancia = gananciaReal; // mantener el embed de resultado en sync con lo realmente acreditado
-        const exito = procesarGanancia(
-            userId,
-            "tragaperras",
-            apuesta,
-            gananciaReal,
-            `🎰 Victoria en Tragaperras (+${gananciaReal - apuesta})`,
-            {
-                carretes,
-                tipo: resultado.tipo,
-                multiplicador: resultado.multiplicador,
-            },
-        );
-
-        if (exito) {
-            logInfo(`[TRAGAPERRAS] Usuario ${username} ganó ${gananciaReal} (${resultado.multiplicador})`);
-        }
-    } else {
-        // Pérdida (ya se descontó la apuesta)
-        procesarPerdida(userId, "tragaperras", apuesta, `🎰 Pérdida en Tragaperras (-${apuesta})`, {
-            carretes,
-            tipo: "perdida",
-            multiplicador: "x0",
-        });
-
-        logInfo(`[TRAGAPERRAS] Usuario ${username} perdió ${apuesta}`);
-    }
-
-    return { carretes, resultado, nuevoJackpot };
 }
 
 // Muestra el resultado con sus botones; si el mensaje ya no admite botones, se reintenta sin ellos.

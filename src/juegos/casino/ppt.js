@@ -1,11 +1,12 @@
 const { EmbedBuilder, MessageFlags } = require("discord.js");
-const { registrarUsuario, descontarApuesta, procesarGanancia, procesarPerdida, obtenerSaldo } = require("../../systems/casinoTransactions");
+const { registrarUsuario, descontarApuesta, obtenerSaldo } = require("../../systems/casinoTransactions");
+const { jugadaDuende, resolverJugada, liquidarJugada } = require("../../systems/casino/ppt");
 const casino = require("../../paneles/casino");
 
-const OPCIONES = {
-    piedra: { emoji: "🪨", gana_a: "tijera" },
-    papel: { emoji: "📄", gana_a: "piedra" },
-    tijera: { emoji: "✂️", gana_a: "papel" },
+const EMOJI = {
+    piedra: "🪨",
+    papel: "📄",
+    tijera: "✂️",
 };
 
 const FRASES_DUENDE = {
@@ -17,6 +18,28 @@ const FRASES_DUENDE = {
 function frase(tipo) {
     const arr = FRASES_DUENDE[tipo];
     return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Lo que se ve del resultado: el color, el título y lo que se ganó o se perdió.
+function embedResultado(tipo, { jugadaUsuario, jugadaDelDuende, cantidad, ganancia, saldoActual }) {
+    const colorPorTipo = { victoria: 0x2ecc71, derrota: 0xe74c3c, empate: 0xf1c40f };
+    const tituloPorTipo = { victoria: "🎉 ¡Ganaste!", derrota: "💀 Perdiste", empate: "🤝 Empate" };
+
+    return new EmbedBuilder()
+        .setTitle(tituloPorTipo[tipo])
+        .setColor(colorPorTipo[tipo])
+        .setDescription(
+            `${EMOJI[jugadaUsuario]} **Tú:** ${jugadaUsuario}\n` +
+                `${EMOJI[jugadaDelDuende]} **El Duende:** ${jugadaDelDuende}\n\n` +
+                `*"${frase(tipo)}"*\n\n` +
+                (tipo === "victoria"
+                    ? `💰 Ganaste **${ganancia - cantidad}** monedas.`
+                    : tipo === "empate"
+                      ? "💰 Recuperas tu apuesta."
+                      : `💰 Perdiste **${cantidad}** monedas.`) +
+                `\n💳 Saldo actual: **${saldoActual}** monedas`,
+        )
+        .setFooter({ text: "El Duende Casino • Piedra, papel o tijera" });
 }
 
 module.exports = {
@@ -33,39 +56,9 @@ module.exports = {
             return;
         }
 
-        const claves = Object.keys(OPCIONES);
-        const jugadaDuende = claves[Math.floor(Math.random() * claves.length)];
-
-        let tipo;
-        if (jugadaUsuario === jugadaDuende) {
-            tipo = "empate";
-        } else if (OPCIONES[jugadaUsuario].gana_a === jugadaDuende) {
-            tipo = "victoria";
-        } else {
-            tipo = "derrota";
-        }
-
-        const descripcion = `PPT: ${jugadaUsuario} vs ${jugadaDuende} (${tipo}), apuesta ${cantidad}`;
-        let ganancia = 0;
-        let exito;
-        if (tipo === "victoria") {
-            ganancia = cantidad * 2;
-            exito = procesarGanancia(userId, "ppt", cantidad, ganancia, descripcion, {
-                jugadaUsuario,
-                jugadaDuende,
-                guildId: interaction.guildId,
-            });
-        } else if (tipo === "empate") {
-            ganancia = cantidad;
-            exito = procesarGanancia(userId, "ppt", cantidad, ganancia, descripcion, {
-                jugadaUsuario,
-                jugadaDuende,
-                guildId: interaction.guildId,
-            });
-        } else {
-            exito = procesarPerdida(userId, "ppt", cantidad, descripcion, { jugadaUsuario, jugadaDuende, guildId: interaction.guildId });
-        }
-
+        const jugadaDelDuende = jugadaDuende();
+        const tipo = resolverJugada(jugadaUsuario, jugadaDelDuende);
+        const { exito, ganancia } = liquidarJugada(userId, interaction.guildId, cantidad, tipo, jugadaUsuario, jugadaDelDuende);
         if (!exito) {
             await interaction.reply({
                 content: "❌ Hubo un error procesando la partida. Contacta a un administrador.",
@@ -75,24 +68,7 @@ module.exports = {
         }
 
         const saldoActual = obtenerSaldo(userId);
-        const colorPorTipo = { victoria: 0x2ecc71, derrota: 0xe74c3c, empate: 0xf1c40f };
-        const tituloPorTipo = { victoria: "🎉 ¡Ganaste!", derrota: "💀 Perdiste", empate: "🤝 Empate" };
-
-        const embed = new EmbedBuilder()
-            .setTitle(tituloPorTipo[tipo])
-            .setColor(colorPorTipo[tipo])
-            .setDescription(
-                `${OPCIONES[jugadaUsuario].emoji} **Tú:** ${jugadaUsuario}\n` +
-                    `${OPCIONES[jugadaDuende].emoji} **El Duende:** ${jugadaDuende}\n\n` +
-                    `*"${frase(tipo)}"*\n\n` +
-                    (tipo === "victoria"
-                        ? `💰 Ganaste **${ganancia - cantidad}** monedas.`
-                        : tipo === "empate"
-                          ? "💰 Recuperas tu apuesta."
-                          : `💰 Perdiste **${cantidad}** monedas.`) +
-                    `\n💳 Saldo actual: **${saldoActual}** monedas`,
-            )
-            .setFooter({ text: "El Duende Casino • Piedra, papel o tijera" });
+        const embed = embedResultado(tipo, { jugadaUsuario, jugadaDelDuende, cantidad, ganancia, saldoActual });
 
         // Repetir vuelve a pedir la jugada con el mismo importe.
         await interaction.reply({ embeds: [embed], components: [casino.filaFinJuego("ppt", cantidad)] });

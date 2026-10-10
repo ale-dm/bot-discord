@@ -1,55 +1,14 @@
 const { EmbedBuilder, MessageFlags } = require("discord.js");
-const {
-    registrarUsuario,
-    descontarApuesta,
-    procesarGanancia,
-    procesarPerdida,
-    obtenerSaldo,
-    applyRtp,
-} = require("../../systems/casinoTransactions");
+const { registrarUsuario, descontarApuesta, obtenerSaldo } = require("../../systems/casinoTransactions");
+const { WHEEL, esRojo, infoNum, tirarNumero, liquidarTirada } = require("../../systems/casino/ruleta");
 const { createLogger } = require("../../core/logger");
 const casino = require("../../paneles/casino");
 
 const log = createLogger("Ruleta");
 
-// ─── DATOS DE LA RULETA ───────────────────────────────────────────────────────
+// ─── TEXTOS DE LA RULETA ──────────────────────────────────────────────────────
 
-const ROJOS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-
-function infoNum(n) {
-    if (n === 0) return { emoji: "🟢", colorNombre: "verde", par: false, mitad: null, docena: null };
-    return {
-        emoji: ROJOS.has(n) ? "🔴" : "⚫",
-        colorNombre: ROJOS.has(n) ? "rojo" : "negro",
-        par: n % 2 === 0,
-        mitad: n <= 18 ? "bajo" : "alto",
-        docena: n <= 12 ? 1 : n <= 24 ? 2 : 3,
-    };
-}
-
-// Retorna ganancia NETA (negativo = pierde apuesta)
-function calcularPago(tipo, valor, n, apuesta) {
-    const info = infoNum(n);
-    let mult = -1;
-    switch (tipo) {
-        case "numero":
-            mult = Number(valor) === n ? 35 : -1;
-            break;
-        case "color":
-            mult = n !== 0 && valor === info.colorNombre ? 1 : -1;
-            break;
-        case "paridad":
-            mult = n !== 0 && (valor === "par") === info.par ? 1 : -1;
-            break;
-        case "mitad":
-            mult = n !== 0 && valor === info.mitad ? 1 : -1;
-            break;
-        case "docena":
-            mult = n !== 0 && Number(valor) === info.docena ? 2 : -1;
-            break;
-    }
-    return mult * apuesta;
-}
+const emojiNum = (n) => (n === 0 ? "🟢" : esRojo(n) ? "🔴" : "⚫");
 
 function descApuesta(tipo, valor) {
     if (tipo === "numero") return `número exacto **${valor}** (×36)`;
@@ -64,15 +23,9 @@ function descApuesta(tipo, valor) {
 
 const DELAY = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Orden real de la ruleta europea (sentido horario)
-const WHEEL = [
-    0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3,
-    26,
-];
-
 function colorEmbedNumero(n) {
     if (n === 0) return 0x2ecc71;
-    return ROJOS.has(n) ? 0xe74c3c : 0x2c3e50;
+    return esRojo(n) ? 0xe74c3c : 0x2c3e50;
 }
 
 function seg(centerIdx, sides = 3) {
@@ -80,8 +33,7 @@ function seg(centerIdx, sides = 3) {
     for (let i = -sides; i <= sides; i++) {
         const idx = (((centerIdx + i) % 37) + 37) % 37;
         const n = WHEEL[idx];
-        const { emoji } = infoNum(n);
-        const lbl = `${emoji}${String(n).padStart(2, "0")}`;
+        const lbl = `${emojiNum(n)}${String(n).padStart(2, "0")}`;
         if (i === 0) parts.push(`【${lbl}】`);
         else parts.push(lbl);
     }
@@ -116,100 +68,50 @@ function buildSpinSteps(startIdx, targetIdx) {
     });
 }
 
-async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
-    // 1. Descontar apuesta — comprometida antes de animar
-    const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
-    if (!descuento.exito) {
-        await interaction.reply({ content: `❌ ${descuento.mensaje}`, flags: MessageFlags.Ephemeral });
-        return;
-    }
-
-    // 2. Calcular resultado ya (pero no revelarlo)
-    const numeroSalido = Math.floor(Math.random() * 37);
-    let gananciaNet = calcularPago(tipo, valor, numeroSalido, apuesta);
-    const apDescCorta = descApuesta(tipo, valor);
-    const targetIdx = WHEEL.indexOf(numeroSalido);
-
-    // 3. Defer — ack silent
+// Muestra un frame; si no se puede editar el mensaje, la ruleta sigue (el resultado se paga igual).
+async function mostrarFrame(interaction, payload) {
     try {
-        await interaction.deferUpdate();
+        await interaction.editReply(payload);
     } catch (e) {
-        log.warn(`deferUpdate falló (${interaction.customId}): ${e.message}`);
+        log.warn(`No se pudo mostrar la ruleta a ${interaction.user.id}: ${e.message}`);
     }
+}
 
-    // 4. Animación nueva: trayectoria completa hasta el número final
-    const startIdx = Math.floor(Math.random() * 37);
-    const steps = buildSpinSteps(startIdx, targetIdx);
+const campoApuesta = (apuesta, apDescCorta) => ({
+    name: "Tu apuesta",
+    value: `**${apuesta.toLocaleString("es")}** 🪙 · ${apDescCorta}`,
+    inline: false,
+});
 
+// Frames de la rueda: pasa por cada casilla de `steps` y el texto va bajando de ritmo.
+async function girarRueda(interaction, apuesta, apDescCorta, steps) {
     for (let i = 0; i < steps.length; i++) {
         const { idx, delay } = steps[i];
         const currentNumber = WHEEL[idx];
-        const info = infoNum(currentNumber);
         const text = i < 5 ? "Girando muy rápido..." : i < 9 ? "Bajando velocidad..." : "Casi para...";
         const sides = i < 5 ? 4 : i < 9 ? 3 : 2;
 
         const embed = new EmbedBuilder()
-            .setTitle(`🎡 Ruleta en movimiento · ${info.emoji} ${String(currentNumber).padStart(2, "0")}`)
+            .setTitle(`🎡 Ruleta en movimiento · ${emojiNum(currentNumber)} ${String(currentNumber).padStart(2, "0")}`)
             .setDescription(`${seg(idx, sides)}\n\n*${text}*`)
             .setColor(colorEmbedNumero(currentNumber))
-            .addFields({ name: "Tu apuesta", value: `**${apuesta.toLocaleString("es")}** 🪙 · ${apDescCorta}`, inline: false })
+            .addFields(campoApuesta(apuesta, apDescCorta))
             .setFooter({ text: "Ruleta Europea • 0-36 • El Duende Casino" });
-        try {
-            await interaction.editReply({ embeds: [embed], components: [] });
-        } catch (e) {
-            log.warn(`No se pudo mostrar la ruleta a ${interaction.user.id}: ${e.message}`);
-        }
+        await mostrarFrame(interaction, { embeds: [embed], components: [] });
         await DELAY(delay);
     }
+}
 
-    // 5. Frame de revelación
-    const infoF = infoNum(numeroSalido);
-    const revealEmbed = new EmbedBuilder()
-        .setTitle(`🛑 ¡Paró en ${infoF.emoji} ${numeroSalido}!`)
-        .setDescription(`${seg(targetIdx, 3)}\n\n**Resultado:** ${infoF.emoji} **${numeroSalido}**`)
-        .setColor(colorEmbedNumero(numeroSalido))
-        .addFields({ name: "Tu apuesta", value: `**${apuesta.toLocaleString("es")}** 🪙 · ${apDescCorta}`, inline: false })
-        .setFooter({ text: "Ruleta Europea • El Duende Casino" });
-    try {
-        await interaction.editReply({ embeds: [revealEmbed], components: [] });
-    } catch (e) {
-        log.warn(`No se pudo mostrar la ruleta a ${interaction.user.id}: ${e.message}`);
-    }
-    await DELAY(900);
-
-    // 6. Procesar resultado en BD
-    const saldoAntes = obtenerSaldo(userId);
-    let pagado;
-    if (gananciaNet > 0) {
-        gananciaNet = applyRtp(interaction.guildId, "ruleta", apuesta, apuesta + gananciaNet) - apuesta;
-        pagado = procesarGanancia(userId, "ruleta", apuesta, apuesta + gananciaNet, `Ruleta: ganaste ${gananciaNet} (${tipo}:${valor})`, {
-            n: numeroSalido,
-            tipo,
-            valor,
-        });
-    } else {
-        pagado = procesarPerdida(userId, "ruleta", apuesta, `Ruleta: perdiste ${apuesta} (${tipo}:${valor})`, {
-            n: numeroSalido,
-            tipo,
-            valor,
-        });
-    }
-    if (!pagado) {
-        log.error(`Ruleta: no se pudo registrar el resultado de ${userId} (apuesta ${apuesta})`);
-        await interaction.editReply({ content: ERROR_PAGO_RULETA, embeds: [], components: [] });
-        return;
-    }
-    const saldoDespues = obtenerSaldo(userId);
-
-    // 7. Embed resultado final
+// El embed final: el número, la apuesta, los saldos antes y después, y el neto.
+function embedResultado(numeroSalido, { apuesta, apDescCorta, gananciaNet, saldoAntes, saldoDespues }) {
     const gano = gananciaNet > 0;
     const numInfo = infoNum(numeroSalido);
     const numDesc =
         numeroSalido === 0
             ? `🟢 **0** — verde (banca gana)`
-            : `${numInfo.emoji} **${numeroSalido}** — ${numInfo.colorNombre}, ${numInfo.par ? "par" : "impar"}, ${numInfo.mitad === "bajo" ? "bajo 1-18" : "alto 19-36"}, ${numInfo.docena}ª docena`;
+            : `${emojiNum(numeroSalido)} **${numeroSalido}** — ${numInfo.colorNombre}, ${numInfo.par ? "par" : "impar"}, ${numInfo.mitad === "bajo" ? "bajo 1-18" : "alto 19-36"}, ${numInfo.docena}ª docena`;
 
-    const resultEmbed = new EmbedBuilder()
+    return new EmbedBuilder()
         .setTitle(gano ? "🏆  ¡¡ G A N A S T E !!  🏆" : "💀  P E R D I S T E  💀")
         .setColor(gano ? 0x2ecc71 : 0xe74c3c)
         .setDescription(
@@ -225,7 +127,54 @@ async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
             { name: "📊 Neto", value: `${gananciaNet >= 0 ? "+" : ""}${gananciaNet.toLocaleString("es")} 🪙`, inline: true },
         )
         .setFooter({ text: "Ruleta Europea • 0-36 — El Duende Casino" });
+}
 
+async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
+    // 1. Descontar apuesta — comprometida antes de animar
+    const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
+    if (!descuento.exito) {
+        await interaction.reply({ content: `❌ ${descuento.mensaje}`, flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    // 2. Sale ya el número (pero no se revela)
+    const numeroSalido = tirarNumero();
+    const apDescCorta = descApuesta(tipo, valor);
+    const targetIdx = WHEEL.indexOf(numeroSalido);
+
+    // 3. Defer — ack silent
+    try {
+        await interaction.deferUpdate();
+    } catch (e) {
+        log.warn(`deferUpdate falló (${interaction.customId}): ${e.message}`);
+    }
+
+    // 4. Trayectoria completa hasta el número final
+    const startIdx = Math.floor(Math.random() * 37);
+    await girarRueda(interaction, apuesta, apDescCorta, buildSpinSteps(startIdx, targetIdx));
+
+    // 5. Frame de revelación
+    const revealEmbed = new EmbedBuilder()
+        .setTitle(`🛑 ¡Paró en ${emojiNum(numeroSalido)} ${numeroSalido}!`)
+        .setDescription(`${seg(targetIdx, 3)}\n\n**Resultado:** ${emojiNum(numeroSalido)} **${numeroSalido}**`)
+        .setColor(colorEmbedNumero(numeroSalido))
+        .addFields(campoApuesta(apuesta, apDescCorta))
+        .setFooter({ text: "Ruleta Europea • El Duende Casino" });
+    await mostrarFrame(interaction, { embeds: [revealEmbed], components: [] });
+    await DELAY(900);
+
+    // 6. Procesar resultado en BD
+    const saldoAntes = obtenerSaldo(userId);
+    const { exito, gananciaNet } = liquidarTirada(userId, interaction.guildId, { apuesta, tipo, valor, numero: numeroSalido });
+    if (!exito) {
+        log.error(`Ruleta: no se pudo registrar el resultado de ${userId} (apuesta ${apuesta})`);
+        await interaction.editReply({ content: ERROR_PAGO_RULETA, embeds: [], components: [] });
+        return;
+    }
+    const saldoDespues = obtenerSaldo(userId);
+
+    // 7. Embed resultado final
+    const resultEmbed = embedResultado(numeroSalido, { apuesta, apDescCorta, gananciaNet, saldoAntes, saldoDespues });
     const row = buildRow(apuesta, tipo, valor);
     try {
         await interaction.editReply({ embeds: [resultEmbed], components: [row] });

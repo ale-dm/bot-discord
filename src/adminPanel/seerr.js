@@ -57,6 +57,52 @@ function buildSeerrHome(guildId) {
     return { embeds: [embed], components: [row1, row2, navRow()] };
 }
 
+async function probarConexion(interaction, guildId) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const result = await seerrClient.testConnection(guildId);
+    if (result.ok) {
+        await interaction.editReply(`✅ Conexión con Seerr correcta (v${result.version}).`);
+    } else {
+        await interaction.editReply(`❌ No se pudo conectar con Seerr: ${result.error}`);
+    }
+    return true;
+}
+
+async function alternarAvisos(interaction, guildId) {
+    const activo = !guildSettings.getSettings(guildId).seerr.avisar_disponible;
+    guildSettings.setSetting(guildId, "seerr.avisar_disponible", activo);
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "seerr.avisos", details: { activo } });
+    await interaction.update(buildSeerrHome(guildId));
+    return true;
+}
+
+async function selectorCanalPermitido(interaction) {
+    const row = new ActionRowBuilder().addComponents(
+        new ChannelSelectMenuBuilder()
+            .setCustomId("paneladmin_seerr_channel_add_select")
+            .setPlaceholder("Selecciona un canal donde permitir pedir/buscar en Seerr")
+            .setMinValues(1)
+            .setMaxValues(1)
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+    );
+    await interaction.reply({
+        content: "¿En qué canal se puede pedir/buscar contenido? (en cuanto añadas el primero, el resto de canales dejan de poder)",
+        components: [row],
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
+async function quitarRestriccionCanales(interaction, guildId) {
+    seerrClient.clearAllowedChannels(guildId);
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "seerr.channels.clear" });
+    await interaction.reply({
+        content: "✅ Sin restricción: se puede pedir/buscar en Seerr en cualquier canal.",
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
 async function handleSeerrButton(interaction) {
     const id = interaction.customId;
     const guildId = interaction.guildId;
@@ -65,26 +111,8 @@ async function handleSeerrButton(interaction) {
         await interaction.update(buildSeerrHome(guildId));
         return true;
     }
-
-    if (id === "paneladmin_seerr_test") {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        const result = await seerrClient.testConnection(guildId);
-        if (result.ok) {
-            await interaction.editReply(`✅ Conexión con Seerr correcta (v${result.version}).`);
-        } else {
-            await interaction.editReply(`❌ No se pudo conectar con Seerr: ${result.error}`);
-        }
-        return true;
-    }
-
-    if (id === "paneladmin_seerr_avisos") {
-        const activo = !guildSettings.getSettings(guildId).seerr.avisar_disponible;
-        guildSettings.setSetting(guildId, "seerr.avisar_disponible", activo);
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "seerr.avisos", details: { activo } });
-        await interaction.update(buildSeerrHome(guildId));
-        return true;
-    }
-
+    if (id === "paneladmin_seerr_test") return probarConexion(interaction, guildId);
+    if (id === "paneladmin_seerr_avisos") return alternarAvisos(interaction, guildId);
     if (id === "paneladmin_seerr_limit") {
         await interaction.showModal(
             simpleModal("paneladmin_seerr_limit_modal", "Límite diario de peticiones IA", [
@@ -93,24 +121,7 @@ async function handleSeerrButton(interaction) {
         );
         return true;
     }
-
-    if (id === "paneladmin_seerr_channel_add") {
-        const row = new ActionRowBuilder().addComponents(
-            new ChannelSelectMenuBuilder()
-                .setCustomId("paneladmin_seerr_channel_add_select")
-                .setPlaceholder("Selecciona un canal donde permitir pedir/buscar en Seerr")
-                .setMinValues(1)
-                .setMaxValues(1)
-                .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
-        );
-        await interaction.reply({
-            content: "¿En qué canal se puede pedir/buscar contenido? (en cuanto añadas el primero, el resto de canales dejan de poder)",
-            components: [row],
-            flags: MessageFlags.Ephemeral,
-        });
-        return true;
-    }
-
+    if (id === "paneladmin_seerr_channel_add") return selectorCanalPermitido(interaction);
     if (id === "paneladmin_seerr_channel_remove") {
         await interaction.showModal(
             simpleModal("paneladmin_seerr_channel_remove_modal", "Quitar canal permitido", [
@@ -119,17 +130,7 @@ async function handleSeerrButton(interaction) {
         );
         return true;
     }
-
-    if (id === "paneladmin_seerr_channel_clear") {
-        seerrClient.clearAllowedChannels(guildId);
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "seerr.channels.clear" });
-        await interaction.reply({
-            content: "✅ Sin restricción: se puede pedir/buscar en Seerr en cualquier canal.",
-            flags: MessageFlags.Ephemeral,
-        });
-        return true;
-    }
-
+    if (id === "paneladmin_seerr_channel_clear") return quitarRestriccionCanales(interaction, guildId);
     return false;
 }
 

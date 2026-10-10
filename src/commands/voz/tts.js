@@ -21,17 +21,22 @@ async function getEdgeStream(text, voice) {
     return getGeminiTtsAudioStream(text, { voice });
 }
 
+/** Cuando la cola se vacía, la conexión se cierra un poco después (por si llega otro mensaje enseguida). */
+function desconectarTrasCola(connection) {
+    setTimeout(() => {
+        try {
+            connection.destroy();
+        } catch (e) {
+            logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
+        }
+    }, 2000);
+}
+
 async function processQueue(guildId, connection) {
     const queue = queues.get(guildId);
     if (!queue || queue.length === 0) {
         players.delete(guildId);
-        setTimeout(() => {
-            try {
-                connection.destroy();
-            } catch (e) {
-                logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
-            }
-        }, 2000);
+        desconectarTrasCola(connection);
         return;
     }
 
@@ -65,6 +70,48 @@ async function processQueue(guildId, connection) {
         logError("[TTS] Error en reproductor:", err);
         processQueue(guildId, connection);
     });
+}
+
+/**
+ * Devuelve la conexión de voz del servidor lista para hablar, reutilizándola si existe o uniéndose al canal.
+ * Si no se puede conectar, avisa al usuario y devuelve null.
+ */
+async function obtenerConexion(interaction, channel, guildId) {
+    // Conectar o reutilizar conexión
+    let connection = getVoiceConnection(guildId);
+    // Si la conexión existente no está lista, es probable que quedara colgada
+    // tras un timeout anterior; la destruimos para forzar una reconexión limpia.
+    if (connection && connection.state.status !== VoiceConnectionStatus.Ready) {
+        try {
+            connection.destroy();
+        } catch (e) {
+            logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
+        }
+        connection = null;
+    }
+    if (connection) return connection;
+
+    try {
+        connection = joinVoiceChannel({
+            channelId: channel.id,
+            guildId,
+            adapterCreator: channel.guild.voiceAdapterCreator,
+            selfDeaf: false,
+        });
+        // 20s: el handshake UDP de voz puede tardar más de lo normal en algunas redes/hosts.
+        await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+        return connection;
+    } catch (err) {
+        logError("[TTS] Error conectando al canal:", err);
+        try {
+            connection?.destroy();
+        } catch (e) {
+            logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
+        }
+        await interaction.editReply({ content: "❌ No pude conectarme al canal de voz." });
+        queues.delete(guildId);
+        return null;
+    }
 }
 
 module.exports = {
@@ -132,40 +179,8 @@ module.exports = {
             flags: MessageFlags.Ephemeral,
         });
 
-        // Conectar o reutilizar conexión
-        let connection = getVoiceConnection(guildId);
-        // Si la conexión existente no está lista, es probable que quedara colgada
-        // tras un timeout anterior; la destruimos para forzar una reconexión limpia.
-        if (connection && connection.state.status !== VoiceConnectionStatus.Ready) {
-            try {
-                connection.destroy();
-            } catch (e) {
-                logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
-            }
-            connection = null;
-        }
-        if (!connection) {
-            try {
-                connection = joinVoiceChannel({
-                    channelId: channel.id,
-                    guildId,
-                    adapterCreator: channel.guild.voiceAdapterCreator,
-                    selfDeaf: false,
-                });
-                // 20s: el handshake UDP de voz puede tardar más de lo normal en algunas redes/hosts.
-                await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
-            } catch (err) {
-                logError("[TTS] Error conectando al canal:", err);
-                try {
-                    connection?.destroy();
-                } catch (e) {
-                    logInfo(`[TTS] La conexión ya estaba destruida: ${e.message}`);
-                }
-                await interaction.editReply({ content: "❌ No pude conectarme al canal de voz." });
-                queues.delete(guildId);
-                return;
-            }
-        }
+        const connection = await obtenerConexion(interaction, channel, guildId);
+        if (!connection) return;
 
         processQueue(guildId, connection);
     },
