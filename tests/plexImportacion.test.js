@@ -258,8 +258,8 @@ test("la migración 018 añade la tabla y las columnas sin tocar lo que había",
         "INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt) VALUES ('g', 'u', 'plex_pelis_1', 1, 5)",
     ).run();
     // 018 (este test) + 019 (notas/embeddings) + 020 (impuestos) + 021 (robar) + 022 (clasificación semanal) + 023 (objetos
-    // antirrobo) + 024 (préstamos del Duende) + 025 (negocios y blanqueo) + 026 (patrimonio) + 027 (pool TTCL) + 028 (liquidar criptos) + 029 (eventos de TTCL) + 030 (liga de pronósticos) + 031 (mercados de goles y hándicap) + 032 (combinadas) + 033 (sesión de cine) + 034 (países de las películas) + 035 (recuerdos automáticos) + 036 (pase de batalla) + 037 (sonidos) + 038 (Wrapped por DM) + 039 (nombre de las décadas), ajenas a Plex
-    expect(runMigrations(bd)).toBe(22);
+    // antirrobo) + 024 (préstamos del Duende) + 025 (negocios y blanqueo) + 026 (patrimonio) + 027 (pool TTCL) + 028 (liquidar criptos) + 029 (eventos de TTCL) + 030 (liga de pronósticos) + 031 (mercados de goles y hándicap) + 032 (combinadas) + 033 (sesión de cine) + 034 (países de las películas) + 035 (recuerdos automáticos) + 036 (pase de batalla) + 037 (sonidos) + 038 (Wrapped por DM) + 039 (nombre de las décadas) + 040 (índices de consultas), ajenas a Plex
+    expect(runMigrations(bd)).toBe(23);
     expect(bd.prepare("SELECT importado, completedAt FROM achievements_progress").get()).toEqual({ importado: 0, completedAt: 5 });
     const columnas = (t) =>
         bd

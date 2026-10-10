@@ -24,6 +24,16 @@ try {
 } catch (e) {
     /* ignore */
 }
+// Con WAL, synchronous = NORMAL es lo recomendado: la BD no se corrompe, y lo único que puede perderse ante un corte
+// de luz o del sistema son las últimas transacciones. Cada mensaje de XP es una escritura: con FULL cada una esperaba
+// a un fsync (en una prueba, ~9 veces más lento).
+try {
+    db.pragma("synchronous = NORMAL");
+    db.pragma("cache_size = -32000"); // 32 MB de páginas en memoria (por defecto, 2 MB)
+    db.pragma("temp_store = MEMORY");
+} catch (e) {
+    /* ignore */
+}
 
 // Caché de sentencias preparadas. El código hace db.prepare(sql) en cada llamada (cada
 // mensaje, cada tick de voz...), y better-sqlite3 recompila el SQL cada vez. Reutilizar la
@@ -50,5 +60,13 @@ db.prepare = (sql) => {
 // Esquema: se aplican las migraciones pendientes (src/core/migrations) al abrir la BD, así
 // cualquier módulo que la use —también los tests— la encuentra completa.
 require("./migrations").runMigrations(db);
+
+// Las estadísticas de las tablas (ANALYZE) las usa el planificador para elegir índice. PRAGMA optimize las
+// actualiza solo cuando hace falta, así que es barato al arrancar.
+try {
+    db.pragma("optimize");
+} catch (e) {
+    /* ignore */
+}
 
 module.exports = db;
