@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (sin recompensa diaria; #315)
+
+- **Eliminada la 🎁 recompensa diaria**: el botón de `/perfil` → 💰 Economía, su formulario en el panel admin (Config Global → 🎁 Diario), la herramienta `consultar_recompensa_diaria` del Duende y `systems/diario.js`, con sus tests. Los ajustes `diario.*` salen de `guildSettings`.
+- **Se mantiene**: la racha de XP (`xp/rachas.js`) y su boost, el toggle de racha del panel de niveles y la migración 011, que no se revierte. Las tablas del diario quedan sin uso, sin borrar, para no perder el historial. Los movimientos antiguos de tipo «diario» siguen viéndose en Movimientos.
+
 ## 2026-10-10 (documentación al día antes del release a main)
 
 - **SIGUIENTES_PASOS** reescrito en lo que estaba viejo: #243 y #244 están en `main`, T-03 confirmada, la migración siguiente es la `044`, 1994 tests en 168 suites, límites del lint en 60 y 400, y el mapa con los módulos nuevos (ranking y resumen, casino, Duende, Plex, admin).

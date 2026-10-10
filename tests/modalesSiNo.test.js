@@ -23,7 +23,6 @@ function interaccion(customId) {
 const BOTONES = [
     "paneladmin_cfg_eventos_xp",
     "paneladmin_cfg_eventos_casino",
-    "paneladmin_cfg_diario_edit",
     "paneladmin_cfg_duende_tono",
     "paneladmin_cfg_duende_espontaneo",
     "paneladmin_cfg_tienda_edit",

@@ -93,12 +93,6 @@ function nodoPlexYLogros(flat) {
 
 function nodoOtros(flat) {
     return {
-        diario: {
-            enabled: flat["diario.enabled"],
-            base: flat["diario.base"],
-            por_dia_racha: flat["diario.por_dia_racha"],
-            tope: flat["diario.tope"],
-        },
         apuestas: {
             canal_resultados: flat["apuestas.canal_resultados"],
             recordatorio: flat["apuestas.recordatorio"],

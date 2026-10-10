@@ -8,7 +8,7 @@ function horaElegida(fields, id) {
 }
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
-const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./vistas");
+const { buildDuendePanel, buildEventosPanel } = require("./vistas");
 
 async function modalDuende(interaction, id, guildId) {
     const modeloAntes = guildSettings.getSettings(guildId).duende.model;
@@ -187,27 +187,6 @@ async function modalLogros(interaction, id, guildId) {
     return true;
 }
 
-async function modalDiario(interaction, id, guildId) {
-    const numeros = { base: "diario.base", porDia: "diario.por_dia_racha", tope: "diario.tope" };
-    const valores = {};
-    for (const [campo, clave] of Object.entries(numeros)) {
-        const n = Number(interaction.fields.getTextInputValue(campo).trim());
-        if (!Number.isInteger(n) || n < 0 || n > 1_000_000) {
-            await interaction.reply({
-                content: "❌ Base, monedas por día y tope tienen que ser números enteros entre 0 y 1.000.000.",
-                flags: MessageFlags.Ephemeral,
-            });
-            return true;
-        }
-        valores[clave] = n;
-    }
-    guildSettings.setManySettings(guildId, { "diario.enabled": interaction.fields.getRadioGroup("enabled"), ...valores });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.diario.update", details: valores });
-    if (interaction.isFromMessage?.()) await interaction.update(buildDiarioPanel(guildId));
-    else await interaction.reply({ content: "✅ Recompensa diaria actualizada.", flags: MessageFlags.Ephemeral });
-    return true;
-}
-
 async function modalEventosXp(interaction, id, guildId) {
     const campo = (c) => interaction.fields.getTextInputValue(c).trim();
     const entero = (c, min, max) => {
@@ -262,7 +241,6 @@ const ACCIONES_MODAL = new Map([
     ["paneladmin_cfg_tienda_modal", modalTienda],
     ["paneladmin_cfg_acl_modal", modalAcl],
     ["paneladmin_cfg_logros_modal", modalLogros],
-    ["paneladmin_cfg_diario_modal", modalDiario],
     ["paneladmin_cfg_eventos_xp_modal", modalEventosXp],
     ["paneladmin_cfg_eventos_casino_modal", modalEventosXp],
 ]);

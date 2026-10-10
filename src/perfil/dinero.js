@@ -51,11 +51,6 @@ module.exports = {
         const c = dinero.cuenta(userId);
 
         if (id === "dinero_panel") return interaction.update(await economiaPropia(interaction));
-        if (id === "dinero_diario") {
-            const r = require("../systems/diario").cobrar(interaction.guildId, userId);
-            if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
-            return interaction.update(await economiaPropia(interaction, r.mensaje));
-        }
         // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
         if (id === "dinero_prestamo_devolver") {
             const r = require("../systems/prestamos").devolver(userId);
