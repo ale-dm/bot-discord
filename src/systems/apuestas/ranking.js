@@ -46,25 +46,63 @@ function cifras(userId) {
     return { ...calcular(userId, estadisticas(userId)), racha: mejorRacha(userId) };
 }
 
-/**
- * Los mejores apostadores por beneficio (a igualdad, más acierto), de quienes tienen al menos `minimo` apuestas resueltas.
- * Las estadísticas de todos salen de dos consultas agrupadas (estadisticasDeTodos), no de una por apostador, y la racha
- * solo se calcula para los que se devuelven: no influye en el orden. Con 50.000 apostadores tardaba 7 s y bloqueaba el bot.
- * @returns {{ userId: string, beneficio: number, resueltas: number, ganadas: number, perdidas: number, acierto: number|null, racha: number }[]}
- */
-function ranking({ limite = 10, minimo = MIN_RESUELTAS } = {}) {
-    const ids = db
+/** Quienes tienen alguna apuesta (a partidos o quinielas). */
+function idsApostadores() {
+    return db
         .prepare("SELECT user_id FROM apuestas_usuario UNION SELECT user_id FROM quiniela_apuestas")
         .all()
         .map((r) => r.user_id)
         .filter(Boolean);
+}
+
+/**
+ * Reconstruye apuestas_resumen: las cifras de cada apostador, sacadas de estadisticasDeTodos. Lo que cambia lo resuelto
+ * (y por tanto el ranking) solo ocurre en la liquidación, que la llama al terminar (orquesta.js). Con una sola consulta
+ * de estadísticas por todos, no una por apostador.
+ */
+function reconstruirResumen() {
     const porUsuario = estadisticasDeTodos();
-    return ids
-        .map((id) => calcular(id, porUsuario.get(id) ?? estadisticasVacias()))
-        .filter((c) => c.resueltas >= minimo)
-        .sort((a, b) => b.beneficio - a.beneficio || (b.acierto ?? -1) - (a.acierto ?? -1))
-        .slice(0, limite)
-        .map((c) => ({ ...c, racha: mejorRacha(c.userId) }));
+    const insertar = db.prepare("INSERT INTO apuestas_resumen (user_id, beneficio, resueltas, ganadas, perdidas) VALUES (?, ?, ?, ?, ?)");
+    db.transaction(() => {
+        db.prepare("DELETE FROM apuestas_resumen").run();
+        for (const id of idsApostadores()) {
+            const c = calcular(id, porUsuario.get(id) ?? estadisticasVacias());
+            insertar.run(id, c.beneficio, c.resueltas, c.ganadas, c.perdidas);
+        }
+    })();
+}
+
+/** Si el resumen está vacío (primera vez, o una BD sin liquidar), se reconstruye antes de leerlo. */
+function asegurarResumen() {
+    if (!db.prepare("SELECT 1 FROM apuestas_resumen LIMIT 1").get()) reconstruirResumen();
+}
+
+/**
+ * Los mejores apostadores por beneficio (a igualdad, más acierto, y luego por id), de quienes tienen al menos `minimo`
+ * apuestas resueltas. Se lee de apuestas_resumen, así que cuesta lo mismo con 50 que con 50.000 apostadores; la racha
+ * solo se calcula para los que se devuelven, porque no influye en el orden. Antes, una consulta por apostador: 1,4 s.
+ * @returns {{ userId: string, beneficio: number, resueltas: number, ganadas: number, perdidas: number, acierto: number|null, racha: number }[]}
+ */
+function ranking({ limite = 10, minimo = MIN_RESUELTAS } = {}) {
+    asegurarResumen();
+    return db
+        .prepare(
+            `SELECT user_id AS userId, beneficio, resueltas, ganadas, perdidas FROM apuestas_resumen
+             WHERE resueltas >= ?
+             ORDER BY beneficio DESC,
+                CASE WHEN ganadas + perdidas > 0 THEN ganadas * 1.0 / (ganadas + perdidas) ELSE -1 END DESC,
+                user_id ASC
+             LIMIT ?`,
+        )
+        .all(minimo, limite)
+        .map((f) => {
+            const decididas = f.ganadas + f.perdidas;
+            return {
+                ...f,
+                acierto: decididas ? (f.ganadas / decididas) * 100 : null,
+                racha: mejorRacha(f.userId),
+            };
+        });
 }
 
 const formatoDia = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" });
@@ -109,4 +147,4 @@ function beneficioEntre(desde, hasta) {
     return [...porUsuario.values()].sort((a, b) => b.beneficio - a.beneficio || b.resueltas - a.resueltas);
 }
 
-module.exports = { MIN_RESUELTAS, cifras, ranking, beneficioEntre };
+module.exports = { MIN_RESUELTAS, cifras, ranking, beneficioEntre, reconstruirResumen };

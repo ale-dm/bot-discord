@@ -5,8 +5,18 @@ const { DEPORTES, DIAS_RESULTADOS, obtenerResultados } = require("../../../servi
 const { caducarSinResultado } = require("./caducidad");
 const { liquidarPartidosSueltos } = require("./partidos");
 const { liquidarQuinielas } = require("./quinielas");
+const { reconstruirResumen } = require("../ranking");
 
 let liquidacionEnCurso = false;
+
+// Lo resuelto ha podido cambiar: el ranking se reconstruye con la liquidación ya cerrada. Un fallo aquí no tumba la liquidación.
+function actualizarRanking() {
+    try {
+        reconstruirResumen();
+    } catch (e) {
+        logError("[PAGARAPUESTAS] No se pudo reconstruir el resumen del ranking:", e);
+    }
+}
 /**
  * Cierra los partidos terminados, paga las apuestas ganadoras y liquida las quinielas
  * completadas. Se usa tanto desde /pagarapuestas como desde el cron de index.js.
@@ -68,6 +78,7 @@ async function liquidarApuestas({ minHorasDesdeInicio = 0, origen = "manual" } =
 
         return resumen;
     } finally {
+        actualizarRanking();
         liquidacionEnCurso = false;
     }
 }
