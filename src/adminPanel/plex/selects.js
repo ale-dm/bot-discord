@@ -5,7 +5,7 @@ const plexGordos = require("../../systems/plexGordos");
 const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
-const { simpleModal } = require("../common");
+const { modalConCampos } = require("../common");
 const { log, buildRolesGordos, buildRankingSemanal } = require("./vistas");
 
 async function handlePlexChannelSelect(interaction) {
@@ -55,14 +55,34 @@ async function handlePlexChannelSelect(interaction) {
     return false;
 }
 
+// Los usuarios de Tautulli para el desplegable. Si no responden en 2 s, o hay más de 25, null: se escribe el nombre.
+async function usuariosDeTautulli(guildId) {
+    let temporizador;
+    const plazo = new Promise((resolve) => {
+        temporizador = setTimeout(() => resolve(null), 2000);
+    });
+    try {
+        const usuarios = await Promise.race([tautulliClient.getUsers(guildId), plazo]);
+        if (!usuarios?.length || usuarios.length > 25) return null;
+        return usuarios.map((u) => {
+            const nombre = String(u.username || u.friendly_name || `id ${u.user_id}`);
+            return { label: nombre.slice(0, 100), value: nombre.slice(0, 100) };
+        });
+    } catch {
+        return null;
+    } finally {
+        clearTimeout(temporizador);
+    }
+}
+
 async function handlePlexUserSelect(interaction) {
     if (interaction.customId === "paneladmin_plex_link_select") {
         const discordUserId = interaction.values[0];
-        await interaction.showModal(
-            simpleModal(`paneladmin_plex_link_modal_${discordUserId}`, "Vincular con Plex", [
-                { id: "plex_username", label: "Usuario de Tautulli/Plex (exacto)", placeholder: "SrAaleeeo" },
-            ]),
-        );
+        const opciones = await usuariosDeTautulli(interaction.guildId);
+        const campo = opciones
+            ? { id: "plex_username_lista", label: "Usuario de Plex", tipo: "opciones", opciones }
+            : { id: "plex_username", label: "Usuario de Tautulli/Plex (exacto)", placeholder: "SrAaleeeo" };
+        await interaction.showModal(modalConCampos(`paneladmin_plex_link_modal_${discordUserId}`, "Vincular con Plex", [campo]));
         return true;
     }
 

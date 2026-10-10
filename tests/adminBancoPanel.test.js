@@ -114,7 +114,7 @@ describe("formulario de saldo", () => {
     function formulario(u, cantidad, tipo) {
         return interaccion({
             customId: `paneladmin_bank_modificar_modal_${u}`,
-            fields: { getTextInputValue: (c) => (c === "cantidad" ? String(cantidad) : tipo) },
+            fields: { getTextInputValue: (c) => (c === "cantidad" ? String(cantidad) : tipo), getStringSelectValues: () => [tipo] },
         });
     }
 

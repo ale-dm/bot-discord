@@ -100,7 +100,14 @@ describe("/paneladmin → ⚙️ Config Global → 🎉 Eventos", () => {
         ...extra,
     });
     const formulario = (customId, campos) =>
-        interaccion({ customId, fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" } });
+        interaccion({
+            customId,
+            fields: {
+                getTextInputValue: (k) => campos[k] ?? "",
+                getStringSelectValues: (k) => [campos[k] ?? ""],
+                getRadioGroup: (k) => campos[k] ?? "",
+            },
+        });
     const campos = (payload) => Object.fromEntries(payload.embeds[0].data.fields.map((f) => [f.name, f.value]));
 
     test("pantalla, formularios y validación", async () => {

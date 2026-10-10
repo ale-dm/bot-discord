@@ -99,6 +99,7 @@ describe("/paneladmin → ⚙️ Config Global → 🤖 Duende → 🕐 Tono", (
             customId: "paneladmin_cfg_duende_tono_modal",
             fields: {
                 getTextInputValue: (k) => campos[k] ?? "",
+                getStringSelectValues: (k) => [campos[k] ?? ""],
                 getRadioGroup: (k) => campos[k] ?? "",
                 getSelectedChannels: (k) =>
                     k === "formales" ? new Map((campos.formales ?? "").match(/\d{17,19}/g)?.map((id) => [id, {}]) ?? []) : null,

@@ -6,7 +6,7 @@ const plexIdiomas = require("../../systems/plexIdiomas");
 const achievements = require("../../systems/achievementsSystem");
 const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
-const { canalElegido } = require("../common");
+const { canalElegido, opcionElegida } = require("../common");
 const adminAudit = require("../../systems/adminAudit");
 const { log } = require("./vistas");
 
@@ -96,7 +96,9 @@ async function modalChannelRemove(interaction) {
 // Vincula una cuenta de Plex a una persona de Discord (el modal de 🔗 Vincular).
 async function vincularCuentaModal(interaction) {
     const discordUserId = interaction.customId.replace("paneladmin_plex_link_modal_", "");
-    const query = interaction.fields.getTextInputValue("plex_username").trim();
+    const query = (
+        opcionElegida(interaction.fields, "plex_username_lista") || interaction.fields.getTextInputValue("plex_username")
+    ).trim();
     const guildId = interaction.guildId;
 
     let users;

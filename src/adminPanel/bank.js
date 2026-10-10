@@ -1,7 +1,14 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder, MessageFlags } = require("discord.js");
 const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal, modalConCampos, usuarioElegido } = require("./common");
+const { modalConCampos, usuarioElegido, opcionElegida } = require("./common");
+
+// Dónde va el saldo que se modifica: efectivo, banco o dinero negro.
+const DESTINOS_SALDO = [
+    { label: "Efectivo", value: "efectivo" },
+    { label: "Banco", value: "banco" },
+    { label: "Dinero negro", value: "negro" },
+];
 
 async function accionModificar(interaction, id, guildId) {
     const row = new ActionRowBuilder().addComponents(
@@ -163,7 +170,7 @@ async function handleBankButton(interaction) {
 // Suma la cantidad al destino elegido (efectivo, banco o dinero negro) y lo deja en el historial y en el registro de admin.
 async function modificarSaldo(interaction, userId) {
     const cantidad = parseInt(interaction.fields.getTextInputValue("cantidad"), 10);
-    const tipo = interaction.fields.getTextInputValue("tipo");
+    const tipo = opcionElegida(interaction.fields, "tipo");
     // "efectivo" (o el antiguo "enMano"), "banco" o "negro" (dinero negro, F-EC-06b).
     const destino = tipo.trim().toLowerCase();
     if (!["banco", "efectivo", "enmano", "negro"].includes(destino)) {
@@ -238,9 +245,9 @@ async function handleBankModal(interaction) {
 async function handleBankUserSelect(interaction) {
     if (interaction.customId === "paneladmin_bank_modificar_select") {
         const userId = interaction.values[0];
-        const modal = simpleModal(`paneladmin_bank_modificar_modal_${userId}`, "Modificar saldo", [
+        const modal = modalConCampos(`paneladmin_bank_modificar_modal_${userId}`, "Modificar saldo", [
             { id: "cantidad", label: "Cantidad (+ o -)", placeholder: "100 o -50" },
-            { id: "tipo", label: "Destino (efectivo, banco o negro)", placeholder: "efectivo / banco / negro" },
+            { id: "tipo", label: "Destino del saldo", tipo: "opciones", opciones: DESTINOS_SALDO },
         ]);
         await interaction.showModal(modal);
         return true;
