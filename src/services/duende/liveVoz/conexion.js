@@ -12,9 +12,9 @@ const {
 const prism = require("prism-media");
 const { Modality } = require("@google/genai");
 const { getGenAI } = require("../../geminiClient");
-const { LIVE_MODEL, LIVE_VOICE, PALABRA_LLAMADA } = require("./constantes");
-const { pararConversacion, marcarActividad } = require("./sesion");
-const { responderLlamadasHerramientas } = require("./declaraciones");
+const { LIVE_MODEL, LIVE_VOICE } = require("./constantes");
+const { marcarActividad } = require("./sesion");
+const { procesarLlamadas, reenviarAudioSalida, procesarTranscripciones } = require("./mensajes");
 const { createLogger } = require("../../../core/logger");
 
 const log = createLogger("Duende").child("VozEnVivo");
@@ -104,57 +104,10 @@ async function conectarGemini(interaction, voiceChannel, sesion, { systemInstruc
             onmessage: (message) => {
                 marcarActividad(sesion);
                 log.debug(`Mensaje de Gemini Live: ${Object.keys(message).join(", ") || "(vacío)"}`);
-                if (message.toolCall) {
-                    const llamadas = message.toolCall.functionCalls || [];
-                    const colgar = llamadas.find((fc) => fc.name === "colgar_llamada");
-                    if (colgar) {
-                        liveSession.sendToolResponse({
-                            functionResponses: [{ id: colgar.id, name: colgar.name, response: { ok: true } }],
-                        });
-                        log.info(`Colgando la llamada en el servidor ${guildId}: pedido por voz.`);
-                        pararConversacion(guildId, "pedido por voz");
-                    }
-                    const resto = llamadas.filter((fc) => fc.name !== "colgar_llamada");
-                    if (resto.length) {
-                        responderLlamadasHerramientas(liveSession, { ...message.toolCall, functionCalls: resto }, toolContext).catch((e) =>
-                            log.warn(`Error respondiendo herramientas en voz en directo: ${e.message}`),
-                        );
-                    }
-                }
-                if (message.data) {
-                    const buf = Buffer.from(message.data, "base64");
-                    if (!sesion.permitirAudioSalida) {
-                        if (!sesion.avisoIgnoradoEsteTurno) {
-                            sesion.avisoIgnoradoEsteTurno = true;
-                            log.debug(`Se ignora la respuesta de Gemini: no le han dicho "duende" en este turno (modo solo si le llaman).`);
-                        }
-                        return;
-                    }
-                    sesion.chunksAudioSalida = (sesion.chunksAudioSalida || 0) + 1;
-                    if (sesion.chunksAudioSalida === 1) {
-                        log.info(`Primer trozo de audio de Gemini recibido (${buf.length} bytes) — pasándolo a ffmpeg.`);
-                    }
-                    try {
-                        // La clase FFmpeg de prism-media pone write/end directamente en la
-                        // instancia (copiados del stdin interno): no existe .stdin.
-                        sesion.ffmpeg.write(buf);
-                    } catch (e) {
-                        log.warn(`Error pasando el audio de Gemini a ffmpeg: ${e.message}`);
-                    }
-                }
-                if (message.serverContent?.outputTranscription?.text) {
-                    log.debug(`Duende (voz en directo): ${message.serverContent.outputTranscription.text}`);
-                }
-                if (message.serverContent?.inputTranscription?.text) {
-                    const texto = message.serverContent.inputTranscription.text;
-                    log.debug(`Usuario (voz en directo): ${texto}`);
-                    sesion.turnoTranscripcion += texto;
-                    // En cuanto se oye la palabra de llamada en este turno, se deja pasar la
-                    // respuesta — no hace falta esperar a que acabe de hablar para decidirlo.
-                    if (sesion.soloSiLeLlaman && PALABRA_LLAMADA.test(sesion.turnoTranscripcion)) {
-                        sesion.permitirAudioSalida = true;
-                    }
-                }
+                if (message.toolCall) procesarLlamadas(liveSession, message.toolCall, { guildId, toolContext });
+                // Si el audio se descarta, no se procesan las transcripciones de este mensaje (como antes).
+                if (message.data && !reenviarAudioSalida(message.data, sesion)) return;
+                procesarTranscripciones(message, sesion);
             },
             onerror: (e) => log.warn(`Error en la conversación en directo: ${e?.message || JSON.stringify(e)}`),
             onclose: (e) =>
