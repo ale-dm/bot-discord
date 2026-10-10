@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: tamaño del Duende y de la voz en directo)
+
+- **`commands/duende/duende.js` partido** (#243): de 775 líneas a 39 (fachada del comando). El panel 💬 pasa a `paneles/duendeAcciones.js` (227 líneas) y el flujo de «hablar» a `services/duende/chat/` (contexto, generar, enviar y hablar: 94 a 175 líneas cada uno). Los nombres que usan el router y los demás ficheros no cambian.
+- **`services/duende/liveVoz.js` partido** (#243): de 596 líneas a 62 (fachada con `empezarConversacion`). La carpeta `liveVoz/` tiene constantes, sesión, declaraciones de herramientas, conexión con Gemini y captura (la tertulia incluida), de 27 a 193 líneas.
+- Es un traslado de código sin cambios: las funciones se copian tal cual y solo cambian las rutas de los `require`. Los tests del Duende y de la voz pasan sin tocar sus expectativas. **La voz en directo no se puede probar con tests**: hay que comprobarla en Discord (conversación, tertulia y salida por inactividad).
+
 ## 2026-10-10 (auditoría: tamaño de retos)
 
 - **`systems/retos.js` partido en una carpeta** (#242): `systems/retos/` con `constantes`, `comun` (error, descripción, azar inyectable), `persistencia` (lectura y escritura de la tabla y consultas de paneles), `cobros` (cobrar, cerrar, devolver, ganar), `partidos`, `crear`, `duelos`, `porras` y `revision` (cron). El fichero `systems/retos.js` queda como fachada que reexporta los mismos nombres: los paneles, los juegos, las herramientas del Duende y la liquidación no cambian. El fichero más grande de la carpeta tiene 228 líneas (antes, 851).
