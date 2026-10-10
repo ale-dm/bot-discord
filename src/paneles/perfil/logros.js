@@ -95,6 +95,80 @@ function menusFiltroLogros(ownerId, targetId, filtro, includeHidden, todos) {
     return filas;
 }
 
+/** Una línea por logro de la página: estado, nombre, categoría, descripción, barra y, si toca, rareza o importación. */
+function lineasLogros(slice, { includeHidden, pctImportacion, rarezas }) {
+    return slice
+        .map((a) => {
+            if (a.hidden && !a.completed && !includeHidden) return "❓ **Logro secreto**";
+            const status = a.completed ? (a.claimable ? "🎁" : "✅") : "⏳";
+            const p = Math.min(a.progress, a.target);
+            const rareza = a.category === "plex" && a.completed ? ` · 🏆 ${plexTrofeos.textoRareza(rarezas.get(a.id))}` : "";
+            const dificultad = a.dificultad ? ` · ${plexIdiomas.textoDificultad(a.dificultad)}` : "";
+            // Desbloqueado con lo antiguo (la primera importación de Plex): da menos monedas.
+            const importado = a.claimable && a.importado && pctImportacion < 100 ? ` · 📼 de la importación (${pctImportacion} %)` : "";
+            return `${status} **${a.name}** (${a.category}${dificultad})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}${importado}\n`;
+        })
+        .join("\n");
+}
+
+/** Campo "🍿 Plex por dificultad" (solo con 🍿 Plex elegido), o null si no toca. */
+function campoPlexDificultad(todos, filtro) {
+    // Dentro de 🍿 Plex: de cada dificultad, cuántos tiene de los que hay. Como en Completados, los secretos solo cuentan
+    // si los tiene; los trofeos de cada serie, saga... también (no se ven hasta conseguirlos).
+    const plexPorDificultad = FILTROS_LOGROS[filtro].plex
+        ? todos.filter((a) => a.category === "plex" && a.dificultad && (!a.hidden || a.completed))
+        : [];
+    if (!plexPorDificultad.length) return null;
+    return {
+        name: "🍿 Plex por dificultad",
+        value: Object.keys(plexIdiomas.DIFICULTADES)
+            .map((d) => {
+                const deEsta = plexPorDificultad.filter((a) => a.dificultad === d);
+                return `${plexIdiomas.textoDificultad(d)}: **${deEsta.filter((a) => a.completed).length}**/${deEsta.length}`;
+            })
+            .join(" · "),
+        inline: false,
+    };
+}
+
+/** Botones de la lista: página anterior y siguiente, ver u ocultar secretos y, si `reclamarTodo`, 🎁 Reclamar todo. */
+function filaPaginaLogros(ownerId, targetId, { safePage, maxPage, includeHidden, filtro, reclamarTodo }) {
+    // perfil_logros_{o}_{t}_{página}_{secretos}[_{filtro}]
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage - 1}_${includeHidden ? 1 : 0}${sufijoFiltro(filtro)}`)
+            .setLabel("◀")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(safePage <= 0),
+        new ButtonBuilder()
+            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage + 1}_${includeHidden ? 1 : 0}${sufijoFiltro(filtro)}`)
+            .setLabel("▶")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(safePage >= maxPage),
+        new ButtonBuilder()
+            .setCustomId(`perfil_logros_${ownerId}_${targetId}_0_${includeHidden ? 0 : 1}${sufijoFiltro(filtro)}`)
+            .setLabel(includeHidden ? "🙈 Ocultar secretos" : "👁️ Ver secretos")
+            .setStyle(ButtonStyle.Secondary),
+    );
+    if (reclamarTodo) {
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`perfil_reclamartodo_${ownerId}_${targetId}${sufijoFiltro(filtro)}`)
+                .setLabel("🎁 Reclamar todo")
+                .setStyle(ButtonStyle.Success),
+        );
+    }
+    return row;
+}
+
+/** El botón de ocultar o enseñar los logros de Plex a los demás (solo lo ves tú, con la cuenta de Plex vinculada). */
+function botonPlexOculto(ownerId, targetId, plexOculto) {
+    return new ButtonBuilder()
+        .setCustomId(`perfil_plexoculto_${ownerId}_${targetId}_${plexOculto ? 0 : 1}`)
+        .setLabel(plexOculto ? "🍿 Enseñar mis logros de Plex" : "🍿 Ocultar mis logros de Plex")
+        .setStyle(ButtonStyle.Secondary);
+}
+
 function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false, filtro = "todos") {
     const userId = targetId;
     const propio = ownerId === targetId;
@@ -116,19 +190,7 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
     const slice = list.slice(start, start + pageSize);
 
     const desc = slice.length
-        ? slice
-              .map((a) => {
-                  if (a.hidden && !a.completed && !includeHidden) return "❓ **Logro secreto**";
-                  const status = a.completed ? (a.claimable ? "🎁" : "✅") : "⏳";
-                  const p = Math.min(a.progress, a.target);
-                  const rareza = a.category === "plex" && a.completed ? ` · 🏆 ${plexTrofeos.textoRareza(rarezas.get(a.id))}` : "";
-                  const dificultad = a.dificultad ? ` · ${plexIdiomas.textoDificultad(a.dificultad)}` : "";
-                  // Desbloqueado con lo antiguo (la primera importación de Plex): da menos monedas.
-                  const importado =
-                      a.claimable && a.importado && pctImportacion < 100 ? ` · 📼 de la importación (${pctImportacion} %)` : "";
-                  return `${status} **${a.name}** (${a.category}${dificultad})\n${a.desc}\n${barraLogro(p, a.target)}${rareza}${importado}\n`;
-              })
-              .join("\n")
+        ? lineasLogros(slice, { includeHidden, pctImportacion, rarezas })
         : filtro === "todos"
           ? "No hay logros en esta vista."
           : "No hay logros con este filtro.";
@@ -143,58 +205,18 @@ function buildLogros(guildId, ownerId, targetId, page = 0, includeHidden = false
         )
         .setColor(0xf1c40f)
         .setTimestamp();
-    // Dentro de 🍿 Plex: de cada dificultad, cuántos tiene de los que hay. Como en Completados, los secretos solo cuentan
-    // si los tiene; los trofeos de cada serie, saga... también (no se ven hasta conseguirlos).
-    const plexPorDificultad = FILTROS_LOGROS[filtro].plex
-        ? todos.filter((a) => a.category === "plex" && a.dificultad && (!a.hidden || a.completed))
-        : [];
-    if (plexPorDificultad.length) {
-        embed.addFields({
-            name: "🍿 Plex por dificultad",
-            value: Object.keys(plexIdiomas.DIFICULTADES)
-                .map((d) => {
-                    const deEsta = plexPorDificultad.filter((a) => a.dificultad === d);
-                    return `${plexIdiomas.textoDificultad(d)}: **${deEsta.filter((a) => a.completed).length}**/${deEsta.length}`;
-                })
-                .join(" · "),
-            inline: false,
-        });
-    }
+    const campoDificultad = campoPlexDificultad(todos, filtro);
+    if (campoDificultad) embed.addFields(campoDificultad);
 
-    // perfil_logros_{o}_{t}_{página}_{secretos}[_{filtro}]
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage - 1}_${includeHidden ? 1 : 0}${sufijoFiltro(filtro)}`)
-            .setLabel("◀")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(safePage <= 0),
-        new ButtonBuilder()
-            .setCustomId(`perfil_logros_${ownerId}_${targetId}_${safePage + 1}_${includeHidden ? 1 : 0}${sufijoFiltro(filtro)}`)
-            .setLabel("▶")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(safePage >= maxPage),
-        new ButtonBuilder()
-            .setCustomId(`perfil_logros_${ownerId}_${targetId}_0_${includeHidden ? 0 : 1}${sufijoFiltro(filtro)}`)
-            .setLabel(includeHidden ? "🙈 Ocultar secretos" : "👁️ Ver secretos")
-            .setStyle(ButtonStyle.Secondary),
-    );
-    if (propio && summary.claimable > 0) {
-        row.addComponents(
-            new ButtonBuilder()
-                .setCustomId(`perfil_reclamartodo_${ownerId}_${targetId}${sufijoFiltro(filtro)}`)
-                .setLabel("🎁 Reclamar todo")
-                .setStyle(ButtonStyle.Success),
-        );
-    }
+    const row = filaPaginaLogros(ownerId, targetId, {
+        safePage,
+        maxPage,
+        includeHidden,
+        filtro,
+        reclamarTodo: propio && summary.claimable > 0,
+    });
     // Solo a quien tiene la cuenta de Plex vinculada: que sus logros de Plex no se anuncien ni los vean los demás.
-    if (propio && plexLinks.getLinkByDiscordId(guildId, userId)) {
-        row.addComponents(
-            new ButtonBuilder()
-                .setCustomId(`perfil_plexoculto_${ownerId}_${targetId}_${plexOculto ? 0 : 1}`)
-                .setLabel(plexOculto ? "🍿 Enseñar mis logros de Plex" : "🍿 Ocultar mis logros de Plex")
-                .setStyle(ButtonStyle.Secondary),
-        );
-    }
+    if (propio && plexLinks.getLinkByDiscordId(guildId, userId)) row.addComponents(botonPlexOculto(ownerId, targetId, plexOculto));
 
     const components = [row];
     const menu = propio ? menuReclamar(guildId, ownerId, targetId, filtro) : null;
