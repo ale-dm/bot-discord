@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (para llegar a 10: lint, TODO y documentación)
+
+- **Límites de tamaño en el lint** (`eslint.config.js`): en `src/`, 120 líneas por función y 500 por fichero. Son los máximos actuales, no la meta (60 y 400): la regla se baja al bajar cada máximo real. El catálogo de logros queda fuera por ser datos. Comprobado: una función de 127 líneas falla el `npm run check`; el repositorio pasa con 0 avisos.
+- **`TODO` de `commands/duende/ia.js` quitado**: era una idea de interfaz (selector con botones de radio) y el comentario decía 12 opciones, cuando hay 8. La idea pasa a [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (apartado 4).
+- **Documentación al día**: README (22 comandos, carpetas de comandos con `/plex`, `/pase`, `/mensaje`, `/conectar` y `/sonidos`, y los scripts que faltaban), [FUNCIONALIDADES](FUNCIONALIDADES.md) (fecha y seis comandos que faltaban en la tabla de referencia), [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (reescrito: estado de la auditoría, releases pendientes, mapa de los refactors, y recetas corregidas: el número de migración, dónde se añade un ajuste), [PLEX_Y_SEERR](../tecnico/PLEX_Y_SEERR.md) (referencias de código al día, sin tocar el registro histórico), [docs/README](README.md) (FEATURES redirige a los issues), [TAREAS](planificacion/TAREAS.md) (T-03: comprobaciones en Discord de #243 y #244, que bloquean liberar a `main`) y [PUNTUACION](planificacion/PUNTUACION.md) (hallazgos por área para llegar a 10).
+- Puntuación del código: Robustez pasa a 10 (0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`); la media queda en 8,6.
+- Lo que no se ha corregido, a propósito, está escrito en PUNTUACION: un índice para `tienda.objetoId` (migración 042), el recuento de funciones y ficheros grandes, y la política de merge de CONTRIBUTING (squash o merge).
+
 ## 2026-10-10 (auditoría: tamaño de paneles, ajustes, quiniela y liquidación)
 
 - **Cuatro ficheros grandes partidos** (#244): `paneles/perfil.js` (594 → 10 líneas de fachada, las pantallas en `paneles/perfil/`: básicos, embeds, logros, ficha y rankings); `systems/guildSettings.js` (526 → 20, con la lista de ajustes como datos aparte en `guildSettings/definicion.js`, y lectura, permisos y límites en sus ficheros); `juegos/apuestas/quiniela.js` (512 → 254, editor y botones en `quiniela/`); `systems/apuestas/liquidacion.js` (507 → 17, en `liquidacion/`: caducidad, partidos, quinielas, orquesta y anuncios). El fichero más grande de cada carpeta tiene 228 líneas o menos.

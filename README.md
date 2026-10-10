@@ -9,12 +9,12 @@ criptomonedas e integración con Plex/Seerr.
 - **Qué hace y todos sus comandos:** [docs/FUNCIONALIDADES.md](docs/FUNCIONALIDADES.md)
 - **Despliegue (Docker / Portainer):** [docs/DEPLOY.md](docs/DEPLOY.md)
 - **Historial de cambios:** [docs/CHANGELOG.md](docs/CHANGELOG.md)
-- **Qué falta:** [tareas](docs/planificacion/TAREAS.md) · [errores conocidos](docs/planificacion/ERRORES.md) · [deuda técnica](docs/planificacion/DEUDA_TECNICA.md) · [ideas de features](docs/planificacion/FEATURES.md)
+- **Qué falta:** [tareas](docs/planificacion/TAREAS.md) · [errores conocidos](docs/planificacion/ERRORES.md) · [deuda técnica](docs/planificacion/DEUDA_TECNICA.md) · [ideas de features](https://github.com/ale-dm/bot-discord/issues?q=is%3Aopen+label%3Afeature-idea) (issues con la etiqueta `feature-idea`)
 - **Índice de toda la documentación:** [docs/README.md](docs/README.md)
 
 ## Cómo se usa
 
-Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (17 comandos en total):
+Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (22 comandos en total):
 
 | Panel | Qué hay |
 |---|---|
@@ -31,7 +31,7 @@ Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí
 `/ayuda` explica cada parte y tiene botones que abren estos paneles. El dinero está en **efectivo** (con lo que se
 juega y se compra) o en el **banco** (seguro; hay que sacarlo para gastarlo). De momento los paneles son públicos
 (solo quien los abre puede pulsarlos); los avisos de error, `/paneladmin` y lo que el Duende recuerda, en privado.
-Aparte: el Duende en el chat y por voz (`/ia`, `/imagen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/bola8`, `/ping` y `/javier`.
+Aparte: el Duende en el chat y por voz (`/ia`, `/imagen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/pase` (pase de batalla), `/bola8`, `/ping`, `/javier` y `/ayuda`. `/mensaje` es solo para admins.
 
 ## Puesta en marcha (desarrollo)
 
@@ -42,12 +42,12 @@ npm run stt:setup           # solo la primera vez: Python + modelo de voz (Windo
 npm start                   # servidor de voz + registro de comandos + bot
 ```
 
-Otros comandos: `npm run start:bot` (sin voz) · `npm test` · `npm run db:check` · `npm run db:backup` ·
+Otros comandos: `npm run start:bot` (sin voz) · `npm run start:vosk` (solo el servidor de voz) · `npm test` · `npm run db:check` · `npm run db:backup` ·
 `npm run commands` (solo registrar los slash commands) · `npm run stt:test ruta.wav` · `npm run plex:check`
 (comprueba los logros de Plex contra el Tautulli de verdad, sin tocar la BD).
 
 Antes de subir cambios: `npm run check` (ESLint + Prettier + tests). `npm run lint:fix` y `npm run format`
-corrigen lo automático.
+corrigen lo automático; `npm run format:check` solo comprueba el formato.
 
 ## Estructura
 
@@ -65,11 +65,12 @@ el-duende/
 │   │   └── registerCommands.js Registra los slash commands en Discord
 │   ├── commands/           Un fichero por slash command, agrupados por tema
 │   │   ├── duende/           /duende /ia /imagen /bola8 /javier
-│   │   ├── voz/              /tts /escuchar /conversación
+│   │   ├── voz/              /tts /escuchar /conversación /sonidos /conectar
 │   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
 │   │   ├── economia/         /tienda (catálogo, inventario y compras) /cripto /robar /trabajar
-│   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas)
-│   │   ├── admin/            /paneladmin (banco, niveles, config, apuestas, catálogo, sistema...)
+│   ├── plex/             /plex (sesiones de cine, recomendaciones, Wrapped y perfil de Plex)
+│   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas) /pase
+│   │   ├── admin/            /paneladmin (banco, niveles, config, apuestas, catálogo, sistema...) /mensaje
 │   │   └── general/          /ayuda /ping
 │   ├── juegos/             Juegos del casino, apuestas y retos: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,

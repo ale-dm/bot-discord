@@ -72,7 +72,7 @@ developer, sin liberar) y #244 (merge a developer, sin liberar).
 | Cobertura | líneas 75,4 %, ramas 62,7 %, funciones 78,2 % | líneas 85,3 %, ramas 71,0 %, funciones 87,9 % | +9,9 / +8,3 / +9,7 puntos |
 | Dependencias con vulnerabilidades | 0 | 0 | sin cambio |
 | `catch` vacíos | 7 | 0 | -7 |
-| `TODO` / `FIXME` | 2 | 1 (un comentario de `ia.js` sobre una API de Discord futura) | -1 |
+| `TODO` / `FIXME` | 2 | 0 (el de `ia.js` se quitó el 2026-10-10) | -2 |
 | `console.log` en `src/` | 2 | 0 | -2 |
 | Índices de BD | 40 | 43 `CREATE INDEX` en migraciones | el recuento de la línea base no se pudo repetir igual: 43 es el número bruto de `CREATE INDEX` |
 | Filas abiertas en el registro de deuda | 0 | 0 | sin cambio |
@@ -84,10 +84,10 @@ developer, sin liberar) y #244 (merge a developer, sin liberar).
 | Tests | 7 | 8 | 243 tests más y cobertura de ramas por encima del 70 %; quedan ficheros de administración con cobertura baja |
 | Lint y formato | 9 | 9 | Cero avisos, igual que antes |
 | Base de datos | 8 | 8 | Sin cambios en esta pasada |
-| Robustez | 7 | 9 | Sin `catch` vacíos ni `console.log` sueltos; queda un `TODO` |
+| Robustez | 7 | 10 | Sin `catch` vacíos, `console.log` sueltos ni `TODO` |
 | Documentación | 8 | 8 | Changelog al día y registro de deuda vacío; este documento se actualiza con cada medida |
 
-**Media: 8,4 / 10** (antes 7,7). Es una valoración propia con los mismos criterios, no una medición externa.
+**Media: 8,4 / 10** (antes 7,7). Con Robustez en 10, que es el estado tras quitar el último `TODO`, la media sube a 8,6. Es una valoración propia con los mismos criterios, no una medición externa.
 
 ### Lo que queda
 
@@ -100,3 +100,18 @@ developer, sin liberar) y #244 (merge a developer, sin liberar).
 - **Duplicación:** los tres pares de la línea base no se han vuelto a medir en esta pasada.
 - **Exports sin uso:** no se ha vuelto a medir.
 - **Pendiente fuera del código:** las comprobaciones en Discord de #243 (voz en directo) y #244 (quiniela, perfil, rankings) antes de liberar a `main`.
+
+## Para llegar a 10: hallazgos por área
+
+Un área llega a 10 cuando no le queda ningún hallazgo. Esto es lo que falta, con el esfuerzo que calculo. Se mide con los
+mismos comandos de la línea base.
+
+| Área | Puntos | Qué falta | Esfuerzo |
+|---|---|---|---|
+| Robustez | 10 | Nada: 0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`/`FIXME` | — |
+| Lint | 9 | Cero avisos, y ya hay límites de tamaño en ESLint (120 líneas por función y 500 por fichero en `src/`). El punto que falta no se anotó en la línea base, así que no hay hallazgo concreto que cerrar: hay que decidir qué se mide (por ejemplo `complexity`, `no-shadow`, `require-await`), medirlo y, si da avisos, resolverlos | Bajo, pero necesita una decisión |
+| Tamaño de funciones | 9 | 53 funciones de más de 60 líneas en 42 ficheros; las que tienen más son `juegos/apuestas/apuestas.js` (3), y con 2 cada una: `adminPanel/apuestas.js`, `adminPanel/niveles/usuarios.js`, `adminPanel/sistema.js`, `commands/duende/ia.js`, `commands/duende/imagen.js`, `juegos/apuestas/quiniela.js`, `juegos/casino/blackjack.js`, `paneles/tienda.js` y `services/stt.js`. Ficheros de más de 400 líneas: 8 (`apuestas.js` 499, `blackjack.js` 487, `tragaperras.js` 473, `paneles/retos.js` 472, `paneles/casino.js` 467, `adivinar.js` 439, `duende/perfiles.js` 439 y `plexFichas.js` 425) | Alto: es el trabajo grande que queda |
+| Organización | 8 | `juegos/` mezcla textos, reglas y flujo: `apuestas.js` (499) y los juegos de casino (`blackjack.js`, `tragaperras.js`, `adivinar.js`). Hay que decidir caso por caso qué regla sale a `systems/` | Medio |
+| Tests | 8 | Cobertura de líneas 85,3 % y de ramas 71,0 %. Por debajo del 60 % de líneas, en la administración: `adminPanel/apodos.js` (28 %), `adminPanel/audit.js` (29 %), `adminPanel/niveles/usuarios.js` (32 %) y `adminPanel/seerr.js` (46 %). **El resto del repositorio no se ha medido fichero a fichero**: el primer paso es medirlo y listar lo que quede por debajo | Medio |
+| Base de datos | 8 | Una clave foránea sin índice: `tienda.objetoId` → `objeto` (migración `042`). 69 `SELECT *` en 25 ficheros: no es un fallo, pero en las consultas calientes conviene listar las columnas. **Sin medir**: el plan de ejecución (`EXPLAIN QUERY PLAN`) de las consultas más usadas. Los 43 `CREATE INDEX` de hoy no son comparables con los 40 de la línea base, que se contaron de otra forma | Bajo para el índice; medio para el resto |
+| Documentación | 8 | Revisado hoy: README, SIGUIENTES_PASOS, FUNCIONALIDADES (tabla de comandos), PLEX_Y_SEERR (referencias al código), TAREAS, docs/README. Falta: decidir la política de merge (CONTRIBUTING pide squash, el historial tiene merges); verificar la sección de configuración de GitHub de CONTRIBUTING; y revisar DEPLOY línea a línea (hoy solo se ha revisado por nombres de comandos y de ficheros) | Bajo |
