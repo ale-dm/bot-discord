@@ -91,20 +91,28 @@ function campoSelector(campo) {
             if (marcados.length) selector.setDefaultChannels(marcados);
             return etiqueta.setChannelSelectMenuComponent(selector);
         }
-        case "rol":
-            return etiqueta.setRoleSelectMenuComponent(
-                new RoleSelectMenuBuilder()
-                    .setCustomId(campo.id)
-                    .setRequired(requerido)
-                    .setPlaceholder(campo.placeholder || "Elige un rol"),
-            );
-        case "usuario":
-            return etiqueta.setUserSelectMenuComponent(
-                new UserSelectMenuBuilder()
-                    .setCustomId(campo.id)
-                    .setRequired(requerido)
-                    .setPlaceholder(campo.placeholder || "Elige a una persona"),
-            );
+        case "rol": {
+            const selector = new RoleSelectMenuBuilder()
+                .setCustomId(campo.id)
+                .setRequired(requerido)
+                .setMinValues(0)
+                .setMaxValues(campo.multiple ? 25 : 1)
+                .setPlaceholder(campo.placeholder || (campo.multiple ? "Elige roles" : "Elige un rol"));
+            const marcados = campo.valores ?? (campo.valor ? [campo.valor] : []);
+            if (marcados.length) selector.setDefaultRoles(marcados);
+            return etiqueta.setRoleSelectMenuComponent(selector);
+        }
+        case "usuario": {
+            const selector = new UserSelectMenuBuilder()
+                .setCustomId(campo.id)
+                .setRequired(requerido)
+                .setMinValues(0)
+                .setMaxValues(campo.multiple ? 25 : 1)
+                .setPlaceholder(campo.placeholder || (campo.multiple ? "Elige personas" : "Elige a una persona"));
+            const marcados = campo.valores ?? (campo.valor ? [campo.valor] : []);
+            if (marcados.length) selector.setDefaultUsers(marcados);
+            return etiqueta.setUserSelectMenuComponent(selector);
+        }
         default:
             throw new Error(`Tipo de campo sin selector: ${campo.tipo}`);
     }
@@ -134,4 +142,39 @@ function canalElegido(fields, id) {
     return canalesElegidos(fields, id)[0] ?? "";
 }
 
-module.exports = { isAdmin, simpleModal, modalConCampos, campoSelector, SI_NO, SI_NO_NUMERICO, canalesElegidos, canalElegido };
+/** Los roles elegidos en un selector de roles (lista de IDs). */
+function rolesElegidos(fields, id) {
+    const elegidos = fields.getSelectedRoles(id);
+    return elegidos ? [...elegidos.keys()] : [];
+}
+
+/** Las personas elegidas en un selector de usuarios (lista de IDs). */
+function usuariosElegidos(fields, id) {
+    const elegidos = fields.getSelectedUsers(id);
+    return elegidos ? [...elegidos.keys()] : [];
+}
+
+/** La persona elegida en un selector de una ("" si no se eligió ninguna). */
+function usuarioElegido(fields, id) {
+    return usuariosElegidos(fields, id)[0] ?? "";
+}
+
+/** El rol elegido en un selector de uno ("" si no se eligió ninguno). */
+function rolElegido(fields, id) {
+    return rolesElegidos(fields, id)[0] ?? "";
+}
+
+module.exports = {
+    isAdmin,
+    simpleModal,
+    modalConCampos,
+    campoSelector,
+    SI_NO,
+    SI_NO_NUMERICO,
+    canalesElegidos,
+    canalElegido,
+    rolesElegidos,
+    rolElegido,
+    usuariosElegidos,
+    usuarioElegido,
+};

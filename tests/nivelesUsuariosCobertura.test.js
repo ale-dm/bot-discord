@@ -48,11 +48,11 @@ function interaccion(extra = {}, { admin = true } = {}) {
 }
 
 function campos(valores) {
-    return { getTextInputValue: (id) => valores[id] ?? "" };
+    return { getTextInputValue: (id) => valores[id] ?? "", getSelectedUsers: (id) => (valores[id] ? new Map([[valores[id], {}]]) : null) };
 }
 
 const ultimo = (mock) => mock.mock.calls.at(-1)[0];
-const idsDeModal = (m) => m.components.map((fila) => fila.components[0].data.custom_id);
+const idsDeModal = (m) => m.toJSON().components.map((fila) => (fila.component ?? fila.components[0]).custom_id);
 const campoDe = (embed, nombre) => embed.fields.find((f) => f.name === nombre).value;
 const auditoria = (accion) =>
     db.prepare("SELECT details FROM admin_audit WHERE guildId = ? AND action = ? ORDER BY id DESC LIMIT 1").get(G, accion);

@@ -3,35 +3,31 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const xp = require("../../systems/xpSystem");
 const adminAudit = require("../../systems/adminAudit");
-const { simpleModal } = require("../common");
+const { modalConCampos, usuarioElegido } = require("../common");
 
 // Los formularios que abren los botones de la vista de usuarios.
 const MODALES_USUARIOS = new Map([
     [
         "paneladmin_levels_user_adjust",
         () =>
-            simpleModal("paneladmin_levels_user_adjust_modal", "Ajustar XP", [
-                { id: "user_id", label: "ID usuario", placeholder: "123..." },
+            modalConCampos("paneladmin_levels_user_adjust_modal", "Ajustar XP", [
+                { id: "user_id", label: "Persona", tipo: "usuario" },
                 { id: "amount", label: "Cantidad (+ o -)", placeholder: "150 o -200" },
             ]),
     ],
     [
         "paneladmin_levels_user_reset",
-        () =>
-            simpleModal("paneladmin_levels_user_reset_modal", "Reset XP", [{ id: "user_id", label: "ID usuario", placeholder: "123..." }]),
+        () => modalConCampos("paneladmin_levels_user_reset_modal", "Reset XP", [{ id: "user_id", label: "Persona", tipo: "usuario" }]),
     ],
     [
         "paneladmin_levels_user_view",
-        () =>
-            simpleModal("paneladmin_levels_user_view_modal", "Ver perfil XP", [
-                { id: "user_id", label: "ID usuario", placeholder: "123..." },
-            ]),
+        () => modalConCampos("paneladmin_levels_user_view_modal", "Ver perfil XP", [{ id: "user_id", label: "Persona", tipo: "usuario" }]),
     ],
     [
         "paneladmin_levels_user_mult",
         () =>
-            simpleModal("paneladmin_levels_user_mult_modal", "Multiplicador de coste XP", [
-                { id: "user_id", label: "ID usuario", placeholder: "123..." },
+            modalConCampos("paneladmin_levels_user_mult_modal", "Multiplicador de coste XP", [
+                { id: "user_id", label: "Persona", tipo: "usuario" },
                 { id: "multiplier", label: "Multiplicador (1 = normal, 0 quita)", placeholder: "1" },
             ]),
     ],
@@ -76,7 +72,7 @@ async function boton(interaction) {
 
 async function modalAjustar(interaction) {
     const guildId = interaction.guildId;
-    const userId = interaction.fields.getTextInputValue("user_id").trim();
+    const userId = usuarioElegido(interaction.fields, "user_id");
     const amount = parseInt(interaction.fields.getTextInputValue("amount"), 10);
     if (!/^\d{17,19}$/.test(userId) || isNaN(amount)) {
         await interaction.reply({ content: "ID o cantidad inválida.", flags: MessageFlags.Ephemeral });
@@ -90,7 +86,7 @@ async function modalAjustar(interaction) {
 }
 
 async function modalConfirmarReset(interaction) {
-    const userId = interaction.fields.getTextInputValue("user_id").trim();
+    const userId = usuarioElegido(interaction.fields, "user_id");
     if (!/^\d{17,19}$/.test(userId)) {
         await interaction.reply({ content: "ID inválido.", flags: MessageFlags.Ephemeral });
         return true;
@@ -109,7 +105,7 @@ async function modalConfirmarReset(interaction) {
 
 async function modalVerPerfil(interaction) {
     const guildId = interaction.guildId;
-    const userId = interaction.fields.getTextInputValue("user_id").trim();
+    const userId = usuarioElegido(interaction.fields, "user_id");
     if (!/^\d{17,19}$/.test(userId)) {
         await interaction.reply({ content: "ID inválido.", flags: MessageFlags.Ephemeral });
         return true;
@@ -136,7 +132,7 @@ async function modalVerPerfil(interaction) {
 
 async function modalMultiplicador(interaction) {
     const guildId = interaction.guildId;
-    const userId = interaction.fields.getTextInputValue("user_id").trim();
+    const userId = usuarioElegido(interaction.fields, "user_id");
     const multiplier = parseFloat(interaction.fields.getTextInputValue("multiplier"));
     if (!/^\d{17,19}$/.test(userId) || isNaN(multiplier) || multiplier < 0) {
         await interaction.reply({ content: "ID o multiplicador inválido.", flags: MessageFlags.Ephemeral });

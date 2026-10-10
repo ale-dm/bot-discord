@@ -28,11 +28,14 @@ function interaccion(extra = {}) {
 }
 
 function campos(valores) {
-    return { getTextInputValue: (id) => valores[id] ?? "" };
+    return {
+        getTextInputValue: (id) => valores[id] ?? "",
+        getSelectedRoles: (id) => (valores[id] ? new Map([[valores[id], {}]]) : null),
+    };
 }
 
 const ultimo = (mock) => mock.mock.calls.at(-1)[0];
-const idsDeModal = (m) => m.components.map((fila) => fila.components[0].data.custom_id);
+const idsDeModal = (m) => m.toJSON().components.map((fila) => (fila.component ?? fila.components[0]).custom_id);
 
 describe("listado de recompensas", () => {
     beforeEach(() => {
@@ -133,11 +136,11 @@ describe("descripción de recompensas", () => {
         expect(ultimo(i.reply).content).toContain("No hay ninguna recompensa");
     });
 
-    test("guarda emoji y descripción, quitando menciones del ID de rol", async () => {
+    test("guarda emoji y descripción del rol elegido", async () => {
         xp.setReward(G, 9, ROL_A, "Moderador");
         const i = interaccion({
             customId: "paneladmin_levels_reward_desc_modal",
-            fields: campos({ nivel: "9", role_id: `<@&${ROL_A}>`, emoji: "🎧", descripcion: "Acceso a la sala" }),
+            fields: campos({ nivel: "9", role_id: ROL_A, emoji: "🎧", descripcion: "Acceso a la sala" }),
         });
         await modal(i);
         const fila = xp.getRewards(G).find((r) => r.nivel === 9);

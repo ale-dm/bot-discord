@@ -15,7 +15,7 @@ const perfiles = require("../systems/duende/perfiles");
 const { buildPersonProfileText } = require("../systems/duende/personas");
 const apodos = require("../systems/apodos");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal } = require("./common");
+const { modalConCampos, usuarioElegido } = require("./common");
 
 const P = "paneladmin_perfiles_";
 const cortar = (t, n) => (t.length > n ? t.slice(0, n - 1) + "…" : t);
@@ -146,10 +146,10 @@ function buildFicha(p, guildId, aviso = null) {
 }
 
 function formularioEdicion(p) {
-    return simpleModal(`${P}modal_${p.id}`, cortar(`Perfil de ${p.name}`, 45), [
+    return modalConCampos(`${P}modal_${p.id}`, cortar(`Perfil de ${p.name}`, 45), [
         { id: "nombre", label: "Nombre (cómo le llama el Duende)", value: p.name.slice(0, 60), maxLength: 60 },
         { id: "username", label: "Username (se actualiza solo al hablar)", value: p.username || "", maxLength: 32, required: false },
-        { id: "discordId", label: "Discord ID (vacío = sin vincular)", value: p.discordId || "", maxLength: 20, required: false },
+        { id: "discordId", label: "Persona vinculada (vacío = ninguna)", tipo: "usuario", required: false, valor: p.discordId || "" },
         {
             id: "descripcion",
             label: "Descripción (cómo es, cómo tratarle)",
@@ -273,7 +273,7 @@ async function handlePerfilesModal(interaction) {
     const r = perfiles.actualizarPerfil(m[1], {
         nombre: campo("nombre"),
         username: campo("username"),
-        discordId: campo("discordId"),
+        discordId: usuarioElegido(interaction.fields, "discordId"),
         descripcion: campo("descripcion"),
         notas,
     });
