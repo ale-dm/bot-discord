@@ -5,6 +5,7 @@
 const { MessageFlags } = require("discord.js");
 const dinero = require("../systems/dinero");
 const economia = require("../paneles/economia");
+const { importeElegido } = require("../paneles/importes");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Dinero");
@@ -112,7 +113,7 @@ module.exports = {
     async handleModal(client, interaction) {
         const userId = interaction.user.id;
         const id = interaction.customId;
-        const cantidad = Number(String(interaction.fields.getTextInputValue("cantidad")).replace(/[.\s]/g, ""));
+        const cantidad = importeElegido(interaction.fields);
         let r;
         let volver = null;
         if (id === "dinero_modal_depositar_negocio") {

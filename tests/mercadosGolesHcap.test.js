@@ -150,7 +150,7 @@ test("apostar a más de 2,5 goles guarda la cuota y la línea de esa apuesta", a
         customId: `apuestas_modal_mas_${PARTIDO}`,
         user: { id: u, tag: u },
         guildId: G,
-        fields: { getTextInputValue: (id) => (id === "cantidad" ? "100" : "") },
+        fields: { getStringSelectValues: () => null, getTextInputValue: (id) => (id === "cantidad" ? "100" : "") },
         reply: jest.fn(),
     };
     await apuestas.handleModal(null, modal);
@@ -169,7 +169,7 @@ test("una apuesta a hándicap guarda la línea del local con la que se apostó",
         customId: `apuestas_modal_casa_${PARTIDO}`,
         user: { id: u, tag: u },
         guildId: G,
-        fields: { getTextInputValue: () => "50" },
+        fields: { getStringSelectValues: () => null, getTextInputValue: () => "50" },
         reply: jest.fn(),
     });
     const fila = db.prepare("SELECT eleccion, cuota, linea FROM apuestas_usuario WHERE user_id = ? AND match_id = ?").get(u, PARTIDO);

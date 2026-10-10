@@ -136,9 +136,10 @@ describe("botones del boleto", () => {
         const modal = i.showModal.mock.calls[0][0].toJSON();
         expect(modal.custom_id).toBe("combinada_modal_apostar");
         expect(modal.title).toBe("🧩 Apostar combinada");
-        const campo = modal.components[0].components[0];
+        expect(modal.components[0].component.custom_id).toBe("importe");
+        const campo = modal.components[1].components[0];
         expect(campo.custom_id).toBe("cantidad");
-        expect(campo.label).toBe(`Cantidad (${combinadas.MIN_APUESTA}-${combinadas.MAX_APUESTA})`);
+        expect(campo.label).toBe(`Otra cantidad (${combinadas.MIN_APUESTA}-${combinadas.MAX_APUESTA})`);
         expect(campo.min_length).toBe(1);
         expect(campo.max_length).toBe(7);
     });
@@ -159,12 +160,15 @@ describe("el formulario de importe", () => {
         interaccion(userId, {
             customId: "combinada_modal_apostar",
             guildId: G,
-            fields: { getTextInputValue: () => valor },
+            fields: { getStringSelectValues: () => null, getTextInputValue: () => valor },
         });
 
     test("un formulario con otro id no hace nada", async () => {
         const u = usuario();
-        const i = interaccion(u, { customId: "otro_formulario", fields: { getTextInputValue: () => "100" } });
+        const i = interaccion(u, {
+            customId: "otro_formulario",
+            fields: { getStringSelectValues: () => null, getTextInputValue: () => "100" },
+        });
         await combinada.handleModal(null, i);
         expect(i.reply).not.toHaveBeenCalled();
     });

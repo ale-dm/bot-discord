@@ -45,7 +45,7 @@ function interaccion(userId, extra = {}) {
         update: jest.fn(async () => {}),
         showModal: jest.fn(async () => {}),
         isButton: () => true,
-        fields: { getTextInputValue: () => "" },
+        fields: { getStringSelectValues: () => null, getTextInputValue: () => "" },
         ...extra,
     };
 }
@@ -151,7 +151,7 @@ describe("apostar", () => {
             guildId: G,
             guild: { id: G },
             user: { id: u, username: u, tag: u },
-            fields: { getTextInputValue: (c) => (c === "cantidad" ? "200" : "") },
+            fields: { getStringSelectValues: () => null, getTextInputValue: (c) => (c === "cantidad" ? "200" : "") },
             reply: jest.fn(async () => {}),
             isFromMessage: () => false,
         };
@@ -175,7 +175,7 @@ describe("apostar", () => {
             guildId: G,
             guild: { id: G },
             user: { id: u, username: u, tag: u },
-            fields: { getTextInputValue: (c) => (c === "cantidad" ? "1" : "") },
+            fields: { getStringSelectValues: () => null, getTextInputValue: (c) => (c === "cantidad" ? "1" : "") },
             reply: jest.fn(async () => {}),
             isFromMessage: () => false,
         };

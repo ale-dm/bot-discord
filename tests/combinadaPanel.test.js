@@ -63,7 +63,7 @@ test("el formulario con un importe no válido responde con el motivo, en privado
         customId: "combinada_modal_apostar",
         user: { id: u },
         guildId: "g-panel-comb",
-        fields: { getTextInputValue: () => "abc" },
+        fields: { getStringSelectValues: () => null, getTextInputValue: () => "abc" },
         reply,
     });
     expect(reply.mock.calls[0][0].flags).toBe(MessageFlags.Ephemeral);

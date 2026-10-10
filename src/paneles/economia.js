@@ -12,13 +12,12 @@ const {
     StringSelectMenuBuilder,
     UserSelectMenuBuilder,
     ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
 } = require("discord.js");
 const db = require("../core/db");
 const dinero = require("../systems/dinero");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
 const { fmtNumero } = require("../core/formato");
+const { filasImporte } = require("./importes");
 
 const POR_PAGINA = 10;
 const signo = (n) => `${n > 0 ? "+" : ""}${fmtNumero(n)}`;
@@ -269,16 +268,12 @@ function modalCantidad(customId, titulo, disponible) {
         .setCustomId(customId)
         .setTitle(titulo)
         .addComponents(
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("cantidad")
-                    .setLabel(`Cantidad (tienes ${fmtNumero(disponible)})`.slice(0, 45))
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder(String(disponible))
-                    .setMinLength(1)
-                    .setMaxLength(9)
-                    .setRequired(true),
-            ),
+            ...filasImporte({
+                textoEtiqueta: `Otra cantidad (tienes ${fmtNumero(disponible)})`,
+                placeholder: String(disponible),
+                maxLength: 9,
+                todo: disponible,
+            }),
         );
 }
 

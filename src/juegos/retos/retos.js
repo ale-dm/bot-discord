@@ -8,6 +8,7 @@ const { MessageFlags } = require("discord.js");
 const retos = require("../../systems/retos");
 const dinero = require("../../systems/dinero");
 const paneles = require("../../paneles/retos");
+const { importeElegido } = require("../../paneles/importes");
 const { avisarGanadores } = require("../../systems/apuestas/liquidacion");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { createLogger } = require("../../core/logger");
@@ -18,7 +19,7 @@ const log = createLogger("Retos");
 const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
 // El número de reto va siempre al final del customId.
 const retoDe = (customId) => Number(customId.split("_").at(-1));
-const leerCantidad = (i) => Number(String(i.fields.getTextInputValue("cantidad")).replace(/[.\s]/g, ""));
+const leerCantidad = (i) => importeElegido(i.fields);
 
 // Pasos para lanzar un reto (en el panel de /juegos).
 const PASOS_PANEL = ["retos_nuevo_", "retos_partido_select", "retos_lado_", "retos_juego_", "retos_rival_"];

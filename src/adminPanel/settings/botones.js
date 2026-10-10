@@ -89,9 +89,9 @@ async function accionDiarioEdit(interaction, id, guildId) {
     await interaction.showModal(
         modalConCampos("paneladmin_cfg_diario_modal", "Recompensa diaria", [
             { id: "enabled", label: "Recompensa diaria activa", tipo: "radio", opciones: SI_NO_NUMERICO, valor: d.enabled ? "1" : "0" },
-            { id: "base", label: "Base (monedas con racha 0)", value: String(d.base) },
-            { id: "porDia", label: "Monedas por día de racha", value: String(d.por_dia_racha) },
-            { id: "tope", label: "Tope (máximo al día)", value: String(d.tope) },
+            { id: "base", label: "Base, monedas con racha 0 (0-1.000.000)", value: String(d.base) },
+            { id: "porDia", label: "Monedas por día de racha (0-1.000.000)", value: String(d.por_dia_racha) },
+            { id: "tope", label: "Tope, máximo al día (0-1.000.000)", value: String(d.tope) },
         ]),
     );
     return true;
