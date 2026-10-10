@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: cobertura del Duende)
+
+- **Tests del Duende con las llamadas externas simuladas** (#239): `tests/seerrClienteCobertura.test.js` (configuración, errores de la API, búsqueda, usuarios con su caché, peticiones, caché de búsquedas y canales permitidos), `tests/sttCobertura.test.js` (grabar una intervención, transcribir con Vosk, fallos del servidor y del miembro, y a quién se escucha), `tests/iaComandoCobertura.test.js` y `tests/imagenComandoCobertura.test.js` (respuestas, errores, cooldown, reintentos y adjuntos de imagen con `fetch` simulado) y `tests/herramientasPlexCobertura.test.js` (las herramientas de Plex que consultan Tautulli). Ninguna prueba sale a la red.
+- Cobertura de líneas / ramas: `services/seerrClient.js` 99 % / 84 %, `services/stt.js` 95 % / 81 %, `commands/duende/ia.js` 98 % / 84 %, `commands/duende/imagen.js` 98 % / 83 %, `services/duende/herramientas/plex.js` 72 % / 73 % (el resto, los trofeos, lo cubre `plexDuendeTrofeos.test.js`).
+- Dos cosas que los tests dejan a la vista y no se cambian: un resultado de Seerr sin datos de estado muestra «desconocido» aunque su código sea «sin solicitar»; y un adjunto no válido en `/imagen` ya consume el cooldown.
+
 ## 2026-10-10 (auditoría: cobertura del panel admin de economía y niveles)
 
 - **Tests de los caminos que cambian dinero o ajustes** (#238): `tests/adminBancoPanel.test.js` (saldos por destino, resetear y borrar historial con confirmación, búsqueda de usuario, historial paginado), `tests/adminImpuestosPanel.test.js`, `tests/adminAjustesBotones.test.js`, `tests/adminRecompensasPanel.test.js` (recompensas por selector, búsqueda paginada, ID y descripción) y `tests/adminNivelesConfigPanel.test.js` (XP de mensajes, voz, multiplicador, fórmula, racha, vista previa y canal de anuncios). Cobertura de líneas / ramas: `bank.js` 96 % / 79 %, `impuestos.js` 100 % / 85 %, `settings/botones.js` 100 % / 78 %, `niveles/recompensas.js` 100 % / 92 %, `niveles/config.js` 100 % / 92 %.
