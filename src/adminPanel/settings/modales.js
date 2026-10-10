@@ -44,7 +44,7 @@ async function modalDuendeChannel(interaction, id, guildId) {
 async function modalDuendeEspontaneo(interaction, id, guildId) {
     const channelId = interaction.fields.getTextInputValue("channel").trim();
     guildSettings.setManySettings(guildId, {
-        "duende.espontaneo_enabled": interaction.fields.getTextInputValue("enabled").trim(),
+        "duende.espontaneo_enabled": interaction.fields.getRadioGroup("enabled"),
         "duende.espontaneo_channel_id": channelId,
     });
     adminAudit.logAdminAction({
@@ -78,7 +78,7 @@ async function modalDuendeTono(interaction, id, guildId) {
         return true;
     }
     const valores = {
-        "duende.madrugada_activa": campo("activa"),
+        "duende.madrugada_activa": interaction.fields.getRadioGroup("activa"),
         "duende.madrugada_desde": desde,
         "duende.madrugada_hasta": hasta,
         "duende.canales_formales": formales.join(","),
@@ -139,7 +139,7 @@ async function modalCasinoRtp(interaction, id, guildId) {
 
 async function modalTienda(interaction, id, guildId) {
     guildSettings.setManySettings(guildId, {
-        "tienda.enabled": interaction.fields.getTextInputValue("enabled").trim(),
+        "tienda.enabled": interaction.fields.getRadioGroup("enabled"),
         "tienda.buy_cooldown_sec": interaction.fields.getTextInputValue("buyCd").trim(),
         "tienda.daily_limit": interaction.fields.getTextInputValue("daily").trim(),
         "tienda.notif_channel_id": interaction.fields.getTextInputValue("channel").trim(),
@@ -151,7 +151,7 @@ async function modalTienda(interaction, id, guildId) {
 
 async function modalAcl(interaction, id, guildId) {
     const command = interaction.fields.getTextInputValue("command").trim().replace(/^\//, "").toLowerCase();
-    const enabledRaw = interaction.fields.getTextInputValue("enabled").trim().toLowerCase();
+    const enabledRaw = interaction.fields.getRadioGroup("enabled");
     const channelsRaw = interaction.fields.getTextInputValue("channels").trim();
     const rolesRaw = interaction.fields.getTextInputValue("roles").trim();
 
@@ -173,7 +173,7 @@ async function modalAcl(interaction, id, guildId) {
 
 async function modalLogros(interaction, id, guildId) {
     guildSettings.setManySettings(guildId, {
-        "logros.enabled": interaction.fields.getTextInputValue("enabled").trim(),
+        "logros.enabled": interaction.fields.getRadioGroup("enabled"),
         "logros.reward_multiplier": interaction.fields.getTextInputValue("mult").trim(),
         "logros.notify_channel_id": interaction.fields.getTextInputValue("channel").trim(),
         "logros.disabled_categories": interaction.fields.getTextInputValue("disabled").trim().toLowerCase(),
@@ -197,7 +197,7 @@ async function modalDiario(interaction, id, guildId) {
         }
         valores[clave] = n;
     }
-    guildSettings.setManySettings(guildId, { "diario.enabled": interaction.fields.getTextInputValue("enabled").trim(), ...valores });
+    guildSettings.setManySettings(guildId, { "diario.enabled": interaction.fields.getRadioGroup("enabled"), ...valores });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.diario.update", details: valores });
     if (interaction.isFromMessage?.()) await interaction.update(buildDiarioPanel(guildId));
     else await interaction.reply({ content: "✅ Recompensa diaria actualizada.", flags: MessageFlags.Ephemeral });
@@ -223,7 +223,7 @@ async function modalEventosXp(interaction, id, guildId) {
             return true;
         }
         valores = {
-            "eventos.xp_activo": campo("activo"),
+            "eventos.xp_activo": interaction.fields.getRadioGroup("activo"),
             "eventos.xp_mult": mult,
             "eventos.xp_desde": desde,
             "eventos.xp_hasta": hasta,
@@ -237,7 +237,7 @@ async function modalEventosXp(interaction, id, guildId) {
             });
             return true;
         }
-        valores = { "eventos.casino_activo": campo("activo"), "eventos.casino_pct": pct };
+        valores = { "eventos.casino_activo": interaction.fields.getRadioGroup("activo"), "eventos.casino_pct": pct };
     }
     guildSettings.setManySettings(guildId, valores);
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.eventos.update", details: valores });

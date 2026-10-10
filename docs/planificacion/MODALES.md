@@ -82,6 +82,8 @@ Relacionado con #303.
 
 ## Lo que ya está hecho
 
+- **G1 (sí/no en radio), convertido** (#305): los 12 campos de sí/no de ajustes, racha, impuestos, recordatorio de apuestas y alertas por DM son grupos de radio. Cada manejador lee el grupo con `getRadioGroup`; los valores guardados no cambian. Falta probarlo en Discord antes de cerrar #305.
+
 - `modalConCampos` en `src/adminPanel/common.js`: un campo puede ser texto (como antes) o un selector (Sí/No en radio,
   opciones, canal, rol o usuario). Los modales existentes no cambian. Pruebas en `tests/modalesCampos.test.js`.
 

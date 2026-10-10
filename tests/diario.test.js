@@ -102,7 +102,7 @@ test("/paneladmin → Config Global → 🎁 Diario guarda la configuración y r
             guildId: G,
             user: { id: "admin", tag: "admin" },
             member: { permissions: { has: () => true } },
-            fields: { getTextInputValue: (k) => campos[k] ?? "" },
+            fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" },
             isFromMessage: () => true,
             reply: jest.fn(async () => {}),
             update: jest.fn(async () => {}),

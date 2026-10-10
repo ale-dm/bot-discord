@@ -44,6 +44,16 @@ function simpleModal(customId, title, inputs) {
     return modal;
 }
 
+// Opciones de los campos de sí/no: el valor es el mismo que ya leen los manejadores (sí/no o 1/0).
+const SI_NO = [
+    { label: "Sí", value: "si" },
+    { label: "No", value: "no" },
+];
+const SI_NO_NUMERICO = [
+    { label: "Sí", value: "1" },
+    { label: "No", value: "0" },
+];
+
 /**
  * Un campo de modal que no es texto libre. `tipo`: "radio" (Sí/No u opciones cerradas), "opciones" (desplegable),
  * "canal", "rol" o "usuario" (selectores de Discord, sin escribir IDs). Las opciones van en `opciones: [{ label, value }]`.
@@ -108,4 +118,4 @@ function modalConCampos(customId, title, campos) {
     return modal;
 }
 
-module.exports = { isAdmin, simpleModal, modalConCampos, campoSelector };
+module.exports = { isAdmin, simpleModal, modalConCampos, campoSelector, SI_NO, SI_NO_NUMERICO };

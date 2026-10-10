@@ -99,7 +99,8 @@ describe("/paneladmin → ⚙️ Config Global → 🎉 Eventos", () => {
         showModal: jest.fn(async () => {}),
         ...extra,
     });
-    const formulario = (customId, campos) => interaccion({ customId, fields: { getTextInputValue: (k) => campos[k] ?? "" } });
+    const formulario = (customId, campos) =>
+        interaccion({ customId, fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" } });
     const campos = (payload) => Object.fromEntries(payload.embeds[0].data.fields.map((f) => [f.name, f.value]));
 
     test("pantalla, formularios y validación", async () => {
@@ -109,7 +110,11 @@ describe("/paneladmin → ⚙️ Config Global → 🎉 Eventos", () => {
 
         const boton = interaccion({ customId: "paneladmin_cfg_eventos_xp" });
         await paneladmin.handleButton(null, boton);
-        expect(boton.showModal.mock.calls[0][0].toJSON().components.map((r) => r.components[0].value)).toEqual(["0", "2", "20", "22"]);
+        expect(
+            boton.showModal.mock.calls[0][0]
+                .toJSON()
+                .components.map((r) => (r.component ? r.component.options.find((o) => o.default)?.value : r.components[0].value)),
+        ).toEqual(["0", "2", "20", "22"]);
 
         for (const mal of [
             { activo: "1", mult: "9", desde: "20", hasta: "22" },

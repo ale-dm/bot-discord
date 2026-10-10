@@ -5,7 +5,7 @@ const impuestos = require("../systems/impuestos");
 const dinero = require("../systems/dinero");
 const adminAudit = require("../systems/adminAudit");
 const patrimonio = require("../systems/patrimonio");
-const { simpleModal } = require("./common");
+const { simpleModal, modalConCampos, SI_NO } = require("./common");
 const { fmtNumero } = require("../core/formato");
 
 function lineaRegla(r) {
@@ -122,9 +122,9 @@ async function handleImpuestosButton(interaction) {
     }
     if (id === "paneladmin_impuestos_toggle") {
         await interaction.showModal(
-            simpleModal("paneladmin_impuestos_toggle_modal", "Activar/desactivar regla", [
+            modalConCampos("paneladmin_impuestos_toggle_modal", "Activar/desactivar regla", [
                 { id: "id", label: "ID de la regla", placeholder: "3" },
-                { id: "activo", label: "¿Activa? (sí/no)", placeholder: "si" },
+                { id: "activo", label: "¿Activa?", tipo: "radio", opciones: SI_NO },
             ]),
         );
         return true;
@@ -196,7 +196,7 @@ async function quitarReglaModal(interaction) {
 async function activarReglaModal(interaction) {
     const guildId = interaction.guildId;
     const idRegla = Number(interaction.fields.getTextInputValue("id").trim());
-    const activo = /^(s|si|sí|y|yes|1)$/i.test(interaction.fields.getTextInputValue("activo").trim());
+    const activo = /^(s|si|sí|y|yes|1)$/i.test(interaction.fields.getRadioGroup("activo"));
     const ok = impuestos.activarRegla(guildId, idRegla, activo);
     if (!ok) {
         await interaction.reply({ content: `❌ No hay ninguna regla #${idRegla} en este servidor.`, flags: MessageFlags.Ephemeral });

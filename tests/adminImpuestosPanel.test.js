@@ -26,7 +26,7 @@ function interaccion(extra = {}) {
 function formulario(customId, valores) {
     return interaccion({
         customId,
-        fields: { getTextInputValue: (campo) => valores[campo] ?? "" },
+        fields: { getTextInputValue: (campo) => valores[campo] ?? "", getRadioGroup: (campo) => valores[campo] ?? "" },
     });
 }
 
