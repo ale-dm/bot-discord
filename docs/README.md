@@ -23,7 +23,7 @@ Lo que falta por hacer, separado por tipo. Cada entrada tiene un ID para poder r
 | [planificacion/TAREAS.md](planificacion/TAREAS.md) | Tareas manuales: subir a git, desplegar, probar en Discord | `T-xx` |
 | [planificacion/ERRORES.md](planificacion/ERRORES.md) | Fallos encontrados que aún no están corregidos (casi siempre, pendientes de una decisión) | `E-xx` |
 | [planificacion/DEUDA_TECNICA.md](planificacion/DEUDA_TECNICA.md) | Problemas del código y los datos que ya existen, con prioridad y propuesta | `DT-xx` |
-| [planificacion/FEATURES.md](planificacion/FEATURES.md) | Ideas de funcionalidad nueva, por área y esfuerzo | `F-<área>-xx` |
+| [planificacion/FEATURES.md](planificacion/FEATURES.md) | Redirección: las ideas son issues con la etiqueta `feature-idea` (por área y esfuerzo) | — |
 | [planificacion/diseno/](planificacion/diseno/) | Diseños detallados: pase de batalla y reorganización de paneles | |
 
 Al terminar algo: borrarlo del documento de planificación y apuntarlo en el CHANGELOG.

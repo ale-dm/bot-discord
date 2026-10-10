@@ -1,7 +1,7 @@
 # El Duende — Qué hace el bot
 
 Documentación funcional de todo lo que hace El Duende: comandos, sistemas automáticos,
-configuración y datos. Refleja el código a fecha 2026-10-02.
+configuración y datos. Refleja el código a fecha 2026-10-10.
 
 > **Leyenda:** `*` = opción obligatoria · 🔒 = solo administradores · ⏱️ = tarea automática
 
@@ -1133,6 +1133,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 |---|---|
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/conectar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/conversación` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
@@ -1141,9 +1142,14 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) · [Retos](#retos-entre-jugadores) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/mensaje` 🔒 | [Administración](#12-administración) |
 | `/paneladmin` 🔒 | [Administración](#12-administración) |
+| `/pase` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/perfil` | [Perfil](#6-perfil) |
 | `/ping` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/plex` | [Plex y Seerr](#11-plex-y-seerr) |
+| `/robar` | [Economía](#7-economía-banco-tienda-e-inventario) |
+| `/sonidos` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/trabajar` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |

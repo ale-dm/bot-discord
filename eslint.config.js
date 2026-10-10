@@ -27,4 +27,19 @@ module.exports = [
         files: ["tests/**/*.js"],
         languageOptions: { globals: { ...globals.node, ...globals.jest } },
     },
+    {
+        // Tamaño, en modo «que no empeore»: el límite es el máximo actual, no la meta. La meta de la puntuación
+        // (docs/planificacion/PUNTUACION.md) es 60 líneas por función y 400 por fichero: al bajar cada máximo real,
+        // se baja también la regla.
+        files: ["src/**/*.js"],
+        rules: {
+            "max-lines-per-function": ["error", { max: 120, skipBlankLines: false, skipComments: false }],
+            "max-lines": ["error", { max: 500, skipBlankLines: false, skipComments: false }],
+        },
+    },
+    {
+        // Catálogo de datos (logros): una lista larga por naturaleza, no lógica.
+        files: ["src/systems/logros/catalogo.js"],
+        rules: { "max-lines": "off" },
+    },
 ];

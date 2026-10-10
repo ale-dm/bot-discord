@@ -8,6 +8,7 @@ La reorganización de paneles, con los errores E-05 a E-15, va por partes según
 | ID | Tarea | Prioridad |
 |---|---|---|
 | [T-02](#t-02-desplegar-y-probar-en-discord) | Desplegar y probar en Discord | 🔴 Alta |
+| [T-03](#t-03-comprobar-en-discord-los-refactors-de-la-auditoría) | Comprobar en Discord los refactors de la auditoría (#243, #244). Bloquea liberar a `main` | 🔴 Alta |
 
 ---
 
@@ -457,3 +458,23 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] `/duende recuerda` sobre otro sin ser admin (debe negarse) y sobre uno mismo; `/duende personas` sin
       ser admin (solo lo tuyo, en privado) y como admin (todos).
 - [x] Al día siguiente, que exista `data/backups/banco-AAAA-MM-DD.db`.
+
+---
+
+## T-03 Comprobar en Discord los refactors de la auditoría
+
+Los cambios de #243 (Duende y voz en directo) y #244 (perfil, ajustes, quiniela y liquidación) son traslados de código sin
+cambio de comportamiento, pero los tests no cubren la voz ni los botones de la quiniela tal como se ven en Discord. Están en
+`developer` y **no se liberan a `main` hasta que esta lista esté marcada.**
+
+**Voz en directo (#243)**
+- [ ] `/conversación` une al bot al canal, responde por voz y sale tras el corte por inactividad.
+- [ ] Tertulia: con varias personas hablando, el Duende recibe turnos y contesta.
+- [ ] Tope de duración: la conexión se cierra al llegar al máximo (`DUENDE_LIVE_MAX_DURATION_MS`, 30 min por defecto).
+- [ ] `/duende` → 💬 Hablar responde en el canal, con GIF y propuestas de reto cuando toca.
+
+**Quiniela, perfil, rankings y ajustes (#244)**
+- [ ] `/juegos` → ⚽ Apuestas → quiniela: crear, pronosticar, 🔄 Refrescar (vuelve a mostrar la jornada), cancelar y confirmar.
+- [ ] `/perfil` → 🏅 Logros: páginas, filtro y reclamar.
+- [ ] `/perfil` → 🏆 Rankings: cambiar de tipo y de página.
+- [ ] `/paneladmin` → configuración: cambiar un ajuste, guardarlo y comprobar que se aplica.
