@@ -78,14 +78,19 @@ function campoSelector(campo) {
                     .setPlaceholder(campo.placeholder || "Elige una")
                     .addOptions(campo.opciones.map((o) => ({ label: o.label, value: o.value, default: o.value === campo.valor }))),
             );
-        case "canal":
-            return etiqueta.setChannelSelectMenuComponent(
-                new ChannelSelectMenuBuilder()
-                    .setCustomId(campo.id)
-                    .setRequired(requerido)
-                    .setChannelTypes(ChannelType.GuildText)
-                    .setPlaceholder(campo.placeholder || "Elige un canal"),
-            );
+        case "canal": {
+            // Un canal, o varios si `multiple`. `valor` (uno) o `valores` (varios) dejan marcado lo que ya hay guardado.
+            const selector = new ChannelSelectMenuBuilder()
+                .setCustomId(campo.id)
+                .setRequired(requerido)
+                .setMinValues(0)
+                .setMaxValues(campo.multiple ? 25 : 1)
+                .setChannelTypes(ChannelType.GuildText)
+                .setPlaceholder(campo.placeholder || (campo.multiple ? "Elige canales" : "Elige un canal"));
+            const marcados = campo.valores ?? (campo.valor ? [campo.valor] : []);
+            if (marcados.length) selector.setDefaultChannels(marcados);
+            return etiqueta.setChannelSelectMenuComponent(selector);
+        }
         case "rol":
             return etiqueta.setRoleSelectMenuComponent(
                 new RoleSelectMenuBuilder()
@@ -118,4 +123,15 @@ function modalConCampos(customId, title, campos) {
     return modal;
 }
 
-module.exports = { isAdmin, simpleModal, modalConCampos, campoSelector, SI_NO, SI_NO_NUMERICO };
+/** Los canales elegidos en un selector de canales (lista de IDs; vacía si no se eligió ninguno). */
+function canalesElegidos(fields, id) {
+    const elegidos = fields.getSelectedChannels(id);
+    return elegidos ? [...elegidos.keys()] : [];
+}
+
+/** El canal elegido en un selector de uno ("" si no se eligió ninguno). */
+function canalElegido(fields, id) {
+    return canalesElegidos(fields, id)[0] ?? "";
+}
+
+module.exports = { isAdmin, simpleModal, modalConCampos, campoSelector, SI_NO, SI_NO_NUMERICO, canalesElegidos, canalElegido };

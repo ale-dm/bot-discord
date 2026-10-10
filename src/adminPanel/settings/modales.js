@@ -1,4 +1,5 @@
 const { MessageFlags } = require("discord.js");
+const { canalElegido, canalesElegidos } = require("../common");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./vistas");
@@ -29,7 +30,7 @@ async function modalDuende(interaction, id, guildId) {
 }
 
 async function modalDuendeChannel(interaction, id, guildId) {
-    const channelId = interaction.fields.getTextInputValue("channel").trim();
+    const channelId = canalElegido(interaction.fields, "channel");
     guildSettings.setSetting(guildId, "duende.allowed_channel_id", channelId);
     adminAudit.logAdminAction({
         guildId,
@@ -42,7 +43,7 @@ async function modalDuendeChannel(interaction, id, guildId) {
 }
 
 async function modalDuendeEspontaneo(interaction, id, guildId) {
-    const channelId = interaction.fields.getTextInputValue("channel").trim();
+    const channelId = canalElegido(interaction.fields, "channel");
     guildSettings.setManySettings(guildId, {
         "duende.espontaneo_enabled": interaction.fields.getRadioGroup("enabled"),
         "duende.espontaneo_channel_id": channelId,
@@ -61,7 +62,7 @@ async function modalDuendeTono(interaction, id, guildId) {
     const campo = (c) => interaction.fields.getTextInputValue(c).trim();
     const desde = Number(campo("desde"));
     const hasta = Number(campo("hasta"));
-    const formales = guildSettings.parseCsvIds(campo("formales").replace(/[<#>]/g, ""));
+    const formales = canalesElegidos(interaction.fields, "formales");
     if (![desde, hasta].every((h) => Number.isInteger(h) && h >= 0 && h <= 23) || desde === hasta) {
         await interaction.reply({
             content: "❌ Las horas de la madrugada son números enteros de 0 a 23 (y distintos entre sí).",
@@ -142,7 +143,7 @@ async function modalTienda(interaction, id, guildId) {
         "tienda.enabled": interaction.fields.getRadioGroup("enabled"),
         "tienda.buy_cooldown_sec": interaction.fields.getTextInputValue("buyCd").trim(),
         "tienda.daily_limit": interaction.fields.getTextInputValue("daily").trim(),
-        "tienda.notif_channel_id": interaction.fields.getTextInputValue("channel").trim(),
+        "tienda.notif_channel_id": canalElegido(interaction.fields, "channel"),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.tienda.update" });
     await interaction.reply({ content: "✅ Configuración de tienda actualizada.", flags: MessageFlags.Ephemeral });
@@ -152,7 +153,6 @@ async function modalTienda(interaction, id, guildId) {
 async function modalAcl(interaction, id, guildId) {
     const command = interaction.fields.getTextInputValue("command").trim().replace(/^\//, "").toLowerCase();
     const enabledRaw = interaction.fields.getRadioGroup("enabled");
-    const channelsRaw = interaction.fields.getTextInputValue("channels").trim();
     const rolesRaw = interaction.fields.getTextInputValue("roles").trim();
 
     if (!command) {
@@ -162,7 +162,7 @@ async function modalAcl(interaction, id, guildId) {
 
     guildSettings.setCommandAcl(guildId, command, {
         enabled: enabledRaw === "1" || enabledRaw === "true" || enabledRaw === "si",
-        allowedChannels: guildSettings.parseCsvIds(channelsRaw),
+        allowedChannels: canalesElegidos(interaction.fields, "channels"),
         allowedRoles: guildSettings.parseCsvIds(rolesRaw),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.acl.update", details: { command } });
@@ -175,7 +175,7 @@ async function modalLogros(interaction, id, guildId) {
     guildSettings.setManySettings(guildId, {
         "logros.enabled": interaction.fields.getRadioGroup("enabled"),
         "logros.reward_multiplier": interaction.fields.getTextInputValue("mult").trim(),
-        "logros.notify_channel_id": interaction.fields.getTextInputValue("channel").trim(),
+        "logros.notify_channel_id": canalElegido(interaction.fields, "channel"),
         "logros.disabled_categories": interaction.fields.getTextInputValue("disabled").trim().toLowerCase(),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.logros.update" });

@@ -107,8 +107,8 @@ async function accionDuendeEdit(interaction, id, guildId) {
 
 async function accionDuendeChannel(interaction, id, guildId) {
     const d = guildSettings.getSettings(guildId).duende;
-    const modal = simpleModal("paneladmin_cfg_duende_channel_modal", "Canal Duende", [
-        { id: "channel", label: "ID de canal (vacío = cualquiera)", required: false, value: d.allowed_channel_id || "" },
+    const modal = modalConCampos("paneladmin_cfg_duende_channel_modal", "Canal Duende", [
+        { id: "channel", label: "Canal permitido (vacío = cualquiera)", tipo: "canal", required: false, valor: d.allowed_channel_id || "" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -129,10 +129,11 @@ async function accionDuendeTono(interaction, id, guildId) {
             { id: "hasta", label: "Madrugada hasta la hora (0-23, Madrid)", value: String(d.madrugada_hasta) },
             {
                 id: "formales",
-                label: "Canales formales (IDs separados por comas)",
+                label: "Canales formales",
+                tipo: "canal",
+                multiple: true,
                 required: false,
-                placeholder: "Vacío = ninguno",
-                value: d.canales_formales || "",
+                valores: guildSettings.parseCsvIds(d.canales_formales || ""),
             },
         ]),
     );
@@ -149,7 +150,7 @@ async function accionDuendeEspontaneo(interaction, id, guildId) {
             opciones: SI_NO_NUMERICO,
             valor: d.espontaneo_enabled ? "1" : "0",
         },
-        { id: "channel", label: "ID de canal (vacío = no sale ninguno)", required: false, value: d.espontaneo_channel_id || "" },
+        { id: "channel", label: "Canal (vacío = no sale ninguno)", tipo: "canal", required: false, valor: d.espontaneo_channel_id || "" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -208,7 +209,7 @@ async function accionTiendaEdit(interaction, id, guildId) {
         { id: "enabled", label: "Tienda activa", tipo: "radio", opciones: SI_NO_NUMERICO, valor: t.enabled ? "1" : "0" },
         { id: "buyCd", label: "Cooldown compra (s)", value: String(t.buy_cooldown_sec) },
         { id: "daily", label: "Límite diario (0 sin límite)", value: String(t.daily_limit) },
-        { id: "channel", label: "ID canal notificaciones", required: false, value: t.notif_channel_id || "" },
+        { id: "channel", label: "Canal de notificaciones", tipo: "canal", required: false, valor: t.notif_channel_id || "" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -218,7 +219,7 @@ async function accionAclEdit(interaction, id, guildId) {
     const modal = modalConCampos("paneladmin_cfg_acl_modal", "ACL comando", [
         { id: "command", label: "Comando (sin /)", value: "" },
         { id: "enabled", label: "Comando habilitado", tipo: "radio", opciones: SI_NO_NUMERICO, valor: "1" },
-        { id: "channels", label: "Canales CSV (IDs)", required: false, value: "" },
+        { id: "channels", label: "Canales permitidos (vacío = todos)", tipo: "canal", multiple: true, required: false },
         { id: "roles", label: "Roles CSV (IDs)", required: false, value: "" },
     ]);
     await interaction.showModal(modal);
@@ -230,7 +231,7 @@ async function accionLogrosEdit(interaction, id, guildId) {
     const modal = modalConCampos("paneladmin_cfg_logros_modal", "Logros", [
         { id: "enabled", label: "Logros activos", tipo: "radio", opciones: SI_NO_NUMERICO, valor: l.enabled ? "1" : "0" },
         { id: "mult", label: "Multiplicador recompensas", value: String(l.reward_multiplier || 1) },
-        { id: "channel", label: "Canal anuncio (ID)", required: false, value: l.notify_channel_id || "" },
+        { id: "channel", label: "Canal de anuncios", tipo: "canal", required: false, valor: l.notify_channel_id || "" },
         { id: "disabled", label: "Categorías off (csv)", required: false, value: l.disabled_categories || "" },
     ]);
     await interaction.showModal(modal);

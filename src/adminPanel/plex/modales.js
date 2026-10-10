@@ -6,6 +6,7 @@ const plexIdiomas = require("../../systems/plexIdiomas");
 const achievements = require("../../systems/achievementsSystem");
 const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
+const { canalElegido } = require("../common");
 const adminAudit = require("../../systems/adminAudit");
 const { log } = require("./vistas");
 
@@ -76,9 +77,9 @@ async function modalTrofeo(interaction) {
 }
 
 async function modalChannelRemove(interaction) {
-    const channelId = interaction.fields.getTextInputValue("channel_id").trim();
-    if (!/^\d{17,19}$/.test(channelId)) {
-        await interaction.reply({ content: "ID de canal inválido.", flags: MessageFlags.Ephemeral });
+    const channelId = canalElegido(interaction.fields, "channel_id");
+    if (!channelId) {
+        await interaction.reply({ content: "Elige un canal.", flags: MessageFlags.Ephemeral });
         return true;
     }
     tautulliClient.removeAllowedChannel(interaction.guildId, channelId);

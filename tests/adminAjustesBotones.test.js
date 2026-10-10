@@ -24,7 +24,10 @@ function valoresDe(modal) {
     const campos = {};
     // Se lee el JSON del modal, que es lo que recibe Discord: los selectores van en su etiqueta.
     for (const fila of modal.toJSON().components) {
-        if (fila.component) campos[fila.component.custom_id] = fila.component.options.find((o) => o.default)?.value;
+        if (fila.component)
+            campos[fila.component.custom_id] = fila.component.options
+                ? fila.component.options.find((o) => o.default)?.value
+                : (fila.component.default_values ?? []).map((d) => d.id).join(",");
         else for (const c of fila.components) campos[c.custom_id] = c.value;
     }
     return campos;

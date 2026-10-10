@@ -97,7 +97,12 @@ describe("/paneladmin → ⚙️ Config Global → 🤖 Duende → 🕐 Tono", (
     const formulario = (campos) =>
         interaccion({
             customId: "paneladmin_cfg_duende_tono_modal",
-            fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" },
+            fields: {
+                getTextInputValue: (k) => campos[k] ?? "",
+                getRadioGroup: (k) => campos[k] ?? "",
+                getSelectedChannels: (k) =>
+                    k === "formales" ? new Map((campos.formales ?? "").match(/\d{17,19}/g)?.map((id) => [id, {}]) ?? []) : null,
+            },
         });
     const tono = (payload) => payload.embeds[0].data.fields.find((f) => f.name === "🕐 Tono").value;
 
@@ -111,13 +116,18 @@ describe("/paneladmin → ⚙️ Config Global → 🤖 Duende → 🕐 Tono", (
         expect(
             boton.showModal.mock.calls[0][0]
                 .toJSON()
-                .components.map((r) => (r.component ? r.component.options.find((o) => o.default)?.value : r.components[0].value)),
+                .components.map((r) =>
+                    r.component
+                        ? r.component.options
+                            ? r.component.options.find((o) => o.default)?.value
+                            : (r.component.default_values ?? []).map((d) => d.id).join(",")
+                        : r.components[0].value,
+                ),
         ).toEqual(["0", "0", "7", ""]);
 
         for (const [campos, error] of [
             [{ activa: "1", desde: "2", hasta: "2", formales: "" }, /de 0 a 23/],
             [{ activa: "1", desde: "25", hasta: "6", formales: "" }, /de 0 a 23/],
-            [{ activa: "1", desde: "0", hasta: "6", formales: "general" }, /no son IDs de canal: general/],
         ]) {
             const mal = formulario(campos);
             await paneladmin.handleModal(null, mal);
