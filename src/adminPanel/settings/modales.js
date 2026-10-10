@@ -1,5 +1,11 @@
 const { MessageFlags } = require("discord.js");
-const { canalElegido, canalesElegidos, rolesElegidos } = require("../common");
+const { canalElegido, canalesElegidos, rolesElegidos, opcionElegida } = require("../common");
+
+// Una hora (0-23) del desplegable; null si no es válida, para que el manejador lo diga.
+function horaElegida(fields, id) {
+    const n = Number(opcionElegida(fields, id));
+    return Number.isInteger(n) && n >= 0 && n <= 23 ? n : null;
+}
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./vistas");
@@ -59,9 +65,8 @@ async function modalDuendeEspontaneo(interaction, id, guildId) {
 }
 
 async function modalDuendeTono(interaction, id, guildId) {
-    const campo = (c) => interaction.fields.getTextInputValue(c).trim();
-    const desde = Number(campo("desde"));
-    const hasta = Number(campo("hasta"));
+    const desde = horaElegida(interaction.fields, "desde");
+    const hasta = horaElegida(interaction.fields, "hasta");
     const formales = canalesElegidos(interaction.fields, "formales");
     if (![desde, hasta].every((h) => Number.isInteger(h) && h >= 0 && h <= 23) || desde === hasta) {
         await interaction.reply({
@@ -212,8 +217,8 @@ async function modalEventosXp(interaction, id, guildId) {
     let valores;
     if (id === "paneladmin_cfg_eventos_xp_modal") {
         const mult = entero("mult", 1, 5);
-        const desde = entero("desde", 0, 23);
-        const hasta = entero("hasta", 0, 23);
+        const desde = horaElegida(interaction.fields, "desde");
+        const hasta = horaElegida(interaction.fields, "hasta");
         if (mult === null || !Number.isInteger(desde) || !Number.isInteger(hasta) || desde === hasta) {
             await interaction.reply({
                 content: "❌ El multiplicador va de 1 a 5, y las horas son enteras de 0 a 23 (y distintas entre sí).",

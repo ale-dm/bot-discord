@@ -46,7 +46,10 @@ const boton = async (customId, extra) => {
     return i;
 };
 const formulario = async (customId, campos) => {
-    const i = interaccion({ customId, fields: { getTextInputValue: (k) => campos[k] ?? "" } });
+    const i = interaccion({
+        customId,
+        fields: { getTextInputValue: (k) => campos[k] ?? "", getStringSelectValues: (k) => [campos[k] ?? ""] },
+    });
     await paneladmin.handleModal(i.client, i);
     return i;
 };

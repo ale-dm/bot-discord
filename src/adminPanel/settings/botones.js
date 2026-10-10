@@ -1,5 +1,8 @@
 const guildSettings = require("../../systems/guildSettings");
 const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
+
+// Las horas de 0 a 23 (Madrid) en un desplegable.
+const HORAS = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, value: String(h) }));
 const {
     buildConfigHome,
     buildDuendePanel,
@@ -23,8 +26,8 @@ async function accionEventosXp(interaction, id, guildId) {
         modalConCampos("paneladmin_cfg_eventos_xp_modal", "Happy hour de XP", [
             { id: "activo", label: "Happy hour activa", tipo: "radio", opciones: SI_NO_NUMERICO, valor: xp.activo ? "1" : "0" },
             { id: "mult", label: "Multiplicador de XP (1 a 5, p. ej. 2)", value: String(xp.mult) },
-            { id: "desde", label: "Desde la hora (0-23, Madrid)", value: String(xp.desde) },
-            { id: "hasta", label: "Hasta la hora (0-23, Madrid)", value: String(xp.hasta) },
+            { id: "desde", label: "Desde la hora (Madrid)", tipo: "opciones", opciones: HORAS, valor: String(xp.desde) },
+            { id: "hasta", label: "Hasta la hora (Madrid)", tipo: "opciones", opciones: HORAS, valor: String(xp.hasta) },
         ]),
     );
     return true;
@@ -125,8 +128,8 @@ async function accionDuendeTono(interaction, id, guildId) {
                 opciones: SI_NO_NUMERICO,
                 valor: d.madrugada_activa ? "1" : "0",
             },
-            { id: "desde", label: "Madrugada desde la hora (0-23, Madrid)", value: String(d.madrugada_desde) },
-            { id: "hasta", label: "Madrugada hasta la hora (0-23, Madrid)", value: String(d.madrugada_hasta) },
+            { id: "desde", label: "Madrugada desde", tipo: "opciones", opciones: HORAS, valor: String(d.madrugada_desde) },
+            { id: "hasta", label: "Madrugada hasta", tipo: "opciones", opciones: HORAS, valor: String(d.madrugada_hasta) },
             {
                 id: "formales",
                 label: "Canales formales",

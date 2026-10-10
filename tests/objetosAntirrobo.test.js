@@ -155,7 +155,7 @@ describe("🛒 Catálogo del panel", () => {
         user: { id: "admin", tag: "admin" },
         member: { permissions: { has: () => true } },
         isFromMessage: () => true,
-        fields: { getTextInputValue: (k) => campos[k] ?? "" },
+        fields: { getTextInputValue: (k) => campos[k] ?? "", getStringSelectValues: (k) => [campos[k] ?? ""] },
         reply: jest.fn(async () => {}),
         update: jest.fn(async () => {}),
     });

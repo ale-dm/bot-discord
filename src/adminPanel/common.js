@@ -159,6 +159,11 @@ function usuarioElegido(fields, id) {
     return usuariosElegidos(fields, id)[0] ?? "";
 }
 
+/** La opción elegida en un desplegable ("" si no se eligió ninguna). */
+function opcionElegida(fields, id) {
+    return fields.getStringSelectValues(id, false)?.[0] ?? "";
+}
+
 /** El rol elegido en un selector de uno ("" si no se eligió ninguno). */
 function rolElegido(fields, id) {
     return rolesElegidos(fields, id)[0] ?? "";
@@ -177,4 +182,5 @@ module.exports = {
     rolElegido,
     usuariosElegidos,
     usuarioElegido,
+    opcionElegida,
 };

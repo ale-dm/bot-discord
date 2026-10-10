@@ -12,6 +12,7 @@ const adminAudit = require("../src/systems/adminAudit");
 
 function formulario(valores = {}) {
     return {
+        getStringSelectValues: () => [],
         getTextInputValue: jest.fn((campo) => {
             if (!(campo in valores)) throw new Error(`campo ${campo} no existe`);
             return valores[campo];

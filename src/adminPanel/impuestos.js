@@ -5,8 +5,24 @@ const impuestos = require("../systems/impuestos");
 const dinero = require("../systems/dinero");
 const adminAudit = require("../systems/adminAudit");
 const patrimonio = require("../systems/patrimonio");
-const { simpleModal, modalConCampos, SI_NO } = require("./common");
+const { simpleModal, modalConCampos, SI_NO, opcionElegida } = require("./common");
 const { fmtNumero } = require("../core/formato");
+
+// Opciones de los desplegables: las mismas que valida el manejador.
+const BASES = [
+    { label: "Ingreso (lo que entra)", value: "ingreso" },
+    { label: "Compra (en la tienda)", value: "compra" },
+];
+const DESTINOS = [
+    { label: "Bote (se reparte)", value: "bote" },
+    { label: "Sumidero (desaparece)", value: "sumidero" },
+];
+const TIPOS_REGLA = [
+    { label: "General (todos los ingresos)", value: "general" },
+    ...Object.keys(dinero.TIPOS)
+        .filter((tipo) => !impuestos.TIPOS_EXCLUIDOS.includes(tipo))
+        .map((tipo) => ({ label: String(dinero.TIPOS[tipo]).slice(0, 100), value: tipo })),
+];
 
 function lineaRegla(r) {
     const ambito =
@@ -86,28 +102,30 @@ async function handleImpuestosButton(interaction) {
     if (id === "paneladmin_impuestos_patrimonio_edit") {
         const c = patrimonio.configuracion();
         await interaction.showModal(
-            simpleModal("paneladmin_impuestos_patrimonio_modal", "Editar impuesto de patrimonio", [
+            modalConCampos("paneladmin_impuestos_patrimonio_modal", "Editar impuesto de patrimonio", [
                 { id: "umbral", label: "Umbral (monedas)", value: String(c.umbral) },
                 { id: "porcentaje", label: "Impuesto (% sobre el exceso)", value: String(c.porcentaje) },
                 { id: "interes", label: "Interés semanal (% del banco)", value: String(c.interes) },
                 { id: "dias", label: "Cada cuántos días", value: String(c.dias) },
-                { id: "destino", label: "Destino: bote o sumidero", value: c.destino },
+                { id: "destino", label: "Destino", tipo: "opciones", opciones: DESTINOS, valor: c.destino },
             ]),
         );
         return true;
     }
     if (id === "paneladmin_impuestos_add") {
         await interaction.showModal(
-            simpleModal("paneladmin_impuestos_add_modal", "Añadir regla de impuesto", [
-                { id: "base", label: "Base: ingreso o compra", placeholder: "ingreso" },
+            modalConCampos("paneladmin_impuestos_add_modal", "Añadir regla de impuesto", [
+                { id: "base", label: "Base", tipo: "opciones", opciones: BASES },
                 {
                     id: "tipo",
-                    label: "Tipo concreto (vacío = general)",
-                    placeholder: "casino — solo para ingreso",
+                    label: "Tipo de movimiento (solo ingreso)",
+                    tipo: "opciones",
+                    opciones: TIPOS_REGLA,
+                    valor: "general",
                     required: false,
                 },
                 { id: "porcentaje", label: "Porcentaje (0-100)", placeholder: "5" },
-                { id: "destino", label: "Destino: bote o sumidero", placeholder: "bote", value: "bote", required: false },
+                { id: "destino", label: "Destino", tipo: "opciones", opciones: DESTINOS, valor: "bote", required: false },
             ]),
         );
         return true;
@@ -134,13 +152,13 @@ async function handleImpuestosButton(interaction) {
 
 async function anadirReglaModal(interaction) {
     const guildId = interaction.guildId;
-    const base = interaction.fields.getTextInputValue("base").trim().toLowerCase();
+    const base = opcionElegida(interaction.fields, "base").toLowerCase();
     if (!["ingreso", "compra"].includes(base)) {
         await interaction.reply({ content: "❌ La base tiene que ser `ingreso` o `compra`.", flags: MessageFlags.Ephemeral });
         return true;
     }
-    const tipoRaw = interaction.fields.getTextInputValue("tipo").trim();
-    const tipoMovimiento = base === "ingreso" && tipoRaw ? tipoRaw : null;
+    const tipoRaw = opcionElegida(interaction.fields, "tipo");
+    const tipoMovimiento = base === "ingreso" && tipoRaw && tipoRaw !== "general" ? tipoRaw : null;
     if (tipoMovimiento && !dinero.TIPOS[tipoMovimiento]) {
         await interaction.reply({
             content: `❌ "${tipoMovimiento}" no es un tipo de movimiento válido. Tipos: ${Object.keys(dinero.TIPOS).join(", ")}.`,
@@ -153,7 +171,7 @@ async function anadirReglaModal(interaction) {
         await interaction.reply({ content: "❌ El porcentaje tiene que ser un número entre 0 y 100.", flags: MessageFlags.Ephemeral });
         return true;
     }
-    const destinoRaw = interaction.fields.getTextInputValue("destino").trim().toLowerCase();
+    const destinoRaw = opcionElegida(interaction.fields, "destino").toLowerCase();
     const destino = destinoRaw === "sumidero" ? "sumidero" : "bote";
     const regla = impuestos.anadirRegla(guildId, { base, tipoMovimiento, porcentaje, destino });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.add", details: regla });
@@ -169,7 +187,7 @@ async function patrimonioModal(interaction) {
         porcentaje: f("porcentaje"),
         interes: f("interes"),
         dias: f("dias"),
-        destino: f("destino"),
+        destino: opcionElegida(interaction.fields, "destino"),
     });
     if (!r.ok) {
         await interaction.reply({ content: `❌ ${r.mensaje}`, flags: MessageFlags.Ephemeral });
