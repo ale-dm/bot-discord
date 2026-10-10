@@ -4,7 +4,7 @@ const db = require("../src/core/db");
 const dinero = require("../src/systems/dinero");
 const cancelar = require("../src/systems/apuestas/cancelar");
 const apuestas = require("../src/juegos/apuestas/apuestas");
-const misapuestas = require("../src/juegos/apuestas/misapuestas");
+const misapuestas = require("../src/paneles/misJugadas");
 const { buildMisJugadas } = require("../src/paneles/misJugadas");
 
 const futuro = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();

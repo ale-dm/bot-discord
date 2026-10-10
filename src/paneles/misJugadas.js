@@ -1,7 +1,7 @@
 // Pestaña "📋 Mis jugadas" de /juegos: lo que tienes en juego y lo ya resuelto, con apuestas a partidos y
 // quinielas juntas. Las estadísticas de apuestas van en la pestaña 📊 Stats (paneles/juegos). Los datos, en
 // systems/apuestas.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require("discord.js");
 const jugadas = require("../systems/apuestas/misJugadas");
 const cancelar = require("../systems/apuestas/cancelar");
 const mercados = require("../systems/apuestas/mercados");
@@ -236,4 +236,59 @@ function filaTrasApostar(userId, { deporte = "laliga", quiniela = false } = {}) 
     );
 }
 
-module.exports = { buildMisJugadas, buildConfirmarCancelar, filaTrasApostar, lineaQuiniela, camposStatsApuestas };
+// Botones de «Mis jugadas» (antes /misapuestas): cambian de vista en el mismo mensaje. Stats (de mensajes antiguos)
+// abre la pestaña 📊 Stats. También ↩️ cancelar una apuesta (F-AP-05): se elige en el menú, se confirma y se vuelve
+// a ⏳ En juego.
+async function soloSuyas(interaction, userId) {
+    if (interaction.user.id === userId) return true;
+    await interaction.reply({ content: "❌ Solo puedes ver tus propias apuestas.", flags: MessageFlags.Ephemeral });
+    return false;
+}
+
+const componentHandlers = [
+    { types: ["button"], prefixes: ["misapuestas_"], method: "handleButton", acl: "juegos" },
+    { types: ["stringSelect"], prefixes: ["misapuestas_cancelarsel_"], method: "handleSelect", acl: "juegos" },
+];
+
+// misapuestas_{vista}_{userId}: solo quien las abrió puede cambiar de vista.
+// misapuestas_cancelarok_{apuestaId}_{userId}: confirma la cancelación.
+async function handleButton(client, interaction) {
+    const partes = interaction.customId.split("_");
+    if (partes[1] === "cancelarok") {
+        const [, , apuestaId, userId] = partes;
+        if (!(await soloSuyas(interaction, userId))) return;
+        const r = cancelar.cancelar(userId, apuestaId);
+        await interaction.update(buildMisJugadas(userId, "activas", r.mensaje));
+        return;
+    }
+    const [, vista, userId] = partes;
+    if (!(await soloSuyas(interaction, userId))) return;
+    // Se pide aquí: paneles/juegos usa este módulo, y al revés daría un ciclo al cargar.
+    const { buildStatsJuegos } = require("./juegos");
+    await interaction.update(
+        vista === "stats" ? { content: "", ...buildStatsJuegos(userId, interaction.user.username) } : buildMisJugadas(userId, vista),
+    );
+}
+
+// misapuestas_cancelarsel_{userId}: la apuesta elegida para cancelar → pantalla de confirmación.
+async function handleSelect(client, interaction) {
+    const userId = interaction.customId.split("_")[2];
+    if (!(await soloSuyas(interaction, userId))) return;
+    const a = cancelar.cancelable(userId, interaction.values[0]);
+    if (!a) {
+        await interaction.update(buildMisJugadas(userId, "activas", "❌ Esa apuesta ya no se puede cancelar: el partido ha empezado."));
+        return;
+    }
+    await interaction.update(buildConfirmarCancelar(userId, a));
+}
+
+module.exports = {
+    buildMisJugadas,
+    buildConfirmarCancelar,
+    filaTrasApostar,
+    lineaQuiniela,
+    camposStatsApuestas,
+    componentHandlers,
+    handleButton,
+    handleSelect,
+};

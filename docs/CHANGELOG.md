@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (#166: los botones llegan a su panel)
+
+- **Mis jugadas** (`/juegos`, antes `/misapuestas`): los botones y el menú de cancelar están en `src/paneles/misJugadas.js`, con el panel. Se borra el envoltorio `src/juegos/apuestas/misapuestas.js`. Para que el panel atienda sus botones, el arranque también carga `src/paneles` (antes solo juegos y perfil).
+- Se queda `src/juegos/apuestas/combinada.js`: no es un envoltorio (tiene su propio modal de apuesta), y su prueba `combinadaPanel` lo importa por esa ruta.
+- Test de arranque: todos los módulos de juegos, perfil y paneles se registran sin error, y `misapuestas_` llega a `paneles/misJugadas` (`tests/componentesRutas.test.js`).
+
 ## 2026-10-10 (base de datos: lo que quedaba de los índices)
 
 - **Índices del resto** (migración `041_indices_resto`): quinielas abiertas por competición, ranking y liga (quinielas cerradas por fecha), rachas diarias de XP e ingresos de los negocios. Los de tablas pequeñas no se notan en el uso normal; estos sí se evitan en cada consulta diaria o de página.
