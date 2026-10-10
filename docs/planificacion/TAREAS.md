@@ -8,7 +8,8 @@ La reorganización de paneles, con los errores E-05 a E-15, va por partes según
 | ID | Tarea | Prioridad |
 |---|---|---|
 | [T-02](#t-02-desplegar-y-probar-en-discord) | Desplegar y probar en Discord | 🔴 Alta |
-| [T-03](#t-03-comprobar-en-discord-los-refactors-de-la-auditoría) | Comprobar en Discord los refactors de la auditoría (#243, #244). Bloquea liberar a `main` | 🔴 Alta |
+| [T-03](#t-03-comprobar-en-discord-los-refactors-de-la-auditoría) | Comprobar en Discord los refactors de la auditoría (#243, #244). ✅ Confirmada por el usuario y liberada a `main` | ✅ Hecha |
+| [T-04](#t-04-comprobar-en-discord-los-refactors-de-tamaño-y-el-resumen-del-ranking) | Comprobar en Discord los refactors de tamaño (#278 a #281, #286), la eliminación de `/ia` y el ranking con resumen (#285) | 🔴 Alta |
 
 ---
 
@@ -178,7 +179,7 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 
 **🍿 Lo pendiente de la gamificación de Plex (2026-10-06, rama `feature/elduendejavier`)**
 - [x] Antes de desplegar: `npm run plex:check` (en el servidor, `docker exec -it duende-bot npm run plex:check`). Todo con
-      ✓; si sale ⚠ o ✗, mirar la línea (y la tabla de [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md#3-lo-que-hay-que-comprobar-con-datos-reales)).
+      ✓; si sale ⚠ o ✗, mirar la línea (y la tabla de [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md)).
 - [x] Al arrancar: `[Migraciones] Aplicada 018_plex_importacion_y_sociales` y, en la primera sincronización, `Importación
       de Plex de …: empieza` por cada vinculado; horas después, `…: terminada`.
 - [x] Panel admin → Plex → 🏆 Trofeos: las líneas 📼 Importación (50 %, N importando) y 🎰 Roles de Gordos, y los
@@ -468,13 +469,44 @@ cambio de comportamiento, pero los tests no cubren la voz ni los botones de la q
 `developer` y **no se liberan a `main` hasta que esta lista esté marcada.**
 
 **Voz en directo (#243)**
-- [ ] `/conversación` une al bot al canal, responde por voz y sale tras el corte por inactividad.
-- [ ] Tertulia: con varias personas hablando, el Duende recibe turnos y contesta.
-- [ ] Tope de duración: la conexión se cierra al llegar al máximo (`DUENDE_LIVE_MAX_DURATION_MS`, 30 min por defecto).
-- [ ] `/duende` → 💬 Hablar responde en el canal, con GIF y propuestas de reto cuando toca.
+- [x] `/conversación` une al bot al canal, responde por voz y sale tras el corte por inactividad.
+- [x] Tertulia: con varias personas hablando, el Duende recibe turnos y contesta.
+- [x] Tope de duración: la conexión se cierra al llegar al máximo (`DUENDE_LIVE_MAX_DURATION_MS`, 30 min por defecto).
+- [x] `/duende` → 💬 Hablar responde en el canal, con GIF y propuestas de reto cuando toca.
 
 **Quiniela, perfil, rankings y ajustes (#244)**
-- [ ] `/juegos` → ⚽ Apuestas → quiniela: crear, pronosticar, 🔄 Refrescar (vuelve a mostrar la jornada), cancelar y confirmar.
-- [ ] `/perfil` → 🏅 Logros: páginas, filtro y reclamar.
-- [ ] `/perfil` → 🏆 Rankings: cambiar de tipo y de página.
-- [ ] `/paneladmin` → configuración: cambiar un ajuste, guardarlo y comprobar que se aplica.
+- [x] `/juegos` → ⚽ Apuestas → quiniela: crear, pronosticar, 🔄 Refrescar (vuelve a mostrar la jornada), cancelar y confirmar.
+- [x] `/perfil` → 🏅 Logros: páginas, filtro y reclamar.
+- [x] `/perfil` → 🏆 Rankings: cambiar de tipo y de página.
+- [x] `/paneladmin` → configuración: cambiar un ajuste, guardarlo y comprobar que se aplica.
+
+Confirmada por el usuario el 2026-10-10. La liberación a `main` se hizo con el release de #284.
+
+---
+
+## T-04 Comprobar en Discord los refactors de tamaño y el resumen del ranking
+
+Son cambios sin cambio de comportamiento previsto (#278, #279, #280 y #286), la eliminación de `/ia` y el ranking con
+resumen (#285). Los tests cubren la lógica, no lo que se ve en Discord. Conviene probar esto tras el release a `main`.
+
+**Voz y Duende**
+- [ ] `/escuchar` y `/conversación` siguen uniendo al bot al canal, respondiendo y saliendo.
+- [ ] `/tts` reproduce en el canal.
+- [ ] `/imagen` genera la imagen. Si la API tarda, el aviso dice el plazo.
+- [ ] `/duende` → 💬 Hablar responde, con GIF cuando toca. Su panel abre sus pantallas (acciones, modales y recuerdos).
+- [ ] `/ia` ya no aparece en la lista de comandos.
+
+**Casino y apuestas**
+- [ ] Ruleta, tragaperras, adivinar, ppt y blackjack: cada juego arranca, cobra y paga igual que antes.
+- [ ] `/juegos` → apuestas: apostar a un partido, ver el listado, la ficha y la confirmación.
+- [ ] La liquidación (`/pagarapuestas`) reparte premios y, después, `/perfil` → 🏆 Rankings → ⚽ Apostadores muestra el resultado nuevo.
+
+**Perfil, pase, tienda, retos y Plex**
+- [ ] `/perfil`: logros, rankings y ficha se ven igual.
+- [ ] `/pase`: cada vista (resumen, niveles, misiones y top) y reclamar.
+- [ ] `/tienda`: catálogo, inventario (con Usar) y compras.
+- [ ] Retos: crear, aceptar y ver el mensaje público.
+- [ ] `/plex`: pantallas de cine, para ti, Wrapped y perfil.
+
+**Paneles de admin** (`/paneladmin`)
+- [ ] Apuestas, niveles (usuarios y recompensas), Plex, Seerr, ajustes y sistema abren y guardan.
