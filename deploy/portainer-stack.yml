@@ -16,6 +16,10 @@ services:
     container_name: duende-bot
     env_file:
       - ../stack.env
+    environment:
+      # Los avisos de arranque (migraciones, conexión y registro de comandos) son de nivel info. Con el valor por
+      # defecto (warn), Portainer solo muestra avisos y errores. Se puede quitar cuando no haga falta.
+      LOG_CONSOLE_LEVEL: info
     restart: unless-stopped
     volumes:
       - /compose/duende-bot/data:/app/data
