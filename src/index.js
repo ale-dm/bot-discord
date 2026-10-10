@@ -99,7 +99,7 @@ client.once("clientReady", async () => {
     log.info(`Conectado como ${client.user.tag} · ${client.guilds.cache.size} servidor(es): ${guilds}`);
     // Única línea de consola al arrancar; el detalle va a logs/app-log.txt.
     const n = client.guilds.cache.size;
-    console.log(`✓ Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
+    log.info(`Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
     programarTareas(client);
 
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato

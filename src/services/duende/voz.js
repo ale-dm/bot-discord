@@ -184,7 +184,9 @@ async function conectarAlCanal(guild, voiceChannel) {
         voiceLog.warn("Error al unirse al canal de voz:", err);
         try {
             connection?.destroy();
-        } catch {}
+        } catch (e) {
+            voiceLog.debug(`La conexión ya estaba destruida: ${e.message}`);
+        }
         return null;
     }
 }
@@ -275,7 +277,9 @@ async function tryVoiceReply(client, interaction, respuesta) {
     } catch (err) {
         try {
             connection?.destroy();
-        } catch {}
+        } catch (e) {
+            voiceLog.debug(`La conexión ya estaba destruida: ${e.message}`);
+        }
         // Log error using logger only (avoid noisy console output)
         voiceLog.error("Error general respondiendo por voz:", err);
         return false;

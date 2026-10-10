@@ -284,7 +284,6 @@ async function handleSelect(client, interaction) {
 
 module.exports = {
     buildMisJugadas,
-    buildConfirmarCancelar,
     filaTrasApostar,
     lineaQuiniela,
     camposStatsApuestas,
