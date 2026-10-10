@@ -3,6 +3,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags
 const db = require("../../core/db");
 const { registrarUsuario, descontarApuesta, procesarGanancia, procesarPerdida } = require("../../systems/casinoTransactions");
 const activeGames = require("../../systems/activeGames");
+const { hayPartidaEnCurso } = require("./partidaEnCurso");
 const bj = require("../../systems/blackjack");
 const { liquidarMano, cobrarExtraBJ } = require("../../systems/blackjackCobros");
 const casino = require("../../paneles/casino");
@@ -338,16 +339,12 @@ module.exports = {
         }
 
         const previa = partidasBJ[userId];
-        if (previa && !previa.finished) {
-            if (!activeGames.estaAbandonada(previa.ultimaAccion)) {
-                await interaction.reply({
-                    content: "🃏 Ya tienes una partida de Blackjack en curso. Termínala antes de empezar otra.",
-                    flags: MessageFlags.Ephemeral,
-                });
-                return;
-            }
-            abandonarPartida(userId, previa);
-        }
+        if (
+            await hayPartidaEnCurso(interaction, previa && !previa.finished ? previa : null, "Blackjack", () =>
+                abandonarPartida(userId, previa),
+            )
+        )
+            return;
 
         registrarUsuario(userId, interaction.user.username, interaction.user.tag);
 

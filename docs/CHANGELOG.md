@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: cobertura del núcleo de XP)
+
+- **Tests del camino que corre en cada mensaje y cada minuto** (#240): `tests/xpActividad.test.js` (cooldown, bonus por longitud, letras repetidas, canales ignorados, voz: entrar, mutear, cambiar de canal, tick), `tests/mensajesDecisiones.test.js` (bots, duplicados, comandos, canal permitido, bajo esfuerzo, cuándo contesta el Duende) y `tests/tareasProgramadas.test.js` (19 tareas de cron con su zona, intervalos y arranque). Cobertura: `actividad.js` 84 % líneas / 72 % ramas, `mensajes.js` 65 % / 54 %, `tareas.js` 92 % / 50 %.
+- Comprobado con mutaciones: quitar el filtro de comandos o el de canales ignorados hace fallar su test.
+
+## 2026-10-10 (auditoría: duplicados)
+
+- **Hora de Madrid en un solo sitio** (#237): `src/core/zonaMadrid.js` (`momentoMadrid`). Seis copias de la misma función de fecha (día, hora, día de la semana) en tareas, eventos, liga, destacado, clasificación, resumen admin e historial de Plex pasan a usarla. Cada módulo conserva su nombre local y lo que devuelve.
+- **«Ya tienes una partida en curso»** (#237): blackjack y adivinar usan `hayPartidaEnCurso` (`juegos/casino/partidaEnCurso.js`). El aviso, el texto y la liquidación de la partida abandonada no cambian.
+- Los otros dos pares del escaneo (paneles de niveles) eran solo la cabecera de imports: no se tocan.
+
 ## 2026-10-10 (auditoría: errores silenciosos y exports)
 
 - **Errores silenciosos** (#235): los 7 `catch {}` vacíos de voz, copias y tts dejan un `debug` o un `info` con el motivo; el de `logger.js` lleva un comentario (un fichero de log que no existe tiene tamaño 0). Los `console.log` de `index.js` y `registerCommands.js` pasan al logger. Solo cambia el texto de los logs de consola (se quita el ✓ inicial), no lo que ve la gente en Discord.
