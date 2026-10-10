@@ -1,6 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { registrarUsuario, descontarApuesta, procesarGanancia, procesarPerdida, applyRtp } = require("../../systems/casinoTransactions");
 const activeGames = require("../../systems/activeGames");
+const { hayPartidaEnCurso } = require("./partidaEnCurso");
 const casino = require("../../paneles/casino");
 const { createLogger } = require("../../core/logger");
 
@@ -66,16 +67,7 @@ module.exports = {
         }
 
         const previa = partidas.get(userId);
-        if (previa) {
-            if (!activeGames.estaAbandonada(previa.ultimaAccion)) {
-                await interaction.reply({
-                    content: "🃏 Ya tienes una partida de Adivinar en curso. Termínala antes de empezar otra.",
-                    flags: MessageFlags.Ephemeral,
-                });
-                return;
-            }
-            abandonarPartida(userId, previa);
-        }
+        if (await hayPartidaEnCurso(interaction, previa, "Adivinar", () => abandonarPartida(userId, previa))) return;
 
         registrarUsuario(userId, interaction.user.username, interaction.user.tag);
         const resultado = descontarApuesta(userId, apuesta, interaction.guildId);

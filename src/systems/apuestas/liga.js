@@ -15,19 +15,7 @@ const HORA = 10;
 const PREMIADOS = 3;
 const MEDALLAS = ["🥇", "🥈", "🥉"];
 
-const formato = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-});
-/** { anio, mes, dia: "AAAA-MM-DD", hora } en hora de Madrid. */
-function momento(fecha) {
-    const p = Object.fromEntries(formato.formatToParts(new Date(fecha)).map((x) => [x.type, x.value]));
-    return { anio: Number(p.year), mes: Number(p.month), dia: `${p.year}-${p.month}-${p.day}`, hora: Number(p.hour) };
-}
+const { momentoMadrid: momento } = require("../../core/zonaMadrid");
 
 /** La temporada de un momento: "2026-27" desde el 1 de julio de 2026 hasta el 30 de junio de 2027. */
 function temporadaDe(ahora = Date.now()) {

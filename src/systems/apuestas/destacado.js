@@ -18,20 +18,7 @@ const log = createLogger("Apuestas");
 /** Desde esta hora (Madrid) se publica. */
 const HORA = 10;
 
-const ZONA = "Europe/Madrid";
-const formato = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ZONA,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-});
-/** { dia: "AAAA-MM-DD", hora } en Madrid. */
-function momento(fecha) {
-    const p = Object.fromEntries(formato.formatToParts(new Date(fecha)).map((x) => [x.type, x.value]));
-    return { dia: `${p.year}-${p.month}-${p.day}`, hora: Number(p.hour) };
-}
+const { momentoMadrid: momento } = require("../../core/zonaMadrid");
 
 /** El partido destacado de hoy (con `apuestas`, cuántas tiene ya), o null si hoy no queda ninguno con cuotas. */
 function elegir(ahora = Date.now()) {

@@ -23,7 +23,6 @@ const MAX_PAGINAS = 500;
 const TIPOS = new Set(["movie", "episode"]);
 // Lo que cuenta como "ver algo de madrugada": empezar entre las 3 y las 6 (hora de Madrid) y verlo al menos 10 min.
 const NOCHE = { desde: 3, hasta: 6, minSegundos: 10 * 60 };
-const ZONA = "Europe/Madrid";
 
 /** Cada estadística y el evento de logros al que va (todos con metric "max": el valor es el total actual). */
 const EVENTOS = {
@@ -66,19 +65,11 @@ function fila(guildId, r) {
     };
 }
 
-const formatoDia = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ZONA,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-});
-
+const { momentoMadrid } = require("../core/zonaMadrid");
 /** Día (AAAA-MM-DD) y hora en Madrid de un instante unix en segundos. */
 function momento(unix) {
-    const p = Object.fromEntries(formatoDia.formatToParts(new Date(unix * 1000)).map((x) => [x.type, x.value]));
-    return { dia: `${p.year}-${p.month}-${p.day}`, hora: Number(p.hour) };
+    const { dia, hora } = momentoMadrid(unix * 1000);
+    return { dia, hora };
 }
 
 /**

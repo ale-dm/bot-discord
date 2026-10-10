@@ -20,19 +20,7 @@ const log = createLogger("Clasificación");
 const HORA = 10;
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-const formato = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-});
-/** { dia: "AAAA-MM-DD", hora } en Madrid. */
-function momento(fecha) {
-    const p = Object.fromEntries(formato.formatToParts(new Date(fecha)).map((x) => [x.type, x.value]));
-    return { dia: `${p.year}-${p.month}-${p.day}`, hora: Number(p.hour) };
-}
+const { momentoMadrid: momento } = require("../core/zonaMadrid");
 const aFecha = (dia) => new Date(`${dia}T00:00:00Z`);
 const sumarDias = (dia, n) => new Date(aFecha(dia).getTime() + n * 86400 * 1000).toISOString().slice(0, 10);
 /** 1 = lunes … 7 = domingo. */
