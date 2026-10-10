@@ -19,4 +19,5 @@ module.exports = {
     JUEGOS_DIR: path.join(ROOT, "src", "juegos"),
     // Botones de /perfil que no son de un comando (dinero: ingresar, sacar, transferir...).
     PERFIL_DIR: path.join(ROOT, "src", "perfil"),
+    PANELES_DIR: path.join(ROOT, "src", "paneles"),
 };
