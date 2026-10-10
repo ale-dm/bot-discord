@@ -126,7 +126,9 @@ function openStream(type) {
     let size = 0;
     try {
         size = fs.statSync(p).size;
-    } catch {}
+    } catch {
+        // Todavía no hay fichero de log de este tipo: su tamaño es 0.
+    }
     // Apertura síncrona: con createWriteStream(path) el fichero se abre más tarde, y una
     // rotación en plena ráfaga de logs intentaría renombrar un fichero que aún no existe.
     const stream = fs.createWriteStream(null, { fd: fs.openSync(p, "a") });
