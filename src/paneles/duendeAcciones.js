@@ -56,63 +56,98 @@ const vistaPersonalidad = (interaction, aviso = null) => {
 const responder = (interaction, payload) =>
     interaction.isFromMessage?.() ? interaction.update(payload) : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
 
+// ─── Formularios (modales) ──────────────────────────────────────────────────
+function modalHablar() {
+    const modal = new ModalBuilder().setCustomId("duendepanel_modal_hablar").setTitle("💬 Hablar con el Duende");
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("texto")
+                .setLabel("¿Qué le quieres decir?")
+                .setStyle(TextInputStyle.Paragraph)
+                .setMaxLength(1500)
+                .setRequired(true),
+        ),
+    );
+    return modal;
+}
+
+function modalAnotar(objetivo) {
+    const modal = new ModalBuilder()
+        .setCustomId(`duendepanel_modal_anotar_${objetivo.id}`)
+        .setTitle(`✏️ Anotar sobre ${objetivo.username}`.slice(0, 45));
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("nota")
+                .setLabel("Qué debe recordar el Duende")
+                .setStyle(TextInputStyle.Paragraph)
+                .setMaxLength(200)
+                .setRequired(true),
+        ),
+    );
+    return modal;
+}
+
+function modalAddPersonalidad() {
+    const modal = new ModalBuilder().setCustomId("duendepanel_modal_add").setTitle("➕ Añadir personalidad");
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("id")
+                .setLabel("ID único (sin espacios)")
+                .setStyle(TextInputStyle.Short)
+                .setMaxLength(40)
+                .setRequired(true),
+        ),
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("title")
+                .setLabel("Título legible")
+                .setStyle(TextInputStyle.Short)
+                .setMaxLength(60)
+                .setRequired(true),
+        ),
+        new ActionRowBuilder().addComponents(
+            new TextInputBuilder()
+                .setCustomId("systeminstructions")
+                .setLabel("Instrucciones del sistema (prompt)")
+                .setStyle(TextInputStyle.Paragraph)
+                .setMaxLength(4000)
+                .setRequired(true),
+        ),
+    );
+    return modal;
+}
+
+// ─── Botones de recuerdos: ✏️ anotar y 🗑️ olvidar (de uno mismo, o de cualquiera si es admin) ───
+async function botonRecuerdos(interaction, id, admin) {
+    const objetivoId = id.replace(/^duendepanel_(anotar|olvidar)_/, "");
+    if (objetivoId !== interaction.user.id && !admin) return noOtra(interaction);
+    const objetivo =
+        objetivoId === interaction.user.id ? interaction.user : await interaction.client.users.fetch(objetivoId).catch(() => null);
+    if (!objetivo) return interaction.reply({ content: "❌ No encuentro a esa persona.", flags: MessageFlags.Ephemeral });
+
+    if (id.startsWith("duendepanel_anotar_")) return interaction.showModal(modalAnotar(objetivo));
+
+    // Olvidar: borra las notas (no la descripción del perfil, que editan los admins en /paneladmin).
+    const notas = perfiles.olvidarNotas(objetivo);
+    if (!notas.length) return interaction.update(vistaRecuerdos(interaction, objetivo, "No tengo notas guardadas sobre esa persona."));
+    log.warn(
+        `${interaction.user.tag} (${interaction.user.id}) borró ${notas.length} notas sobre ${objetivo.username}: ${JSON.stringify(notas)}`,
+    );
+    return interaction.update(vistaRecuerdos(interaction, objetivo, `🗑️ Olvidadas ${notas.length} notas sobre **${objetivo.username}**.`));
+}
+
 const acciones = {
     async handleButton(client, interaction) {
         const id = interaction.customId;
         const admin = esAdmin(interaction);
         if (id === "duendepanel_inicio") return interaction.update(vistaInicio(interaction));
-        if (id === "duendepanel_hablar") {
-            const modal = new ModalBuilder().setCustomId("duendepanel_modal_hablar").setTitle("💬 Hablar con el Duende");
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(
-                    new TextInputBuilder()
-                        .setCustomId("texto")
-                        .setLabel("¿Qué le quieres decir?")
-                        .setStyle(TextInputStyle.Paragraph)
-                        .setMaxLength(1500)
-                        .setRequired(true),
-                ),
-            );
-            return interaction.showModal(modal);
-        }
+        if (id === "duendepanel_hablar") return interaction.showModal(modalHablar());
         if (id === "duendepanel_recuerdos") return interaction.update(vistaRecuerdos(interaction, interaction.user));
         if (id === "duendepanel_personalidad") return interaction.update(vistaPersonalidad(interaction));
-
-        if (id.startsWith("duendepanel_anotar_") || id.startsWith("duendepanel_olvidar_")) {
-            const objetivoId = id.replace(/^duendepanel_(anotar|olvidar)_/, "");
-            if (objetivoId !== interaction.user.id && !admin) return noOtra(interaction);
-            const objetivo =
-                objetivoId === interaction.user.id ? interaction.user : await interaction.client.users.fetch(objetivoId).catch(() => null);
-            if (!objetivo) return interaction.reply({ content: "❌ No encuentro a esa persona.", flags: MessageFlags.Ephemeral });
-
-            if (id.startsWith("duendepanel_anotar_")) {
-                const modal = new ModalBuilder()
-                    .setCustomId(`duendepanel_modal_anotar_${objetivo.id}`)
-                    .setTitle(`✏️ Anotar sobre ${objetivo.username}`.slice(0, 45));
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(
-                        new TextInputBuilder()
-                            .setCustomId("nota")
-                            .setLabel("Qué debe recordar el Duende")
-                            .setStyle(TextInputStyle.Paragraph)
-                            .setMaxLength(200)
-                            .setRequired(true),
-                    ),
-                );
-                return interaction.showModal(modal);
-            }
-
-            // Olvidar: borra las notas (no la descripción del perfil, que editan los admins en /paneladmin).
-            const notas = perfiles.olvidarNotas(objetivo);
-            if (!notas.length)
-                return interaction.update(vistaRecuerdos(interaction, objetivo, "No tengo notas guardadas sobre esa persona."));
-            log.warn(
-                `${interaction.user.tag} (${interaction.user.id}) borró ${notas.length} notas sobre ${objetivo.username}: ${JSON.stringify(notas)}`,
-            );
-            return interaction.update(
-                vistaRecuerdos(interaction, objetivo, `🗑️ Olvidadas ${notas.length} notas sobre **${objetivo.username}**.`),
-            );
-        }
+        if (id.startsWith("duendepanel_anotar_") || id.startsWith("duendepanel_olvidar_")) return botonRecuerdos(interaction, id, admin);
 
         // Solo admins: personalidades.
         if (id === "duendepanel_add" || id === "duendepanel_quitar") {
@@ -120,34 +155,7 @@ const acciones = {
             if (id === "duendepanel_quitar") {
                 return interaction.update(paneles.buildQuitar({ personalidades: perfiles.listarPersonalidades() }));
             }
-            const modal = new ModalBuilder().setCustomId("duendepanel_modal_add").setTitle("➕ Añadir personalidad");
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(
-                    new TextInputBuilder()
-                        .setCustomId("id")
-                        .setLabel("ID único (sin espacios)")
-                        .setStyle(TextInputStyle.Short)
-                        .setMaxLength(40)
-                        .setRequired(true),
-                ),
-                new ActionRowBuilder().addComponents(
-                    new TextInputBuilder()
-                        .setCustomId("title")
-                        .setLabel("Título legible")
-                        .setStyle(TextInputStyle.Short)
-                        .setMaxLength(60)
-                        .setRequired(true),
-                ),
-                new ActionRowBuilder().addComponents(
-                    new TextInputBuilder()
-                        .setCustomId("systeminstructions")
-                        .setLabel("Instrucciones del sistema (prompt)")
-                        .setStyle(TextInputStyle.Paragraph)
-                        .setMaxLength(4000)
-                        .setRequired(true),
-                ),
-            );
-            return interaction.showModal(modal);
+            return interaction.showModal(modalAddPersonalidad());
         }
     },
 
