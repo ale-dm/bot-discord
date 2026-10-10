@@ -26,20 +26,7 @@ const DIAS = 7;
 const DIA_MS = 86400 * 1000;
 const CLAVE = "resumen_admin_semana";
 
-const formato = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    weekday: "short",
-    hourCycle: "h23",
-});
-/** { dia, hora, lunes } en Madrid. */
-function momento(ahora) {
-    const p = Object.fromEntries(formato.formatToParts(new Date(ahora)).map((x) => [x.type, x.value]));
-    return { dia: `${p.year}-${p.month}-${p.day}`, hora: Number(p.hour), lunes: p.weekday === "Mon" };
-}
+const { momentoMadrid: momento } = require("../core/zonaMadrid");
 
 // Los mismos que usa el logger para rotar (core/logger): más allá del último, lo antiguo se borra.
 const LOG_MAX_FILES = Math.max(1, Number(process.env.LOG_MAX_FILES || 5));

@@ -6,12 +6,7 @@
 // Los dos vienen desactivados: se activan y ajustan en /paneladmin → ⚙️ Config Global → 🎉 Eventos.
 const guildSettings = require("./guildSettings");
 
-const formato = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", weekday: "short", hour: "2-digit", hourCycle: "h23" });
-/** { hora, finDeSemana } en Madrid. */
-function momento(ahora) {
-    const p = Object.fromEntries(formato.formatToParts(new Date(ahora)).map((x) => [x.type, x.value]));
-    return { hora: Number(p.hour), finDeSemana: p.weekday === "Sat" || p.weekday === "Sun" };
-}
+const { momentoMadrid: momento } = require("../core/zonaMadrid");
 
 /** ¿`hora` está entre `desde` (incluida) y `hasta` (sin incluir)? Si desde > hasta, pasa por la medianoche (22 a 2). */
 function dentroDeHoras(hora, desde, hasta) {
