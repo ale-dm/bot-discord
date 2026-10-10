@@ -55,3 +55,48 @@ resta según su peso. La media es la puntuación global.
   verificarlos antes de quitar nada.
 - **Sin hallazgos:** dependencias (0 vulnerabilidades), secretos literales (ninguno detectado), SQL con interpolación
   (todo revisado antes: solo placeholders o listas fijas).
+
+## Segunda medida (2026-10-10, tras la auditoría)
+
+Misma escala y mismos comandos que la línea base. Sobre `developer` tras #238, #239, #241, #242, #243 (merge a
+developer, sin liberar) y #244 (merge a developer, sin liberar).
+
+| Criterio | Línea base | Ahora | Cambio |
+|---|---|---|---|
+| Ficheros en `src/` | 243 (36.732 líneas) | 281 (37.161 líneas) | +38 ficheros: las piezas nuevas de los traslados |
+| Funciones de más de 120 líneas | 0 (la mayor, 114: `ia.js`) | 0 (la mayor, 114: `ia.js`) | sin cambio |
+| Funciones de más de 60 líneas | 53 | 53 | sin cambio (los traslados no tocaron funciones largas) |
+| Ficheros de más de 400 líneas | 16 (el mayor, `retos.js`, 852) | 9 (el mayor, `catalogo.js`, 518, que es un catálogo de datos) | 8 sin contar el catálogo |
+| Avisos de lint | 0 | 0 | sin cambio |
+| Tests | 1038 en 114 suites | 1281 en 129 suites, todos en verde | +243 tests |
+| Cobertura | líneas 75,4 %, ramas 62,7 %, funciones 78,2 % | líneas 85,3 %, ramas 71,0 %, funciones 87,9 % | +9,9 / +8,3 / +9,7 puntos |
+| Dependencias con vulnerabilidades | 0 | 0 | sin cambio |
+| `catch` vacíos | 7 | 0 | -7 |
+| `TODO` / `FIXME` | 2 | 1 (un comentario de `ia.js` sobre una API de Discord futura) | -1 |
+| `console.log` en `src/` | 2 | 0 | -2 |
+| Índices de BD | 40 | 43 `CREATE INDEX` en migraciones | el recuento de la línea base no se pudo repetir igual: 43 es el número bruto de `CREATE INDEX` |
+| Filas abiertas en el registro de deuda | 0 | 0 | sin cambio |
+
+| Área | Puntos antes | Puntos ahora | Por qué |
+|---|---|---|---|
+| Tamaño de funciones | 8 | 9 | Ya no hay ficheros de código de más de 500 líneas; quedan 53 funciones de más de 60 líneas |
+| Organización | 7 | 8 | Las reglas de quiniela y liquidación están fuera de `juegos/`; `juegos/` aún mezcla formularios y reglas en `apuestas.js` |
+| Tests | 7 | 8 | 243 tests más y cobertura de ramas por encima del 70 %; quedan ficheros de administración con cobertura baja |
+| Lint y formato | 9 | 9 | Cero avisos, igual que antes |
+| Base de datos | 8 | 8 | Sin cambios en esta pasada |
+| Robustez | 7 | 9 | Sin `catch` vacíos ni `console.log` sueltos; queda un `TODO` |
+| Documentación | 8 | 8 | Changelog al día y registro de deuda vacío; este documento se actualiza con cada medida |
+
+**Media: 8,4 / 10** (antes 7,7). Es una valoración propia con los mismos criterios, no una medición externa.
+
+### Lo que queda
+
+- **Funciones largas:** 53 funciones de más de 60 líneas (la mayor, 114 en `ia.js`). Ninguna pasa de 120.
+- **Ficheros grandes:** `juegos/apuestas/apuestas.js` (499), `juegos/casino/blackjack.js` (487), `juegos/casino/tragaperras.js` (473),
+  `paneles/retos.js` (472), `paneles/casino.js` (467), `juegos/casino/adivinar.js` (439), `systems/duende/perfiles.js` (439) y
+  `systems/plexFichas.js` (425). Están por debajo de 500 pero por encima de 400.
+- **Cobertura baja que queda** (de la medida por fichero de la administración): `adminPanel/apodos.js` (28 %), `adminPanel/audit.js` (29 %),
+  `adminPanel/niveles/usuarios.js` (32 %) y `adminPanel/seerr.js` (46 %). Los de la auditoría (#238, #239, #241) ya cumplen.
+- **Duplicación:** los tres pares de la línea base no se han vuelto a medir en esta pasada.
+- **Exports sin uso:** no se ha vuelto a medir.
+- **Pendiente fuera del código:** las comprobaciones en Discord de #243 (voz en directo) y #244 (quiniela, perfil, rankings) antes de liberar a `main`.
