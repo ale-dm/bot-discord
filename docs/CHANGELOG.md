@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: tamaño de retos)
+
+- **`systems/retos.js` partido en una carpeta** (#242): `systems/retos/` con `constantes`, `comun` (error, descripción, azar inyectable), `persistencia` (lectura y escritura de la tabla y consultas de paneles), `cobros` (cobrar, cerrar, devolver, ganar), `partidos`, `crear`, `duelos`, `porras` y `revision` (cron). El fichero `systems/retos.js` queda como fachada que reexporta los mismos nombres: los paneles, los juegos, las herramientas del Duende y la liquidación no cambian. El fichero más grande de la carpeta tiene 228 líneas (antes, 851).
+- Los tests de retos pasan sin tocar sus expectativas. Sin cambios de comportamiento.
+
 ## 2026-10-10 (auditoría: cobertura del Duende)
 
 - **Tests del Duende con las llamadas externas simuladas** (#239): `tests/seerrClienteCobertura.test.js` (configuración, errores de la API, búsqueda, usuarios con su caché, peticiones, caché de búsquedas y canales permitidos), `tests/sttCobertura.test.js` (grabar una intervención, transcribir con Vosk, fallos del servidor y del miembro, y a quién se escucha), `tests/iaComandoCobertura.test.js` y `tests/imagenComandoCobertura.test.js` (respuestas, errores, cooldown, reintentos y adjuntos de imagen con `fetch` simulado) y `tests/herramientasPlexCobertura.test.js` (las herramientas de Plex que consultan Tautulli). Ninguna prueba sale a la red.
