@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: tamaño de paneles, ajustes, quiniela y liquidación)
+
+- **Cuatro ficheros grandes partidos** (#244): `paneles/perfil.js` (594 → 10 líneas de fachada, las pantallas en `paneles/perfil/`: básicos, embeds, logros, ficha y rankings); `systems/guildSettings.js` (526 → 20, con la lista de ajustes como datos aparte en `guildSettings/definicion.js`, y lectura, permisos y límites en sus ficheros); `juegos/apuestas/quiniela.js` (512 → 254, editor y botones en `quiniela/`); `systems/apuestas/liquidacion.js` (507 → 17, en `liquidacion/`: caducidad, partidos, quinielas, orquesta y anuncios). El fichero más grande de cada carpeta tiene 228 líneas o menos.
+- Traslado de código sin cambios de comportamiento. Los tests pasan sin tocar sus expectativas. Un detalle que los tests sí detectaron: un `module.exports.run` que dejó de apuntar al fichero correcto al moverse; ahora se pide la fachada en la función que lo llama.
+
 ## 2026-10-10 (auditoría: tamaño del Duende y de la voz en directo)
 
 - **`commands/duende/duende.js` partido** (#243): de 775 líneas a 39 (fachada del comando). El panel 💬 pasa a `paneles/duendeAcciones.js` (227 líneas) y el flujo de «hablar» a `services/duende/chat/` (contexto, generar, enviar y hablar: 94 a 175 líneas cada uno). Los nombres que usan el router y los demás ficheros no cambian.
