@@ -148,7 +148,6 @@ Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.
 
 | Comando | Qué hace |
 |---|---|
-| `/ia prompt* [agente] [generar_imagen]` | Consulta a un agente de IA especializado. Agentes: Asistente General, Técnico, Creativo, Profesor, Negocios, Coach Personal, Científico y Filósofo. Puede generar además una imagen ilustrativa. Respuestas largas se parten en varios embeds. Cooldown de 15 s por usuario. |
 | `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario. |
 | `/tts texto* [voz]` | El bot entra en tu canal de voz y lee el texto (Gemini TTS). Voces: Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina. El idioma se detecta solo. Los textos se ponen en cola por servidor. |
 | `/escuchar [usuario]` | El bot escucha a un usuario en el canal de voz, transcribe lo que dice (Vosk, local) y le responde **por voz** como el Duende, encadenando turnos mientras la conversación siga activa. |
@@ -896,7 +895,7 @@ El bot avisa por mensaje privado a los admins cuando pasa algo que hay que mirar
 - **Un error nuevo** (lo que acaba en `logs/error-log.txt`). El mismo error, aunque cambien los números, como mucho
   una vez cada 6 horas. Si falla la copia de seguridad, sale como "💾 La copia de seguridad ha fallado".
 - **Odds API con menos de 50 créditos** este mes (`ODDS_CREDITOS_AVISO`), una vez al día.
-- **Gemini sin cuota** (el Duende, `/ia` y `/imagen` fallan hasta que se renueve).
+- **Gemini sin cuota** (el Duende y `/imagen` fallan hasta que se renueve).
 - **El modelo de Gemini no funciona** al arrancar: no existe, o responde pero no usa las herramientas (con él, el
   Duende se inventaría los datos). En esos dos casos el bot **se cambia solo** al primero que funcione de los de
   respaldo (el de `GEMINI_MODEL` y los de `GEMINI_FALLBACK_MODELS`), lo pone como modelo del servidor en Config
@@ -1001,7 +1000,7 @@ donde se guardan; por defecto, `data/sonidos`. Migración 037: `sonidos`. Tests:
 | Variable | Para qué |
 |---|---|
 | `TOKEN`, `CLIENT_ID`, `GUILD_ID` | Conexión a Discord y registro de comandos |
-| `GOOGLE_API_KEY` | Gemini (Duende, `/ia`, `/imagen`, TTS) |
+| `GOOGLE_API_KEY` | Gemini (Duende, `/imagen`, TTS) |
 | `ODDS_API_KEY` | Apuestas deportivas y quinielas |
 
 ### Integraciones (opcionales)
@@ -1022,7 +1021,7 @@ donde se guardan; por defecto, `data/sonidos`. Migración 037: `sonidos`. Tests:
 
 | Variable | Por defecto | Qué controla |
 |---|---|---|
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Modelo del Duende y de `/ia` |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Modelo del Duende |
 | `GEMINI_FALLBACK_MODELS` | `gemini-2.5-flash,gemini-2.5-pro` | Modelos de respaldo del Duende: si al arrancar el del servidor no existe o no usa herramientas, se pasa solo al primero que funcione (antes se prueba el de `GEMINI_MODEL`) |
 | `GEMINI_TIMEOUT_MS` | 20000 | Timeout de cada llamada (cancela la petición) |
 | `DUENDE_MAX_TOKENS` / `DUENDE_MAX_TOKENS_FALLBACK` | 1024 / 512 | Longitud máxima de respuesta |
@@ -1044,8 +1043,7 @@ donde se guardan; por defecto, `data/sonidos`. Migración 037: `sonidos`. Tests:
 | `DUENDE_LOG_FULL_PROMPT` | 0 | `1` = guarda el prompt completo en el log |
 | `DUENDE_ESPONTANEO_PROB` | 0.15 | Probabilidad de mensaje espontáneo por hora (11:00-23:00); canal y activado en el panel |
 | `DUENDE_ESPONTANEO_QUIET_MS` | 7200000 (2h) | Tiempo sin mensajes de verdad en el canal para considerarlo "parado" |
-| `IMAGE_GEN_MODEL`, `IMAGE_GEN_TIMEOUT_MS`, `IMAGE_GEN_MAX_RETRIES`, `IMAGE_GEN_RETRY_BASE_MS`, `IMAGE_GEN_COOLDOWN_MS` | | `/imagen` e imágenes de `/ia` |
-| `IA_COOLDOWN_MS` | 15000 | Cooldown de `/ia` |
+| `IMAGE_GEN_MODEL`, `IMAGE_GEN_TIMEOUT_MS`, `IMAGE_GEN_MAX_RETRIES`, `IMAGE_GEN_RETRY_BASE_MS`, `IMAGE_GEN_COOLDOWN_MS` | | `/imagen` |
 
 ### Voz (STT)
 
@@ -1138,7 +1136,6 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
-| `/ia` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) · [Retos](#retos-entre-jugadores) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |

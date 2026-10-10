@@ -14,7 +14,7 @@ criptomonedas e integración con Plex/Seerr.
 
 ## Cómo se usa
 
-Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (22 comandos en total):
+Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (21 comandos en total):
 
 | Panel | Qué hay |
 |---|---|
@@ -31,7 +31,7 @@ Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí
 `/ayuda` explica cada parte y tiene botones que abren estos paneles. El dinero está en **efectivo** (con lo que se
 juega y se compra) o en el **banco** (seguro; hay que sacarlo para gastarlo). De momento los paneles son públicos
 (solo quien los abre puede pulsarlos); los avisos de error, `/paneladmin` y lo que el Duende recuerda, en privado.
-Aparte: el Duende en el chat y por voz (`/ia`, `/imagen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/pase` (pase de batalla), `/bola8`, `/ping`, `/javier` y `/ayuda`. `/mensaje` es solo para admins.
+Aparte: el Duende en el chat y por voz (`/imagen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/pase` (pase de batalla), `/bola8`, `/ping`, `/javier` y `/ayuda`. `/mensaje` es solo para admins.
 
 ## Puesta en marcha (desarrollo)
 
@@ -64,7 +64,7 @@ el-duende/
 │   │   ├── migrations/       Esquema de la BD: migraciones numeradas que se aplican solas al arrancar
 │   │   └── registerCommands.js Registra los slash commands en Discord
 │   ├── commands/           Un fichero por slash command, agrupados por tema
-│   │   ├── duende/           /duende /ia /imagen /bola8 /javier
+│   │   ├── duende/           /duende /imagen /bola8 /javier
 │   │   ├── voz/              /tts /escuchar /conversación /sonidos /conectar
 │   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
 │   │   ├── economia/         /tienda (catálogo, inventario y compras) /cripto /robar /trabajar
@@ -74,7 +74,8 @@ el-duende/
 │   │   └── general/          /ayuda /ping
 │   ├── juegos/             Juegos del casino, apuestas y retos: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
-│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/)
+│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/).
+│   │                         Sus reglas están en systems/ (casino/, apuestas/, retos/)
 │   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
 │   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda, /cripto y /duende
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, apuestas, catálogo, sistema, Plex, Seerr, apodos y

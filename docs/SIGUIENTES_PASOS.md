@@ -13,26 +13,18 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
   liga de pronósticos, quinielas, retos), cripto (pool de liquidez, solo TTCL, panel con pestañas), tienda y Duende con
   panel, Plex (`/plex` con botones, trofeos por país, recomendaciones, sesión de cine, Wrapped privado por DM), pase de
   batalla, `/sonidos` y `/conectar`.
-- Auditoría de código del 2026-10-10: #238, #239, #241 y #242 están cerradas y liberadas a `main`. **#243** (Duende y voz
-  en directo) y **#244** (perfil, ajustes, quiniela y liquidación) están en `developer` pero **sin liberar**: falta
-  comprobarlas en Discord (ver el apartado 2). La puntuación del código pasa de 7,7 a 8,4 / 10
-  ([PUNTUACION](planificacion/PUNTUACION.md), con la lista de lo que falta para llegar a 10).
-- Migraciones: hasta la `042_indice_tienda`, que añade el índice de `tienda.objetoId`. La siguiente es la `043`.
+- Auditoría de código del 2026-10-10: #238 a #244 y #278 a #281 están cerradas. #243 y #244 se comprobaron en Discord (T-03) y están en `main`. La puntuación del código está en 9,6 / 10 ([PUNTUACION](planificacion/PUNTUACION.md)). Lo que queda: #282 (configuración de GitHub sin verificar) y revisar `juegos/` fichero a fichero (Organización, 9 de 10).
+- Migraciones: hasta la `043_resumen_apuestas`, la tabla del ranking (#285). La siguiente es la `044`.
 - Los cabos sueltos de la revisión del 2026-10-08 están cerrados (ver el CHANGELOG).
-- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 1281 tests en 129 suites. Los tests usan una
+- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 1994 tests en 168 suites. Los tests usan una
   BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
 - No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica no tiene filas abiertas
   ([DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md)); lo pendiente está en issues.
 
 ## 2. Lo primero, en este orden
 
-1. **Probar en Discord** las listas de [TAREAS](planificacion/TAREAS.md). Hay 62 comprobaciones a mano sin marcar, sobre
-   todo de lo que depende de Discord de verdad: `/sonidos` y `/conectar` (que el bot entre y salga del canal), la tertulia
-   por voz del Duende (opt-in, si está activada en el servidor), las apuestas en directo (con `ODDS_DIRECTO=1`), el Wrapped
-   por DM y los premios de la liga en `/paneladmin`. Además, la comprobación de los refactors de la auditoría (**T-03**):
-   la voz en directo (#243), la quiniela, el perfil y los rankings (#244).
-2. **Liberar a `main` lo que está en `developer`** (#243, #244 y la nueva puntuación) solo después de T-03. Hasta entonces,
-   `main` no tiene esos cambios y `developer` va por delante.
+1. **Probar en Discord** lo que cambió sin tests de Discord: la lista [T-04](planificacion/TAREAS.md) (refactors de tamaño, casino, Duende y voz, y el ranking). T-03 (#243, #244) ya está confirmada y en `main`.
+2. **Comprobar en GitHub** la protección de ramas, el check `test` y el Project board que describe CONTRIBUTING (#282). Desde el entorno no hay herramienta para leerlo.
 3. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Eurocopa, Copa
    del Rey y Europa League tienen claves sin verificar. El Mundial (`soccer_fifa_world_cup`) sí está confirmado. Si una
    clave no sale en `/v4/sports`, corregirla en `DEPORTES` de `src/services/oddsApi.js`.
@@ -72,8 +64,6 @@ Son issues con la etiqueta `feature-idea`. De las que más aportan con menos tra
 - Estrenos de la semana en `/plex`, con 📥 para pedirlos (M).
 - Resumen diario del canal del Duende (M).
 - Historial de temporadas del pase (M).
-- Selección de agente en `/ia` con `RadioGroup`/`CheckboxGroup` (un modal con botones de radio), cuando discord.js lo
-  soporte. Antes era un TODO en `src/commands/duende/ia.js`.
 
 ## 5. Mapa de lo nuevo
 
@@ -95,14 +85,20 @@ Son issues con la etiqueta `feature-idea`. De las que más aportan con menos tra
 | `src/systems/guildSettings/` | Ajustes: la lista (`definicion.js`), los valores, el acceso con caché, los permisos de comandos y los límites |
 | `src/juegos/apuestas/quiniela/`, `src/systems/apuestas/liquidacion/` | Editor y botones de la quiniela; la liquidación en partes (caducidad, partidos, quinielas, orquesta y anuncios) |
 | `src/paneles/perfil/` | Pantallas de `/perfil`: básicos, embeds, logros, ficha y rankings |
+| `src/systems/apuestas/ranking.js`, `src/core/migrations/043_resumen_apuestas.js` | Ranking de apostadores: lee `apuestas_resumen`, que se reconstruye al terminar cada liquidación (`liquidacion/orquesta.js`) |
+| `src/systems/casino/` | Reglas de ruleta, tragaperras, adivinar y ppt; los cobros del blackjack están en `systems/blackjackCobros.js` |
+| `src/services/duende/` | Chat, voz en directo (`liveVoz/`), herramientas del Duende y la generación de imagen (`imagenGemini.js`) |
+| `src/systems/plexFichas/`, `src/systems/plexTrofeos/`, `src/systems/duende/perfiles/` | Partes de Plex y de los perfiles del Duende, cada una en su módulo; la fachada conserva el nombre antiguo |
+| `src/adminPanel/apuestas/`, `niveles/`, `plex/` | Vistas y botones de cada sección de `/paneladmin` |
+| `src/paneles/retos*.js` | Retos: pestaña, pasos, mensaje público y piezas privadas; `paneles/retos.js` es la fachada |
 
 Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del código; así el resto no cambia.
 
 ## 6. Recetas
 
-- **Una migración nueva**: el siguiente número libre (hoy el `043`) en `src/core/migrations`, con `up(db)`. Nunca editar
+- **Una migración nueva**: el siguiente número libre (hoy el `044`) en `src/core/migrations`, con `up(db)`. Nunca editar
   una que ya se haya aplicado en producción. Actualizar el número de migraciones en `tests/plexImportacion.test.js`
-  (`runMigrations(bd)`, hoy 25) y la lista de su comentario.
+  (`runMigrations(bd)`, hoy 26) y la lista de su comentario.
 - **Un comando nuevo**: el módulo en `src/commands/…`, con `data` y `run`, y su nombre en la lista de
   `tests/parte8Admin.test.js`. Si tiene botones, `componentHandlers` con un prefijo propio. Añadirlo a `/ayuda`
   (`src/commands/general/ayuda.js`) y a [FUNCIONALIDADES](FUNCIONALIDADES.md).
@@ -115,9 +111,7 @@ Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del 
 
 - `npm run check` antes de cada commit (ESLint, Prettier y Jest).
 - Merges: los PRs de una feature a `developer` se hacen con squash, como dice [CONTRIBUTING](../CONTRIBUTING.md); de `developer` a `main`, con merge commit.
-- ESLint limita el tamaño en `src/`: 120 líneas por función y 500 por fichero (el catálogo de logros queda fuera por ser
-  datos). Son máximos actuales, no la meta: la meta es 60 y 400 ([PUNTUACION](planificacion/PUNTUACION.md)). Al bajar un
-  máximo real, bajar también la regla en `eslint.config.js`.
+- ESLint limita el tamaño en `src/` a 60 líneas por función y 400 por fichero, que es la meta de la puntuación (el catálogo de logros queda fuera por ser datos). No se sube el límite para pasar un fichero: se parte.
 - Cada cambio, en el [CHANGELOG](CHANGELOG.md) y, si cambia lo que ve la gente, en
   [FUNCIONALIDADES](FUNCIONALIDADES.md); lo que haya que probar a mano, en [TAREAS](planificacion/TAREAS.md); las
   migraciones, en [DEPLOY](DEPLOY.md).

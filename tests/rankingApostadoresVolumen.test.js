@@ -47,7 +47,9 @@ function cargarDatos() {
     }
 }
 
-const porBeneficio = (a, b) => b.beneficio - a.beneficio || (b.acierto ?? -1) - (a.acierto ?? -1);
+// El mismo orden que la consulta del ranking: beneficio, luego acierto (sin partidos decididos cuenta como -1) y luego id.
+const porBeneficio = (a, b) =>
+    b.beneficio - a.beneficio || (b.acierto ?? -1) - (a.acierto ?? -1) || (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0);
 
 beforeAll(() => {
     cargarDatos();
@@ -66,6 +68,32 @@ test("el ranking agrupado da exactamente las cifras de cada persona", () => {
 
     expect(esperado.length).toBeGreaterThan(20);
     expect(ranking.ranking({ limite: 1000 })).toEqual(esperado.slice(0, 1000));
+});
+
+test("el resumen no cambia hasta que se reconstruye, y entonces coincide con las cifras de cada persona", () => {
+    const antes = ranking.ranking({ limite: 1000 });
+    // Una apuesta perdida de un partido ya terminado: al cambiarla por un premio grande, su dueño tiene que subir.
+    const { id, user_id: ganador } = db
+        .prepare(
+            "SELECT a.id, a.user_id FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id WHERE a.premio = 0 AND p.estado = 'finalizado' ORDER BY a.id LIMIT 1",
+        )
+        .get();
+    db.prepare("UPDATE apuestas_usuario SET premio = 100000 WHERE id = ?").run(id);
+
+    expect(ranking.ranking({ limite: 1000 })).toEqual(antes);
+
+    ranking.reconstruirResumen();
+    const ids = db
+        .prepare("SELECT user_id FROM apuestas_usuario UNION SELECT user_id FROM quiniela_apuestas")
+        .all()
+        .map((r) => r.user_id)
+        .filter(Boolean);
+    const esperado = ids
+        .map((id) => ranking.cifras(id))
+        .filter((c) => c.resueltas >= ranking.MIN_RESUELTAS)
+        .sort(porBeneficio);
+    expect(ranking.ranking({ limite: 1000 })).toEqual(esperado.slice(0, 1000));
+    expect(ranking.ranking({ limite: 1 })[0].userId).toBe(ganador);
 });
 
 test("sin mínimo, entran todos los que tienen apuestas, también los que no tienen nada resuelto", () => {
