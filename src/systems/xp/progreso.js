@@ -50,18 +50,7 @@ async function addXp(guild, member, amount) {
     await achievements.applyEvent(guild, userId, "xp_gain", gain);
     await achievements.applyEvent(guild, userId, "xp_level", user.nivel);
 
-    if (user.nivel > oldLevel) {
-        const insertHistory = db.prepare(`
-            INSERT INTO xp_level_history (guildId, userId, nivel, createdAt)
-            VALUES (?, ?, ?, ?)
-        `);
-        for (let lvl = oldLevel + 1; lvl <= user.nivel; lvl++) {
-            insertHistory.run(guildId, userId, lvl, Date.now());
-        }
-        log.info(`${userId} sube a nivel ${user.nivel} (desde ${oldLevel}) en ${guild.name}`);
-        await tryAssignRewards(guild, member, oldLevel, user.nivel);
-        await maybeAnnounceLevelUp(guild, member, user.nivel);
-    }
+    if (user.nivel > oldLevel) await registrarSubida(guild, member, guildId, userId, oldLevel, user.nivel);
 
     if (streakEnabled && streak.incremented && streak.streakDias >= 2) {
         const pct = streakBonusPct(guildId, streak.streakDias);
@@ -70,6 +59,20 @@ async function addXp(guild, member, amount) {
     }
 
     return { ...user, gain, oldLevel, streak_dias: streak.streakDias, streakDias: streak.streakDias };
+}
+
+/** Guarda cada nivel nuevo en el historial, da los roles de premio y anuncia la subida. */
+async function registrarSubida(guild, member, guildId, userId, oldLevel, nivel) {
+    const insertHistory = db.prepare(`
+            INSERT INTO xp_level_history (guildId, userId, nivel, createdAt)
+            VALUES (?, ?, ?, ?)
+        `);
+    for (let lvl = oldLevel + 1; lvl <= nivel; lvl++) {
+        insertHistory.run(guildId, userId, lvl, Date.now());
+    }
+    log.info(`${userId} sube a nivel ${nivel} (desde ${oldLevel}) en ${guild.name}`);
+    await tryAssignRewards(guild, member, oldLevel, nivel);
+    await maybeAnnounceLevelUp(guild, member, nivel);
 }
 
 function getProfile(guildId, userId) {
