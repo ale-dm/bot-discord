@@ -95,7 +95,10 @@ describe("/paneladmin → ⚙️ Config Global → 🤖 Duende → 🕐 Tono", (
         ...extra,
     });
     const formulario = (campos) =>
-        interaccion({ customId: "paneladmin_cfg_duende_tono_modal", fields: { getTextInputValue: (k) => campos[k] ?? "" } });
+        interaccion({
+            customId: "paneladmin_cfg_duende_tono_modal",
+            fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" },
+        });
     const tono = (payload) => payload.embeds[0].data.fields.find((f) => f.name === "🕐 Tono").value;
 
     test("la pantalla, el formulario y la validación", async () => {
@@ -105,7 +108,11 @@ describe("/paneladmin → ⚙️ Config Global → 🤖 Duende → 🕐 Tono", (
 
         const boton = interaccion({ customId: "paneladmin_cfg_duende_tono" });
         await paneladmin.handleButton(null, boton);
-        expect(boton.showModal.mock.calls[0][0].toJSON().components.map((r) => r.components[0].value)).toEqual(["0", "0", "7", ""]);
+        expect(
+            boton.showModal.mock.calls[0][0]
+                .toJSON()
+                .components.map((r) => (r.component ? r.component.options.find((o) => o.default)?.value : r.components[0].value)),
+        ).toEqual(["0", "0", "7", ""]);
 
         for (const [campos, error] of [
             [{ activa: "1", desde: "2", hasta: "2", formales: "" }, /de 0 a 23/],

@@ -11,7 +11,7 @@ const {
 } = require("discord.js");
 const xp = require("../../systems/xpSystem");
 const adminAudit = require("../../systems/adminAudit");
-const { simpleModal } = require("../common");
+const { simpleModal, modalConCampos, SI_NO } = require("../common");
 
 async function accionConfig(interaction, id, guildId) {
     const cfg = xp.getAllConfig(guildId);
@@ -107,8 +107,14 @@ async function accionCfgFormula(interaction, id, guildId) {
 async function accionCfgStreak(interaction, id, guildId) {
     const cfg = xp.getAllConfig(guildId);
     await interaction.showModal(
-        simpleModal("paneladmin_levels_cfg_streak_modal", "Racha diaria", [
-            { id: "enabled", label: "Activada (si/no)", value: cfg.streak_enabled === "0" ? "no" : "si" },
+        modalConCampos("paneladmin_levels_cfg_streak_modal", "Racha diaria", [
+            {
+                id: "enabled",
+                label: "Racha diaria activada",
+                tipo: "radio",
+                opciones: SI_NO,
+                valor: cfg.streak_enabled === "0" ? "no" : "si",
+            },
             { id: "pct_per_day", label: "% bonus XP por día de racha", value: cfg.streak_bonus_pct_per_day },
             { id: "cap_pct", label: "% bonus máximo", value: cfg.streak_bonus_cap_pct },
         ]),
@@ -250,7 +256,7 @@ async function modalFormula(interaction) {
 
 async function modalRacha(interaction) {
     const guildId = interaction.guildId;
-    const enabledRaw = interaction.fields.getTextInputValue("enabled").trim().toLowerCase();
+    const enabledRaw = interaction.fields.getRadioGroup("enabled");
     const enabled = !["no", "n", "0", "false"].includes(enabledRaw);
     const pctPerDay = Math.max(0, parseFloat(interaction.fields.getTextInputValue("pct_per_day")));
     const capPct = Math.max(0, parseFloat(interaction.fields.getTextInputValue("cap_pct")));

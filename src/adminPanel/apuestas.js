@@ -78,7 +78,7 @@ async function handleApuestasModal(interaction) {
     if (interaction.customId === "paneladmin_apu_limites_modal") return handleLimitesModal(interaction);
     if (interaction.customId === "paneladmin_apu_premios_modal") return handlePremiosModal(interaction);
     if (interaction.customId !== "paneladmin_apu_recordatorio_modal") return false;
-    const activo = interaction.fields.getTextInputValue("activo").trim();
+    const activo = interaction.fields.getRadioGroup("activo");
     const minutos = Number(interaction.fields.getTextInputValue("minutos").trim());
     if (!Number.isInteger(minutos) || minutos < 5 || minutos > 1440) {
         await interaction.reply({

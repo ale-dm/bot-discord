@@ -3,7 +3,7 @@
 const { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, MessageFlags } = require("discord.js");
 const adminAudit = require("../../systems/adminAudit");
 const guildSettings = require("../../systems/guildSettings");
-const { simpleModal } = require("../common");
+const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
 const { createLogger } = require("../../core/logger");
 const { buildApuestasHome } = require("./vistas");
 
@@ -35,8 +35,8 @@ async function quitarCanal(interaction) {
 async function abrirModalRecordatorio(interaction) {
     const cfg = guildSettings.getSettings(interaction.guildId).apuestas;
     await interaction.showModal(
-        simpleModal("paneladmin_apu_recordatorio_modal", "Recordatorio antes del partido", [
-            { id: "activo", label: "Activo (1/0)", value: cfg.recordatorio ? "1" : "0" },
+        modalConCampos("paneladmin_apu_recordatorio_modal", "Recordatorio antes del partido", [
+            { id: "activo", label: "Recordatorio activo", tipo: "radio", opciones: SI_NO_NUMERICO, valor: cfg.recordatorio ? "1" : "0" },
             { id: "minutos", label: "Minutos antes del partido (5-1440)", value: String(cfg.recordatorio_min) },
         ]),
     );

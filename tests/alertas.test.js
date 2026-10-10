@@ -143,7 +143,10 @@ describe("/paneladmin → 🩺 Sistema → 🔔 Alertas", () => {
         expect(campos["A quién"]).toBe(`el dueño del servidor (<@${DUENO}>)`);
 
         const formulario = (campos) =>
-            interaccion({ customId: "paneladmin_sis_alertas_modal", fields: { getTextInputValue: (k) => campos[k] ?? "" } });
+            interaccion({
+                customId: "paneladmin_sis_alertas_modal",
+                fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" },
+            });
         const mal = formulario({ activas: "1", ids: "123, pepito" });
         await paneladmin.handleModal(null, mal);
         expect(mal.reply.mock.calls[0][0].content).toMatch(/no son IDs de Discord: 123, pepito/);
