@@ -37,7 +37,7 @@ const { registrarMensajes } = require("./core/mensajes");
 const { programarTareas } = require("./core/tareas");
 
 const db = require("./core/db");
-const { ROOT, COMMANDS_DIR, JUEGOS_DIR, PERFIL_DIR } = require("./core/paths");
+const { ROOT, COMMANDS_DIR, JUEGOS_DIR, PERFIL_DIR, PANELES_DIR } = require("./core/paths");
 
 const { getAllJsFiles } = require("./core/cargarModulos");
 
@@ -58,9 +58,9 @@ try {
             log.error(`No se pudo cargar el módulo ${path.relative(ROOT, file)}:`, e);
         }
     }
-    // Los juegos, las apuestas y el dinero no son comandos (se entra por /juegos y /perfil), pero sus
-    // botones sí se atienden.
-    for (const file of [...getAllJsFiles(JUEGOS_DIR), ...getAllJsFiles(PERFIL_DIR)]) {
+    // Los juegos, las apuestas, el dinero y los paneles no son comandos (se entra por /juegos y /perfil), pero sus
+    // botones sí se atienden. Los paneles solo tienen componentes cuando el panel los atiende (ver misJugadas).
+    for (const file of [...getAllJsFiles(JUEGOS_DIR), ...getAllJsFiles(PERFIL_DIR), ...getAllJsFiles(PANELES_DIR)]) {
         try {
             componentRouter.register(require(file), path.relative(ROOT, file));
         } catch (e) {

@@ -2,7 +2,7 @@
 // pronósticos con aciertos (E-08). /misapuestas edita el mensaje en vez de crear otro (E-13).
 const db = require("../src/core/db");
 const jugadas = require("../src/systems/apuestas/misJugadas");
-const misapuestas = require("../src/juegos/apuestas/misapuestas");
+const misapuestas = require("../src/paneles/misJugadas");
 const juegos = require("../src/commands/juegos/juegos");
 const quiniela = require("../src/juegos/apuestas/quiniela");
 const apuestas = require("../src/juegos/apuestas/apuestas");
