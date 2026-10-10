@@ -1,39 +1,12 @@
 // Panel de casino de /perfil: resumen, estadísticas, historial, ranking y los selectores de apuesta
 // de cada juego. Solo construye mensajes; las partidas las juega cada comando de casino.
-const {
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-} = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const db = require("../core/db");
-const casinoTx = require("../systems/casinoTransactions");
 const { filaPestanas } = require("./pestanasJuegos");
-const { botonSacar, lineaDinero } = require("./economia");
-const dinero = require("../systems/dinero");
+const { lineaDinero } = require("./economia");
 const eventos = require("../systems/eventos");
-
-const EMOJI = {
-    blackjack: "🃏",
-    tragaperras: "🎰",
-    slots: "🎰",
-    ruleta: "🎡",
-    adivinar: "🔮",
-    ppt: "✂️",
-    apuestas: "⚽",
-    quiniela: "📋",
-};
-const NOMBRE = {
-    blackjack: "Blackjack",
-    tragaperras: "Tragaperras",
-    ruleta: "Ruleta",
-    adivinar: "Adivinar",
-    ppt: "Piedra, papel o tijera",
-};
-const MONTOS = [50, 100, 500, 1000, 5000];
+const { EMOJI, NOMBRE, getSaldo, backBtn, filaMontos, filaSacar } = require("./casinoComun");
+const ruleta = require("./casinoRuleta");
 
 // ─── Datos ───────────────────────────────────────────────────────────────────
 // Con `juego`, solo las partidas de ese juego (la tragaperras antiguas se guardaban como "slots").
@@ -76,94 +49,46 @@ function getLastGames(userId, n = 5) {
     return db.prepare("SELECT juego, resultado, apuesta FROM casino WHERE userId = ? ORDER BY fecha DESC LIMIT ?").all(userId, n);
 }
 
-// El 💵 efectivo, con lo que se juega.
-function getSaldo(userId) {
-    return casinoTx.obtenerSaldo(userId);
-}
-
-// "💵 Sacar del banco" (vuelve a esta pantalla después) si hay algo en el banco.
-function filaSacar(userId, volver, ...otros) {
-    const fila = new ActionRowBuilder().addComponents(...otros);
-    if (dinero.banco(userId) > 0) fila.addComponents(botonSacar(volver));
-    return fila;
-}
-
 // ─── Botones comunes ─────────────────────────────────────────────────────────
-function backBtn() {
-    return new ButtonBuilder().setCustomId("casino_home").setLabel("◄ Casino").setStyle(ButtonStyle.Secondary);
-}
-
 function backToPerfilBtn(userId) {
     return new ButtonBuilder().setCustomId(`perfil_ver_${userId}_${userId}`).setLabel("◄ Perfil").setStyle(ButtonStyle.Secondary);
 }
 
-// Una fila con un botón por importe (desactivados los que no se puede pagar).
-function filaMontos(saldo, customId) {
-    return new ActionRowBuilder().addComponents(
-        ...MONTOS.map((m) =>
-            new ButtonBuilder()
-                .setCustomId(customId(m))
-                .setLabel(`${m.toLocaleString("es")} 💰`)
-                .setStyle(m <= 100 ? ButtonStyle.Secondary : m <= 500 ? ButtonStyle.Primary : ButtonStyle.Danger)
-                .setDisabled(saldo < m),
-        ),
-    );
-}
-
-function filaVolverRuleta(label) {
-    return new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("casino_ruleta").setLabel(label).setStyle(ButtonStyle.Secondary),
-        backBtn(),
-    );
-}
-
 // ─── Pantallas ───────────────────────────────────────────────────────────────
-/** `guildId`: para avisar si hay un 🎉 fin de semana del casino en marcha (F-EC-02). */
-function buildHome(userId, guildId = null) {
-    const stats = getUserStats(userId);
-    const fav = getFavoriteGame(userId);
-    const last = getLastGames(userId, 5);
+// Las estadísticas del resumen: el total, el juego favorito y el ROI (o el aviso de que aún no hay partidas).
+function lineasEstadisticasHome(stats, fav) {
+    if (stats.total === 0) return ["", "_Sin partidas todavía. ¡Elige un juego y empieza!_"];
 
-    const winRate = stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : "0.0";
+    const winRate = ((stats.wins / stats.total) * 100).toFixed(1);
     const roi = stats.apostado > 0 ? ((stats.ganancia / stats.apostado) * 100).toFixed(1) : "0.0";
     const netSign = stats.ganancia >= 0 ? "+" : "";
     const roiSign = parseFloat(roi) >= 0 ? "+" : "";
 
-    const parts = [];
-    const evento = eventos.lineaCasino(guildId);
-    if (evento) parts.push(evento, "");
-    parts.push(lineaDinero(userId));
+    const lineas = [
+        "",
+        "**── Tus estadísticas ──**",
+        `🎮 **${stats.total}** partidas  ·  ✅ **${stats.wins}** victorias  ·  📊 WR **${winRate}%**`,
+        `💸 Ganancia neta: **${netSign}${stats.ganancia.toLocaleString("es")}**  ·  ROI: **${roiSign}${roi}%**`,
+        `🏆 Mejor jugada: **+${stats.mejor.toLocaleString("es")}**`,
+    ];
+    if (fav) lineas.push(`🎲 Juego favorito: ${fav}`);
+    return lineas;
+}
 
-    if (stats.total > 0) {
-        parts.push(
-            "",
-            "**── Tus estadísticas ──**",
-            `🎮 **${stats.total}** partidas  ·  ✅ **${stats.wins}** victorias  ·  📊 WR **${winRate}%**`,
-            `💸 Ganancia neta: **${netSign}${stats.ganancia.toLocaleString("es")}**  ·  ROI: **${roiSign}${roi}%**`,
-            `🏆 Mejor jugada: **+${stats.mejor.toLocaleString("es")}**`,
-        );
-        if (fav) parts.push(`🎲 Juego favorito: ${fav}`);
-    } else {
-        parts.push("", "_Sin partidas todavía. ¡Elige un juego y empieza!_");
-    }
+// Las últimas cinco partidas, en una sola línea.
+function lineasUltimasHome(last) {
+    if (!last.length) return [];
+    const lines = last.map((r) => {
+        const e = EMOJI[r.juego] || "🎲";
+        const icon = r.resultado > 0 ? "✅" : r.resultado < 0 ? "❌" : "🟡";
+        const val = r.resultado >= 0 ? `+${r.resultado}` : `${r.resultado}`;
+        return `${e} ${icon} **${val}**`;
+    });
+    return ["", "**── Últimas jugadas ──**", lines.join("  ·  ")];
+}
 
-    if (last.length) {
-        const lines = last.map((r) => {
-            const e = EMOJI[r.juego] || "🎲";
-            const icon = r.resultado > 0 ? "✅" : r.resultado < 0 ? "❌" : "🟡";
-            const val = r.resultado >= 0 ? `+${r.resultado}` : `${r.resultado}`;
-            return `${e} ${icon} **${val}**`;
-        });
-        parts.push("", "**── Últimas jugadas ──**", lines.join("  ·  "));
-    }
-
-    const embed = new EmbedBuilder()
-        .setTitle("🎰 Casino — Tu resumen")
-        .setDescription(parts.join("\n"))
-        .setColor(0xf39c12)
-        .setFooter({ text: "El Duende Casino" })
-        .setTimestamp();
-
+// Los botones del resumen: los juegos, los accesos al ranking, el historial y las stats, y volver al perfil.
+function filasHome(userId) {
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("casino_tragaperras").setLabel("🎰 Tragaperras").setStyle(ButtonStyle.Danger),
         new ButtonBuilder().setCustomId("casino_blackjack").setLabel("🃏 Blackjack").setStyle(ButtonStyle.Primary),
@@ -177,8 +102,28 @@ function buildHome(userId, guildId = null) {
         new ButtonBuilder().setCustomId("casino_stats").setLabel("📊 Mis Stats").setStyle(ButtonStyle.Secondary),
         backToPerfilBtn(userId),
     );
+    return [row1, row2];
+}
 
-    return { embeds: [embed], components: [row1, row2, filaPestanas(userId, "casino")] };
+/** `guildId`: para avisar si hay un 🎉 fin de semana del casino en marcha (F-EC-02). */
+function buildHome(userId, guildId = null) {
+    const stats = getUserStats(userId);
+    const fav = getFavoriteGame(userId);
+    const last = getLastGames(userId, 5);
+
+    const parts = [];
+    const evento = eventos.lineaCasino(guildId);
+    if (evento) parts.push(evento, "");
+    parts.push(lineaDinero(userId), ...lineasEstadisticasHome(stats, fav), ...lineasUltimasHome(last));
+
+    const embed = new EmbedBuilder()
+        .setTitle("🎰 Casino — Tu resumen")
+        .setDescription(parts.join("\n"))
+        .setColor(0xf39c12)
+        .setFooter({ text: "El Duende Casino" })
+        .setTimestamp();
+
+    return { embeds: [embed], components: [...filasHome(userId), filaPestanas(userId, "casino")] };
 }
 
 /** Estadísticas del casino; con `juego`, solo de ese juego (lo usa el botón 📊 al acabar una partida). */
@@ -310,89 +255,6 @@ function buildPickApuesta(userId, juego) {
     };
 }
 
-/** Ruleta, paso 1: tipo de apuesta. */
-function buildPickRuleta(userId) {
-    const tipos = [
-        { label: "🔴 Rojo (×2)", value: "color_rojo" },
-        { label: "⚫ Negro (×2)", value: "color_negro" },
-        { label: "Par (×2)", value: "paridad_par" },
-        { label: "Impar (×2)", value: "paridad_impar" },
-        { label: "Bajo 1-18 (×2)", value: "mitad_bajo" },
-        { label: "Alto 19-36 (×2)", value: "mitad_alto" },
-        { label: "🎲 Docenas (×3)", value: "docenas" },
-        { label: "🔢 Número exacto (×36)", value: "numero" },
-    ];
-    const mkBtn = (t) => new ButtonBuilder().setCustomId(`casino_pick_ruleta_${t.value}`).setLabel(t.label).setStyle(ButtonStyle.Secondary);
-    const embed = new EmbedBuilder()
-        .setTitle("🎡 Ruleta — Elige tipo de apuesta")
-        .setDescription(`${lineaDinero(userId)}\n\nSelecciona el tipo antes de elegir cantidad:`)
-        .setColor(0xe74c3c);
-    return {
-        embeds: [embed],
-        components: [
-            new ActionRowBuilder().addComponents(tipos.slice(0, 4).map(mkBtn)),
-            new ActionRowBuilder().addComponents(tipos.slice(4).map(mkBtn)),
-            new ActionRowBuilder().addComponents(backBtn()),
-        ],
-    };
-}
-
-/** Ruleta, paso 1b: qué docena. */
-function buildPickDocenas(userId) {
-    const docenas = [
-        { label: "1ª Docena  1-12  (×3)", value: "docena_1" },
-        { label: "2ª Docena 13-24 (×3)", value: "docena_2" },
-        { label: "3ª Docena 25-36 (×3)", value: "docena_3" },
-    ];
-    const docRow = new ActionRowBuilder().addComponents(
-        ...docenas.map((d) =>
-            new ButtonBuilder().setCustomId(`casino_pick_ruleta_${d.value}`).setLabel(d.label).setStyle(ButtonStyle.Secondary),
-        ),
-    );
-    const embed = new EmbedBuilder().setTitle("🎡 Ruleta — Docenas").setDescription(lineaDinero(userId)).setColor(0xe74c3c);
-    return { embeds: [embed], components: [docRow, filaVolverRuleta("◄ Tipos")] };
-}
-
-/** Ruleta, paso 1c: formulario del número exacto. */
-function modalNumeroRuleta() {
-    const input = new TextInputBuilder()
-        .setCustomId("casino_ruleta_numero_input")
-        .setLabel("Número (0 – 36)")
-        .setStyle(TextInputStyle.Short)
-        .setMinLength(1)
-        .setMaxLength(2)
-        .setPlaceholder("Ej: 17")
-        .setRequired(true);
-    return new ModalBuilder()
-        .setCustomId("casino_ruleta_numero_modal")
-        .setTitle("🎡 Ruleta — Número exacto")
-        .addComponents(new ActionRowBuilder().addComponents(input));
-}
-
-/** Ruleta, paso 2: importe (casino_play_ruleta_{importe}_{tipo}_{valor}). */
-function buildPickMontoRuleta(userId, tipo, valor) {
-    const saldo = getSaldo(userId);
-    const numero = tipo === "numero";
-    const embed = new EmbedBuilder()
-        .setTitle(numero ? "🎡 Ruleta — Número exacto" : "🎡 Ruleta — Elige tu apuesta")
-        .setDescription(
-            numero ? `Número: **${valor}** (×36)\n${lineaDinero(userId)}` : `Tipo: **${tipo} ${valor}**\n${lineaDinero(userId)}`,
-        )
-        .setColor(0xe74c3c);
-    return {
-        embeds: [embed],
-        components: [
-            filaMontos(saldo, (m) => `casino_play_ruleta_${m}_${tipo}_${valor}`),
-            filaSacar(
-                userId,
-                `casino_pick_ruleta_${tipo}_${valor}`,
-                new ButtonBuilder().setCustomId("casino_ruleta").setLabel("◄ Cambiar tipo").setStyle(ButtonStyle.Secondary),
-                backBtn(),
-            ),
-        ],
-    };
-}
-
 /** Piedra, papel o tijera: elegir jugada con el importe ya elegido (casino_play_ppt_{importe}_{jugada}). */
 function buildPickJugadaPpt(userId, apuesta) {
     const jugadas = [
@@ -459,8 +321,8 @@ module.exports = {
     buildHistorial,
     buildRanking,
     buildPickApuesta,
-    buildPickRuleta,
-    buildPickDocenas,
-    modalNumeroRuleta,
-    buildPickMontoRuleta,
+    buildPickRuleta: ruleta.buildPickRuleta,
+    buildPickDocenas: ruleta.buildPickDocenas,
+    modalNumeroRuleta: ruleta.modalNumeroRuleta,
+    buildPickMontoRuleta: ruleta.buildPickMontoRuleta,
 };

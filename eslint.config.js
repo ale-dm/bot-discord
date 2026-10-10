@@ -28,13 +28,12 @@ module.exports = [
         languageOptions: { globals: { ...globals.node, ...globals.jest } },
     },
     {
-        // Tamaño, en modo «que no empeore»: el límite es el máximo actual, no la meta. La meta de la puntuación
-        // (docs/planificacion/PUNTUACION.md) es 60 líneas por función y 400 por fichero: al bajar cada máximo real,
-        // se baja también la regla.
+        // Tamaño: 60 líneas por función y 400 por fichero, que son la meta de la puntuación
+        // (docs/planificacion/PUNTUACION.md). El repositorio ya cumple ambos; el catálogo de logros queda fuera.
         files: ["src/**/*.js"],
         rules: {
-            "max-lines-per-function": ["error", { max: 120, skipBlankLines: false, skipComments: false }],
-            "max-lines": ["error", { max: 500, skipBlankLines: false, skipComments: false }],
+            "max-lines-per-function": ["error", { max: 60, skipBlankLines: false, skipComments: false }],
+            "max-lines": ["error", { max: 400, skipBlankLines: false, skipComments: false }],
             // Una variable interna con el mismo nombre que una de fuera: lo que lee cada línea depende de dónde esté.
             "no-shadow": "error",
         },

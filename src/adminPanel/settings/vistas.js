@@ -10,6 +10,89 @@ function navRow() {
     );
 }
 
+// Campos de Config Global de los módulos de siempre: Duende, Cripto, Casino, Tienda, ACL y Logros.
+function camposModulos(cfg, acl) {
+    return [
+        {
+            name: "🤖 Duende IA",
+            value: `Modelo: **${cfg.duende.model || "default"}**\nTemp: **${cfg.duende.temperature}**`,
+            inline: true,
+        },
+        {
+            name: "📈 Cripto",
+            value: `Fee buy/sell: **${cfg.cripto.fee_buy_pct}% / ${cfg.cripto.fee_sell_pct}%**`,
+            inline: true,
+        },
+        {
+            name: "🎰 Casino",
+            value: `Apuesta: **${cfg.casino.min_bet} - ${cfg.casino.max_bet}**\nCooldown: **${cfg.casino.global_cooldown_sec}s**\nLímite diario: **${cfg.casino.daily_limit || "∞"}**`,
+            inline: true,
+        },
+        {
+            name: "🛒 Tienda",
+            value: `Estado: **${cfg.tienda.enabled ? "Activa" : "Desactivada"}**\nCooldown compra: **${cfg.tienda.buy_cooldown_sec}s**\nLímite diario: **${cfg.tienda.daily_limit || "∞"}**`,
+            inline: true,
+        },
+        { name: "🔐 ACL comandos", value: `Reglas activas: **${acl.length}**`, inline: true },
+        {
+            name: "🏅 Logros",
+            value: `Estado: **${cfg.logros.enabled ? "Activo" : "Off"}**\nMultiplicador: **x${cfg.logros.reward_multiplier}**`,
+            inline: true,
+        },
+    ];
+}
+
+// Campos de Config Global de la recompensa diaria, la clasificación, los eventos y los impuestos.
+function camposAvanzados(cfg, guildId) {
+    return [
+        {
+            name: "🎁 Diario",
+            value: cfg.diario.enabled
+                ? `**${cfg.diario.base}** + **${cfg.diario.por_dia_racha}**/día de racha\nTope: **${cfg.diario.tope}**`
+                : "Desactivado",
+            inline: true,
+        },
+        {
+            name: "🏆 Clasificación semanal",
+            value: cfg.clasificacion.canal
+                ? `Lunes en <#${cfg.clasificacion.canal}>\nPremio: **${fmtNumero(cfg.clasificacion.premio)}**`
+                : "Sin canal (no se publica)",
+            inline: true,
+        },
+        {
+            name: "🎉 Eventos",
+            value:
+                [cfg.eventos.xp.activo && `⚡ XP ×${cfg.eventos.xp.mult}`, cfg.eventos.casino.activo && `🎰 ${cfg.eventos.casino.pct} %`]
+                    .filter(Boolean)
+                    .join("\n") || "Ninguno activo",
+            inline: true,
+        },
+        {
+            name: "🏛️ Impuestos",
+            value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmtNumero(impuestos.boteTotal(guildId))}**`,
+            inline: true,
+        },
+    ];
+}
+
+function filasConfigHome() {
+    const row1 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cfg_duende").setLabel("🤖 Duende").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_cripto").setLabel("📈 Cripto").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_casino").setLabel("🎰 Casino").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_tienda").setLabel("🛒 Tienda").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_acl").setLabel("🔐 Comandos").setStyle(ButtonStyle.Danger),
+    );
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_semanal_home").setLabel("🏆 Semanal").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
+    );
+    return [row1, row2];
+}
+
 function buildConfigHome(guildId) {
     const cfg = guildSettings.getSettings(guildId);
     const acl = guildSettings.listCommandAcl(guildId);
@@ -18,88 +101,11 @@ function buildConfigHome(guildId) {
         .setDescription(
             "Administra parámetros de Duende, Cripto, Casino, Tienda, Logros, recompensa diaria, clasificación semanal, eventos temporales y acceso por comando.",
         )
-        .addFields(
-            {
-                name: "🤖 Duende IA",
-                value: `Modelo: **${cfg.duende.model || "default"}**\nTemp: **${cfg.duende.temperature}**`,
-                inline: true,
-            },
-            {
-                name: "📈 Cripto",
-                value: `Fee buy/sell: **${cfg.cripto.fee_buy_pct}% / ${cfg.cripto.fee_sell_pct}%**`,
-                inline: true,
-            },
-            {
-                name: "🎰 Casino",
-                value: `Apuesta: **${cfg.casino.min_bet} - ${cfg.casino.max_bet}**\nCooldown: **${cfg.casino.global_cooldown_sec}s**\nLímite diario: **${cfg.casino.daily_limit || "∞"}**`,
-                inline: true,
-            },
-            {
-                name: "🛒 Tienda",
-                value: `Estado: **${cfg.tienda.enabled ? "Activa" : "Desactivada"}**\nCooldown compra: **${cfg.tienda.buy_cooldown_sec}s**\nLímite diario: **${cfg.tienda.daily_limit || "∞"}**`,
-                inline: true,
-            },
-            {
-                name: "🔐 ACL comandos",
-                value: `Reglas activas: **${acl.length}**`,
-                inline: true,
-            },
-            {
-                name: "🏅 Logros",
-                value: `Estado: **${cfg.logros.enabled ? "Activo" : "Off"}**\nMultiplicador: **x${cfg.logros.reward_multiplier}**`,
-                inline: true,
-            },
-            {
-                name: "🎁 Diario",
-                value: cfg.diario.enabled
-                    ? `**${cfg.diario.base}** + **${cfg.diario.por_dia_racha}**/día de racha\nTope: **${cfg.diario.tope}**`
-                    : "Desactivado",
-                inline: true,
-            },
-            {
-                name: "🏆 Clasificación semanal",
-                value: cfg.clasificacion.canal
-                    ? `Lunes en <#${cfg.clasificacion.canal}>\nPremio: **${fmtNumero(cfg.clasificacion.premio)}**`
-                    : "Sin canal (no se publica)",
-                inline: true,
-            },
-            {
-                name: "🎉 Eventos",
-                value:
-                    [
-                        cfg.eventos.xp.activo && `⚡ XP ×${cfg.eventos.xp.mult}`,
-                        cfg.eventos.casino.activo && `🎰 ${cfg.eventos.casino.pct} %`,
-                    ]
-                        .filter(Boolean)
-                        .join("\n") || "Ninguno activo",
-                inline: true,
-            },
-            {
-                name: "🏛️ Impuestos",
-                value: `Reglas activas: **${impuestos.listarReglas(guildId).filter((r) => r.activo).length}**\nBote: **${fmtNumero(impuestos.boteTotal(guildId))}**`,
-                inline: true,
-            },
-        )
+        .addFields(...camposModulos(cfg, acl), ...camposAvanzados(cfg, guildId))
         .setColor(0x1abc9c)
         .setTimestamp();
 
-    const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("paneladmin_cfg_duende").setLabel("🤖 Duende").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_cripto").setLabel("📈 Cripto").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_casino").setLabel("🎰 Casino").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_tienda").setLabel("🛒 Tienda").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_acl").setLabel("🔐 Comandos").setStyle(ButtonStyle.Danger),
-    );
-
-    const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("paneladmin_cfg_logros").setLabel("🏅 Logros").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_diario").setLabel("🎁 Diario").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("paneladmin_semanal_home").setLabel("🏆 Semanal").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
-    );
-
-    return { embeds: [embed], components: [row1, row2, navRow()] };
+    return { embeds: [embed], components: [...filasConfigHome(), navRow()] };
 }
 
 const hora = (h) => `${String(h).padStart(2, "0")}:00`;

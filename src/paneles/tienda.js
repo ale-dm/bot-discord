@@ -101,6 +101,36 @@ function emojiPorTipo(tipo) {
     }
 }
 
+/** El campo del embed de un objeto del catálogo: nombre con precio y stock y, debajo, tipo, rareza y avisos. */
+function campoObjetoCatalogo(item, isAdmin) {
+    let name = `${emojiPorTipo(item.tipo)} ${isAdmin ? `[#${item.tiendaId}] ` : ""}${item.nombre} — ${item.precio} 🪙`;
+    if (item.unico) name = "🟢 " + name;
+    if (item.stock !== null) name += ` (Stock: ${item.stock})`;
+    let value = item.descripcion ? item.descripcion.slice(0, 300) : "Sin descripción";
+    if (item.tipo) value += `\nTipo: ${item.tipo}`;
+    if (item.rareza) value += `  •  Rareza: ${item.rareza}`;
+    if (item.stock !== null && item.stock > 0 && item.stock <= 3) value += "  \n⚠️ ¡Últimas unidades!";
+    if (item.stock !== null && item.stock === 0) value += "  \n❌ Agotado";
+    if (item.rolId || (item.tipo || "").toLowerCase() === "rol") value += "\n🎭 Asigna rol automáticamente al comprar";
+    return { name: name.slice(0, 256), value: value.slice(0, 1024), inline: false };
+}
+
+/** La fila de compra de una página: un botón por objeto (apagado si está agotado). */
+function filaCompras(pageItems) {
+    const compraRow = new ActionRowBuilder();
+    pageItems.forEach((item) => {
+        const agotado = item.stock !== null && item.stock === 0;
+        compraRow.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`tienda_confirmar_${item.tiendaId}`)
+                .setLabel(agotado ? `${item.nombre} (agotado)` : `🛒 ${item.nombre}`)
+                .setStyle(agotado ? ButtonStyle.Danger : ButtonStyle.Primary)
+                .setDisabled(agotado),
+        );
+    });
+    return compraRow;
+}
+
 /** Una página del catálogo (ya filtrado): embed con los objetos, un botón de compra por cada uno y los filtros. */
 function buildTiendaPage(items, pagina, isAdmin, filtros = {}) {
     const totalPaginas = Math.max(1, Math.ceil(items.length / ITEMS_POR_PAGINA));
@@ -126,33 +156,11 @@ function buildTiendaPage(items, pagina, isAdmin, filtros = {}) {
     if (pageItems[0]?.imagen) embed.setThumbnail(pageItems[0].imagen);
 
     pageItems.forEach((item) => {
-        let name = `${emojiPorTipo(item.tipo)} ${isAdmin ? `[#${item.tiendaId}] ` : ""}${item.nombre} — ${item.precio} 🪙`;
-        if (item.unico) name = "🟢 " + name;
-        if (item.stock !== null) name += ` (Stock: ${item.stock})`;
-        let value = item.descripcion ? item.descripcion.slice(0, 300) : "Sin descripción";
-        if (item.tipo) value += `\nTipo: ${item.tipo}`;
-        if (item.rareza) value += `  •  Rareza: ${item.rareza}`;
-        if (item.stock !== null && item.stock > 0 && item.stock <= 3) value += "  \n⚠️ ¡Últimas unidades!";
-        if (item.stock !== null && item.stock === 0) value += "  \n❌ Agotado";
-        if (item.rolId || (item.tipo || "").toLowerCase() === "rol") value += "\n🎭 Asigna rol automáticamente al comprar";
-        embed.addFields({ name: name.slice(0, 256), value: value.slice(0, 1024), inline: false });
+        embed.addFields(campoObjetoCatalogo(item, isAdmin));
     });
 
     const filas = [];
-    if (pageItems.length) {
-        const compraRow = new ActionRowBuilder();
-        pageItems.forEach((item) => {
-            const agotado = item.stock !== null && item.stock === 0;
-            compraRow.addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`tienda_confirmar_${item.tiendaId}`)
-                    .setLabel(agotado ? `${item.nombre} (agotado)` : `🛒 ${item.nombre}`)
-                    .setStyle(agotado ? ButtonStyle.Danger : ButtonStyle.Primary)
-                    .setDisabled(agotado),
-            );
-        });
-        filas.push(compraRow);
-    }
+    if (pageItems.length) filas.push(filaCompras(pageItems));
 
     const navRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -259,6 +267,29 @@ function buildHistorialCompras(historial, pagina) {
     return { content: "", embeds: [embed], components: [row, filaPestanasTienda("compras")] };
 }
 
+/** El campo del embed de un objeto del inventario: cuántos tienes y su tipo, categoría y rareza. */
+function campoObjetoInventario(obj) {
+    let value = obj.descripcion ? obj.descripcion.slice(0, 512) : "";
+    if (obj.categoria) value += `\nCategoría: ${obj.categoria}`;
+    if (obj.rareza) value += `\nRareza: ${obj.rareza}`;
+    return {
+        name: `${obj.cantidad}x ${emojiPorTipo(obj.tipo)} ${obj.nombre}${obj.tipo ? ` (${obj.tipo})` : ""}`.slice(0, 256),
+        value: (value || "—").slice(0, 1024),
+    };
+}
+
+/** La fila de Usar de una página: un botón por objeto de la página que hace algo al usarse. */
+function filaUsar(usables, pagina) {
+    return new ActionRowBuilder().addComponents(
+        usables.map((obj) =>
+            new ButtonBuilder()
+                .setCustomId(`tienda_usar_${obj.id}_${pagina}`)
+                .setLabel(`Usar ${obj.nombre}`.slice(0, 80))
+                .setStyle(ButtonStyle.Success),
+        ),
+    );
+}
+
 /** Pestaña 🎒 Inventario: tus objetos (agrupados, con cuántos tienes), con filtros y un botón de Usar por cada uno que haga algo. */
 function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
     const busqueda = filtros.busqueda ? filtros.busqueda.toLowerCase() : null;
@@ -282,31 +313,12 @@ function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
         )
         .setColor(colorPorRareza(pagItems[0]?.rareza))
         .setFooter({ text: `Página ${pagina} de ${totalPaginas} · ${lista.reduce((a, o) => a + o.cantidad, 0)} objetos` });
-    for (const obj of pagItems) {
-        let value = obj.descripcion ? obj.descripcion.slice(0, 512) : "";
-        if (obj.categoria) value += `\nCategoría: ${obj.categoria}`;
-        if (obj.rareza) value += `\nRareza: ${obj.rareza}`;
-        embed.addFields({
-            name: `${obj.cantidad}x ${emojiPorTipo(obj.tipo)} ${obj.nombre}${obj.tipo ? ` (${obj.tipo})` : ""}`.slice(0, 256),
-            value: (value || "—").slice(0, 1024),
-        });
-    }
+    for (const obj of pagItems) embed.addFields(campoObjetoInventario(obj));
     if (pagItems[0]?.imagen) embed.setThumbnail(pagItems[0].imagen);
 
     const filas = [];
     const usables = pagItems.filter(objetos.esUsable);
-    if (usables.length) {
-        filas.push(
-            new ActionRowBuilder().addComponents(
-                usables.map((obj) =>
-                    new ButtonBuilder()
-                        .setCustomId(`tienda_usar_${obj.id}_${pagina}`)
-                        .setLabel(`Usar ${obj.nombre}`.slice(0, 80))
-                        .setStyle(ButtonStyle.Success),
-                ),
-            ),
-        );
-    }
+    if (usables.length) filas.push(filaUsar(usables, pagina));
     filas.push(
         new ActionRowBuilder().addComponents(
             new ButtonBuilder()

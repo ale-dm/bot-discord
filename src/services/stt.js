@@ -93,6 +93,88 @@ function keepFailedWav(wavFile) {
     }
 }
 
+/** Graba el audio de un usuario en pcmFile (PCM 16kHz mono) hasta que calla. Devuelve el stream de escritura. */
+function grabarPCM(receiver, userIdSpeaking, pcmFile) {
+    const opusStream = receiver.subscribe(userIdSpeaking, {
+        end: { behavior: EndBehaviorType.AfterSilence, duration: 1800 }, // 1,8 s de silencio corta
+    });
+    const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
+    const out = fs.createWriteStream(pcmFile);
+    pcmStream.pipe(out);
+    return out;
+}
+
+/**
+ * Convierte la grabación a WAV, la transcribe y entrega el resultado al callback.
+ * Al acabar borra los temporales (guarda el WAV si no hubo transcripción).
+ */
+async function procesarGrabacion({ client, guild, channel, callback, receiver, userIdSpeaking, pcmFile, wavFile }) {
+    let transcript = null;
+    try {
+        await pcmToWav(pcmFile, wavFile);
+        transcript = await transcribeWithLocalServer(wavFile);
+
+        let member = null;
+        let user = { id: userIdSpeaking };
+        try {
+            member = await guild.members.fetch(userIdSpeaking);
+            user = member.user;
+        } catch (e) {
+            log.warn(`No se pudo obtener el miembro ${userIdSpeaking}: ${e.message}`);
+        }
+
+        try {
+            await callback(transcript, { client, guild, channel, user, member });
+        } catch (cbErr) {
+            log.error("Error procesando la transcripción:", cbErr);
+        }
+    } catch (err) {
+        log.error("Error procesando el audio grabado:", err);
+    } finally {
+        removeQuietly(pcmFile);
+        if (fs.existsSync(wavFile)) {
+            if (transcript) removeQuietly(wavFile);
+            else keepFailedWav(wavFile);
+        }
+        delete receiver._recordingUsers[userIdSpeaking];
+    }
+}
+
+/**
+ * Atiende el primer «empieza a hablar» del usuario que se espera: graba su intervención y la procesa.
+ * ctx lleva lo que necesita de listenAndTranscribe, y detach para dejar de escuchar.
+ */
+function atenderInicio(userIdSpeaking, ctx) {
+    const { client, guild, channel, callback, receiver, onlyListenUser, detach } = ctx;
+    if (onlyListenUser && userIdSpeaking !== onlyListenUser) return;
+    const maybeMember = guild.members.cache.get(userIdSpeaking);
+    if (maybeMember?.user?.bot) return;
+    detach();
+
+    if (!receiver._recordingUsers) receiver._recordingUsers = {};
+    if (receiver._recordingUsers[userIdSpeaking]) {
+        log.debug(`Ya se está grabando a ${userIdSpeaking}, se ignora`);
+        return;
+    }
+    receiver._recordingUsers[userIdSpeaking] = true;
+    log.debug(`${userIdSpeaking} empieza a hablar`);
+
+    // Temporales en la carpeta del sistema, no en la raíz del proyecto.
+    const pcmFile = path.join(os.tmpdir(), `duende_audio_${userIdSpeaking}_${Date.now()}.pcm`);
+    const wavFile = pcmFile.replace(/\.pcm$/, ".wav");
+    const out = grabarPCM(receiver, userIdSpeaking, pcmFile);
+
+    // Cierre forzado a los 15 s por si el silencio no llega a detectarse.
+    const forceClose = setTimeout(() => {
+        if (!out.closed) out.end();
+    }, 15000);
+
+    out.on("finish", () => {
+        clearTimeout(forceClose);
+        return procesarGrabacion({ client, guild, channel, callback, receiver, userIdSpeaking, pcmFile, wavFile });
+    });
+}
+
 /**
  * Escucha la próxima intervención de un usuario en un canal de voz, la transcribe y
  * llama a callback(transcript, { client, guild, channel, user, member }).
@@ -122,81 +204,20 @@ async function listenAndTranscribe(client, guildId, channelId, invokingUserId, c
     const timeoutMs = Number(opts.timeoutMs ?? process.env.STT_LISTEN_TIMEOUT_MS ?? 5 * 60 * 1000);
     let timeoutHandle = null;
     const detach = () => {
-        receiver.speaking.removeListener("start", onSpeakingStart);
+        receiver.speaking.removeListener("start", onStart);
         if (timeoutHandle) {
             clearTimeout(timeoutHandle);
             timeoutHandle = null;
         }
     };
+    const onStart = (userIdSpeaking) =>
+        atenderInicio(userIdSpeaking, { client, guild, channel, callback, receiver, onlyListenUser, detach });
     timeoutHandle = setTimeout(() => {
         log.debug(`Tiempo de espera agotado sin que hablara ${onlyListenUser || "(nadie)"}`);
         detach();
     }, timeoutMs);
 
-    function onSpeakingStart(userIdSpeaking) {
-        if (onlyListenUser && userIdSpeaking !== onlyListenUser) return;
-        const maybeMember = guild.members.cache.get(userIdSpeaking);
-        if (maybeMember?.user?.bot) return;
-        detach();
-
-        if (!receiver._recordingUsers) receiver._recordingUsers = {};
-        if (receiver._recordingUsers[userIdSpeaking]) {
-            log.debug(`Ya se está grabando a ${userIdSpeaking}, se ignora`);
-            return;
-        }
-        receiver._recordingUsers[userIdSpeaking] = true;
-        log.debug(`${userIdSpeaking} empieza a hablar`);
-
-        const opusStream = receiver.subscribe(userIdSpeaking, {
-            end: { behavior: EndBehaviorType.AfterSilence, duration: 1800 }, // 1,8 s de silencio corta
-        });
-        const pcmStream = opusStream.pipe(new prism.opus.Decoder({ channels: 1, rate: 16000, frameSize: 320 }));
-        // Temporales en la carpeta del sistema, no en la raíz del proyecto.
-        const pcmFile = path.join(os.tmpdir(), `duende_audio_${userIdSpeaking}_${Date.now()}.pcm`);
-        const wavFile = pcmFile.replace(/\.pcm$/, ".wav");
-        const out = fs.createWriteStream(pcmFile);
-        pcmStream.pipe(out);
-
-        // Cierre forzado a los 15 s por si el silencio no llega a detectarse.
-        const forceClose = setTimeout(() => {
-            if (!out.closed) out.end();
-        }, 15000);
-
-        out.on("finish", async () => {
-            clearTimeout(forceClose);
-            let transcript = null;
-            try {
-                await pcmToWav(pcmFile, wavFile);
-                transcript = await transcribeWithLocalServer(wavFile);
-
-                let member = null;
-                let user = { id: userIdSpeaking };
-                try {
-                    member = await guild.members.fetch(userIdSpeaking);
-                    user = member.user;
-                } catch (e) {
-                    log.warn(`No se pudo obtener el miembro ${userIdSpeaking}: ${e.message}`);
-                }
-
-                try {
-                    await callback(transcript, { client, guild, channel, user, member });
-                } catch (cbErr) {
-                    log.error("Error procesando la transcripción:", cbErr);
-                }
-            } catch (err) {
-                log.error("Error procesando el audio grabado:", err);
-            } finally {
-                removeQuietly(pcmFile);
-                if (fs.existsSync(wavFile)) {
-                    if (transcript) removeQuietly(wavFile);
-                    else keepFailedWav(wavFile);
-                }
-                delete receiver._recordingUsers[userIdSpeaking];
-            }
-        });
-    }
-
-    receiver.speaking.on("start", onSpeakingStart);
+    receiver.speaking.on("start", onStart);
 }
 
 module.exports = { listenAndTranscribe };

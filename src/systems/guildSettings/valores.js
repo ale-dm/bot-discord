@@ -16,20 +16,23 @@ function parseValue(key, value) {
     return String(value ?? "");
 }
 
-function flattenToNested(flat) {
+function nodoDuende(flat) {
     return {
-        duende: {
-            model: flat["duende.model"],
-            temperature: flat["duende.temperature"],
-            history_limit: flat["duende.history_limit"],
-            allowed_channel_id: flat["duende.allowed_channel_id"],
-            espontaneo_enabled: !!flat["duende.espontaneo_enabled"],
-            espontaneo_channel_id: flat["duende.espontaneo_channel_id"],
-            madrugada_activa: flat["duende.madrugada_activa"],
-            madrugada_desde: flat["duende.madrugada_desde"],
-            madrugada_hasta: flat["duende.madrugada_hasta"],
-            canales_formales: flat["duende.canales_formales"],
-        },
+        model: flat["duende.model"],
+        temperature: flat["duende.temperature"],
+        history_limit: flat["duende.history_limit"],
+        allowed_channel_id: flat["duende.allowed_channel_id"],
+        espontaneo_enabled: !!flat["duende.espontaneo_enabled"],
+        espontaneo_channel_id: flat["duende.espontaneo_channel_id"],
+        madrugada_activa: flat["duende.madrugada_activa"],
+        madrugada_desde: flat["duende.madrugada_desde"],
+        madrugada_hasta: flat["duende.madrugada_hasta"],
+        canales_formales: flat["duende.canales_formales"],
+    };
+}
+
+function nodoEconomia(flat) {
+    return {
         cripto: {
             fee_buy_pct: flat["cripto.fee_buy_pct"],
             fee_sell_pct: flat["cripto.fee_sell_pct"],
@@ -56,6 +59,11 @@ function flattenToNested(flat) {
             daily_limit: flat["tienda.daily_limit"],
             notif_channel_id: flat["tienda.notif_channel_id"],
         },
+    };
+}
+
+function nodoPlexYLogros(flat) {
+    return {
         logros: {
             enabled: flat["logros.enabled"],
             notify_channel_id: flat["logros.notify_channel_id"],
@@ -80,6 +88,11 @@ function flattenToNested(flat) {
             daily_request_limit: flat["seerr.daily_request_limit"],
             avisar_disponible: flat["seerr.avisar_disponible"],
         },
+    };
+}
+
+function nodoOtros(flat) {
+    return {
         diario: {
             enabled: flat["diario.enabled"],
             base: flat["diario.base"],
@@ -118,6 +131,15 @@ function flattenToNested(flat) {
             },
             casino: { activo: flat["eventos.casino_activo"], pct: flat["eventos.casino_pct"] },
         },
+    };
+}
+
+function flattenToNested(flat) {
+    return {
+        duende: nodoDuende(flat),
+        ...nodoEconomia(flat),
+        ...nodoPlexYLogros(flat),
+        ...nodoOtros(flat),
     };
 }
 

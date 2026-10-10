@@ -5,6 +5,24 @@ const dinero = require("../systems/dinero");
 const negocios = require("../systems/negocios");
 const { fmtNumero } = require("../core/formato");
 
+// Una opción por cada negocio del catálogo: vender el que se tiene, o comprar el que no.
+function opcionesCompraVenta(e) {
+    return Object.entries(negocios.CATALOGO).map(([tipo, c]) => {
+        const suyo = e.negocios.find((n) => n.tipo === tipo);
+        return suyo
+            ? {
+                  label: `Vender ${c.emoji} ${c.nombre}`.slice(0, 100),
+                  description: `Recuperas ${fmtNumero(Math.floor((suyo.pagado * negocios.VENTA_PCT) / 100))} 🪙 en el banco`,
+                  value: `vender_${tipo}`,
+              }
+            : {
+                  label: `Comprar ${c.emoji} ${c.nombre}`.slice(0, 100),
+                  description: `${fmtNumero(c.precio)} 🪙 del banco · blanquea ${fmtNumero(c.blanqueoDia)}/día`.slice(0, 100),
+                  value: `comprar_${tipo}`,
+              };
+    });
+}
+
 function buildNegocios(userId, aviso = null) {
     const e = negocios.estado(userId);
     const lineas = e.negocios.length
@@ -34,24 +52,10 @@ function buildNegocios(userId, aviso = null) {
         .setColor(0x16a085)
         .setTimestamp();
 
-    const opciones = Object.entries(negocios.CATALOGO).map(([tipo, c]) => {
-        const suyo = e.negocios.find((n) => n.tipo === tipo);
-        return suyo
-            ? {
-                  label: `Vender ${c.emoji} ${c.nombre}`.slice(0, 100),
-                  description: `Recuperas ${fmtNumero(Math.floor((suyo.pagado * negocios.VENTA_PCT) / 100))} 🪙 en el banco`,
-                  value: `vender_${tipo}`,
-              }
-            : {
-                  label: `Comprar ${c.emoji} ${c.nombre}`.slice(0, 100),
-                  description: `${fmtNumero(c.precio)} 🪙 del banco · blanquea ${fmtNumero(c.blanqueoDia)}/día`.slice(0, 100),
-                  value: `comprar_${tipo}`,
-              };
-    });
     const menu = new StringSelectMenuBuilder()
         .setCustomId("dinero_negocio_elegir")
         .setPlaceholder("Comprar o vender un negocio")
-        .addOptions(opciones);
+        .addOptions(opcionesCompraVenta(e));
 
     const depositar = new ButtonBuilder()
         .setCustomId("dinero_negocio_depositar")

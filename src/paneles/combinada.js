@@ -4,6 +4,39 @@ const combinadas = require("../systems/apuestas/combinadas");
 const mercados = require("../systems/apuestas/mercados");
 const { fmtNumero } = require("../core/formato");
 
+// Filas del boleto: quitar cada pata, apostar (solo con las patas mínimas), vaciar y actualizar.
+function filasBoleto(patas) {
+    const filas = [];
+    if (patas.length) {
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                ...patas.map((p, i) =>
+                    new ButtonBuilder()
+                        .setCustomId(`combinada_quitar_${p.matchId}`)
+                        .setLabel(`✖ Quitar ${i + 1}`)
+                        .setStyle(ButtonStyle.Secondary),
+                ),
+            ),
+        );
+    }
+    filas.push(
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("combinada_apostar")
+                .setLabel("💰 Apostar combinada")
+                .setStyle(ButtonStyle.Success)
+                .setDisabled(patas.length < combinadas.MIN_PATAS),
+            new ButtonBuilder()
+                .setCustomId("combinada_vaciar")
+                .setLabel("🗑️ Vaciar")
+                .setStyle(ButtonStyle.Danger)
+                .setDisabled(!patas.length),
+            new ButtonBuilder().setCustomId("combinada_ver").setLabel("🔄 Actualizar").setStyle(ButtonStyle.Secondary),
+        ),
+    );
+    return filas;
+}
+
 /** La pantalla del boleto en armado de alguien. `aviso`: una línea de resultado de la última acción. */
 function pantallaCombinada(userId, aviso = null) {
     const patas = combinadas.borrador(userId);
@@ -39,35 +72,7 @@ function pantallaCombinada(userId, aviso = null) {
         });
     }
 
-    const filas = [];
-    if (patas.length) {
-        filas.push(
-            new ActionRowBuilder().addComponents(
-                ...patas.map((p, i) =>
-                    new ButtonBuilder()
-                        .setCustomId(`combinada_quitar_${p.matchId}`)
-                        .setLabel(`✖ Quitar ${i + 1}`)
-                        .setStyle(ButtonStyle.Secondary),
-                ),
-            ),
-        );
-    }
-    filas.push(
-        new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId("combinada_apostar")
-                .setLabel("💰 Apostar combinada")
-                .setStyle(ButtonStyle.Success)
-                .setDisabled(patas.length < combinadas.MIN_PATAS),
-            new ButtonBuilder()
-                .setCustomId("combinada_vaciar")
-                .setLabel("🗑️ Vaciar")
-                .setStyle(ButtonStyle.Danger)
-                .setDisabled(!patas.length),
-            new ButtonBuilder().setCustomId("combinada_ver").setLabel("🔄 Actualizar").setStyle(ButtonStyle.Secondary),
-        ),
-    );
-    return { content: "", embeds: [embed], components: filas };
+    return { content: "", embeds: [embed], components: filasBoleto(patas) };
 }
 
 module.exports = { pantallaCombinada };

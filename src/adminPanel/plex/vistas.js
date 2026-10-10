@@ -103,22 +103,15 @@ function textoRolesGordos(guildId) {
 /** 🏆 Trofeos de Plex: fichas e idiomas, qué es anime, la importación, los roles de Gordos, trofeos creados (por tipo y
  * dificultad) y los de admin. */
 
-function buildPlexTrofeos(guildId) {
-    const f = plexFichas.estado(guildId);
-    const idiomas = plexIdiomas.estado(guildId);
-    const { porTipo, porDificultad, admin } = plexTrofeos.resumen(guildId);
+function textoAnime(guildId) {
     const anime = plexFichas.configAnime(guildId);
     const nombres = plexFichas.nombresBibliotecas(guildId);
-    const animeTexto = anime.auto
-        ? "automático (bibliotecas con «anime» en el nombre y lo que tenga el género Anime)"
-        : [...anime.ids].map((id) => `**${nombres.get(id) || `biblioteca ${id}`}**`).join(", ");
-    const creados = Object.entries(NOMBRE_TIPO)
-        .map(([tipo, nombre]) => `${nombre} **${porTipo[tipo] || 0}**`)
-        .join(" · ");
-    const dificultades = Object.keys(plexIdiomas.DIFICULTADES)
-        .map((d) => `${plexIdiomas.textoDificultad(d)} **${porDificultad[d]}**`)
-        .join(" · ");
-    let lista = admin.length
+    if (anime.auto) return "automático (bibliotecas con «anime» en el nombre y lo que tenga el género Anime)";
+    return [...anime.ids].map((id) => `**${nombres.get(id) || `biblioteca ${id}`}**`).join(", ");
+}
+
+function textoTrofeosAdmin(admin) {
+    const lista = admin.length
         ? admin
               .map(
                   (t) =>
@@ -126,7 +119,32 @@ function buildPlexTrofeos(guildId) {
               )
               .join("\n")
         : "Ninguno todavía. Con ➕ Crear trofeo: nombre, condición, recompensa y dificultad.";
-    if (lista.length > 1500) lista = `${lista.slice(0, 1500)}…`;
+    return lista.length > 1500 ? `${lista.slice(0, 1500)}…` : lista;
+}
+
+function filaTrofeosAdmin(admin) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_plex_trofeo_crear").setLabel("➕ Crear trofeo").setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_plex_trofeo_borrar")
+            .setLabel("🗑️ Borrar trofeo")
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(!admin.length),
+        new ButtonBuilder().setCustomId("paneladmin_plex_anime").setLabel("🎌 Bibliotecas de anime").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_plex_historial").setLabel("📼 Sincronizar ahora").setStyle(ButtonStyle.Primary),
+    );
+}
+
+function buildPlexTrofeos(guildId) {
+    const f = plexFichas.estado(guildId);
+    const idiomas = plexIdiomas.estado(guildId);
+    const { porTipo, porDificultad, admin } = plexTrofeos.resumen(guildId);
+    const creados = Object.entries(NOMBRE_TIPO)
+        .map(([tipo, nombre]) => `${nombre} **${porTipo[tipo] || 0}**`)
+        .join(" · ");
+    const dificultades = Object.keys(plexIdiomas.DIFICULTADES)
+        .map((d) => `${plexIdiomas.textoDificultad(d)} **${porDificultad[d]}**`)
+        .join(" · ");
     const ayuda = [...Object.values(plexTrofeos.CONDICIONES).filter((c) => c.ayuda), { ayuda: plexTrofeos.AYUDA_FECHAS }]
         .map((c) => `• ${c.ayuda}`)
         .join("\n");
@@ -141,25 +159,16 @@ function buildPlexTrofeos(guildId) {
                 `"Todas las de…" y sagas: ${f.completa ? "✅ activos" : "⏳ cuando estén todas las fichas de películas"}\n` +
                 `🗣️ Idiomas: **${idiomas.revisadas.toLocaleString("es")}** reproducciones revisadas · ` +
                 `**${idiomas.pendientes.toLocaleString("es")}** pendientes\n` +
-                `🎌 Anime: ${animeTexto}\n` +
+                `🎌 Anime: ${textoAnime(guildId)}\n` +
                 `📼 Importación: lo que se desbloquea con lo antiguo da el **${achievements.porcentajeImportacion(guildId)} %** de las ` +
                 `monedas · ${importando === 1 ? "**1** vinculado importando" : `**${importando}** vinculados importando`} ahora\n` +
                 `🎰 Roles de Gordos del Plex: ${textoRolesGordos(guildId)}\n\n` +
                 `**Creados**: ${creados}\n**Por dificultad**: ${dificultades}\n\n` +
-                `**Trofeos de admin (${admin.length})**\n${lista}\n\n**Condiciones**\n${ayuda}`,
+                `**Trofeos de admin (${admin.length})**\n${textoTrofeosAdmin(admin)}\n\n**Condiciones**\n${ayuda}`,
         )
         .setColor(0xe5a00d)
         .setTimestamp();
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("paneladmin_plex_trofeo_crear").setLabel("➕ Crear trofeo").setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-            .setCustomId("paneladmin_plex_trofeo_borrar")
-            .setLabel("🗑️ Borrar trofeo")
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(!admin.length),
-        new ButtonBuilder().setCustomId("paneladmin_plex_anime").setLabel("🎌 Bibliotecas de anime").setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId("paneladmin_plex_historial").setLabel("📼 Sincronizar ahora").setStyle(ButtonStyle.Primary),
-    );
+    const row = filaTrofeosAdmin(admin);
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_plex_importacion").setLabel("🪙 % de la importación").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_plex_gordos").setLabel("🎰 Roles de Gordos").setStyle(ButtonStyle.Secondary),

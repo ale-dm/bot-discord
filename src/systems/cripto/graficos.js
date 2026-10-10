@@ -40,81 +40,88 @@ const fmtFecha = (rango) => (t) => {
     return d.toLocaleString("es-ES", { timeZone: "Europe/Madrid", ...opts });
 };
 
+/** Como mucho 400 puntos: se saltan los sobrantes, pero el último precio siempre se queda. */
+function muestrear(history) {
+    if (history.length <= 400) return history;
+    const step = Math.ceil(history.length / 400);
+    return history.filter((_, i) => i % step === 0 || i === history.length - 1);
+}
+
+/** La serie de la línea: relleno degradado y un punto marcado en el último precio. */
+function serieLinea(datos, linea, ultimo) {
+    return {
+        type: "line",
+        data: datos,
+        showSymbol: false,
+        smooth: 0.3,
+        lineStyle: { color: linea, width: 3 },
+        areaStyle: {
+            color: {
+                type: "linear",
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                    { offset: 0, color: `${linea}55` },
+                    { offset: 1, color: `${linea}00` },
+                ],
+            },
+        },
+        markPoint: {
+            symbol: "circle",
+            symbolSize: 9,
+            itemStyle: { color: linea, borderColor: FONDO, borderWidth: 2 },
+            label: { color: TEXTO, fontSize: 12, formatter: () => formatCoins(ultimo), position: "right" },
+            data: [{ coord: datos.at(-1) }],
+        },
+    };
+}
+
+/** Opción de ECharts de la línea de precio: verde si ha subido en el periodo, rojo si ha bajado. */
+function opcionLinea({ labelText, days, hexColor, datos, ultimo, cambioTxt, subida }) {
+    const linea = subida ? "#26a69a" : "#ef5350";
+    return {
+        title: {
+            text: labelText,
+            subtext: `${monedas(ultimo)}  ·  ${cambioTxt}`,
+            left: 40,
+            top: 24,
+            textStyle: { color: TEXTO, fontSize: 22, fontWeight: "bold" },
+            subtextStyle: { color: linea, fontSize: 15 },
+        },
+        grid: { left: 90, right: 120, top: 100, bottom: 60 },
+        xAxis: {
+            type: "time",
+            axisLine: { lineStyle: { color: REJILLA } },
+            axisTick: { show: false },
+            axisLabel: { color: TEXTO_SUAVE, fontSize: 12, formatter: fmtFecha(days) },
+            splitLine: { show: false },
+        },
+        yAxis: {
+            type: "value",
+            scale: true,
+            axisLabel: { color: TEXTO_SUAVE, fontSize: 12, formatter: (v) => formatCoins(v) },
+            splitLine: { lineStyle: { color: REJILLA } },
+        },
+        series: [serieLinea(datos, linea, ultimo)],
+        color: [hexColor || "#9b59b6"],
+    };
+}
+
 async function generateLineChart(cryptoId, days, labelText, hexColor) {
     try {
-        let history = await fetchCryptoHistory(cryptoId, days);
+        const history = await fetchCryptoHistory(cryptoId, days);
         if (!history || history.length < 2) return null;
-        if (history.length > 400) {
-            const step = Math.ceil(history.length / 400);
-            history = history.filter((_, i) => i % step === 0 || i === history.length - 1);
-        }
+        const muestra = muestrear(history);
 
-        const primero = history[0].p;
-        const ultimo = history.at(-1).p;
+        const primero = muestra[0].p;
+        const ultimo = muestra.at(-1).p;
         const cambio = primero ? ((ultimo - primero) / primero) * 100 : 0;
-        const subida = ultimo >= primero;
-        const linea = subida ? "#26a69a" : "#ef5350";
         const cambioTxt = `${cambio >= 0 ? "+" : ""}${cambio.toFixed(2)} %`;
-        const datos = history.map((h) => [h.t, h.p]);
+        const datos = muestra.map((h) => [h.t, h.p]);
 
-        return renderPng(
-            {
-                title: {
-                    text: labelText,
-                    subtext: `${monedas(ultimo)}  ·  ${cambioTxt}`,
-                    left: 40,
-                    top: 24,
-                    textStyle: { color: TEXTO, fontSize: 22, fontWeight: "bold" },
-                    subtextStyle: { color: subida ? "#26a69a" : "#ef5350", fontSize: 15 },
-                },
-                grid: { left: 90, right: 120, top: 100, bottom: 60 },
-                xAxis: {
-                    type: "time",
-                    axisLine: { lineStyle: { color: REJILLA } },
-                    axisTick: { show: false },
-                    axisLabel: { color: TEXTO_SUAVE, fontSize: 12, formatter: fmtFecha(days) },
-                    splitLine: { show: false },
-                },
-                yAxis: {
-                    type: "value",
-                    scale: true,
-                    axisLabel: { color: TEXTO_SUAVE, fontSize: 12, formatter: (v) => formatCoins(v) },
-                    splitLine: { lineStyle: { color: REJILLA } },
-                },
-                series: [
-                    {
-                        type: "line",
-                        data: datos,
-                        showSymbol: false,
-                        smooth: 0.3,
-                        lineStyle: { color: linea, width: 3 },
-                        areaStyle: {
-                            color: {
-                                type: "linear",
-                                x: 0,
-                                y: 0,
-                                x2: 0,
-                                y2: 1,
-                                colorStops: [
-                                    { offset: 0, color: `${linea}55` },
-                                    { offset: 1, color: `${linea}00` },
-                                ],
-                            },
-                        },
-                        markPoint: {
-                            symbol: "circle",
-                            symbolSize: 9,
-                            itemStyle: { color: linea, borderColor: FONDO, borderWidth: 2 },
-                            label: { color: TEXTO, fontSize: 12, formatter: () => formatCoins(ultimo), position: "right" },
-                            data: [{ coord: datos.at(-1) }],
-                        },
-                    },
-                ],
-                color: [hexColor || "#9b59b6"],
-            },
-            1000,
-            440,
-        );
+        return renderPng(opcionLinea({ labelText, days, hexColor, datos, ultimo, cambioTxt, subida: ultimo >= primero }), 1000, 440);
     } catch (e) {
         logWarn("[Cripto] No se pudo dibujar la gráfica de precio: " + e.message);
         return null;

@@ -132,81 +132,87 @@ async function handleImpuestosButton(interaction) {
     return false;
 }
 
+async function anadirReglaModal(interaction) {
+    const guildId = interaction.guildId;
+    const base = interaction.fields.getTextInputValue("base").trim().toLowerCase();
+    if (!["ingreso", "compra"].includes(base)) {
+        await interaction.reply({ content: "❌ La base tiene que ser `ingreso` o `compra`.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    const tipoRaw = interaction.fields.getTextInputValue("tipo").trim();
+    const tipoMovimiento = base === "ingreso" && tipoRaw ? tipoRaw : null;
+    if (tipoMovimiento && !dinero.TIPOS[tipoMovimiento]) {
+        await interaction.reply({
+            content: `❌ "${tipoMovimiento}" no es un tipo de movimiento válido. Tipos: ${Object.keys(dinero.TIPOS).join(", ")}.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    const porcentaje = Number(interaction.fields.getTextInputValue("porcentaje").trim());
+    if (!Number.isFinite(porcentaje) || porcentaje <= 0 || porcentaje > 100) {
+        await interaction.reply({ content: "❌ El porcentaje tiene que ser un número entre 0 y 100.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    const destinoRaw = interaction.fields.getTextInputValue("destino").trim().toLowerCase();
+    const destino = destinoRaw === "sumidero" ? "sumidero" : "bote";
+    const regla = impuestos.anadirRegla(guildId, { base, tipoMovimiento, porcentaje, destino });
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.add", details: regla });
+    await interaction.reply({ content: `✅ Regla #${regla.id} añadida.`, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function patrimonioModal(interaction) {
+    const guildId = interaction.guildId;
+    const f = (campo) => interaction.fields.getTextInputValue(campo).trim();
+    const r = patrimonio.guardarConfiguracion({
+        umbral: f("umbral"),
+        porcentaje: f("porcentaje"),
+        interes: f("interes"),
+        dias: f("dias"),
+        destino: f("destino"),
+    });
+    if (!r.ok) {
+        await interaction.reply({ content: `❌ ${r.mensaje}`, flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.patrimonio", details: r.cfg });
+    await interaction.reply({ content: "✅ Impuesto de patrimonio guardado.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function quitarReglaModal(interaction) {
+    const guildId = interaction.guildId;
+    const idRegla = Number(interaction.fields.getTextInputValue("id").trim());
+    const ok = impuestos.quitarRegla(guildId, idRegla);
+    if (!ok) {
+        await interaction.reply({ content: `❌ No hay ninguna regla #${idRegla} en este servidor.`, flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.remove", details: { id: idRegla } });
+    await interaction.reply({ content: `✅ Regla #${idRegla} borrada.`, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function activarReglaModal(interaction) {
+    const guildId = interaction.guildId;
+    const idRegla = Number(interaction.fields.getTextInputValue("id").trim());
+    const activo = /^(s|si|sí|y|yes|1)$/i.test(interaction.fields.getTextInputValue("activo").trim());
+    const ok = impuestos.activarRegla(guildId, idRegla, activo);
+    if (!ok) {
+        await interaction.reply({ content: `❌ No hay ninguna regla #${idRegla} en este servidor.`, flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.toggle", details: { id: idRegla, activo } });
+    await interaction.reply({ content: `✅ Regla #${idRegla} ${activo ? "activada" : "desactivada"}.`, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
 async function handleImpuestosModal(interaction) {
     const id = interaction.customId;
-    const guildId = interaction.guildId;
-
-    if (id === "paneladmin_impuestos_add_modal") {
-        const base = interaction.fields.getTextInputValue("base").trim().toLowerCase();
-        if (!["ingreso", "compra"].includes(base)) {
-            await interaction.reply({ content: "❌ La base tiene que ser `ingreso` o `compra`.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        const tipoRaw = interaction.fields.getTextInputValue("tipo").trim();
-        const tipoMovimiento = base === "ingreso" && tipoRaw ? tipoRaw : null;
-        if (tipoMovimiento && !dinero.TIPOS[tipoMovimiento]) {
-            await interaction.reply({
-                content: `❌ "${tipoMovimiento}" no es un tipo de movimiento válido. Tipos: ${Object.keys(dinero.TIPOS).join(", ")}.`,
-                flags: MessageFlags.Ephemeral,
-            });
-            return true;
-        }
-        const porcentaje = Number(interaction.fields.getTextInputValue("porcentaje").trim());
-        if (!Number.isFinite(porcentaje) || porcentaje <= 0 || porcentaje > 100) {
-            await interaction.reply({ content: "❌ El porcentaje tiene que ser un número entre 0 y 100.", flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        const destinoRaw = interaction.fields.getTextInputValue("destino").trim().toLowerCase();
-        const destino = destinoRaw === "sumidero" ? "sumidero" : "bote";
-        const regla = impuestos.anadirRegla(guildId, { base, tipoMovimiento, porcentaje, destino });
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.add", details: regla });
-        await interaction.reply({ content: `✅ Regla #${regla.id} añadida.`, flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
-    if (id === "paneladmin_impuestos_patrimonio_modal") {
-        const f = (campo) => interaction.fields.getTextInputValue(campo).trim();
-        const r = patrimonio.guardarConfiguracion({
-            umbral: f("umbral"),
-            porcentaje: f("porcentaje"),
-            interes: f("interes"),
-            dias: f("dias"),
-            destino: f("destino"),
-        });
-        if (!r.ok) {
-            await interaction.reply({ content: `❌ ${r.mensaje}`, flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.patrimonio", details: r.cfg });
-        await interaction.reply({ content: "✅ Impuesto de patrimonio guardado.", flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
-    if (id === "paneladmin_impuestos_remove_modal") {
-        const idRegla = Number(interaction.fields.getTextInputValue("id").trim());
-        const ok = impuestos.quitarRegla(guildId, idRegla);
-        if (!ok) {
-            await interaction.reply({ content: `❌ No hay ninguna regla #${idRegla} en este servidor.`, flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.remove", details: { id: idRegla } });
-        await interaction.reply({ content: `✅ Regla #${idRegla} borrada.`, flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
-    if (id === "paneladmin_impuestos_toggle_modal") {
-        const idRegla = Number(interaction.fields.getTextInputValue("id").trim());
-        const activo = /^(s|si|sí|y|yes|1)$/i.test(interaction.fields.getTextInputValue("activo").trim());
-        const ok = impuestos.activarRegla(guildId, idRegla, activo);
-        if (!ok) {
-            await interaction.reply({ content: `❌ No hay ninguna regla #${idRegla} en este servidor.`, flags: MessageFlags.Ephemeral });
-            return true;
-        }
-        adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "impuestos.toggle", details: { id: idRegla, activo } });
-        await interaction.reply({ content: `✅ Regla #${idRegla} ${activo ? "activada" : "desactivada"}.`, flags: MessageFlags.Ephemeral });
-        return true;
-    }
-
+    if (id === "paneladmin_impuestos_add_modal") return anadirReglaModal(interaction);
+    if (id === "paneladmin_impuestos_patrimonio_modal") return patrimonioModal(interaction);
+    if (id === "paneladmin_impuestos_remove_modal") return quitarReglaModal(interaction);
+    if (id === "paneladmin_impuestos_toggle_modal") return activarReglaModal(interaction);
     return false;
 }
 
