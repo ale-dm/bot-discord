@@ -1,14 +1,6 @@
 // Selectores de la ruleta del panel de casino: el tipo de apuesta, la docena, el número exacto y el importe.
 // Solo construyen mensajes; la tirada la juega juegos/casino/ruleta.
-const {
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-} = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { lineaDinero } = require("./economia");
 const { backBtn, filaMontos, filaSacar, getSaldo } = require("./casinoComun");
 
@@ -62,20 +54,52 @@ function buildPickDocenas(userId) {
     return { embeds: [embed], components: [docRow, filaVolverRuleta("◄ Tipos")] };
 }
 
-/** Ruleta, paso 1c: formulario del número exacto. */
-function modalNumeroRuleta() {
-    const input = new TextInputBuilder()
-        .setCustomId("casino_ruleta_numero_input")
-        .setLabel("Número (0 – 36)")
-        .setStyle(TextInputStyle.Short)
-        .setMinLength(1)
-        .setMaxLength(2)
-        .setPlaceholder("Ej: 17")
-        .setRequired(true);
-    return new ModalBuilder()
-        .setCustomId("casino_ruleta_numero_modal")
+// Número exacto en dos pasos (#310, grupo G6): el rango, y luego el número en un desplegable. El 0 va solo, y cada
+// docena tiene 12 números, que sí caben en un desplegable (Discord admite 25).
+const RANGOS_NUMERO = [
+    { label: "0", inicio: 0, fin: 0 },
+    { label: "1–12", inicio: 1, fin: 12 },
+    { label: "13–24", inicio: 13, fin: 24 },
+    { label: "25–36", inicio: 25, fin: 36 },
+];
+
+/** Ruleta, número exacto, paso 1: el rango del número (botones, uno por cada RANGOS_NUMERO). */
+function buildPickRangoNumero(userId) {
+    const rangos = new ActionRowBuilder().addComponents(
+        RANGOS_NUMERO.map((r, grupo) =>
+            new ButtonBuilder().setCustomId(`casino_pick_ruleta_rango_${grupo}`).setLabel(r.label).setStyle(ButtonStyle.Secondary),
+        ),
+    );
+    const embed = new EmbedBuilder()
         .setTitle("🎡 Ruleta — Número exacto")
-        .addComponents(new ActionRowBuilder().addComponents(input));
+        .setDescription(`Elige el rango del número (cobra ×36).\n${lineaDinero(userId)}`)
+        .setColor(0xe74c3c);
+    return { embeds: [embed], components: [rangos, filaVolverRuleta("◄ Tipos")] };
+}
+
+/** Ruleta, número exacto, paso 2: el número del rango elegido. El 0 va directo al importe. */
+function buildPickNumeroRuleta(userId, grupo) {
+    const rango = RANGOS_NUMERO[grupo];
+    if (!rango) return buildPickRangoNumero(userId);
+    if (grupo === 0) return buildPickMontoRuleta(userId, "numero", 0);
+
+    const numeros = [];
+    for (let n = rango.inicio; n <= rango.fin; n++) numeros.push({ label: String(n), value: String(n) });
+    const desplegable = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId("casino_ruleta_numero_sel")
+            .setPlaceholder(`Número del ${rango.label}`)
+            .addOptions(numeros),
+    );
+    const volver = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("casino_pick_ruleta_numero").setLabel("◄ Rangos").setStyle(ButtonStyle.Secondary),
+        backBtn(),
+    );
+    const embed = new EmbedBuilder()
+        .setTitle("🎡 Ruleta — Número exacto")
+        .setDescription(`Elige el número del ${rango.label} (cobra ×36).\n${lineaDinero(userId)}`)
+        .setColor(0xe74c3c);
+    return { embeds: [embed], components: [desplegable, volver] };
 }
 
 /** Ruleta, paso 2: importe (casino_play_ruleta_{importe}_{tipo}_{valor}). */
@@ -102,4 +126,4 @@ function buildPickMontoRuleta(userId, tipo, valor) {
     };
 }
 
-module.exports = { buildPickRuleta, buildPickDocenas, modalNumeroRuleta, buildPickMontoRuleta };
+module.exports = { buildPickRuleta, buildPickDocenas, buildPickRangoNumero, buildPickNumeroRuleta, buildPickMontoRuleta };
