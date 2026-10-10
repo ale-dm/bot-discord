@@ -52,7 +52,13 @@ test("Editar todo abre un formulario con los cinco campos rellenos", async () =>
     await panel.handlePerfilesButton(i);
     const [tipo, modal] = i.respuestas[0];
     expect(tipo).toBe("modal");
-    const valores = Object.fromEntries(modal.components.map((r) => [r.components[0].custom_id, r.components[0].value]));
+    const valores = Object.fromEntries(
+        modal.components.map((r) =>
+            r.component
+                ? [r.component.custom_id, (r.component.default_values ?? []).map((d) => d.id).join(",")]
+                : [r.components[0].custom_id, r.components[0].value],
+        ),
+    );
     expect(Object.keys(valores)).toEqual(["nombre", "username", "discordId", "descripcion", "notas"]);
     expect(valores.nombre).toBe("Raúl");
     expect(valores.notas.split("\n")).toHaveLength(perfiles.MAX_NOTAS);
@@ -66,7 +72,9 @@ test("guardar el formulario cambia todos los campos", async () => {
         descripcion: "Nueva descripción",
         notas: "primera\n\n  segunda  \n",
     };
-    const i = fake(`paneladmin_perfiles_modal_${id}`, { fields: { getTextInputValue: (k) => valores[k] } });
+    const i = fake(`paneladmin_perfiles_modal_${id}`, {
+        fields: { getTextInputValue: (k) => valores[k], getSelectedUsers: (k) => (valores[k] ? new Map([[valores[k], {}]]) : null) },
+    });
     await panel.handlePerfilesModal(i);
     expect(i.respuestas[0][0]).toBe("update");
     expect(perfiles.perfilPorId(id)).toMatchObject({
@@ -82,7 +90,9 @@ test("un Discord ID inválido o de otro perfil no guarda nada", async () => {
     perfiles.guardarDescripcion({ discordId: "111111111111111111", nombre: "Otro", descripcion: "" });
     for (const discordId of ["abc", "111111111111111111"]) {
         const valores = { nombre: "Cambio", username: "", discordId, descripcion: "", notas: "" };
-        const i = fake(`paneladmin_perfiles_modal_${id}`, { fields: { getTextInputValue: (k) => valores[k] } });
+        const i = fake(`paneladmin_perfiles_modal_${id}`, {
+            fields: { getTextInputValue: (k) => valores[k], getSelectedUsers: (k) => (valores[k] ? new Map([[valores[k], {}]]) : null) },
+        });
         await panel.handlePerfilesModal(i);
         expect(i.respuestas[0][1].content).toMatch(/^❌/);
     }

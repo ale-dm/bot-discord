@@ -11,7 +11,7 @@ const {
 } = require("discord.js");
 const xp = require("../../systems/xpSystem");
 const adminAudit = require("../../systems/adminAudit");
-const { simpleModal } = require("../common");
+const { simpleModal, modalConCampos, rolElegido } = require("../common");
 const { CacheLimitada } = require("../../core/cacheLimitada");
 
 const rewardSearchSessions = new CacheLimitada({ max: 200 });
@@ -111,9 +111,9 @@ const MODALES_RECOMPENSAS = new Map([
     [
         "paneladmin_levels_reward_desc",
         () =>
-            simpleModal("paneladmin_levels_reward_desc_modal", "Descripción de una recompensa", [
+            modalConCampos("paneladmin_levels_reward_desc_modal", "Descripción de una recompensa", [
                 { id: "nivel", label: "Nivel", placeholder: "12" },
-                { id: "role_id", label: "ID del rol", placeholder: "1474049913829462016" },
+                { id: "role_id", label: "Rol", tipo: "rol" },
                 { id: "emoji", label: "Emoji (opcional)", placeholder: "🚶", required: false },
                 {
                     id: "descripcion",
@@ -126,9 +126,9 @@ const MODALES_RECOMPENSAS = new Map([
     [
         "paneladmin_levels_reward_remove",
         () =>
-            simpleModal("paneladmin_levels_reward_remove_modal", "Quitar recompensa", [
+            modalConCampos("paneladmin_levels_reward_remove_modal", "Quitar recompensa", [
                 { id: "nivel", label: "Nivel", placeholder: "30" },
-                { id: "role_id", label: "Rol a quitar (vacío = TODOS en ese nivel)", required: false, placeholder: "<@&123...> o 123..." },
+                { id: "role_id", label: "Rol a quitar (vacío = todos en ese nivel)", tipo: "rol", required: false },
             ]),
     ],
     [
@@ -142,9 +142,9 @@ const MODALES_RECOMPENSAS = new Map([
     [
         "paneladmin_levels_reward_add_manual",
         () =>
-            simpleModal("paneladmin_levels_reward_add_manual_modal", "Añadir recompensa por ID", [
+            modalConCampos("paneladmin_levels_reward_add_manual_modal", "Añadir recompensa por ID", [
                 { id: "nivel", label: "Nivel", placeholder: "30" },
-                { id: "role_id", label: "Rol (mención o ID)", placeholder: "<@&123...> o 123..." },
+                { id: "role_id", label: "Rol", tipo: "rol" },
             ]),
     ],
 ]);
@@ -190,10 +190,7 @@ async function accionAddModal(interaction, id, guildId) {
 
 async function accionDescModal(interaction, id, guildId) {
     const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-    const roleId = interaction.fields
-        .getTextInputValue("role_id")
-        .trim()
-        .replace(/[<@&>]/g, "");
+    const roleId = rolElegido(interaction.fields, "role_id");
     const emoji = interaction.fields.getTextInputValue("emoji").trim().slice(0, 16);
     const descripcion = interaction.fields.getTextInputValue("descripcion").trim().slice(0, 200);
     if (!xp.setRewardDescription(guildId, nivel, roleId, descripcion, emoji)) {
@@ -220,7 +217,7 @@ async function accionDescModal(interaction, id, guildId) {
 
 async function accionRemoveModal(interaction, id, guildId) {
     const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-    const rawRole = interaction.fields.getTextInputValue("role_id").trim();
+    const rawRole = rolElegido(interaction.fields, "role_id");
     if (isNaN(nivel) || nivel < 1) {
         await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
         return true;
@@ -267,7 +264,7 @@ async function accionSearchModal(interaction, id, guildId) {
 
 async function accionAddManualModal(interaction, id, guildId) {
     const nivel = parseInt(interaction.fields.getTextInputValue("nivel"), 10);
-    const rawRole = interaction.fields.getTextInputValue("role_id").trim();
+    const rawRole = rolElegido(interaction.fields, "role_id");
     if (isNaN(nivel) || nivel < 1) {
         await interaction.reply({ content: "Nivel inválido.", flags: MessageFlags.Ephemeral });
         return true;

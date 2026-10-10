@@ -84,6 +84,7 @@ Relacionado con #303.
 
 - **G1 (sí/no en radio), convertido** (#305): los 12 campos de sí/no de ajustes, racha, impuestos, recordatorio de apuestas y alertas por DM son grupos de radio. Cada manejador lee el grupo con `getRadioGroup`; los valores guardados no cambian. Falta probarlo en Discord antes de cerrar #305.
 - **G2 (canales con selector), convertido** (#306): el canal del Duende, de mensajes espontáneos, de notificaciones de la tienda y de anuncios de logros son un selector de uno; la ACL y los canales formales del Duende, selector múltiple (marcado con los que ya hay). Quitar canal (ignorados, Seerr y Plex) usa el mismo selector: un canal sin elegir se rechaza con «Elige un canal.». Falta probarlo en Discord antes de cerrar #306.
+- **G3 (roles y personas con selector), convertido en parte** (#307): ajustar, resetear, ver perfil y multiplicador de XP; buscar usuario en el banco; vincular un perfil del Duende; quién recibe las alertas (varios); roles de las recompensas (descripción, quitar, añadir por ID; «quitar» sigue significando todos si va vacío); roles de la ACL (varios). Queda: el objeto de la tienda que mezcla efecto y rol (`catalogo.js`), que pide separarse en dos campos, y el usuario de Plex, que es G4. Falta probarlo en Discord antes de cerrar #307.
 
 - `modalConCampos` en `src/adminPanel/common.js`: un campo puede ser texto (como antes) o un selector (Sí/No en radio,
   opciones, canal, rol o usuario). Los modales existentes no cambian. Pruebas en `tests/modalesCampos.test.js`.

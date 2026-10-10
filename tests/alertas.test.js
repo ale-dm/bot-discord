@@ -136,7 +136,7 @@ describe("/paneladmin → 🩺 Sistema → 🔔 Alertas", () => {
         ...extra,
     });
 
-    test("la pantalla dice a quién van; el formulario guarda IDs válidos y rechaza los que no lo son", async () => {
+    test("la pantalla dice a quién van; el formulario guarda las personas elegidas", async () => {
         const home = interaccion({ customId: "paneladmin_sis_alertas" });
         await paneladmin.handleButton(null, home);
         const campos = Object.fromEntries(home.update.mock.calls[0][0].embeds[0].data.fields.map((f) => [f.name, f.value]));
@@ -145,12 +145,19 @@ describe("/paneladmin → 🩺 Sistema → 🔔 Alertas", () => {
         const formulario = (campos) =>
             interaccion({
                 customId: "paneladmin_sis_alertas_modal",
-                fields: { getTextInputValue: (k) => campos[k] ?? "", getRadioGroup: (k) => campos[k] ?? "" },
+                fields: {
+                    getTextInputValue: (k) => campos[k] ?? "",
+                    getRadioGroup: (k) => campos[k] ?? "",
+                    getSelectedUsers: (k) =>
+                        new Map(
+                            (campos[k] ?? "")
+                                .split(",")
+                                .map((x) => x.trim())
+                                .filter(Boolean)
+                                .map((x) => [x, {}]),
+                        ),
+                },
             });
-        const mal = formulario({ activas: "1", ids: "123, pepito" });
-        await paneladmin.handleModal(null, mal);
-        expect(mal.reply.mock.calls[0][0].content).toMatch(/no son IDs de Discord: 123, pepito/);
-
         const bien = formulario({ activas: "1", ids: "111111111111111111 , 222222222222222222" });
         await paneladmin.handleModal(null, bien);
         expect(guildSettings.getSettings(G).alertas.admin_ids).toBe("111111111111111111,222222222222222222");

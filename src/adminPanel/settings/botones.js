@@ -220,7 +220,7 @@ async function accionAclEdit(interaction, id, guildId) {
         { id: "command", label: "Comando (sin /)", value: "" },
         { id: "enabled", label: "Comando habilitado", tipo: "radio", opciones: SI_NO_NUMERICO, valor: "1" },
         { id: "channels", label: "Canales permitidos (vacío = todos)", tipo: "canal", multiple: true, required: false },
-        { id: "roles", label: "Roles CSV (IDs)", required: false, value: "" },
+        { id: "roles", label: "Roles permitidos (vacío = todos)", tipo: "rol", multiple: true, required: false },
     ]);
     await interaction.showModal(modal);
     return true;

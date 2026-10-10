@@ -1,7 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder, MessageFlags } = require("discord.js");
 const db = require("../core/db");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal } = require("./common");
+const { simpleModal, modalConCampos, usuarioElegido } = require("./common");
 
 async function accionModificar(interaction, id, guildId) {
     const row = new ActionRowBuilder().addComponents(
@@ -44,8 +44,8 @@ async function accionBorrarhistorial(interaction, id, guildId) {
 }
 
 async function accionBuscarusuario(interaction, id, guildId) {
-    const modal = simpleModal("paneladmin_bank_buscarusuario_modal", "Buscar usuario", [
-        { id: "busqueda_usuario", label: "Nombre/tag o ID", placeholder: "Alex#1234 o 123..." },
+    const modal = modalConCampos("paneladmin_bank_buscarusuario_modal", "Buscar usuario", [
+        { id: "busqueda_usuario", label: "Persona", tipo: "usuario" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -212,7 +212,7 @@ function textoResumenBanco(memberId) {
 }
 
 async function buscarUsuario(interaction) {
-    const query = interaction.fields.getTextInputValue("busqueda_usuario").trim();
+    const query = usuarioElegido(interaction.fields, "busqueda_usuario");
     const member = await buscarMiembro(interaction, query);
     if (!member) {
         await interaction.reply({ content: "Usuario no encontrado.", flags: MessageFlags.Ephemeral });

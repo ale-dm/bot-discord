@@ -1,5 +1,5 @@
 const { MessageFlags } = require("discord.js");
-const { canalElegido, canalesElegidos } = require("../common");
+const { canalElegido, canalesElegidos, rolesElegidos } = require("../common");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { buildDuendePanel, buildDiarioPanel, buildEventosPanel } = require("./vistas");
@@ -153,7 +153,6 @@ async function modalTienda(interaction, id, guildId) {
 async function modalAcl(interaction, id, guildId) {
     const command = interaction.fields.getTextInputValue("command").trim().replace(/^\//, "").toLowerCase();
     const enabledRaw = interaction.fields.getRadioGroup("enabled");
-    const rolesRaw = interaction.fields.getTextInputValue("roles").trim();
 
     if (!command) {
         await interaction.reply({ content: "❌ Debes indicar un comando.", flags: MessageFlags.Ephemeral });
@@ -163,7 +162,7 @@ async function modalAcl(interaction, id, guildId) {
     guildSettings.setCommandAcl(guildId, command, {
         enabled: enabledRaw === "1" || enabledRaw === "true" || enabledRaw === "si",
         allowedChannels: canalesElegidos(interaction.fields, "channels"),
-        allowedRoles: guildSettings.parseCsvIds(rolesRaw),
+        allowedRoles: rolesElegidos(interaction.fields, "roles"),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.acl.update", details: { command } });
 
