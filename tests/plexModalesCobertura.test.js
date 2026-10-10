@@ -19,13 +19,13 @@ function formulario(valores = {}) {
     };
 }
 
-function interaccion({ customId, valores = {}, guildId = "g-plex-modales" } = {}) {
+function interaccion({ customId, valores = {}, guildId = "g-plex-modales", canal = null } = {}) {
     return {
         customId,
         guildId,
         guild: { id: guildId },
         user: { id: "admin-1", tag: "admin#0001" },
-        fields: formulario(valores),
+        fields: { ...formulario(valores), getSelectedChannels: () => (canal ? new Map([[canal, {}]]) : null) },
         reply: jest.fn(async () => {}),
     };
 }
@@ -129,18 +129,15 @@ describe("trofeo nuevo", () => {
 });
 
 describe("quitar canal", () => {
-    test("un ID de canal que no es un ID de Discord se rechaza", async () => {
-        const i = interaccion({ customId: "paneladmin_plex_channel_remove_modal", valores: { channel_id: "no-es-id" } });
+    test("sin elegir ningún canal se rechaza", async () => {
+        const i = interaccion({ customId: "paneladmin_plex_channel_remove_modal" });
         await handlePlexModal(i);
-        expect(ultimoTexto(i)).toBe("ID de canal inválido.");
+        expect(ultimoTexto(i)).toBe("Elige un canal.");
         expect(tautulliClient.removeAllowedChannel).not.toHaveBeenCalled();
     });
 
-    test("un ID válido se quita de la lista y se audita", async () => {
-        const i = interaccion({
-            customId: "paneladmin_plex_channel_remove_modal",
-            valores: { channel_id: " 123456789012345678 " },
-        });
+    test("el canal elegido se quita de la lista y se audita", async () => {
+        const i = interaccion({ customId: "paneladmin_plex_channel_remove_modal", canal: "123456789012345678" });
         await handlePlexModal(i);
         expect(tautulliClient.removeAllowedChannel).toHaveBeenCalledWith("g-plex-modales", "123456789012345678");
         expect(adminAudit.logAdminAction).toHaveBeenCalledWith(expect.objectContaining({ action: "plex.channels.remove" }));

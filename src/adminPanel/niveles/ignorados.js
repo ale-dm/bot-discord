@@ -10,7 +10,7 @@ const {
 } = require("discord.js");
 const xp = require("../../systems/xpSystem");
 const adminAudit = require("../../systems/adminAudit");
-const { simpleModal } = require("../common");
+const { modalConCampos, canalElegido } = require("../common");
 
 async function boton(interaction) {
     const id = interaction.customId;
@@ -45,8 +45,8 @@ async function boton(interaction) {
 
     if (id === "paneladmin_levels_ignored_remove") {
         await interaction.showModal(
-            simpleModal("paneladmin_levels_ignored_remove_modal", "Quitar canal ignorado", [
-                { id: "channel_id", label: "ID canal", placeholder: "123..." },
+            modalConCampos("paneladmin_levels_ignored_remove_modal", "Quitar canal ignorado", [
+                { id: "channel_id", label: "Canal a quitar", tipo: "canal" },
             ]),
         );
         return true;
@@ -67,9 +67,9 @@ async function modal(interaction) {
     const guildId = interaction.guildId;
 
     if (id === "paneladmin_levels_ignored_remove_modal") {
-        const channelId = interaction.fields.getTextInputValue("channel_id").trim();
-        if (!/^\d{17,19}$/.test(channelId)) {
-            await interaction.reply({ content: "ID canal inválido.", flags: MessageFlags.Ephemeral });
+        const channelId = canalElegido(interaction.fields, "channel_id");
+        if (!channelId) {
+            await interaction.reply({ content: "Elige un canal.", flags: MessageFlags.Ephemeral });
             return true;
         }
         xp.removeIgnoredChannel(guildId, channelId);
