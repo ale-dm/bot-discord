@@ -111,17 +111,16 @@ describe("primera página", () => {
         expect(fila.split(" · ")).toHaveLength(3);
     });
 
-    // BUG (no corregido, src/adminPanel/audit.js línea 5): el panel pide `listRecent(guildId, 200)`, pero
-    // src/systems/adminAudit.js limita `listRecent` a 100 (Math.min(100, ...)). Así el panel solo navega por las 100
-    // más recientes (10 páginas, no 20). Se deja como test.failing: pasa mientras el fallo exista.
-    test.failing("pagina hasta 200 acciones, que es lo que pide el panel", async () => {
+    // El panel pide `listRecent(guildId, 100)`, que es el máximo que devuelve adminAudit.listRecent
+    // (src/adminPanel/audit.js). Con 205 acciones hay 10 páginas, no 20.
+    test("pagina hasta 100 acciones, el máximo que devuelve listRecent", async () => {
         const g = nuevoServidor();
         llenar(g, 205);
         const i = interaccion({ guildId: g, customId: "paneladmin_audit" });
 
         await handleAuditButton(i);
 
-        expect(pie(ultimo(i.update))).toBe("Página 1/20");
+        expect(pie(ultimo(i.update))).toBe("Página 1/10");
     });
 
     test("con más de 100 acciones, la primera página muestra las más recientes", async () => {

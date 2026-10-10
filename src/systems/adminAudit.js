@@ -27,7 +27,7 @@ function logAdminAction({ guildId, actorId, action, details }) {
             INSERT INTO admin_audit (guildId, actorId, action, details, createdAt)
             VALUES (?, ?, ?, ?, ?)
         `,
-        ).run(guildId, actorId, action, details ? JSON.stringify(details) : null, Date.now());
+        ).run(guildId, actorId, action, details ? JSON.stringify(maskSecrets(details)) : null, Date.now());
         return true;
     } catch (e) {
         log.error(`No se pudo guardar en admin_audit la acción ${action} de ${actorId}:`, e);

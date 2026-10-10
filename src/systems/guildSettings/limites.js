@@ -35,6 +35,9 @@ function checkAndConsumeLimit(guildId, scope, userId, options = {}) {
         return { ok: false, reason: "daily" };
     }
 
+    // Con consume: false solo se comprueba el cupo (p. ej. antes de hacer algo que puede fallar).
+    if (options.consume === false) return { ok: true };
+
     const nextCount = row && row.day === today ? countToday + 1 : 1;
     db.prepare(
         `

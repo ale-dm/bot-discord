@@ -181,7 +181,9 @@ async function responderNatural(interaction, state, tipo) {
             )
             .setColor(COLOR.pierde);
     }
+    // Si el cobro falla, la partida termina igual: si no, el jugador queda bloqueado con una mano en memoria.
     if (!exito) {
+        terminarPartida(userId);
         await interaction.reply({ content: ERROR_RESULTADO, flags: MessageFlags.Ephemeral });
         return;
     }

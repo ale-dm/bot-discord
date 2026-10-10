@@ -64,6 +64,15 @@ describe("logAdminAction: guardar una acción", () => {
         expect(filas(g)).toBe(0);
     });
 
+    test("en admin_audit los secretos se guardan como ***", () => {
+        const g = nuevoServidor();
+
+        adminAudit.logAdminAction({ guildId: g, actorId: "a1", action: "settings.update", details: { apiKey: "clave-789", ok: 2 } });
+
+        const fila = db.prepare("SELECT details FROM admin_audit WHERE guildId = ?").get(g);
+        expect(JSON.parse(fila.details)).toEqual({ apiKey: "***", ok: 2 });
+    });
+
     test("en el log de fichero los secretos salen como ***, pero lo demás no cambia", () => {
         const g = nuevoServidor();
         mockInfo.mockClear();

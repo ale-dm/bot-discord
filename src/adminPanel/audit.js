@@ -2,7 +2,8 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const adminAudit = require("../systems/adminAudit");
 
 function buildAuditPayload(guildId, page = 0, pageSize = 10) {
-    const rows = adminAudit.listRecent(guildId, 200);
+    // 100 es lo máximo que devuelve adminAudit.listRecent (ver listRecent en adminAudit.js).
+    const rows = adminAudit.listRecent(guildId, 100);
     const maxPage = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
     const safePage = Math.max(0, Math.min(maxPage, Number(page) || 0));
     const start = safePage * pageSize;

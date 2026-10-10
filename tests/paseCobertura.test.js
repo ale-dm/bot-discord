@@ -83,10 +83,8 @@ describe("🎁 Reclamar", () => {
         expect(movimiento.cantidad).toBe(esperado);
     });
 
-    // Fallo de producto (no corregido): dinero.apuntar solo guarda los tipos de TIPOS (systems/dinero.js), y "pase"
-    // no está ahí, así que el cobro queda como "otro" (📦 Otros). Con test.failing, el test pasa mientras el fallo
-    // exista; cuando se corrija, fallará y habrá que quitar el .failing.
-    test.failing("el cobro del pase se apunta en el historial con tipo «pase», no «otro»", async () => {
+    // Antes "pase" no estaba en TIPOS (systems/dinero.js) y el cobro quedaba como "otro" (📦 Otros).
+    test("el cobro del pase se apunta en el historial con tipo «pase», no «otro»", async () => {
         await paseCmd.handleButton({}, interaccion("pase_reclamar"));
         const movimiento = db.prepare("SELECT tipo FROM historial WHERE userId = 'ana' ORDER BY id DESC LIMIT 1").get();
         expect(movimiento.tipo).toBe("pase");

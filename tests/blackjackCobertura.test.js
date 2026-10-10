@@ -178,6 +178,17 @@ describe("blackjack natural", () => {
         expect(ultima(i).embeds).toBeUndefined();
     });
 
+    test("si no se puede registrar el blackjack, la partida termina igual y se puede empezar otra", async () => {
+        const u = jugador(1000);
+        conBaraja([11, 10, 10, 7]);
+        cas.procesarGanancia.mockReturnValueOnce(false);
+        await empezar(u);
+        conBaraja([2, 3, 10, 8]);
+        const otra = await empezar(u);
+        expect(ultima(otra).content ?? "").not.toMatch(/en curso/);
+        expect(titulo(otra)).toBe("🃏 Blackjack");
+    });
+
     test("si no se puede registrar la pérdida ante el blackjack del crupier, avisa de error", async () => {
         const u = jugador(1000);
         conBaraja([10, 7, 11, 10]);

@@ -292,13 +292,14 @@ describe("formularios de Seerr", () => {
         ["abc", "no es un número"],
         ["-1", "es negativo"],
         ["Infinity", "no es finito"],
+        ["2.5", "no es un entero"],
     ])("límite inválido («%s»: %s) no cambia el ajuste", async (valor) => {
         const g = servidorConfigurado();
         const i = interaccion({ guildId: g, customId: "paneladmin_seerr_limit_modal", fields: campos({ limit: valor }) });
 
         await handleSeerrModal(i);
 
-        expect(ultimo(i.reply).content).toBe("Número inválido.");
+        expect(ultimo(i.reply).content).toBe("Pon un número entero, 0 o más.");
         expect(guildSettings.getSettings(g).seerr.daily_request_limit).toBe(5);
     });
 

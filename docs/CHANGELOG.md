@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (corrección de los fallos encontrados por los tests)
+
+- **Los once fallos de producto de la cobertura, corregidos** (issues #263 a #277). Lo más importante: la ruleta y el blackjack ya no anuncian un resultado que el saldo no refleja (si falla el cobro, avisan del error; el blackjack además termina la partida). El cupo diario de Seerr solo se gasta cuando Seerr acepta la petición. `DUENDE_GIF_PROB=0` apaga los GIF. `recortarParaDiscord` cuenta el aviso de truncado, así que nunca supera los 2000 caracteres de Discord.
+- **Otros arreglos de la misma pasada**: `pase` tiene etiqueta en el historial de dinero; las menciones del Duende reconocen nombres con tildes («José», «Raúl»); la etiqueta del multiplicador de XP cabe en Discord y el mensaje muestra el valor guardado; el anuncio de subida de nivel menciona a la persona aunque no esté en caché; el panel de auditoría pide 100 acciones (el máximo que devuelve la consulta); los secretos de la auditoría se guardan enmascarados en la BD, no solo en el log; el límite de Seerr rechaza decimales; y las novedades de Plex no se dan por publicadas si el canal no existe.
+- **Lint**: `eqeqeq` pasa de `smart` a `always` (los `== null` siguen permitidos). Sin avisos. `no-shadow` ya estaba activo.
+- **Tests**: los siete tests marcados con `test.failing` pasan a tests normales; se añaden regresiones para la ruleta y el blackjack cuando no se puede cobrar, el enmascarado en la BD, el canal de novedades pendiente y los límites de Seerr. Los tests ya no documentan el fallo: comprueban el comportamiento correcto.
+- **Pendiente, sin cambiar**: los issues #278 a #282 (tamaño de funciones y ficheros, organización de `juegos/`, medición real de la base de datos, verificación de la configuración de GitHub en CONTRIBUTING). La release de `developer` a `main` sigue esperando a la comprobación en Discord de T-03 (#243 y #244).
+- Puntuación: Lint y Tests pasan a 10; la media queda en 9,1.
+
 ## 2026-10-10 (cobertura de todo src/)
 
 - **Cobertura por encima del objetivo en los 280 ficheros de `src/`** (antes, 36 por debajo). Tests nuevos en `tests/`, uno por fuente o grupo, sin cambios en el código de producción. Totales: líneas 91,1 %, ramas 80,5 %, funciones 92,6 %. `npm run check`: 168 suites, 2004 tests, en verde.

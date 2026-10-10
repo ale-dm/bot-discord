@@ -237,11 +237,9 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         expect(canal.send).toHaveBeenCalledTimes(1);
     });
 
-    // BUG CONOCIDO (no corregido, src/systems/xp/roles.js, maybeAnnounceLevelUp): `member?.toString?.()` existe en
-    // cualquier objeto y devuelve "[object Object]" en un objeto plano; el fallback `<@id>` nunca se usa. El objeto
-    // plano llega desde xp.adjustUserXp (progreso.js) cuando el miembro no está en caché. Se deja como test.failing:
-    // pasa mientras el fallo exista y avisará cuando se corrija (entonces quitar el .failing).
-    test.failing("menciona a la persona aunque el miembro sea un objeto plano {id} (ajuste manual de XP)", async () => {
+    // El objeto plano llega desde xp.adjustUserXp (progreso.js) cuando el miembro no está en caché. Antes
+    // `member?.toString?.()` devolvía "[object Object]"; ahora se usa `<@id>` (src/systems/xp/roles.js).
+    test("menciona a la persona aunque el miembro sea un objeto plano {id} (ajuste manual de XP)", async () => {
         const id = nuevoServidor();
         const canal = canalDeTexto("c1");
         xp.setConfig(id, "xp_announce_channel_id", "c1");

@@ -57,7 +57,9 @@ async function safeEditReply(interaction, content) {
 // Un GIF de vez en cuando (DUENDE_GIF_PROB); si falla, la respuesta sale igual sin él.
 async function buscarGifParaRespuesta(text, userInput) {
     try {
-        if (Math.random() < (parseFloat(process.env.DUENDE_GIF_PROB) || 0.08)) {
+        // 0 es un valor válido (apaga los GIF); solo cuando no es un número se usa el 8 %.
+        const probGif = parseFloat(process.env.DUENDE_GIF_PROB);
+        if (Math.random() < (Number.isNaN(probGif) ? 0.08 : probGif)) {
             const gifUrl = await getGifForText(text, userInput);
             if (gifUrl) log.debug("GIF encontrado: " + gifUrl);
             else log.debug("No se encontró GIF relevante.");
@@ -74,10 +76,12 @@ async function buscarGifParaRespuesta(text, userInput) {
 function recortarParaDiscord(text) {
     const MAX_DISCORD_CONTENT = 2000;
     const SAFETY_MARGIN = 20; // leave room for extra text like truncation notice and gif url
-    const effectiveMax = MAX_DISCORD_CONTENT - SAFETY_MARGIN;
+    const AVISO = "\n\n(Respuesta truncada por longitud)";
+    // El aviso cuenta dentro del límite: el texto cortado más el aviso no pasa de MAX_DISCORD_CONTENT - SAFETY_MARGIN.
+    const effectiveMax = MAX_DISCORD_CONTENT - SAFETY_MARGIN - AVISO.length;
     const sendText = typeof text === "string" ? text : String(text || "");
     if (sendText.length > effectiveMax) {
-        return sendText.slice(0, effectiveMax) + "\n\n(Respuesta truncada por longitud)";
+        return sendText.slice(0, effectiveMax) + AVISO;
     }
     return sendText;
 }

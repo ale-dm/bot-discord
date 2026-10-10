@@ -249,9 +249,11 @@ async function checkAllGuildsForNewContent(client) {
 
             const channel = guild.channels.cache.get(channelId) || (await guild.channels.fetch(channelId).catch(() => null));
             if (!channel || !channel.isTextBased()) {
+                // Sin canal no se avanza la marca: las novedades se publican cuando haya un canal válido.
                 log.warn(
-                    `Novedades: el canal ${channelId} de ${guild.name} no existe o no es de texto; ${nuevos.length} novedades sin publicar`,
+                    `Novedades: el canal ${channelId} de ${guild.name} no existe o no es de texto; ${nuevos.length} novedades pendientes`,
                 );
+                continue;
             } else {
                 log.info(`Novedades: ${nuevos.length} nuevas en ${guild.name}, publicando en #${channel.name}`);
                 for (const item of nuevos) {
