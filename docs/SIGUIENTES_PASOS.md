@@ -72,8 +72,6 @@ Son issues con la etiqueta `feature-idea`. De las que más aportan con menos tra
 - Estrenos de la semana en `/plex`, con 📥 para pedirlos (M).
 - Resumen diario del canal del Duende (M).
 - Historial de temporadas del pase (M).
-- Selección de agente en `/ia` con `RadioGroup`/`CheckboxGroup` (un modal con botones de radio), cuando discord.js lo
-  soporte. Antes era un TODO en `src/commands/duende/ia.js`.
 
 ## 5. Mapa de lo nuevo
 

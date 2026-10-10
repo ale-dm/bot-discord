@@ -4,7 +4,6 @@
 process.env.GOOGLE_API_KEY = "clave-de-prueba";
 process.env.IMAGE_GEN_RETRY_BASE_MS = "1";
 process.env.IMAGE_GEN_MAX_RETRIES = "2";
-process.env.IMAGE_GEN_TIMEOUT_MS = "80";
 
 const imagen = require("../src/commands/duende/imagen");
 
@@ -205,14 +204,14 @@ describe("mensajes de error", () => {
     });
 
     test("un tiempo agotado de la API se explica con el plazo", async () => {
-        rutas({
-            api: [
-                (opciones) =>
-                    new Promise((_resolve, reject) => {
-                        opciones.signal.addEventListener("abort", () => reject(opciones.signal.reason));
-                    }),
-            ],
+        // El plazo es un temporizador real de AbortSignal, que Jest no controla: con un plazo corto, el resultado
+        // dependería de lo que tarde la máquina. Aquí el plazo vence ya, y así el test no depende del tiempo.
+        jest.spyOn(AbortSignal, "timeout").mockImplementation(() => {
+            const controlador = new AbortController();
+            controlador.abort(new DOMException("El plazo ha vencido", "TimeoutError"));
+            return controlador.signal;
         });
+        rutas({ api: [(opciones) => Promise.reject(opciones.signal.reason)] });
         const i = interaccion();
         await imagen.run(cliente, i);
         expect(i.editReply.mock.calls.at(-1)[0].content).toContain("tardó demasiado");
