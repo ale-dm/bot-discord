@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: cobertura de casino y quiniela)
+
+- **Tests de Adivinar y de la quiniela** (#241): `tests/adivinarRondas.test.js` (cada ronda con acierto y fallo, importes acumulados por ronda, retirarse en la 3 y la 4, partida en curso, partida abandonada) y `tests/quinielaFlujo.test.js` (crear la jornada solo como admin, editor, pronósticos, navegar, cancelar, confirmar, cantidades fuera de rango, apuesta única). Con el mazo fijo, cada carta es conocida de antemano. Cobertura: `adivinar.js` 93 % líneas / 86 % ramas; `quiniela.js` 84 % / 77 %.
+- Comprobado con una mutación: cambiar el multiplicador de la ronda 2 hace fallar el test.
+
 ## 2026-10-10 (auditoría: cobertura del núcleo de XP)
 
 - **Tests del camino que corre en cada mensaje y cada minuto** (#240): `tests/xpActividad.test.js` (cooldown, bonus por longitud, letras repetidas, canales ignorados, voz: entrar, mutear, cambiar de canal, tick), `tests/mensajesDecisiones.test.js` (bots, duplicados, comandos, canal permitido, bajo esfuerzo, cuándo contesta el Duende) y `tests/tareasProgramadas.test.js` (19 tareas de cron con su zona, intervalos y arranque). Cobertura: `actividad.js` 84 % líneas / 72 % ramas, `mensajes.js` 65 % / 54 %, `tareas.js` 92 % / 50 %.
