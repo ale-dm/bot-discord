@@ -10,14 +10,9 @@ const { logInfo, logDebug } = require("../../../core/logger");
 const { deporteValido, resultadoDeScore } = require("../../../services/oddsApi");
 
 /**
- * Cierra los partidos terminados, paga las apuestas ganadoras y liquida las quinielas
- * completadas. Se usa tanto desde /pagarapuestas como desde el cron de index.js.
- * @param {object} opts
- * @param {number} [opts.minHorasDesdeInicio=0] - solo mira partidos empezados hace al menos N horas
- * @param {string} [opts.origen] - para los logs
- * @returns {Promise<object|null>} resumen, o null si ya había una liquidación en marcha
+ * Cierra cada partido terminado del corte con su resultado, y paga o cobra sus apuestas y sus retos. Lo llama
+ * liquidarApuestas (orquesta.js).
  */
-// Apuestas a partidos sueltos del corte: cierra cada partido con resultado y paga o cobra sus apuestas (y los retos).
 async function liquidarPartidosSueltos({ corte, limite, resumen, scoresDe, origen }) {
     const partidos = db
         .prepare(
