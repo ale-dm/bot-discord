@@ -5,6 +5,7 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 ## 2026-10-10 (auditoría: tamaño de paneles, ajustes, quiniela y liquidación)
 
 - **Cuatro ficheros grandes partidos** (#244): `paneles/perfil.js` (594 → 10 líneas de fachada, las pantallas en `paneles/perfil/`: básicos, embeds, logros, ficha y rankings); `systems/guildSettings.js` (526 → 20, con la lista de ajustes como datos aparte en `guildSettings/definicion.js`, y lectura, permisos y límites en sus ficheros); `juegos/apuestas/quiniela.js` (512 → 254, editor y botones en `quiniela/`); `systems/apuestas/liquidacion.js` (507 → 17, en `liquidacion/`: caducidad, partidos, quinielas, orquesta y anuncios). El fichero más grande de cada carpeta tiene 228 líneas o menos.
+- **Nueva medida de la puntuación** (`docs/planificacion/PUNTUACION.md`): 8,4 / 10, antes 7,7. Cobertura de líneas 85,3 % (antes 75,4 %) y 0 `catch` vacíos (antes 7).
 - Traslado de código sin cambios de comportamiento. Los tests pasan sin tocar sus expectativas. Un detalle que los tests sí detectaron: un `module.exports.run` que dejó de apuntar al fichero correcto al moverse; ahora se pide la fachada en la función que lo llama.
 
 ## 2026-10-10 (auditoría: tamaño del Duende y de la voz en directo)
