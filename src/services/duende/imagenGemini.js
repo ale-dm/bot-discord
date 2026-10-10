@@ -1,5 +1,5 @@
 // Generación de imagen de /imagen con el endpoint REST de Gemini (generateContent), con reintentos ante 503/429.
-// Sacado de commands/duende/imagen.js. La versión de /ia (consultaIA.js) es distinta a propósito: sus textos de error difieren.
+// Sacado de commands/duende/imagen.js.
 
 require("dotenv").config();
 const { logWarn } = require("../../core/logger");

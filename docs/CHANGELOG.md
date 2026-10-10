@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (sin /ia; timeout de /imagen en el test)
+
+- **Eliminado el comando `/ia`**, con su servicio (`consultaIA`), su catálogo de agentes y su test. `/imagen` queda igual. Los comandos de Discord se sustituyen en cada registro (`registerCommands`), así que `/ia` deja de aparecer al desplegar. Quedan 21 comandos. La documentación de README y FUNCIONALIDADES se actualiza; los documentos de diseño y de línea base se dejan como están.
+- **Test de `/imagen` sin plazo real**: el tiempo de espera era un temporizador de 80 ms, y en una máquina cargada podía vencer antes de tiempo. Ahora el test simula el plazo ya vencido. El comportamiento de `/imagen` no cambia.
+
 ## 2026-10-10 (ranking con resumen por apostador, #285)
 
 - **El ranking lee una tabla de resumen** (`apuestas_resumen`, migración 043): beneficio, resueltas, ganadas y perdidas de cada apostador. La tabla se reconstruye al terminar cada liquidación (`reconstruirResumen`, con una sola consulta de estadísticas por todos), porque lo único que cambia lo resuelto es la liquidación. Resultado: el ranking tarda **3 ms** con 49.251 apostadores, frente a 690 ms de la entrada anterior y 1.379 ms de la original. La reconstrucción cuesta unos 700 ms, en la liquidación, no al abrir el panel. La primera lectura tras desplegar también reconstruye una vez, porque la tabla empieza vacía.
