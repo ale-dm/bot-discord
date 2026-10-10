@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (cobertura de todo src/)
+
+- **Cobertura por encima del objetivo en los 280 ficheros de `src/`** (antes, 36 por debajo). Tests nuevos en `tests/`, uno por fuente o grupo, sin cambios en el código de producción. Totales: líneas 91,1 %, ramas 80,5 %, funciones 92,6 %. `npm run check`: 168 suites, 2004 tests, en verde.
+- **Once fallos de producto encontrados por los tests**, sin corregir y documentados con `test.failing` (la suite pasa hasta que se corrige el fallo, y entonces hay que quitar el `.failing`). La lista, con dónde está cada test, está en [PUNTUACION](planificacion/PUNTUACION.md). Los más importantes: la ruleta y el blackjack pueden dar un resultado que no se cobra (ruleta, blackjack), el cupo de Seerr se gasta en peticiones fallidas, y no se pueden apagar los GIF del Duende.
+- Puntuación: Tests pasa a 9.
+
 ## 2026-10-10 (para llegar a 10: base de datos, lint y documentación, segunda pasada)
 
 - **Índice de `tienda.objetoId`** (migración `042_indice_tienda`): era la única clave foránea sin índice. Lo usan el catálogo del panel admin y los borrados. `tests/indiceTienda.test.js` comprueba que el índice existe y que las consultas lo usan con un volumen realista (400 objetos).

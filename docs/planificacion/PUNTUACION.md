@@ -111,7 +111,7 @@ Estado tras la segunda pasada del 2026-10-10. Un área llega a 10 cuando no le q
 | Lint | 9 | Hecho: `no-shadow` activo, con 5 casos corregidos renombrando variables internas. Sigue en 9 porque no quedó anotado qué le faltaba en la línea base, así que no sé si el punto era otra regla. Medido por si acaso: `complexity` 15 da 62 avisos y 20 da 27; `require-await` 55; `consistent-return` 48. Hay que decidir cuál de ellas cuenta. | Bajo, pero necesita una decisión |
 | Tamaño de funciones | 9 | 53 funciones de más de 60 líneas en 42 ficheros (lista en la sección anterior). Ficheros de más de 400 líneas: 8. | Alto |
 | Organización | 8 | `juegos/` mezcla textos, reglas y flujo en `apuestas.js` (499) y en los juegos de casino. Hay que decidir caso por caso qué regla sale a `systems/`. | Medio |
-| Tests | 8 | Cobertura de todo el repositorio medida: 36 ficheros de `src/` están por debajo del 60 % de líneas o del 50 % de ramas (anexo abajo). | Medio-alto: son muchos tests nuevos |
+| Tests | 9 | Tercera pasada: los 280 ficheros de src/ están por encima del 60 % de líneas y el 50 % de ramas (antes eran 36). Totales: líneas 91,1 %, ramas 80,5 %, funciones 92,6 %. No llega a 10 porque los tests han encontrado fallos de producto que siguen sin corregir (lista abajo).
 | Base de datos | 9 | Hecho: índice de `tienda.objetoId` (migración 042), 0 claves foráneas sin índice, `SELECT *` sustituido por columnas explícitas en 68 consultas (la de la migración 007 se queda a propósito, porque vuelca tablas de esquema desconocido), y el plan revisado en 344 consultas literales: 14 con `SCAN`, todas agregados o listas completas (saldos, ranking, cron) o tablas pequeñas de configuración y panel. Falta medir con volumen real: las pruebas usan muestras de 400 filas. El coste: esas listas de columnas hay que mantenerlas a mano si cambia el esquema. | Bajo |
 | Documentación | 8 | Revisado y corregido en esta pasada: README, FUNCIONALIDADES, SIGUIENTES_PASOS, PLEX_Y_SEERR, DEPLOY (sin `/diagnostico`, el enlace a DT-01 retirado y la copia de seguridad como decisión registrada). La política de merge quedó decidida (squash para feature, merge commit para `developer` → `main`). Falta: la sección de configuración de GitHub de CONTRIBUTING no se puede verificar desde aquí, no hay herramienta para la protección de ramas. | Bajo |
 
@@ -161,3 +161,30 @@ Objetivo: 60 % de líneas y 50 % de ramas. Formato: líneas / ramas.
 | `juegos/casino/ppt.js` | 75 % | 44 % |
 
 Nota: `commands/duende/duende.js` aparece bajo porque es la fachada del comando; la lógica de `hablar` está en `services/duende/chat/`, y la cobertura de la voz en directo no se mide con tests (ver T-03).
+
+## Tercera pasada: cobertura y fallos encontrados por los tests (2026-10-10)
+
+Todos los ficheros de src/ están por encima del objetivo. Los tests escritos para llegar ahí han encontrado fallos de
+producto. Ninguno está corregido: cada uno tiene un test marcado con `test.failing` (la suite pasa mientras el fallo
+exista, y avisa cuando se corrige: entonces hay que quitar el `.failing`).
+
+| # | Fichero | Fallo | Dónde está el test |
+|---|---|---|---|
+| 1 | `juegos/casino/ruleta.js` 181-187 | Se ignora el resultado de `procesarGanancia` / `procesarPerdida`: si falla la transacción, el embed anuncia el resultado y el saldo no cambia | `tests/ruletaCobertura.test.js` |
+| 2 | `juegos/casino/blackjack.js` `responderNatural` 184-187 | Si falla el cobro de un blackjack natural no se llama a `terminarPartida`: la partida queda en memoria y bloquea al jugador hasta que se liquida por abandono | `tests/blackjackCobertura.test.js` |
+| 3 | `systems/dinero.js` 21-37 | El tipo `"pase"` no está en el mapa de tipos: el cobro de las recompensas del pase aparece en el historial como `"otro"` | `tests/paseCobertura.test.js` |
+| 4 | `services/duende/herramientas/seerr.js` 86 | El cupo diario se gasta antes de resolver a la persona y antes de llamar a Seerr: una petición que falla también gasta el cupo | `tests/seerrHerramientasCobertura.test.js` |
+| 5 | `services/duende/chat/enviar.js` 60 | `parseFloat(DUENDE_GIF_PROB) \|\| 0.08`: con `DUENDE_GIF_PROB=0` se usa el 8 %, así que no se pueden apagar los GIF | `tests/duendeEnviarCobertura.test.js` |
+| 6 | `services/duende/chat/enviar.js` 80 | `recortarParaDiscord` puede dejar hasta 2015 caracteres, por encima del límite de 2000 de Discord (lo usa también `/escuchar` sin voz) | `tests/duendeEnviarCobertura.test.js` |
+| 7 | `systems/duende/personas.js` 40 | El `\\b` sin la bandera `u` no reconoce letras acentuadas como límite de palabra: un nombre que empieza o acaba en tilde nunca se convierte en mención | `tests/duendePersonasCobertura.test.js` |
+| 8 | `systems/duende/personas.js` 73-75 | La comparación sin tildes no encuentra a un miembro con tildes en el nombre (`Tonin` no encuentra a `Tonín`) | `tests/duendePersonasCobertura.test.js` |
+| 9 | `adminPanel/niveles/usuarios.js` 61 | La etiqueta del botón de multiplicador tiene 47 caracteres (límite de Discord: 45): el botón falla y no abre su formulario | `tests/nivelesUsuariosCobertura.test.js` |
+| 10 | `systems/xp/roles.js` 52 | `member?.toString?.()` devuelve `[object Object]` con un objeto plano: el anuncio de subida de nivel puede decir `[object Object] alcanzó el Nivel N` | `tests/xpRolesCobertura.test.js` |
+| 11 | `adminPanel/audit.js` 5 | Pide 200 acciones, pero `adminAudit.listRecent` devuelve como mucho 100: el panel solo navega 100 | `tests/auditPanelCobertura.test.js` |
+
+Observaciones que no son fallos de test (anotadas en el informe de los agentes, sin test): `services/tautulliClient.js`
+250-267 marca las novedades como vistas aunque el canal no exista (puede ser intencionado); `adminAudit` guarda los
+detalles sin enmascarar y el panel de auditoría los muestra en Discord; el límite de Seerr acepta decimales; y el
+mensaje de multiplicador dice «x0.001» cuando la base de datos guarda 0.01.
+
+Cifras de la cobertura al cierre de esta pasada: líneas 91,1 %, ramas 80,5 %, funciones 92,6 % (antes 85,3 / 71,0 / 87,9).
