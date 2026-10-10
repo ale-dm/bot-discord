@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (auditoría: cobertura del panel admin de economía y niveles)
+
+- **Tests de los caminos que cambian dinero o ajustes** (#238): `tests/adminBancoPanel.test.js` (saldos por destino, resetear y borrar historial con confirmación, búsqueda de usuario, historial paginado), `tests/adminImpuestosPanel.test.js`, `tests/adminAjustesBotones.test.js`, `tests/adminRecompensasPanel.test.js` (recompensas por selector, búsqueda paginada, ID y descripción) y `tests/adminNivelesConfigPanel.test.js` (XP de mensajes, voz, multiplicador, fórmula, racha, vista previa y canal de anuncios). Cobertura de líneas / ramas: `bank.js` 96 % / 79 %, `impuestos.js` 100 % / 85 %, `settings/botones.js` 100 % / 78 %, `niveles/recompensas.js` 100 % / 92 %, `niveles/config.js` 100 % / 92 %.
+- Sin cambios en el código de producción: los tests no encontraron ningún fallo.
+- Limpieza en `tests/mensajesDecisiones.test.js`: se quita un import sin uso que marcaba el lint.
+
 ## 2026-10-10 (auditoría: cobertura de casino y quiniela)
 
 - **Tests de Adivinar y de la quiniela** (#241): `tests/adivinarRondas.test.js` (cada ronda con acierto y fallo, importes acumulados por ronda, retirarse en la 3 y la 4, partida en curso, partida abandonada) y `tests/quinielaFlujo.test.js` (crear la jornada solo como admin, editor, pronósticos, navegar, cancelar, confirmar, cantidades fuera de rango, apuesta única). Con el mazo fijo, cada carta es conocida de antemano. Cobertura: `adivinar.js` 93 % líneas / 86 % ramas; `quiniela.js` 84 % / 77 %.

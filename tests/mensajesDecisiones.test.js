@@ -1,6 +1,5 @@
 // Qué pasa con cada mensaje de texto (#240): bots, duplicados, comandos, canal permitido, mensajes de bajo esfuerzo y
 // cuándo contesta el Duende. El cliente es falso: se captura el manejador de «messageCreate» y se le pasan mensajes.
-const db = require("../src/core/db");
 const guildSettings = require("../src/systems/guildSettings");
 const xpSystem = require("../src/systems/xpSystem");
 const duendeCommand = require("../src/commands/duende/duende");
