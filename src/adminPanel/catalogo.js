@@ -129,7 +129,11 @@ function aplicar(interaction) {
     const audit = (action, details) =>
         adminAudit.logAdminAction({ guildId: interaction.guildId, actorId: interaction.user.id, action, details });
     const objetoId = parseInt(v("id"), 10);
-    const obj = Number.isInteger(objetoId) ? db.prepare("SELECT * FROM objeto WHERE id = ?").get(objetoId) : null;
+    const obj = Number.isInteger(objetoId)
+        ? db
+              .prepare("SELECT id, nombre, descripcion, imagen, tipo, unico, categoria, rareza, rolId, efecto FROM objeto WHERE id = ?")
+              .get(objetoId)
+        : null;
 
     if (id === "paneladmin_cat_crear_modal") {
         const tipo = v("tipo").toLowerCase();
@@ -179,7 +183,7 @@ function aplicar(interaction) {
         if (!Number.isInteger(precio) || precio < 0) return { error: "El precio tiene que ser un número (0 o más)." };
         if (stock !== null && (!Number.isInteger(stock) || stock < 0))
             return { error: "El stock tiene que ser un número, o vacío para ilimitado." };
-        const enVenta = db.prepare("SELECT * FROM tienda WHERE objetoId = ?").get(obj.id);
+        const enVenta = db.prepare("SELECT id, objetoId, precio, stock FROM tienda WHERE objetoId = ?").get(obj.id);
         if (enVenta) {
             db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio, stock, enVenta.id);
             audit("tienda.item.edit", { tiendaId: enVenta.id, antes: { precio: enVenta.precio, stock: enVenta.stock }, precio, stock });

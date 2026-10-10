@@ -78,8 +78,8 @@ function momento(unix) {
  * @returns {Promise<{ nuevas: number, leidas: number, primera: boolean }>}
  */
 async function sincronizar(guildId) {
-    const estado = db.prepare("SELECT ultimo_inicio FROM plex_sync WHERE guildId = ?").get(guildId);
-    const after = estado?.ultimo_inicio ? momento(estado.ultimo_inicio - 2 * 86400).dia : null;
+    const sincronizacion = db.prepare("SELECT ultimo_inicio FROM plex_sync WHERE guildId = ?").get(guildId);
+    const after = sincronizacion?.ultimo_inicio ? momento(sincronizacion.ultimo_inicio - 2 * 86400).dia : null;
     const insertar = db.prepare(
         `INSERT OR IGNORE INTO plex_reproducciones
             (guildId, id, tautulliUserId, tipo, rating_key, serie_key, titulo, serie, temporada, episodio, anio, inicio, segundos, porcentaje, visto)
@@ -88,7 +88,7 @@ async function sincronizar(guildId) {
     );
     let nuevas = 0;
     let leidas = 0;
-    let ultimo = estado?.ultimo_inicio || 0;
+    let ultimo = sincronizacion?.ultimo_inicio || 0;
     const t0 = Date.now();
     for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
         const filas = await tautulli.getHistoryPage(guildId, { start: pagina * PAGINA, length: PAGINA, after });
@@ -108,9 +108,9 @@ async function sincronizar(guildId) {
          ON CONFLICT(guildId) DO UPDATE SET ultimo_inicio = excluded.ultimo_inicio, ultima_sync = excluded.ultima_sync`,
     ).run(guildId, ultimo, Date.now());
     (nuevas ? log.info : log.debug)(
-        `Historial de ${guildId}: ${nuevas} reproducciones nuevas de ${leidas} leídas${estado ? "" : " (primera importación)"} · ${Date.now() - t0} ms`,
+        `Historial de ${guildId}: ${nuevas} reproducciones nuevas de ${leidas} leídas${sincronizacion ? "" : " (primera importación)"} · ${Date.now() - t0} ms`,
     );
-    return { nuevas, leidas, primera: !estado };
+    return { nuevas, leidas, primera: !sincronizacion };
 }
 
 /** Cuántas reproducciones hay guardadas y cuándo se sincronizó por última vez (para el panel de admin). */

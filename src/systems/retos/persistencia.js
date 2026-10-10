@@ -4,22 +4,37 @@ const db = require("../../core/db");
 
 /** Un reto con sus participantes, y `opciones` y `datos` ya leídos del JSON. null si no existe. */
 function obtener(id) {
-    const r = db.prepare("SELECT * FROM retos WHERE id = ?").get(Number(id));
+    const r = db
+        .prepare(
+            "SELECT id, tipo, estado, creador, rival, cantidad, guildId, channelId, messageId, match_id, eleccion, juego, pregunta, opciones, datos, resultado, creado_en, actualizado_en, expira_en, resuelto_en FROM retos WHERE id = ?",
+        )
+        .get(Number(id));
     if (!r) return null;
     return {
         ...r,
         opciones: r.opciones ? JSON.parse(r.opciones) : null,
         datos: r.datos ? JSON.parse(r.datos) : null,
-        participantes: db.prepare("SELECT * FROM retos_participantes WHERE reto_id = ? ORDER BY unido_en, rowid").all(r.id),
+        participantes: db
+            .prepare(
+                "SELECT reto_id, userId, opcion, cantidad, premio, unido_en FROM retos_participantes WHERE reto_id = ? ORDER BY unido_en, rowid",
+            )
+            .all(r.id),
     };
 }
 
-const partidoDe = (matchId) => db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(matchId);
+const partidoDe = (matchId) =>
+    db
+        .prepare(
+            "SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos WHERE match_id = ?",
+        )
+        .get(matchId);
 
 /** Los próximos partidos abiertos (de cualquier competición), para elegir uno al retar. */
 function partidosParaRetar(limite = 25) {
     return db
-        .prepare("SELECT * FROM apuestas_partidos WHERE estado = 'abierto' AND start_time > ? ORDER BY start_time LIMIT ?")
+        .prepare(
+            "SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos WHERE estado = 'abierto' AND start_time > ? ORDER BY start_time LIMIT ?",
+        )
         .all(new Date().toISOString(), limite);
 }
 

@@ -1,42 +1,47 @@
 # Siguientes pasos
 
 Para quien coja el proyecto ahora: dónde está, qué comprobar primero y qué decisiones quedan abiertas. Actualizado el
-2026-10-08. Si algo de aquí ya está hecho, borrarlo (y apuntarlo en el [CHANGELOG](CHANGELOG.md)).
+2026-10-10. Si algo de aquí ya está hecho, borrarlo (y apuntarlo en el [CHANGELOG](CHANGELOG.md)).
 
 Para entender el proyecto en general: [README](../README.md) (puesta en marcha y convenciones),
-[FUNCIONALIDADES](FUNCIONALIDADES.md) (qué hace el bot), [DEPLOY](DEPLOY.md) (cómo se despliega) y
-[FEATURES](planificacion/FEATURES.md) (ideas, con el estado de cada una).
+[FUNCIONALIDADES](FUNCIONALIDADES.md) (qué hace el bot), [DEPLOY](DEPLOY.md) (cómo se despliega) y las ideas, que son
+issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATURES.md) solo redirige allí).
 
 ## 1. Dónde estamos
 
-- Todas las issues de la planificación están hechas: apuestas (combinadas, goles y hándicap, directo, liga de
-  pronósticos, quinielas, retos), cripto (pool de liquidez, solo TTCL, panel con pestañas), tienda y Duende con panel,
-  Plex (`/plex` con botones, trofeos por país, recomendaciones, sesión de cine, Wrapped privado por DM), pase de batalla,
-  `/sonidos` y `/conectar`.
-- Migraciones: hasta la `041_indices_resto`. La siguiente es la `042`.
-- Los cabos sueltos de la revisión del 2026-10-08 están cerrados: `/ayuda` cubre `/plex`, `/sonidos`, `/conectar` y
-  `/pase`; los logros completados dan XP de pase; en `/paneladmin` → ⚽ Apuestas están los premios de la liga; y
-  Mis jugadas y Stats muestran las combinadas.
-- `npm run check` (ESLint, Prettier y Jest) en verde. Los tests usan una BD en memoria y no tocan Discord, Odds API,
-  Tautulli, Seerr, TMDB ni Gemini.
-- No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica está en
-  [DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md).
+- Todas las issues de funcionalidad de la planificación están hechas: apuestas (combinadas, goles y hándicap, directo,
+  liga de pronósticos, quinielas, retos), cripto (pool de liquidez, solo TTCL, panel con pestañas), tienda y Duende con
+  panel, Plex (`/plex` con botones, trofeos por país, recomendaciones, sesión de cine, Wrapped privado por DM), pase de
+  batalla, `/sonidos` y `/conectar`.
+- Auditoría de código del 2026-10-10: #238, #239, #241 y #242 están cerradas y liberadas a `main`. **#243** (Duende y voz
+  en directo) y **#244** (perfil, ajustes, quiniela y liquidación) están en `developer` pero **sin liberar**: falta
+  comprobarlas en Discord (ver el apartado 2). La puntuación del código pasa de 7,7 a 8,4 / 10
+  ([PUNTUACION](planificacion/PUNTUACION.md), con la lista de lo que falta para llegar a 10).
+- Migraciones: hasta la `042_indice_tienda`, que añade el índice de `tienda.objetoId`. La siguiente es la `043`.
+- Los cabos sueltos de la revisión del 2026-10-08 están cerrados (ver el CHANGELOG).
+- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 1281 tests en 129 suites. Los tests usan una
+  BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
+- No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica no tiene filas abiertas
+  ([DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md)); lo pendiente está en issues.
 
 ## 2. Lo primero, en este orden
 
-1. **Probar en Discord** las listas de [TAREAS](planificacion/TAREAS.md). Hay unas 60 comprobaciones a mano sin marcar,
-   sobre todo de lo que depende de Discord de verdad: `/sonidos` y `/conectar` (que el bot entre y salga del canal),
-   la tertulia por voz del Duende (opt-in, si está activada en el servidor), las apuestas en directo (con `ODDS_DIRECTO=1`), el Wrapped
-   por DM y los premios de la liga en `/paneladmin`.
-2. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Eurocopa, Copa
+1. **Probar en Discord** las listas de [TAREAS](planificacion/TAREAS.md). Hay 62 comprobaciones a mano sin marcar, sobre
+   todo de lo que depende de Discord de verdad: `/sonidos` y `/conectar` (que el bot entre y salga del canal), la tertulia
+   por voz del Duende (opt-in, si está activada en el servidor), las apuestas en directo (con `ODDS_DIRECTO=1`), el Wrapped
+   por DM y los premios de la liga en `/paneladmin`. Además, la comprobación de los refactors de la auditoría (**T-03**):
+   la voz en directo (#243), la quiniela, el perfil y los rankings (#244).
+2. **Liberar a `main` lo que está en `developer`** (#243, #244 y la nueva puntuación) solo después de T-03. Hasta entonces,
+   `main` no tiene esos cambios y `developer` va por delante.
+3. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Eurocopa, Copa
    del Rey y Europa League tienen claves sin verificar. El Mundial (`soccer_fifa_world_cup`) sí está confirmado. Si una
    clave no sale en `/v4/sports`, corregirla en `DEPORTES` de `src/services/oddsApi.js`.
-3. **Ramas remotas viejas**: las ramas `feature/…` ya fusionadas siguen en GitHub. Borrarlas desde la web de GitHub
+4. **Ramas remotas viejas**: las ramas `feature/…` ya fusionadas siguen en GitHub. Borrarlas desde la web de GitHub
    (el proxy del entorno no deja borrarlas por git).
-4. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
-5. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)). Al arrancar se aplican las migraciones pendientes; en el log,
+5. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
+6. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)). Al arrancar se aplican las migraciones pendientes; en el log,
    `[Migraciones] Aplicada …`.
-6. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
+7. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
    `.env.example`): `TMDB_API_KEY` (trofeos por país), `SEERR_*` (recomendaciones y pedidos), `ODDS_DIRECTO`
    (apuestas en directo, opcional), `DUENDE_RECUERDOS_AUTO` y `DUENDE_RECUERDOS_MAX_DIA` (recuerdos automáticos),
    `SONIDOS_DIR` (opcional, si los sonidos no van en `DATA_DIR/sonidos`).
@@ -58,7 +63,7 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 
 ## 4. Ideas abiertas (sin empezar)
 
-De [FEATURES](planificacion/FEATURES.md), en orden de esfuerzo estimado:
+Son issues con la etiqueta `feature-idea`. De las que más aportan con menos trabajo, en orden de esfuerzo estimado:
 
 - Alertas de precio de TTCL por DM (S).
 - Cancelar combinadas antes de que empiecen (S).
@@ -67,6 +72,8 @@ De [FEATURES](planificacion/FEATURES.md), en orden de esfuerzo estimado:
 - Estrenos de la semana en `/plex`, con 📥 para pedirlos (M).
 - Resumen diario del canal del Duende (M).
 - Historial de temporadas del pase (M).
+- Selección de agente en `/ia` con `RadioGroup`/`CheckboxGroup` (un modal con botones de radio), cuando discord.js lo
+  soporte. Antes era un TODO en `src/commands/duende/ia.js`.
 
 ## 5. Mapa de lo nuevo
 
@@ -82,22 +89,35 @@ De [FEATURES](planificacion/FEATURES.md), en orden de esfuerzo estimado:
 | `src/systems/apuestas/misJugadas.js`, `src/paneles/misJugadas.js` | Combinadas en 📋 Mis jugadas y en las estadísticas |
 | `src/adminPanel/apuestas.js` | `/paneladmin` → ⚽ Apuestas, incluidos los premios de la liga |
 | `src/systems/duende/recuerdosAuto.js` | Recuerdos automáticos del Duende (las admins deciden por DM) |
+| `src/systems/retos/` | Retos separados por tipo (crear, duelos, porras, partidos, cobros, persistencia y revisión). `systems/retos.js` es la fachada |
+| `src/services/duende/chat/`, `src/paneles/duendeAcciones.js` | El flujo de «hablar» del Duende y las acciones de su panel. `commands/duende/duende.js` es la fachada del comando |
+| `src/services/duende/liveVoz/` | Voz en directo: constantes, sesión, declaraciones de herramientas, conexión con Gemini y captura (la tertulia) |
+| `src/systems/guildSettings/` | Ajustes: la lista (`definicion.js`), los valores, el acceso con caché, los permisos de comandos y los límites |
+| `src/juegos/apuestas/quiniela/`, `src/systems/apuestas/liquidacion/` | Editor y botones de la quiniela; la liquidación en partes (caducidad, partidos, quinielas, orquesta y anuncios) |
+| `src/paneles/perfil/` | Pantallas de `/perfil`: básicos, embeds, logros, ficha y rankings |
+
+Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del código; así el resto no cambia.
 
 ## 6. Recetas
 
-- **Una migración nueva**: el siguiente número (`039_…`) en `src/core/migrations`, con `up(db)`. Nunca editar una que
-  ya se haya aplicado en producción. Actualizar el número de migraciones en `tests/plexImportacion.test.js`.
+- **Una migración nueva**: el siguiente número libre (hoy el `043`) en `src/core/migrations`, con `up(db)`. Nunca editar
+  una que ya se haya aplicado en producción. Actualizar el número de migraciones en `tests/plexImportacion.test.js`
+  (`runMigrations(bd)`, hoy 25) y la lista de su comentario.
 - **Un comando nuevo**: el módulo en `src/commands/…`, con `data` y `run`, y su nombre en la lista de
   `tests/parte8Admin.test.js`. Si tiene botones, `componentHandlers` con un prefijo propio. Añadirlo a `/ayuda`
   (`src/commands/general/ayuda.js`) y a [FUNCIONALIDADES](FUNCIONALIDADES.md).
-- **Un ajuste nuevo**: su clave y tipo en `src/systems/guildSettings.js` (las dos listas), y su control en el panel
-  admin correspondiente.
+- **Un ajuste nuevo**: su clave y tipo en `src/systems/guildSettings/definicion.js` (las dos listas, `DEFAULT_FLAT` y
+  `KEY_TYPES`), y su control en el panel admin correspondiente.
 - **Un logro de pase**: si el evento da XP de pase, usar `pase.registrarSeguro(guildId, userId, categoria, cantidad)`
   con una categoría de `CATEGORIAS` (`src/systems/pase/pase.js`), con su tope diario.
 
 ## 7. Convenciones (resumen)
 
 - `npm run check` antes de cada commit (ESLint, Prettier y Jest).
+- Merges: los PRs de una feature a `developer` se hacen con squash, como dice [CONTRIBUTING](../CONTRIBUTING.md); de `developer` a `main`, con merge commit.
+- ESLint limita el tamaño en `src/`: 120 líneas por función y 500 por fichero (el catálogo de logros queda fuera por ser
+  datos). Son máximos actuales, no la meta: la meta es 60 y 400 ([PUNTUACION](planificacion/PUNTUACION.md)). Al bajar un
+  máximo real, bajar también la regla en `eslint.config.js`.
 - Cada cambio, en el [CHANGELOG](CHANGELOG.md) y, si cambia lo que ve la gente, en
   [FUNCIONALIDADES](FUNCIONALIDADES.md); lo que haya que probar a mano, en [TAREAS](planificacion/TAREAS.md); las
   migraciones, en [DEPLOY](DEPLOY.md).

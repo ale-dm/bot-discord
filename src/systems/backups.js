@@ -63,8 +63,8 @@ async function hacerBackup(database = require("../core/db")) {
     } catch (e) {
         try {
             fs.unlinkSync(tmp);
-        } catch (e) {
-            log.debug(`No se pudo borrar el temporal de la copia: ${e.message}`);
+        } catch (errBorrado) {
+            log.debug(`No se pudo borrar el temporal de la copia: ${errBorrado.message}`);
         }
         log.error(`La copia de seguridad ${fichero} falló:`, e);
         throw e;

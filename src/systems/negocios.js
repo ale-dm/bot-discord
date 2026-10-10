@@ -24,7 +24,9 @@ const CATALOGO = {
 const diaDe = (ahora) => madridDateStr(new Date(ahora));
 
 function negociosDe(userId) {
-    return db.prepare("SELECT * FROM negocios_usuario WHERE userId = ?").all(String(userId));
+    return db
+        .prepare("SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia FROM negocios_usuario WHERE userId = ?")
+        .all(String(userId));
 }
 
 function capacidadDiaria(userId) {
@@ -71,7 +73,11 @@ function comprar(userId, guildId, tipo, ahora = Date.now()) {
 /** Vende un negocio: vuelve al banco el 50 % de lo pagado. */
 function vender(userId, tipo) {
     const n = CATALOGO[tipo];
-    const row = db.prepare("SELECT * FROM negocios_usuario WHERE userId = ? AND tipo = ?").get(String(userId), tipo);
+    const row = db
+        .prepare(
+            "SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia FROM negocios_usuario WHERE userId = ? AND tipo = ?",
+        )
+        .get(String(userId), tipo);
     if (!n || !row) return { ok: false, mensaje: "❌ No tienes ese negocio." };
     const devuelto = Math.floor((row.pagado * VENTA_PCT) / 100);
     return db.transaction(() => {
@@ -126,7 +132,9 @@ function depositar(userId, guildId, cantidad, ahora = Date.now()) {
  */
 function avanzarLotes(ahora = Date.now()) {
     let total = 0;
-    for (const lote of db.prepare("SELECT * FROM blanqueo_lotes WHERE liberado < cantidad").all()) {
+    for (const lote of db
+        .prepare("SELECT id, userId, guildId, cantidad, liberado, inicio, fin FROM blanqueo_lotes WHERE liberado < cantidad")
+        .all()) {
         const liberable =
             ahora >= lote.fin ? lote.cantidad : Math.floor((lote.cantidad * (ahora - lote.inicio)) / (lote.fin - lote.inicio));
         const delta = liberable - lote.liberado;
@@ -148,7 +156,11 @@ function avanzarLotes(ahora = Date.now()) {
 function pagarIngresosDiarios(ahora = Date.now()) {
     const hoy = diaDe(ahora);
     let pagos = 0;
-    for (const n of db.prepare("SELECT * FROM negocios_usuario WHERE ultimo_ingreso_dia IS NULL OR ultimo_ingreso_dia < ?").all(hoy)) {
+    for (const n of db
+        .prepare(
+            "SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia FROM negocios_usuario WHERE ultimo_ingreso_dia IS NULL OR ultimo_ingreso_dia < ?",
+        )
+        .all(hoy)) {
         const c = CATALOGO[n.tipo];
         if (!c) continue;
         db.transaction(() => {

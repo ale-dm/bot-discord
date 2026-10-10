@@ -6,12 +6,7 @@
  *   - agente      (opcional)  Tipo de agente IA (selector)
  *   - generar_imagen (opcional) Booleano — genera también una imagen basada en la consulta
  *
- * Novedades Discord April 2026 aprovechadas:
- *   - Context menu limits 5→15: el selector de agentes aprovecha los limits ampliados
- *     (actualmente 12 choices, margen para crecer)
- *   - TODO: Cuando discord.js implemente los nuevos modal components (RadioGroup,
- *     CheckboxGroup) del API de marzo 2026, migrar la selección de agente a un modal
- *     con RadioButtons para una UX más rica.
+ * El selector de agente es una opción de slash command: Discord admite hasta 25 opciones y hoy hay 8 (ver AGENTES).
  */
 
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require("discord.js");

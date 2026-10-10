@@ -128,7 +128,9 @@ function observar(message, deps = {}) {
  * @returns {{ ok: boolean, mensaje: string }}
  */
 function resolver(id, adminId, aprobar) {
-    const p = db.prepare("SELECT * FROM duende_recuerdos_propuestos WHERE id = ?").get(Number(id));
+    const p = db
+        .prepare("SELECT id, guildId, userId, nombre, texto, estado, creada_en, resuelta_por FROM duende_recuerdos_propuestos WHERE id = ?")
+        .get(Number(id));
     if (!p) return { ok: false, mensaje: "Esa propuesta ya no existe." };
     if (!adminsDe(p.guildId).includes(String(adminId))) return { ok: false, mensaje: "Solo los admins del servidor pueden decidir esto." };
     if (p.estado !== "pendiente") return { ok: false, mensaje: `Ya está ${p.estado === "aprobado" ? "guardado" : "descartado"}.` };

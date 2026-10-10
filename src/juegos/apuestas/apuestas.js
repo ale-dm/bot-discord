@@ -9,7 +9,6 @@ const {
     TextInputStyle,
     MessageFlags,
 } = require("discord.js");
-const db = require("../../core/db");
 const dinero = require("../../systems/dinero");
 const marcadorExacto = require("../../systems/apuestas/marcador");
 const mercados = require("../../systems/apuestas/mercados");
@@ -28,6 +27,7 @@ const {
     partidosDePagina,
     yaApostadoApuesta,
     PARTIDOS_POR_PAGINA,
+    partidoPorMatch,
 } = require("../../systems/apuestas/apostar");
 
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
@@ -110,7 +110,7 @@ module.exports = {
         if (interaction.customId !== "apuestas_select_partido") return;
 
         const match_id = interaction.values[0];
-        const partido = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+        const partido = partidoPorMatch(match_id);
         if (!partido) {
             await interaction.reply({ content: "No se encontró el partido seleccionado.", flags: MessageFlags.Ephemeral });
             return;
@@ -212,17 +212,17 @@ module.exports = {
 
         if (interaction.customId.startsWith("apuesta_home_")) {
             const match_id = interaction.customId.replace("apuesta_home_", "");
-            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            match = partidoPorMatch(match_id);
             eleccion = "home";
             cuota = match?.cuota_home;
         } else if (interaction.customId.startsWith("apuesta_draw_")) {
             const match_id = interaction.customId.replace("apuesta_draw_", "");
-            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            match = partidoPorMatch(match_id);
             eleccion = "draw";
             cuota = match?.cuota_draw;
         } else if (interaction.customId.startsWith("apuesta_away_")) {
             const match_id = interaction.customId.replace("apuesta_away_", "");
-            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            match = partidoPorMatch(match_id);
             eleccion = "away";
             cuota = match?.cuota_away;
         } else if (interaction.customId.startsWith("apuesta_mercado_")) {
@@ -231,13 +231,13 @@ module.exports = {
             const corte = resto.indexOf("_");
             eleccion = resto.slice(0, corte);
             const match_id = resto.slice(corte + 1);
-            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            match = partidoPorMatch(match_id);
             if (!mercados.esMercado(eleccion)) return;
             cuota = match ? mercados.cuotaDe(match, eleccion) : null;
         } else if (interaction.customId.startsWith("apuesta_exacto_")) {
             // 🎯 Marcador exacto (F-AP-10): sin cuota de la API, premio fijo.
             const match_id = interaction.customId.replace("apuesta_exacto_", "");
-            match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+            match = partidoPorMatch(match_id);
             eleccion = "exacto";
             cuota = marcadorExacto.PREMIO;
         } else {
@@ -316,7 +316,7 @@ module.exports = {
             return;
         }
 
-        const match = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(match_id);
+        const match = partidoPorMatch(match_id);
         if (!match) {
             await avisoError(interaction, "❌ Error", "No se encontró el partido seleccionado.");
             return;

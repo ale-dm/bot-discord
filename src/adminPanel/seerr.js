@@ -171,8 +171,9 @@ async function handleSeerrModal(interaction) {
     if (interaction.customId === "paneladmin_seerr_limit_modal") {
         const raw = interaction.fields.getTextInputValue("limit").trim();
         const num = Number(raw);
-        if (!Number.isFinite(num) || num < 0) {
-            await interaction.reply({ content: "Número inválido.", flags: MessageFlags.Ephemeral });
+        // Son peticiones: solo enteros (2,5 peticiones no tiene sentido).
+        if (!Number.isInteger(num) || num < 0) {
+            await interaction.reply({ content: "Pon un número entero, 0 o más.", flags: MessageFlags.Ephemeral });
             return true;
         }
         guildSettings.setSetting(interaction.guildId, "seerr.daily_request_limit", num);

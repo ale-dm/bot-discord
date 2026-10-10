@@ -58,7 +58,7 @@ async function boton(interaction) {
         await interaction.showModal(
             simpleModal("paneladmin_levels_user_mult_modal", "Multiplicador de coste XP", [
                 { id: "user_id", label: "ID usuario", placeholder: "123..." },
-                { id: "multiplier", label: "Multiplicador (1 = normal, 0 quita el override)", placeholder: "1" },
+                { id: "multiplier", label: "Multiplicador (1 = normal, 0 quita)", placeholder: "1" },
             ]),
         );
         return true;
@@ -153,15 +153,16 @@ async function modal(interaction) {
             await interaction.reply({ content: `✅ Multiplicador de <@${userId}> restablecido a x1.`, flags: MessageFlags.Ephemeral });
             return true;
         }
-        xp.setUserCostMultiplier(guildId, userId, multiplier);
+        // Lo que se guarda puede ser distinto de lo pedido (mínimo 0.01): se enseña lo guardado.
+        const guardado = xp.setUserCostMultiplier(guildId, userId, multiplier);
         adminAudit.logAdminAction({
             guildId,
             actorId: interaction.user.id,
             action: "xp.user.multiplier.set",
-            details: { userId, multiplier },
+            details: { userId, multiplier: guardado },
         });
         await interaction.reply({
-            content: `✅ Multiplicador de coste de <@${userId}> ajustado a x${multiplier}.`,
+            content: `✅ Multiplicador de coste de <@${userId}> ajustado a x${guardado}.`,
             flags: MessageFlags.Ephemeral,
         });
         return true;

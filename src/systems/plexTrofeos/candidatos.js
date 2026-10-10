@@ -48,15 +48,27 @@ function aLogro(t) {
 /** Los trofeos creados en un servidor como logros del catálogo (lo usa achievementsSystem.getCatalog). */
 function catalogo(guildId) {
     if (!cacheCatalogo.has(guildId)) {
-        const filas = db.prepare("SELECT * FROM plex_trofeos WHERE guildId = ? ORDER BY creado, id").all(guildId);
+        const filas = db
+            .prepare(
+                "SELECT guildId, id, tipo, nombre, descripcion, objetivo, recompensa, anime, condicion, nombre_ia, creado, creado_por, dificultad FROM plex_trofeos WHERE guildId = ? ORDER BY creado, id",
+            )
+            .all(guildId);
         cacheCatalogo.set(guildId, filas.map(aLogro));
     }
     return cacheCatalogo.get(guildId);
 }
 function trofeos(guildId, tipo = null) {
     return tipo
-        ? db.prepare("SELECT * FROM plex_trofeos WHERE guildId = ? AND tipo = ? ORDER BY creado, id").all(guildId, tipo)
-        : db.prepare("SELECT * FROM plex_trofeos WHERE guildId = ? ORDER BY creado, id").all(guildId);
+        ? db
+              .prepare(
+                  "SELECT guildId, id, tipo, nombre, descripcion, objetivo, recompensa, anime, condicion, nombre_ia, creado, creado_por, dificultad FROM plex_trofeos WHERE guildId = ? AND tipo = ? ORDER BY creado, id",
+              )
+              .all(guildId, tipo)
+        : db
+              .prepare(
+                  "SELECT guildId, id, tipo, nombre, descripcion, objetivo, recompensa, anime, condicion, nombre_ia, creado, creado_por, dificultad FROM plex_trofeos WHERE guildId = ? ORDER BY creado, id",
+              )
+              .all(guildId);
 }
 
 // ─── Lo que ha visto cada uno ────────────────────────────────────────────────

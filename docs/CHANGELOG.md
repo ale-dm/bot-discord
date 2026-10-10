@@ -2,6 +2,52 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-10 (corrección de los fallos encontrados por los tests)
+
+- **Los once fallos de producto de la cobertura, corregidos** (issues #263 a #277). Lo más importante: la ruleta y el blackjack ya no anuncian un resultado que el saldo no refleja (si falla el cobro, avisan del error; el blackjack además termina la partida). El cupo diario de Seerr solo se gasta cuando Seerr acepta la petición. `DUENDE_GIF_PROB=0` apaga los GIF. `recortarParaDiscord` cuenta el aviso de truncado, así que nunca supera los 2000 caracteres de Discord.
+- **Otros arreglos de la misma pasada**: `pase` tiene etiqueta en el historial de dinero; las menciones del Duende reconocen nombres con tildes («José», «Raúl»); la etiqueta del multiplicador de XP cabe en Discord y el mensaje muestra el valor guardado; el anuncio de subida de nivel menciona a la persona aunque no esté en caché; el panel de auditoría pide 100 acciones (el máximo que devuelve la consulta); los secretos de la auditoría se guardan enmascarados en la BD, no solo en el log; el límite de Seerr rechaza decimales; y las novedades de Plex no se dan por publicadas si el canal no existe.
+- **Lint**: `eqeqeq` pasa de `smart` a `always` (los `== null` siguen permitidos). Sin avisos. `no-shadow` ya estaba activo.
+- **Tests**: los siete tests marcados con `test.failing` pasan a tests normales; se añaden regresiones para la ruleta y el blackjack cuando no se puede cobrar, el enmascarado en la BD, el canal de novedades pendiente y los límites de Seerr. Los tests ya no documentan el fallo: comprueban el comportamiento correcto.
+- **Pendiente, sin cambiar**: los issues #278 a #282 (tamaño de funciones y ficheros, organización de `juegos/`, medición real de la base de datos, verificación de la configuración de GitHub en CONTRIBUTING). La release de `developer` a `main` sigue esperando a la comprobación en Discord de T-03 (#243 y #244).
+- Puntuación: Lint y Tests pasan a 10; la media queda en 9,1.
+
+## 2026-10-10 (cobertura de todo src/)
+
+- **Cobertura por encima del objetivo en los 280 ficheros de `src/`** (antes, 36 por debajo). Tests nuevos en `tests/`, uno por fuente o grupo, sin cambios en el código de producción. Totales: líneas 91,1 %, ramas 80,5 %, funciones 92,6 %. `npm run check`: 168 suites, 2004 tests, en verde.
+- **Once fallos de producto encontrados por los tests**, sin corregir y documentados con `test.failing` (la suite pasa hasta que se corrige el fallo, y entonces hay que quitar el `.failing`). La lista, con dónde está cada test, está en [PUNTUACION](planificacion/PUNTUACION.md). Los más importantes: la ruleta y el blackjack pueden dar un resultado que no se cobra (ruleta, blackjack), el cupo de Seerr se gasta en peticiones fallidas, y no se pueden apagar los GIF del Duende.
+- Puntuación: Tests pasa a 9.
+
+## 2026-10-10 (para llegar a 10: base de datos, lint y documentación, segunda pasada)
+
+- **Índice de `tienda.objetoId`** (migración `042_indice_tienda`): era la única clave foránea sin índice. Lo usan el catálogo del panel admin y los borrados. `tests/indiceTienda.test.js` comprueba que el índice existe y que las consultas lo usan con un volumen realista (400 objetos).
+- **`SELECT *` sustituido** por columnas explícitas en 68 consultas de `src/` (las del esquema actual; el resultado no cambia). La de la migración 007, que vuelca tablas de esquema desconocido, se queda a propósito. Las siete consultas de partidos repetidas en `juegos/apuestas/apuestas.js` pasan a un solo helper, `partidoPorMatch` (en `systems/apuestas/apostar.js`), para que el fichero siga por debajo de 500 líneas.
+- **Plan de las consultas**: 344 consultas literales de `src/` revisadas con `EXPLAIN QUERY PLAN`. 14 recorren una tabla entera, todas agregados o listas completas (saldos, ranking, cron) o tablas pequeñas de configuración y panel. No hace falta ningún índice nuevo.
+- **Lint**: `no-shadow` activo en `src/`, sin avisos. Se corrigieron los cinco casos renombrando la variable interna (`vistas.js`, `index.js`, `geminiTts.js`, `backups.js`, `plexHistorial.js`), sin cambio de comportamiento.
+- **Cobertura de todo el repositorio medida**: 36 ficheros de `src/` por debajo del 60 % de líneas o del 50 % de ramas, listados en [PUNTUACION](planificacion/PUNTUACION.md).
+- **DEPLOY y comentarios**: `/diagnostico` pasa a ser `/paneladmin` → 🩺 Sistema; el enlace a DT-01 (ya retirado) sale del documento, y la copia de seguridad queda como decisión registrada.
+- **Merges**: a partir de ahora, los PRs de feature a `developer` se hacen con squash, como dice CONTRIBUTING; `developer` → `main`, con merge commit.
+- Puntuación: Base de datos pasa a 9 y la media a 8,7. Lint se queda en 9 hasta decidir qué medida faltaba.
+
+## 2026-10-10 (para llegar a 10: lint, TODO y documentación)
+
+- **Límites de tamaño en el lint** (`eslint.config.js`): en `src/`, 120 líneas por función y 500 por fichero. Son los máximos actuales, no la meta (60 y 400): la regla se baja al bajar cada máximo real. El catálogo de logros queda fuera por ser datos. Comprobado: una función de 127 líneas falla el `npm run check`; el repositorio pasa con 0 avisos.
+- **`TODO` de `commands/duende/ia.js` quitado**: era una idea de interfaz (selector con botones de radio) y el comentario decía 12 opciones, cuando hay 8. La idea pasa a [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (apartado 4).
+- **Documentación al día**: README (22 comandos, carpetas de comandos con `/plex`, `/pase`, `/mensaje`, `/conectar` y `/sonidos`, y los scripts que faltaban), [FUNCIONALIDADES](FUNCIONALIDADES.md) (fecha y seis comandos que faltaban en la tabla de referencia), [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md) (reescrito: estado de la auditoría, releases pendientes, mapa de los refactors, y recetas corregidas: el número de migración, dónde se añade un ajuste), [PLEX_Y_SEERR](../tecnico/PLEX_Y_SEERR.md) (referencias de código al día, sin tocar el registro histórico), [docs/README](README.md) (FEATURES redirige a los issues), [TAREAS](planificacion/TAREAS.md) (T-03: comprobaciones en Discord de #243 y #244, que bloquean liberar a `main`) y [PUNTUACION](planificacion/PUNTUACION.md) (hallazgos por área para llegar a 10).
+- Puntuación del código: Robustez pasa a 10 (0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`); la media queda en 8,6.
+- Lo que no se ha corregido, a propósito, está escrito en PUNTUACION: un índice para `tienda.objetoId` (migración 042), el recuento de funciones y ficheros grandes, y la política de merge de CONTRIBUTING (squash o merge).
+
+## 2026-10-10 (auditoría: tamaño de paneles, ajustes, quiniela y liquidación)
+
+- **Cuatro ficheros grandes partidos** (#244): `paneles/perfil.js` (594 → 10 líneas de fachada, las pantallas en `paneles/perfil/`: básicos, embeds, logros, ficha y rankings); `systems/guildSettings.js` (526 → 20, con la lista de ajustes como datos aparte en `guildSettings/definicion.js`, y lectura, permisos y límites en sus ficheros); `juegos/apuestas/quiniela.js` (512 → 254, editor y botones en `quiniela/`); `systems/apuestas/liquidacion.js` (507 → 17, en `liquidacion/`: caducidad, partidos, quinielas, orquesta y anuncios). El fichero más grande de cada carpeta tiene 228 líneas o menos.
+- **Nueva medida de la puntuación** (`docs/planificacion/PUNTUACION.md`): 8,4 / 10, antes 7,7. Cobertura de líneas 85,3 % (antes 75,4 %) y 0 `catch` vacíos (antes 7).
+- Traslado de código sin cambios de comportamiento. Los tests pasan sin tocar sus expectativas. Un detalle que los tests sí detectaron: un `module.exports.run` que dejó de apuntar al fichero correcto al moverse; ahora se pide la fachada en la función que lo llama.
+
+## 2026-10-10 (auditoría: tamaño del Duende y de la voz en directo)
+
+- **`commands/duende/duende.js` partido** (#243): de 775 líneas a 39 (fachada del comando). El panel 💬 pasa a `paneles/duendeAcciones.js` (227 líneas) y el flujo de «hablar» a `services/duende/chat/` (contexto, generar, enviar y hablar: 94 a 175 líneas cada uno). Los nombres que usan el router y los demás ficheros no cambian.
+- **`services/duende/liveVoz.js` partido** (#243): de 596 líneas a 62 (fachada con `empezarConversacion`). La carpeta `liveVoz/` tiene constantes, sesión, declaraciones de herramientas, conexión con Gemini y captura (la tertulia incluida), de 27 a 193 líneas.
+- Es un traslado de código sin cambios: las funciones se copian tal cual y solo cambian las rutas de los `require`. Los tests del Duende y de la voz pasan sin tocar sus expectativas. **La voz en directo no se puede probar con tests**: hay que comprobarla en Discord (conversación, tertulia y salida por inactividad).
+
 ## 2026-10-10 (auditoría: tamaño de retos)
 
 - **`systems/retos.js` partido en una carpeta** (#242): `systems/retos/` con `constantes`, `comun` (error, descripción, azar inyectable), `persistencia` (lectura y escritura de la tabla y consultas de paneles), `cobros` (cobrar, cerrar, devolver, ganar), `partidos`, `crear`, `duelos`, `porras` y `revision` (cron). El fichero `systems/retos.js` queda como fachada que reexporta los mismos nombres: los paneles, los juegos, las herramientas del Duende y la liquidación no cambian. El fichero más grande de la carpeta tiene 228 líneas (antes, 851).

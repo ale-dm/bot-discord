@@ -390,7 +390,11 @@ function nombresBibliotecas(guildId) {
 
 /** Todas las fichas ya pedidas de un servidor, con las listas en JSON ya leídas. */
 function cargar(guildId) {
-    const filas = db.prepare("SELECT * FROM plex_fichas WHERE guildId = ? AND actualizada > 0").all(guildId);
+    const filas = db
+        .prepare(
+            "SELECT guildId, rating_key, tipo, titulo, anio, section_id, biblioteca, generos, directores, colecciones, temporadas, encontrada, actualizada, alta, altas, tmdb, paises FROM plex_fichas WHERE guildId = ? AND actualizada > 0",
+        )
+        .all(guildId);
     const fichas = filas.map((f) => ({
         ...f,
         encontrada: Boolean(f.encontrada),

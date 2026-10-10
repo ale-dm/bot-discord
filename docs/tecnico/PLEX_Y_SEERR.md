@@ -124,7 +124,7 @@ panel es para mantenerla después sin tener que pedírmelo cada vez.
 Igual que las herramientas ya existentes nunca dejan que el modelo invente
 un `userId`, aquí el modelo solo puede referirse a personas por **nombre**
 (ej. "Raúl"), y el ejecutor resuelve ese nombre a un Discord userId
-reutilizando el mismo mapa que ya usa `duende.js` para menciones
+reutilizando el mismo mapa que usa `systems/duende/personas.js` para menciones
 (`nombresUsuarios` + notas de `/duende recuerda`), y de ahí busca el vínculo
 en `plex_links`. Si el nombre no resuelve a nadie vinculado, la herramienta
 devuelve `{ error: "No encuentro a esa persona vinculada a Plex" }` y el
@@ -279,7 +279,7 @@ Detectados por el usuario probando "pide X en nombre de Y" en el canal real, con
 
 - **Codificación de búsquedas rota para títulos con espacio**: `axios` serializa espacios como `+` por defecto; Jellyseerr valida estrictamente `%20` y rechaza `+` con `400 "Parameter 'query' must be url encoded"`. Cualquier búsqueda de más de una palabra fallaba (`buscar_contenido_seerr({"titulo":"Barbie 2"})` → error). Arreglado con un `paramsSerializer` propio en `seerrClient.js` usando `encodeURIComponent` (RFC3986, siempre `%20`).
 - **Frase no reconocida**: "haz que el hustlehard pida barbie 2" no disparaba la herramienta — la descripción de `solicitar_contenido_seerr` solo cubría literalmente "pide X para/en nombre de Y". Ampliada con varias construcciones equivalentes y una frase explícita contra la duda de "no puedo actuar en nombre de otro".
-- Recordatorio de arquitectura (no es bug, pero costó tiempo de depuración): el historial de conversación vive **en memoria** (`conversationHistory`, cargado una vez al arrancar `duende.js`) — limpiar `data/duende-history.json` a mano mientras el bot está corriendo no tiene efecto hasta el siguiente reinicio, porque `saveHistory()` sobreescribe el archivo con la copia en memoria en cuanto se genera una respuesta más.
+- Recordatorio de arquitectura (no es bug, pero costó tiempo de depuración): el historial de conversación vive **en memoria** (`conversationHistory`, en `systems/duende/memoria.js`, cargado una vez al arrancar) — limpiar `data/duende-history.json` a mano mientras el bot está corriendo no tiene efecto hasta el siguiente reinicio, porque `saveHistory()` sobreescribe el archivo con la copia en memoria en cuanto se genera una respuesta más.
 
 ### 4.7 Idea futura: `terminate_session` ligado a la tienda
 
@@ -298,7 +298,7 @@ en ningún caso, solo detrás de un comando/botón explícito de compra y uso.
   (conexión real, `get_users`/`get_history`/`get_activity` funcionando).
 - ✅ Tautulli accesible públicamente desde donde corre el bot (URL propia,
   sin problema de red).
-- ✅ Las **11 herramientas** del apartado 3 implementadas en `duende.js` y
+- ✅ Las **11 herramientas** del apartado 3 implementadas en `services/duende/herramientas/plex.js` y
   probadas en vivo contra datos reales: actividad, viendo ahora, tiempo
   visto, última conexión, novedades, comparar dos personas, top del
   server (vía `get_home_stats`), buscar en Plex, ranking de usuarios, nº
@@ -311,14 +311,14 @@ en ningún caso, solo detrás de un comando/botón explícito de compra y uso.
   asierbernabugimnez, Ddrakon, jorgealfonso939, jorgevilellaadsuar,
   laurap215, mario4424, martinbernabeu, miryam_diezz, paulaalfonso922,
   raulalfonsoferrandez, tomsibarralled, SrAaleeeo.
-- ✅ Apodos cargados en `src/commands/duende/duende.js` (`APODOS_DISCORD_ID`,
+- ✅ Apodos cargados en el código (`APODOS_DISCORD_ID`, hoy en la tabla `duende_apodos`, migración 003, y `systems/apodos.js`;
   resuelto por ID directo — el más fiable, se comprueba antes que
   cualquier otra fuente), con normalización de tildes para que "Raúl" y
   "raul" resuelvan igual. Verificado en vivo: preguntar por "Raúl" y "el
   perro" en la misma frase resolvió a las dos personas correctas con datos
   reales (32,5h para Raúl, 0h para Javier/Ddrakon).
 - Nuevos vínculos o apodos que hagan falta más adelante, o desde el panel
-  admin (vínculos) o pidiéndomelo (apodos, hardcodeados en `duende.js`).
+  admin (vínculos) o desde el panel (apodos, que hoy están en la BD).
 - ✅ **Seerr**: `SEERR_URL`/`SEERR_API_KEY` en `.env`, conexión verificada
   (`get_status`, versión 3.4.1). Las **3 herramientas** del apartado 4.3
   implementadas y probadas en vivo: búsqueda real (Daredevil, con estado

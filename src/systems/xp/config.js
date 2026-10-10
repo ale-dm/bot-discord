@@ -77,7 +77,11 @@ function setConfig(guildId, key, value) {
 
 function ensureUser(guildId, userId) {
     db.prepare(`INSERT OR IGNORE INTO xp_users (guildId, userId) VALUES (?, ?)`).run(guildId, userId);
-    return db.prepare(`SELECT * FROM xp_users WHERE guildId = ? AND userId = ?`).get(guildId, userId);
+    return db
+        .prepare(
+            `SELECT guildId, userId, xp, nivel, xp_total, ultimo_msg, voz_inicio, voz_segundos, streak_dias, streak_last_day FROM xp_users WHERE guildId = ? AND userId = ?`,
+        )
+        .get(guildId, userId);
 }
 
 function getUserCostMultiplier(guildId, userId) {
@@ -94,6 +98,7 @@ function setUserCostMultiplier(guildId, userId, multiplier) {
         ON CONFLICT(guildId, userId) DO UPDATE SET costMultiplier = excluded.costMultiplier
     `,
     ).run(guildId, userId, mult);
+    return mult;
 }
 
 function removeUserCostMultiplier(guildId, userId) {

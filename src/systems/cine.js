@@ -60,7 +60,12 @@ function crear({ guildId, canalId, organizador, peli, inicio }) {
     return lastInsertRowid;
 }
 
-const sesion = (id) => db.prepare("SELECT * FROM cine_sesiones WHERE id = ?").get(Number(id)) || null;
+const sesion = (id) =>
+    db
+        .prepare(
+            "SELECT id, guildId, canalId, mensajeId, organizador, peli, inicio, recordatorio, cancelada, creada_en FROM cine_sesiones WHERE id = ?",
+        )
+        .get(Number(id)) || null;
 const asistentes = (id) =>
     db
         .prepare("SELECT userId FROM cine_asistentes WHERE sesion_id = ? ORDER BY rowid")
@@ -90,7 +95,9 @@ function cancelar(id, userId, esAdmin = false) {
 function recordatoriosPendientes(ahora = Date.now()) {
     const hasta = new Date(ahora + AVISO_MIN * 60000).toISOString();
     return db
-        .prepare(`SELECT * FROM cine_sesiones WHERE cancelada = 0 AND recordatorio = 0 AND inicio > ? AND inicio <= ?`)
+        .prepare(
+            `SELECT id, guildId, canalId, mensajeId, organizador, peli, inicio, recordatorio, cancelada, creada_en FROM cine_sesiones WHERE cancelada = 0 AND recordatorio = 0 AND inicio > ? AND inicio <= ?`,
+        )
         .all(new Date(ahora).toISOString(), hasta);
 }
 

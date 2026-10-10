@@ -114,8 +114,8 @@ client.once("clientReady", async () => {
         runJob(
             `Backfill de roles (${guild.name})`,
             async () => {
-                const n = await xpSystem.backfillRoles(guild);
-                if (n > 0) log.info(`Backfill: ${n} roles de nivel asignados en ${guild.name}`);
+                const asignados = await xpSystem.backfillRoles(guild);
+                if (asignados > 0) log.info(`Backfill: ${asignados} roles de nivel asignados en ${guild.name}`);
                 // Después del backfill, que ya ha cargado los miembros del servidor: pedirlos otra vez
                 // a la vez hacía que Discord limitara la petición ("opcode 8 was rate limited").
                 await require("./systems/duende/perfiles").vincularPerfiles(guild);
