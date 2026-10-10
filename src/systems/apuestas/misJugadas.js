@@ -22,7 +22,11 @@ function partidosDe(userId, { pendientes = true, limite = 10 } = {}) {
  * acertaste. `aciertos` cuenta solo los partidos ya jugados.
  */
 function detalleQuiniela(quinielaId, predicciones) {
-    const partidos = db.prepare("SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC").all(quinielaId);
+    const partidos = db
+        .prepare(
+            "SELECT id, quiniela_id, match_id, orden, home_team, away_team, start_time, resultado_final FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC",
+        )
+        .all(quinielaId);
     const pred = String(predicciones || "").toUpperCase();
     const lineas = partidos.map((p, i) => {
         const salio = p.resultado_final ? SIGNO[p.resultado_final] : null;
@@ -63,7 +67,11 @@ function quinielasDe(userId, { abiertas = true, limite = 5 } = {}) {
 
 /** Su apuesta en una quiniela concreta (o null). */
 function quinielaDe(userId, quinielaId) {
-    const r = db.prepare("SELECT * FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?").get(quinielaId, userId);
+    const r = db
+        .prepare(
+            "SELECT id, quiniela_id, user_id, predicciones, cantidad, aciertos, premio, pagado, creada_en FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?",
+        )
+        .get(quinielaId, userId);
     return r ? { ...r, detalle: detalleQuiniela(quinielaId, r.predicciones) } : null;
 }
 
@@ -183,7 +191,9 @@ function cartera(userId, ahora = Date.now()) {
 function combinadasDe(userId, { abiertas = true, limite = 3 } = {}) {
     const filtro = abiertas ? "estado = 'abierta'" : "estado != 'abierta'";
     const combinadas = db
-        .prepare(`SELECT * FROM combinadas WHERE user_id = ? AND ${filtro} ORDER BY creada_en DESC LIMIT ?`)
+        .prepare(
+            `SELECT id, user_id, cantidad, cuota, estado, premio, creada_en FROM combinadas WHERE user_id = ? AND ${filtro} ORDER BY creada_en DESC LIMIT ?`,
+        )
         .all(String(userId), limite);
     const patas = db.prepare(
         `SELECT pa.*, p.home_team, p.away_team, p.start_time

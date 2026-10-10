@@ -28,7 +28,7 @@ La configuración (`.env`) se guarda en el propio stack de Portainer, no en un f
    - Environment variables → **Load variables from .env file** → subir el `.env` (Portainer las guarda en `stack.env`, en la raíz del repo clonado).
 4. **Deploy the stack**. La primera vez tarda varios minutos (dependencias del sistema, modelo de voz de
    ~40 MB, módulos de Node).
-5. Comprobar: `docker logs -f duende-bot` y, en Discord, `/diagnostico`.
+5. Comprobar: `docker logs -f duende-bot` y, en Discord, `/paneladmin` → 🩺 Sistema.
 
 ## Actualizar
 
@@ -172,15 +172,14 @@ a medias, devuelve lo apostado.
 - Voz: `STT_ENABLED=0` en `.env` para no arrancar Vosk.
 - Liquidación de apuestas automática cada hora (minuto 15); `ODDS_API_KEY` es obligatoria.
 - Copia de la BD cada día a las 04:30 en `data/backups/banco-AAAA-MM-DD.db` (se guardan 7, `BACKUP_KEEP`).
-  Está en el mismo disco: conviene copiar esa carpeta a otro sitio (ver
-  [DT-01](planificacion/DEUDA_TECNICA.md#dt-01-las-copias-de-seguridad-están-en-el-mismo-disco)).
+  Está en el mismo disco. Es una decisión registrada (ver [DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md), «Decisiones tomadas»): para tener copias fuera del servidor hay que copiar la carpeta a mano.
   Para restaurar: parar el stack, sustituir `data/banco.db` por la copia y borrar `banco.db-wal` / `banco.db-shm`.
 
 ## Logs
 
 - `logs/app-log.txt` (todo), `warn-log.txt` y `error-log.txt`, con rotación (5 MB × 5 ficheros por defecto).
 - `LOG_LEVEL` (por defecto `info`; `debug` para detalle paso a paso) y `LOG_CONSOLE_LEVEL` (por defecto
-  `warn`: lo que sale en `docker logs`). El nivel también se cambia en caliente con `/diagnostico nivel_log`.
+  `warn`: lo que sale en `docker logs`). El nivel también se cambia en caliente en `/paneladmin` → 🩺 Sistema (vuelve al de `.env` al reiniciar).
 - Las claves de API y el token se ocultan automáticamente.
 
 ## Probar la imagen en local

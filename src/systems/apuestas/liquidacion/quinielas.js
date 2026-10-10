@@ -12,14 +12,16 @@ async function liquidarQuinielas({ corte, resumen, scoresDe, origen }) {
     // jornada dura de viernes a lunes, y cuando acaba el último partido el primero ya no está
     // en la ventana de la API. Antes solo se guardaban si estaban los 10 a la vez, y así una
     // jornada larga no se podía completar nunca.
-    const quinielasAbiertas = db.prepare(`SELECT * FROM quinielas WHERE estado = 'abierta'`).all();
+    const quinielasAbiertas = db
+        .prepare(`SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas WHERE estado = 'abierta'`)
+        .all();
 
     for (const q of quinielasAbiertas) {
         const deporteKey = deporteValido(q.deporte);
         let partidosQ = db
             .prepare(
                 `
-            SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC
+            SELECT id, quiniela_id, match_id, orden, home_team, away_team, start_time, resultado_final FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC
         `,
             )
             .all(q.id);
@@ -35,7 +37,11 @@ async function liquidarQuinielas({ corte, resumen, scoresDe, origen }) {
                 const r = resultadoDeScore(scores.find((s) => s.id === p.match_id));
                 if (r) db.prepare(`UPDATE quiniela_partidos SET resultado_final = ? WHERE id = ?`).run(r.resultado, p.id);
             }
-            partidosQ = db.prepare(`SELECT * FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC`).all(q.id);
+            partidosQ = db
+                .prepare(
+                    `SELECT id, quiniela_id, match_id, orden, home_team, away_team, start_time, resultado_final FROM quiniela_partidos WHERE quiniela_id = ? ORDER BY orden ASC`,
+                )
+                .all(q.id);
         }
         if (partidosQ.some((p) => !p.resultado_final)) continue;
 
@@ -43,7 +49,7 @@ async function liquidarQuinielas({ corte, resumen, scoresDe, origen }) {
         const apuestasQ = db
             .prepare(
                 `
-            SELECT * FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0
+            SELECT id, quiniela_id, user_id, predicciones, cantidad, aciertos, premio, pagado, creada_en FROM quiniela_apuestas WHERE quiniela_id = ? AND pagado = 0
         `,
             )
             .all(q.id);

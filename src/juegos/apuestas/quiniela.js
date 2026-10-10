@@ -51,7 +51,7 @@ module.exports = {
         const quiniela = db
             .prepare(
                 `
-            SELECT * FROM quinielas
+            SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas
             WHERE estado = 'abierta' AND deporte = ?
             ORDER BY id DESC
             LIMIT 1
@@ -154,7 +154,11 @@ module.exports = {
         if (!customId.startsWith("quiniela_modal_confirmar_")) return;
 
         const quinielaId = parseInt(customId.replace("quiniela_modal_confirmar_", ""), 10);
-        const quiniela = db.prepare(`SELECT * FROM quinielas WHERE id = ? AND estado = 'abierta'`).get(quinielaId);
+        const quiniela = db
+            .prepare(
+                `SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas WHERE id = ? AND estado = 'abierta'`,
+            )
+            .get(quinielaId);
         if (!quiniela) {
             await interaction.reply({ content: "❌ Quiniela no disponible.", flags: MessageFlags.Ephemeral });
             return;

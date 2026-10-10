@@ -56,7 +56,11 @@ function borrador(userId) {
  * @returns {{ ok: boolean, mensaje: string }}
  */
 function sumar(userId, matchId, eleccion) {
-    const partido = db.prepare("SELECT * FROM apuestas_partidos WHERE match_id = ?").get(String(matchId));
+    const partido = db
+        .prepare(
+            "SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos WHERE match_id = ?",
+        )
+        .get(String(matchId));
     const cuota = cuotaDeEleccion(partido, eleccion);
     if (!cuota) return { ok: false, mensaje: "❌ Ese partido ya ha empezado o no tiene cuota para esa elección." };
     const actual = borrador(userId);
@@ -189,9 +193,16 @@ function caducarPartido(matchId, reembolsar) {
 /** Las combinadas de alguien: las que siguen en juego y las últimas resueltas. */
 function de(userId, limite = 5) {
     const abiertas = db
-        .prepare("SELECT * FROM combinadas WHERE user_id = ? AND estado = 'abierta' ORDER BY creada_en DESC LIMIT ?")
+        .prepare(
+            "SELECT id, user_id, cantidad, cuota, estado, premio, creada_en FROM combinadas WHERE user_id = ? AND estado = 'abierta' ORDER BY creada_en DESC LIMIT ?",
+        )
         .all(String(userId), limite);
-    const patas = (id) => db.prepare("SELECT * FROM combinada_patas WHERE combinada_id = ? ORDER BY id").all(id);
+    const patas = (id) =>
+        db
+            .prepare(
+                "SELECT id, combinada_id, match_id, eleccion, cuota, linea, resultado FROM combinada_patas WHERE combinada_id = ? ORDER BY id",
+            )
+            .all(id);
     return abiertas.map((c) => ({ ...c, patas: patas(c.id) }));
 }
 

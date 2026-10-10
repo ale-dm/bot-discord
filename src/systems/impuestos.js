@@ -28,7 +28,9 @@ function aRegla(r) {
 
 function listarReglas(guildId) {
     return db
-        .prepare("SELECT * FROM impuestos_reglas WHERE guildId = ? ORDER BY base, tipoMovimiento IS NULL DESC, id")
+        .prepare(
+            "SELECT id, guildId, base, tipoMovimiento, porcentaje, activo, destino, creadoEn FROM impuestos_reglas WHERE guildId = ? ORDER BY base, tipoMovimiento IS NULL DESC, id",
+        )
         .all(guildId)
         .map(aRegla);
 }
@@ -46,7 +48,11 @@ function anadirRegla(guildId, { base, tipoMovimiento = null, porcentaje, destino
             "INSERT INTO impuestos_reglas (guildId, base, tipoMovimiento, porcentaje, activo, destino, creadoEn) VALUES (?, ?, ?, ?, 1, ?, ?)",
         )
         .run(guildId, base, tipoMovimiento, porcentaje, destino, Date.now());
-    return aRegla(db.prepare("SELECT * FROM impuestos_reglas WHERE id = ?").get(info.lastInsertRowid));
+    return aRegla(
+        db
+            .prepare("SELECT id, guildId, base, tipoMovimiento, porcentaje, activo, destino, creadoEn FROM impuestos_reglas WHERE id = ?")
+            .get(info.lastInsertRowid),
+    );
 }
 
 function quitarRegla(guildId, id) {
@@ -60,12 +66,16 @@ function activarRegla(guildId, id, activo) {
 /** La regla de ingreso que aplica a ese tipo: la específica si existe y está activa; si no, la general; si no, null. */
 function reglaDeIngreso(guildId, tipo) {
     const especifica = db
-        .prepare("SELECT * FROM impuestos_reglas WHERE guildId = ? AND base = 'ingreso' AND tipoMovimiento = ? AND activo = 1")
+        .prepare(
+            "SELECT id, guildId, base, tipoMovimiento, porcentaje, activo, destino, creadoEn FROM impuestos_reglas WHERE guildId = ? AND base = 'ingreso' AND tipoMovimiento = ? AND activo = 1",
+        )
         .get(guildId, tipo);
     if (especifica) return aRegla(especifica);
     return aRegla(
         db
-            .prepare("SELECT * FROM impuestos_reglas WHERE guildId = ? AND base = 'ingreso' AND tipoMovimiento IS NULL AND activo = 1")
+            .prepare(
+                "SELECT id, guildId, base, tipoMovimiento, porcentaje, activo, destino, creadoEn FROM impuestos_reglas WHERE guildId = ? AND base = 'ingreso' AND tipoMovimiento IS NULL AND activo = 1",
+            )
             .get(guildId),
     );
 }
@@ -85,7 +95,13 @@ function calcularImpuesto(guildId, tipo, cantidad) {
 function impuestoDeCompra(guildId, cantidad) {
     if (!guildId) return null;
     asegurarReglaPorDefecto(guildId);
-    const regla = aRegla(db.prepare("SELECT * FROM impuestos_reglas WHERE guildId = ? AND base = 'compra' AND activo = 1").get(guildId));
+    const regla = aRegla(
+        db
+            .prepare(
+                "SELECT id, guildId, base, tipoMovimiento, porcentaje, activo, destino, creadoEn FROM impuestos_reglas WHERE guildId = ? AND base = 'compra' AND activo = 1",
+            )
+            .get(guildId),
+    );
     if (!regla) return null;
     const impuesto = Math.floor((cantidad * regla.porcentaje) / 100);
     if (impuesto <= 0) return null;

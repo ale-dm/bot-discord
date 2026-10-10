@@ -17,8 +17,7 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
   en directo) y **#244** (perfil, ajustes, quiniela y liquidación) están en `developer` pero **sin liberar**: falta
   comprobarlas en Discord (ver el apartado 2). La puntuación del código pasa de 7,7 a 8,4 / 10
   ([PUNTUACION](planificacion/PUNTUACION.md), con la lista de lo que falta para llegar a 10).
-- Migraciones: hasta la `041_indices_resto`. La siguiente es la `042`. La auditoría de base de datos propone un índice
-  para `tienda.objetoId` (única clave foránea sin índice): sin hacer.
+- Migraciones: hasta la `042_indice_tienda`, que añade el índice de `tienda.objetoId`. La siguiente es la `043`.
 - Los cabos sueltos de la revisión del 2026-10-08 están cerrados (ver el CHANGELOG).
 - `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 1281 tests en 129 suites. Los tests usan una
   BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
@@ -61,8 +60,6 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
   salen.
 - **Recomendaciones de Seerr**: se asume que `/{movie|tv}/{id}/recommendations` responde como en la documentación. Si
   devuelve otra cosa, el panel "🎯 Para ti" quedaría vacío sin error.
-- **Merge o squash.** [CONTRIBUTING](../CONTRIBUTING.md) pide squash al pasar de feature a `developer`, pero el
-  historial de `developer` tiene merges normales. Hay que decidir cuál vale y dejar el documento de acuerdo.
 
 ## 4. Ideas abiertas (sin empezar)
 
@@ -103,9 +100,9 @@ Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del 
 
 ## 6. Recetas
 
-- **Una migración nueva**: el siguiente número libre (hoy el `042`) en `src/core/migrations`, con `up(db)`. Nunca editar
-  una que ya se haya aplicado en producción. Los tests de migraciones usan `listMigrations().length`: no hay un número
-  fijo que actualizar.
+- **Una migración nueva**: el siguiente número libre (hoy el `043`) en `src/core/migrations`, con `up(db)`. Nunca editar
+  una que ya se haya aplicado en producción. Actualizar el número de migraciones en `tests/plexImportacion.test.js`
+  (`runMigrations(bd)`, hoy 25) y la lista de su comentario.
 - **Un comando nuevo**: el módulo en `src/commands/…`, con `data` y `run`, y su nombre en la lista de
   `tests/parte8Admin.test.js`. Si tiene botones, `componentHandlers` con un prefijo propio. Añadirlo a `/ayuda`
   (`src/commands/general/ayuda.js`) y a [FUNCIONALIDADES](FUNCIONALIDADES.md).
@@ -117,6 +114,7 @@ Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del 
 ## 7. Convenciones (resumen)
 
 - `npm run check` antes de cada commit (ESLint, Prettier y Jest).
+- Merges: los PRs de una feature a `developer` se hacen con squash, como dice [CONTRIBUTING](../CONTRIBUTING.md); de `developer` a `main`, con merge commit.
 - ESLint limita el tamaño en `src/`: 120 líneas por función y 500 por fichero (el catálogo de logros queda fuera por ser
   datos). Son máximos actuales, no la meta: la meta es 60 y 400 ([PUNTUACION](planificacion/PUNTUACION.md)). Al bajar un
   máximo real, bajar también la regla en `eslint.config.js`.

@@ -27,7 +27,7 @@ function obtenerPartidosQuiniela(quinielaId) {
     return db
         .prepare(
             `
-        SELECT * FROM quiniela_partidos
+        SELECT id, quiniela_id, match_id, orden, home_team, away_team, start_time, resultado_final FROM quiniela_partidos
         WHERE quiniela_id = ?
         ORDER BY orden ASC
     `,
@@ -88,7 +88,7 @@ async function crearQuiniela(deporteSeleccionado, creadorId) {
     const ahora = new Date().toISOString();
     const partidos = db
         .prepare(
-            `SELECT * FROM apuestas_partidos WHERE deporte = ? AND estado = 'abierto' AND start_time > ? ORDER BY start_time ASC LIMIT ?`,
+            `SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos WHERE deporte = ? AND estado = 'abierto' AND start_time > ? ORDER BY start_time ASC LIMIT ?`,
         )
         .all(deporteSeleccionado, ahora, QUINIELA_MATCH_COUNT);
     if (partidos.length < 5) return { ok: false, mensaje: "❌ No hay suficientes partidos próximos para crear quiniela (mínimo 5)." };

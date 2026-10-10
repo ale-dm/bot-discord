@@ -26,7 +26,11 @@ function minutoMadrid(fecha) {
 }
 
 function eventoDelDia(dia) {
-    return db.prepare("SELECT * FROM cripto_eventos WHERE dia = ?").get(dia);
+    return db
+        .prepare(
+            "SELECT dia, minuto, direccion, porcentaje, aplicado_en, precio_antes, precio_despues, avisados FROM cripto_eventos WHERE dia = ?",
+        )
+        .get(dia);
 }
 
 /** Elige el evento del día al empezarlo: minuto y dirección al azar, guardados para que no cambien. */
@@ -119,7 +123,13 @@ async function revisarYAvisar(client, ahora = Date.now(), rng = Math.random) {
 
 /** El último evento que se ha aplicado (para el panel), o null si todavía no hay ninguno. */
 function ultimoEvento() {
-    return db.prepare("SELECT * FROM cripto_eventos WHERE aplicado_en IS NOT NULL ORDER BY aplicado_en DESC LIMIT 1").get() || null;
+    return (
+        db
+            .prepare(
+                "SELECT dia, minuto, direccion, porcentaje, aplicado_en, precio_antes, precio_despues, avisados FROM cripto_eventos WHERE aplicado_en IS NOT NULL ORDER BY aplicado_en DESC LIMIT 1",
+            )
+            .get() || null
+    );
 }
 
 module.exports = { minutoMadrid, revisar, revisarYAvisar, destinatarios, ultimoEvento };

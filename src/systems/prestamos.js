@@ -26,7 +26,9 @@ const totalDe = (cantidad) => Math.ceil((cantidad * (100 + INTERES)) / 100);
 /** El préstamo sin cerrar de alguien (activo o en deuda), con lo que le `falta` por devolver; null si no tiene. */
 function abierto(userId) {
     const p = db
-        .prepare("SELECT * FROM prestamos_duende WHERE userId = ? AND estado IN ('activo', 'deuda') ORDER BY id DESC LIMIT 1")
+        .prepare(
+            "SELECT id, userId, guildId, cantidad, total, pagado, estado, creado_en, vence_en, cerrado_en FROM prestamos_duende WHERE userId = ? AND estado IN ('activo', 'deuda') ORDER BY id DESC LIMIT 1",
+        )
         .get(String(userId));
     return p ? { ...p, falta: p.total - p.pagado } : null;
 }
@@ -104,7 +106,11 @@ function vencer(ahora = Date.now()) {
     const cobros = [];
     for (const { id } of db.prepare("SELECT id FROM prestamos_duende WHERE estado = 'activo' AND vence_en <= ?").all(ahora)) {
         const r = db.transaction(() => {
-            const p = db.prepare("SELECT * FROM prestamos_duende WHERE id = ? AND estado = 'activo'").get(id);
+            const p = db
+                .prepare(
+                    "SELECT id, userId, guildId, cantidad, total, pagado, estado, creado_en, vence_en, cerrado_en FROM prestamos_duende WHERE id = ? AND estado = 'activo'",
+                )
+                .get(id);
             if (!p) return null;
             let falta = p.total - p.pagado;
             const c = dinero.cuenta(p.userId);
@@ -139,7 +145,11 @@ function vencer(ahora = Date.now()) {
  */
 function cobrarDeuda(userId, maximo) {
     if (!(maximo > 0)) return 0;
-    const p = db.prepare("SELECT * FROM prestamos_duende WHERE userId = ? AND estado = 'deuda' LIMIT 1").get(String(userId));
+    const p = db
+        .prepare(
+            "SELECT id, userId, guildId, cantidad, total, pagado, estado, creado_en, vence_en, cerrado_en FROM prestamos_duende WHERE userId = ? AND estado = 'deuda' LIMIT 1",
+        )
+        .get(String(userId));
     if (!p) return 0;
     const cantidad = Math.min(p.total - p.pagado, maximo, dinero.efectivo(userId));
     if (cantidad <= 0 || !dinero.cobrar(userId, cantidad)) return 0;

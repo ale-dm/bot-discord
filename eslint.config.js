@@ -35,6 +35,8 @@ module.exports = [
         rules: {
             "max-lines-per-function": ["error", { max: 120, skipBlankLines: false, skipComments: false }],
             "max-lines": ["error", { max: 500, skipBlankLines: false, skipComments: false }],
+            // Una variable interna con el mismo nombre que una de fuera: lo que lee cada línea depende de dónde esté.
+            "no-shadow": "error",
         },
     },
     {

@@ -103,15 +103,61 @@ developer, sin liberar) y #244 (merge a developer, sin liberar).
 
 ## Para llegar a 10: hallazgos por área
 
-Un área llega a 10 cuando no le queda ningún hallazgo. Esto es lo que falta, con el esfuerzo que calculo. Se mide con los
-mismos comandos de la línea base.
+Estado tras la segunda pasada del 2026-10-10. Un área llega a 10 cuando no le queda ningún hallazgo medido.
 
 | Área | Puntos | Qué falta | Esfuerzo |
 |---|---|---|---|
-| Robustez | 10 | Nada: 0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`/`FIXME` | — |
-| Lint | 9 | Cero avisos, y ya hay límites de tamaño en ESLint (120 líneas por función y 500 por fichero en `src/`). El punto que falta no se anotó en la línea base, así que no hay hallazgo concreto que cerrar: hay que decidir qué se mide (por ejemplo `complexity`, `no-shadow`, `require-await`), medirlo y, si da avisos, resolverlos | Bajo, pero necesita una decisión |
-| Tamaño de funciones | 9 | 53 funciones de más de 60 líneas en 42 ficheros; las que tienen más son `juegos/apuestas/apuestas.js` (3), y con 2 cada una: `adminPanel/apuestas.js`, `adminPanel/niveles/usuarios.js`, `adminPanel/sistema.js`, `commands/duende/ia.js`, `commands/duende/imagen.js`, `juegos/apuestas/quiniela.js`, `juegos/casino/blackjack.js`, `paneles/tienda.js` y `services/stt.js`. Ficheros de más de 400 líneas: 8 (`apuestas.js` 499, `blackjack.js` 487, `tragaperras.js` 473, `paneles/retos.js` 472, `paneles/casino.js` 467, `adivinar.js` 439, `duende/perfiles.js` 439 y `plexFichas.js` 425) | Alto: es el trabajo grande que queda |
-| Organización | 8 | `juegos/` mezcla textos, reglas y flujo: `apuestas.js` (499) y los juegos de casino (`blackjack.js`, `tragaperras.js`, `adivinar.js`). Hay que decidir caso por caso qué regla sale a `systems/` | Medio |
-| Tests | 8 | Cobertura de líneas 85,3 % y de ramas 71,0 %. Por debajo del 60 % de líneas, en la administración: `adminPanel/apodos.js` (28 %), `adminPanel/audit.js` (29 %), `adminPanel/niveles/usuarios.js` (32 %) y `adminPanel/seerr.js` (46 %). **El resto del repositorio no se ha medido fichero a fichero**: el primer paso es medirlo y listar lo que quede por debajo | Medio |
-| Base de datos | 8 | Una clave foránea sin índice: `tienda.objetoId` → `objeto` (migración `042`). 69 `SELECT *` en 25 ficheros: no es un fallo, pero en las consultas calientes conviene listar las columnas. **Sin medir**: el plan de ejecución (`EXPLAIN QUERY PLAN`) de las consultas más usadas. Los 43 `CREATE INDEX` de hoy no son comparables con los 40 de la línea base, que se contaron de otra forma | Bajo para el índice; medio para el resto |
-| Documentación | 8 | Revisado hoy: README, SIGUIENTES_PASOS, FUNCIONALIDADES (tabla de comandos), PLEX_Y_SEERR (referencias al código), TAREAS, docs/README. Falta: decidir la política de merge (CONTRIBUTING pide squash, el historial tiene merges); verificar la sección de configuración de GitHub de CONTRIBUTING; y revisar DEPLOY línea a línea (hoy solo se ha revisado por nombres de comandos y de ficheros) | Bajo |
+| Robustez | 10 | Nada: 0 `catch` vacíos, 0 `console.log` en `src/`, 0 `TODO`/`FIXME`. | — |
+| Lint | 9 | Hecho: `no-shadow` activo, con 5 casos corregidos renombrando variables internas. Sigue en 9 porque no quedó anotado qué le faltaba en la línea base, así que no sé si el punto era otra regla. Medido por si acaso: `complexity` 15 da 62 avisos y 20 da 27; `require-await` 55; `consistent-return` 48. Hay que decidir cuál de ellas cuenta. | Bajo, pero necesita una decisión |
+| Tamaño de funciones | 9 | 53 funciones de más de 60 líneas en 42 ficheros (lista en la sección anterior). Ficheros de más de 400 líneas: 8. | Alto |
+| Organización | 8 | `juegos/` mezcla textos, reglas y flujo en `apuestas.js` (499) y en los juegos de casino. Hay que decidir caso por caso qué regla sale a `systems/`. | Medio |
+| Tests | 8 | Cobertura de todo el repositorio medida: 36 ficheros de `src/` están por debajo del 60 % de líneas o del 50 % de ramas (anexo abajo). | Medio-alto: son muchos tests nuevos |
+| Base de datos | 9 | Hecho: índice de `tienda.objetoId` (migración 042), 0 claves foráneas sin índice, `SELECT *` sustituido por columnas explícitas en 68 consultas (la de la migración 007 se queda a propósito, porque vuelca tablas de esquema desconocido), y el plan revisado en 344 consultas literales: 14 con `SCAN`, todas agregados o listas completas (saldos, ranking, cron) o tablas pequeñas de configuración y panel. Falta medir con volumen real: las pruebas usan muestras de 400 filas. El coste: esas listas de columnas hay que mantenerlas a mano si cambia el esquema. | Bajo |
+| Documentación | 8 | Revisado y corregido en esta pasada: README, FUNCIONALIDADES, SIGUIENTES_PASOS, PLEX_Y_SEERR, DEPLOY (sin `/diagnostico`, el enlace a DT-01 retirado y la copia de seguridad como decisión registrada). La política de merge quedó decidida (squash para feature, merge commit para `developer` → `main`). Falta: la sección de configuración de GitHub de CONTRIBUTING no se puede verificar desde aquí, no hay herramienta para la protección de ramas. | Bajo |
+
+Con los cambios de esta pasada, la media queda en 8,7 (Lint, Base de datos y Robustez, según la tabla).
+
+### Anexo: ficheros de src/ por debajo del objetivo (2026-10-10)
+
+Objetivo: 60 % de líneas y 50 % de ramas. Formato: líneas / ramas.
+
+| Fichero | Líneas | Ramas |
+|---|---|---|
+| `commands/voz/tts.js` | 11 % | 0 % |
+| `services/duende/herramientas/seerr.js` | 14 % | 0 % |
+| `core/interactionLog.js` | 19 % | 15 % |
+| `commands/voz/escuchar.js` | 22 % | 7 % |
+| `commands/voz/sonidos.js` | 22 % | 0 % |
+| `services/giphy.js` | 22 % | 9 % |
+| `paneles/cripto/mercado.js` | 26 % | 0 % |
+| `commands/voz/conversacion.js` | 27 % | 0 % |
+| `adminPanel/apodos.js` | 28 % | 18 % |
+| `systems/xp/roles.js` | 28 % | 33 % |
+| `adminPanel/audit.js` | 29 % | 25 % |
+| `commands/economia/trabajar.js` | 29 % | 0 % |
+| `commands/general/ping.js` | 30 % | 100 % |
+| `commands/plex/plex.js` | 30 % | 9 % |
+| `commands/progresion/pase.js` | 31 % | 0 % |
+| `adminPanel/niveles/usuarios.js` | 32 % | 30 % |
+| `systems/plexLinks.js` | 44 % | 32 % |
+| `juegos/apuestas/combinada.js` | 45 % | 14 % |
+| `adminPanel/seerr.js` | 46 % | 36 % |
+| `commands/duende/duende.js` | 46 % | 0 % |
+| `services/tautulliClient.js` | 48 % | 38 % |
+| `systems/duende/memoria.js` | 48 % | 18 % |
+| `systems/duende/personas.js` | 48 % | 43 % |
+| `services/duende/chat/enviar.js` | 49 % | 38 % |
+| `systems/guildSettings/acl.js` | 50 % | 30 % |
+| `commands/duende/bola8.js` | 56 % | 100 % |
+| `paneles/cripto/index.js` | 56 % | 25 % |
+| `commands/economia/robar.js` | 57 % | 46 % |
+| `systems/objetos.js` | 57 % | 41 % |
+| `systems/adminAudit.js` | 59 % | 62 % |
+| `juegos/casino/blackjack.js` | 62 % | 49 % |
+| `systems/xp/rachas.js` | 66 % | 43 % |
+| `juegos/casino/ruleta.js` | 71 % | 49 % |
+| `services/geminiClient.js` | 74 % | 31 % |
+| `services/duende/chat/generar.js` | 74 % | 40 % |
+| `juegos/casino/ppt.js` | 75 % | 44 % |
+
+Nota: `commands/duende/duende.js` aparece bajo porque es la fachada del comando; la lógica de `hablar` está en `services/duende/chat/`, y la cobertura de la voz en directo no se mide con tests (ver T-03).

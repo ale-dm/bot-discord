@@ -19,7 +19,7 @@ function getGenAI() {
     return client;
 }
 
-// Consumo acumulado desde el arranque (lo muestra /diagnostico).
+// Consumo acumulado desde el arranque (lo muestra /paneladmin → 🩺 Sistema).
 const usage = { llamadas: 0, errores: 0, cuotaAgotada: 0, tokensEntrada: 0, tokensSalida: 0 };
 
 function isQuotaError(err) {
