@@ -285,3 +285,164 @@ describe("reproducir bien: el sonido entero, sin dejar nada colgado", () => {
         expect(sonidos.sonando(G)).toBe(false);
     });
 });
+
+describe("renombrar y cambiar el archivo (#321)", () => {
+    const enDisco = (archivo) => fs.readFileSync(path.join(dir, G, archivo));
+    const bajada = (bytes, relleno) => async () => ({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => Buffer.alloc(bytes, relleno).buffer,
+    });
+
+    test("renombrar cambia el nombre y conserva el id", async () => {
+        const s = (await subir("Risa vieja")).sonido;
+        expect(sonidos.renombrar(G, s.id, "  Risa   de Ana ")).toMatchObject({ ok: true, sonido: { id: s.id, nombre: "Risa de Ana" } });
+    });
+
+    test("no admite el nombre de otro sonido del servidor, y sí el suyo en otras mayúsculas", async () => {
+        const gol = (await subir("Gol")).sonido;
+        await subir("Pitido");
+        expect(sonidos.renombrar(G, gol.id, "pitido").motivo).toMatch(/Ya hay un sonido/);
+        expect(sonidos.renombrar(G, gol.id, "GOL").ok).toBe(true);
+    });
+
+    test("renombrar un sonido que no existe, o a un nombre vacío, lo dice", async () => {
+        const tos = (await subir("Tos")).sonido;
+        expect(sonidos.renombrar(G, 999999, "Otro").motivo).toMatch(/ya no existe/);
+        expect(sonidos.renombrar(G, tos.id, "   ").motivo).toMatch(/vacío/);
+    });
+
+    test("cambiar el archivo mantiene id y nombre, y el fichero nuevo sustituye al anterior", async () => {
+        const campana = (await subir("Campana", "campana.mp3", 100)).sonido;
+        const r = await sonidos.reemplazarArchivo(G, campana.id, {
+            nombreArchivo: "campana2.mp3",
+            url: "u",
+            tamano: 50,
+            fetchFn: bajada(50, 7),
+        });
+        expect(r).toMatchObject({ ok: true, sonido: { id: campana.id, nombre: "Campana", archivo: `${campana.id}.mp3` } });
+        expect(enDisco(`${campana.id}.mp3`).equals(Buffer.alloc(50, 7))).toBe(true);
+    });
+
+    test("si la extensión cambia, el fichero anterior se borra", async () => {
+        const bocina = (await subir("Bocina", "bocina.mp3")).sonido;
+        const antes = path.join(dir, G, bocina.archivo);
+        expect(fs.existsSync(antes)).toBe(true);
+        const r = await sonidos.reemplazarArchivo(G, bocina.id, {
+            nombreArchivo: "bocina.ogg",
+            url: "u",
+            tamano: 10,
+            fetchFn: bajada(10, 3),
+        });
+        expect(r.sonido.archivo).toBe(`${bocina.id}.ogg`);
+        expect(fs.existsSync(antes)).toBe(false);
+        expect(fs.existsSync(path.join(dir, G, `${bocina.id}.ogg`))).toBe(true);
+    });
+
+    test("un archivo que no vale, o una descarga que falla, no toca el sonido", async () => {
+        const silbato = (await subir("Silbato", "silbato.mp3", 100)).sonido;
+        expect(
+            (await sonidos.reemplazarArchivo(G, silbato.id, { nombreArchivo: "x.exe", url: "u", tamano: 1, fetchFn: bajada(1, 1) })).motivo,
+        ).toMatch(/Formato/);
+        expect(
+            (await sonidos.reemplazarArchivo(G, silbato.id, { nombreArchivo: "x.mp3", url: "u", tamano: 2 * 1024 * 1024 })).motivo,
+        ).toMatch(/1 MB/);
+        expect(
+            (await sonidos.reemplazarArchivo(G, silbato.id, { nombreArchivo: "x.mp3", url: "u", tamano: 1, fetchFn: descarga(1, false) }))
+                .motivo,
+        ).toMatch(/descargar/);
+        expect(sonidos.obtener(G, silbato.id).archivo).toBe(silbato.archivo);
+        expect(fs.existsSync(path.join(dir, G, silbato.archivo))).toBe(true);
+    });
+});
+
+describe("correcciones de #468 y #469: cambio de archivo y tiempo de descarga", () => {
+    const { EventEmitter } = require("events");
+    const enDisco = (archivo) => fs.readFileSync(path.join(dir, G, archivo));
+    const bajada = (bytes, relleno) => async () => ({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => Buffer.alloc(bytes, relleno).buffer,
+    });
+    // Un reproductor que no termina hasta que se le pida (un sonido que está sonando).
+    const sonando = (s) => {
+        const reproductor = new EventEmitter();
+        reproductor.play = () => {};
+        reproductor.stop = () => {};
+        const conexion = { subscribe: () => ({ unsubscribe() {} }), once() {}, off() {} };
+        const pendiente = sonidos.reproducir(G, null, s, {
+            presencia: { conexion },
+            crearReproductor: () => reproductor,
+            crearRecurso: () => ({}),
+        });
+        return { reproductor, pendiente };
+    };
+
+    test("mientras se descarga el cambio, el servidor queda reservado y ningún sonido puede empezar", async () => {
+        const original = (await subir("Reservado", "r.mp3", 100)).sonido;
+        const otro = (await subir("Otro sonido", "o.mp3", 100)).sonido;
+        let liberar;
+        const retraso = new Promise((r) => (liberar = r));
+        const cambio = sonidos.reemplazarArchivo(G, original.id, {
+            nombreArchivo: "r2.mp3",
+            url: "u",
+            tamano: 10,
+            fetchFn: async () => {
+                await retraso;
+                return { ok: true, status: 200, arrayBuffer: async () => Buffer.alloc(10, 9).buffer };
+            },
+        });
+        await new Promise((r) => setImmediate(r));
+        expect(sonidos.sonando(G)).toBe(true);
+        expect((await sonidos.reproducir(G, null, otro, {})).motivo).toMatch(/Ya está sonando/);
+        liberar();
+        expect((await cambio).ok).toBe(true);
+        expect(sonidos.sonando(G)).toBe(false);
+    });
+
+    test("un sonido que ya suena impide el cambio, y el fichero no se toca", async () => {
+        const original = (await subir("Fijo", "f.mp3", 100)).sonido;
+        const otro = (await subir("Suena", "s.mp3", 100)).sonido;
+        const { reproductor, pendiente } = sonando(otro);
+        await new Promise((r) => setImmediate(r));
+        const r = await sonidos.reemplazarArchivo(G, original.id, {
+            nombreArchivo: "f2.mp3",
+            url: "u",
+            tamano: 10,
+            fetchFn: bajada(10, 5),
+        });
+        expect(r.ok).toBe(false);
+        expect(r.motivo).toMatch(/suena un sonido/);
+        expect(enDisco(original.archivo).equals(Buffer.alloc(100, 1))).toBe(true);
+        reproductor.emit("idle");
+        await pendiente;
+    });
+
+    test("una descarga que tarda más del tiempo límite avisa, no cambia nada y libera el servidor", async () => {
+        const original = (await subir("Lenta", "l.mp3", 100)).sonido;
+        const r = await sonidos.reemplazarArchivo(G, original.id, {
+            nombreArchivo: "l2.mp3",
+            url: "u",
+            tamano: 10,
+            tiempoMs: 30,
+            fetchFn: (url, { signal }) => new Promise((_, rechazar) => signal.addEventListener("abort", () => rechazar(signal.reason))),
+        });
+        expect(r.motivo).toMatch(/tiempo agotado/);
+        expect(enDisco(original.archivo).equals(Buffer.alloc(100, 1))).toBe(true);
+        expect(sonidos.sonando(G)).toBe(false);
+    });
+
+    test("un adjunto que anuncia más de 1 MB se rechaza sin leer el cuerpo", async () => {
+        const original = (await subir("Grande", "g.mp3", 100)).sonido;
+        const arrayBuffer = jest.fn(async () => Buffer.alloc(10, 1).buffer);
+        const r = await sonidos.reemplazarArchivo(G, original.id, {
+            nombreArchivo: "g2.mp3",
+            url: "u",
+            tamano: 10,
+            fetchFn: async () => ({ ok: true, status: 200, headers: new Map([["content-length", String(2 * 1024 * 1024)]]), arrayBuffer }),
+        });
+        expect(r.motivo).toMatch(/1 MB/);
+        expect(arrayBuffer).not.toHaveBeenCalled();
+        expect(sonidos.sonando(G)).toBe(false);
+    });
+});

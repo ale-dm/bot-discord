@@ -67,10 +67,9 @@ async function guardar(guildId, { nombre, archivo, userId }) {
         return { ok: false, motivo: `Ya hay un sonido que se llama «${n.nombre}».` };
     }
 
-    const descarga = await (archivo.fetchFn || fetch)(archivo.url);
-    if (!descarga.ok) return { ok: false, motivo: `No pude descargar el archivo (${descarga.status}).` };
-    const datos = Buffer.from(await descarga.arrayBuffer());
-    if (datos.length > MAX_BYTES) return { ok: false, motivo: "El archivo pasa de 1 MB." };
+    const descargado = await descargar(archivo);
+    if (!descargado.ok) return descargado;
+    const datos = descargado.datos;
 
     const { lastInsertRowid } = db
         .prepare("INSERT INTO sonidos (guildId, nombre, archivo, creado_por, creado_en) VALUES (?, ?, ?, ?, ?)")
@@ -87,6 +86,85 @@ async function guardar(guildId, { nombre, archivo, userId }) {
     db.prepare("UPDATE sonidos SET archivo = ? WHERE id = ?").run(nombreFichero, lastInsertRowid);
     log.info(`Sonido «${n.nombre}» añadido en ${guildId} por ${userId}`);
     return { ok: true, sonido: obtener(guildId, lastInsertRowid) };
+}
+
+// Tiempo máximo para descargar un adjunto (#469): antes de que caduque el token de la interacción (15 min).
+const TIEMPO_DESCARGA_MS = 15 * 1000;
+
+/**
+ * Descarga el archivo subido, con tiempo límite y mirando el tamaño anunciado antes de leer el cuerpo.
+ * Devuelve { ok, datos } o { ok: false, motivo }.
+ */
+async function descargar(archivo) {
+    const senal = AbortSignal.timeout(archivo.tiempoMs || TIEMPO_DESCARGA_MS);
+    try {
+        const descarga = await (archivo.fetchFn || fetch)(archivo.url, { signal: senal });
+        if (!descarga.ok) return { ok: false, motivo: `No pude descargar el archivo (${descarga.status}).` };
+        if (Number(descarga.headers?.get?.("content-length") || 0) > MAX_BYTES) return { ok: false, motivo: "El archivo pasa de 1 MB." };
+        const datos = Buffer.from(await descarga.arrayBuffer());
+        if (datos.length > MAX_BYTES) return { ok: false, motivo: "El archivo pasa de 1 MB." };
+        return { ok: true, datos };
+    } catch (e) {
+        if (e.name === "TimeoutError" || e.name === "AbortError") {
+            return { ok: false, motivo: "No pude descargar el archivo (tiempo agotado)." };
+        }
+        return { ok: false, motivo: "No pude descargar el archivo." };
+    }
+}
+
+/** Cambia el nombre de un sonido, con las mismas reglas que al subirlo (sin repetir el de otro sonido del servidor). */
+function renombrar(guildId, id, nombre) {
+    const n = validarNombre(nombre);
+    if (!n.ok) return n;
+    const sonido = obtener(guildId, id);
+    if (!sonido) return { ok: false, motivo: "Ese sonido ya no existe." };
+    if (
+        db
+            .prepare("SELECT 1 FROM sonidos WHERE guildId = ? AND nombre = ? COLLATE NOCASE AND id != ?")
+            .get(String(guildId), n.nombre, sonido.id)
+    ) {
+        return { ok: false, motivo: `Ya hay un sonido que se llama «${n.nombre}».` };
+    }
+    db.prepare("UPDATE sonidos SET nombre = ? WHERE id = ?").run(n.nombre, sonido.id);
+    log.info(`Sonido «${sonido.nombre}» renombrado a «${n.nombre}» en ${guildId}`);
+    return { ok: true, sonido: obtener(guildId, sonido.id) };
+}
+
+/**
+ * Sustituye el archivo de un sonido, manteniendo su id y su nombre. Si cambia la extensión, borra el fichero anterior.
+ * El servidor queda reservado desde antes de descargar hasta después de escribir (#468): ningún sonido puede empezar
+ * en medio, y no se cambia un fichero que está sonando.
+ */
+async function reemplazarArchivo(guildId, id, archivo) {
+    const sonido = obtener(guildId, id);
+    if (!sonido) return { ok: false, motivo: "Ese sonido ya no existe." };
+    const gid = String(guildId);
+    if (ocupados.has(gid)) return { ok: false, motivo: "Ahora mismo suena un sonido en el servidor. Prueba en un momento." };
+    const ext = path.extname(archivo.nombreArchivo || "").toLowerCase();
+    if (!EXTENSIONES.includes(ext)) return { ok: false, motivo: `Formato no válido. Vale ${EXTENSIONES.join(", ")}.` };
+    if (Number(archivo.tamano || 0) > MAX_BYTES) return { ok: false, motivo: "El archivo pasa de 1 MB." };
+
+    // Desde aquí no hay más await hasta reservar: la comprobación de arriba sigue valiendo.
+    ocupados.add(gid);
+    try {
+        const descargado = await descargar(archivo);
+        if (!descargado.ok) return descargado;
+
+        const nombreFichero = `${sonido.id}${ext}`;
+        try {
+            fs.mkdirSync(carpetaDe(guildId), { recursive: true });
+            fs.writeFileSync(path.join(carpetaDe(guildId), nombreFichero), descargado.datos);
+        } catch (e) {
+            log.warn(`No se pudo cambiar el archivo de ${sonido.nombre}: ${e.message}`);
+            return { ok: false, motivo: "No pude guardar el archivo." };
+        }
+        db.prepare("UPDATE sonidos SET archivo = ? WHERE id = ?").run(nombreFichero, sonido.id);
+        if (sonido.archivo !== nombreFichero) fs.rmSync(rutaDe(sonido), { force: true });
+        log.info(`Archivo de «${sonido.nombre}» cambiado en ${guildId}`);
+        return { ok: true, sonido: obtener(guildId, sonido.id) };
+    } finally {
+        ocupados.delete(gid);
+    }
 }
 
 /** Borra un sonido (la fila y el fichero). */
@@ -230,6 +308,8 @@ module.exports = {
     obtener,
     rutaDe,
     guardar,
+    renombrar,
+    reemplazarArchivo,
     borrar,
     borrarPorNombre,
     reproducir,
