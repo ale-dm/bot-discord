@@ -57,9 +57,10 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 ## 4. Ideas abiertas y plan
 
 Hay 185 issues abiertas: 3 bugs (#468–#470), 10 refactors de arquitectura (#471–#480), 7 de rendimiento (#481–#487), 150 features y 15 anteriores.
-El orden de trabajo está en [PLAN_ISSUES](planificacion/PLAN_ISSUES.md), en cuatro fases con condición de salida:
+El orden de trabajo está en [PLAN_ISSUES](planificacion/PLAN_ISSUES.md), en fases (0 a 15), cada una con su condición de salida:
 0) cerrar lo abierto (bugs de sonidos, PR de sonidos, verificación de modales, medición), 1) victorias rápidas sin
-refactor, 2) cimientos de arquitectura y el rendimiento que los necesita, 3) features por dominio.
+refactor, 2) cimientos de arquitectura y el rendimiento que los necesita, 3 a 15) features por dominio, en fases de como
+mucho 13 issues.
 
 ## 5. Mapa de lo nuevo
 

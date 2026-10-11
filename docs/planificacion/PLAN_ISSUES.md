@@ -33,10 +33,23 @@ en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
 | [0](#fase-0-cerrar-lo-abierto-y-medir) | Cerrar lo abierto: bugs de sonidos, PR de sonidos, verificación de modales, medición | 14 | Sonidos en `developer`; medición publicada; decisiones tomadas |
 | [1](#fase-1-victorias-rápidas-sin-refactor) | Victorias rápidas que no dependen de refactors | 11 | Sonidos y dedupe probados en Discord; mediciones antes/después |
 | [2](#fase-2-cimientos-refactor-y-rendimiento-que-depende-de-ellos) | Refactors de arquitectura y los dos rendimientos que los necesitan | 12 | `grep` de dependencias limpio; tests de comportamiento sin cambios |
-| [3](#fase-3-features-por-dominio) | Features por dominio, cada grupo cuando su refactor está hecho | 148 | Cada grupo probado en Discord y cerrado |
+| [3](#fase-3-juego-responsable-y-casino) | Juego responsable y casino | 13 | Probado en Discord y cerrado |
+| [4](#fase-4-apuestas-y-quinielas) | Apuestas y quinielas | 11 | Probado en Discord y cerrado |
+| [5](#fase-5-pase-de-batalla-y-sonidos-avanzados) | Pase de batalla y sonidos avanzados | 13 | Probado en Discord y cerrado |
+| [6](#fase-6-niveles-xp-y-logros) | Niveles, XP y logros | 11 | Probado en Discord y cerrado |
+| [7](#fase-7-economía-y-tienda) | Economía y tienda | 12 | Probado en Discord y cerrado |
+| [8](#fase-8-impuestos-y-robos) | Impuestos y robos | 2 | Probado en Discord y cerrado |
+| [9](#fase-9-perfil-clasificación-y-patrimonio) | Perfil, clasificación y patrimonio | 12 | Probado en Discord y cerrado |
+| [10](#fase-10-criptomonedas) | Criptomonedas | 13 | Probado en Discord y cerrado |
+| [11](#fase-11-retos-entre-jugadores) | Retos entre jugadores | 12 | Probado en Discord y cerrado |
+| [12](#fase-12-el-duende-e-ia) | El Duende e IA | 13 | Probado en Discord y cerrado |
+| [13](#fase-13-plex-y-seerr) | Plex y Seerr | 13 | Probado en Discord y cerrado |
+| [14](#fase-14-administración-y-tareas-automáticas) | Administración y tareas automáticas | 12 | Probado en Discord y cerrado |
+| [15](#fase-15-utilidades-y-comandos-generales) | Utilidades y comandos generales | 11 | Probado en Discord y cerrado |
 
-Cada fase depende de la anterior, salvo indicación. Dentro de una fase, los grupos son independientes entre sí y pueden
-ir en paralelo.
+Las fases 0 a 2 van en orden. Las fases 3 a 15 son independientes entre sí: cada una empieza cuando la fase 2 está
+hecha y sus requisitos (columna *Requiere* de cada grupo) también. Dentro de una fase, los grupos pueden ir en paralelo.
+Ninguna fase tiene más de 13 issues.
 
 ## Riesgos
 
@@ -92,12 +105,12 @@ Es la fase que bloquea todo lo demás: sin ella, la rama de sonidos no se puede 
 
 Ninguna de estas bloquea código ahora, pero cada una bloquea un grupo de la fase 3 si no se toma:
 
-- **#432 o #414**: avisar a la víctima de `/robar` siempre, o solo si lo activa. Se excluyen entre sí. Bloquea 3.6 y 3.5.
-- **#422 o #431**: alertas de administración y preferencias personales, unidas o separadas. Bloquea 3.13 y 3.5.
-- **#319**: pérdidas netas o total apostado. Bloquea 3.1.
-- **#397**: si el interés del impuesto de patrimonio se exime también. Bloquea 3.7.
-- **#324**: si el cooldown de sonidos aplica a los admins (propuesta: no). Bloquea 1.
-- **#297**: si el probar del admin cuenta en las estadísticas (propuesta: sí). Bloquea 1.
+- **#432 o #414**: avisar a la víctima de `/robar` siempre, o solo si lo activa. Se excluyen entre sí. Bloquea las fases 8 y 15.
+- **#422 o #431**: alertas de administración y preferencias personales, unidas o separadas. Bloquea las fases 14 y 15.
+- **#319**: pérdidas netas o total apostado. Bloquea la fase 3.
+- **#397**: si el interés del impuesto de patrimonio se exime también. Bloquea la fase 9.
+- **#324**: si el cooldown de sonidos aplica a los admins (propuesta: no). Bloquea la fase 1.
+- **#297**: si el probar del admin cuenta en las estadísticas (propuesta: sí). Bloquea la fase 1.
 
 **Condición de salida de la fase 0:** #321 y #322 mergeadas a `developer` con #468 y #469 arreglados; #481 publicada; los
 modales (#305–#310) verificados en Discord; las decisiones de arriba registradas en su issue.
@@ -174,28 +187,13 @@ sin ciclos nuevos (#479); tests de comportamiento sin cambios en sus expectativa
 
 ---
 
-## Fase 3: features por dominio
+## Fase 3: Juego responsable y casino
 
-Cada grupo empieza cuando su refactor está hecho (columna *Requiere*). Los grupos son independientes entre sí. Si se
-trabajan en paralelo, cada uno va en su PR.
+Requiere: la fase 2 completa, y lo que indique cada grupo.
 
-**Orden sugerido**, por valor frente a riesgo (los primeros tienen menos dependencias abiertas):
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
 
-1. 3.1 Juego responsable, 3.2 Apuestas, 3.6 Economía, 3.8 Casino.
-2. 3.9 Criptomonedas, 3.10 Retos, 3.3 Pase, 3.4 Niveles.
-3. 3.11 Duende, 3.12 Plex y Seerr, 3.13 Administración.
-4. 3.5 Utilidades, 3.7 Perfil. Y 3.0 Sonidos avanzados, cuando #472 esté hecho.
-
-### 3.0 Sonidos avanzados (2)
-
-*Requiere: #471, #472.*
-
-| # | Título | Decisión pendiente |
-|---|---|---|
-| [#326](https://github.com/ale-dm/bot-discord/issues/326) | Sonidos ligados a eventos | ¿Cuántos eventos en la primera versión? (propuesta: dos) |
-| [#301](https://github.com/ale-dm/bot-discord/issues/301) | Sonido de entrada al usar `/conectar` | — |
-
-### 3.1 Juego responsable (4)
+### Juego responsable (4)
 
 *Requiere: #474.*
 
@@ -206,7 +204,29 @@ trabajan en paralelo, cada uno va en su PR.
 | [#461](https://github.com/ale-dm/bot-discord/issues/461) | Cooldown por juego | — |
 | [#463](https://github.com/ale-dm/bot-discord/issues/463) | Autoexclusión temporal del casino | — |
 
-### 3.2 Apuestas y quinielas (11)
+### Casino (9)
+
+*Requiere: #474, #484 (el resumen, antes de añadir nuevas jugadas).*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#333](https://github.com/ale-dm/bot-discord/issues/333) | Seguro en blackjack | — |
+| [#337](https://github.com/ale-dm/bot-discord/issues/337) | Rendirse en blackjack | Mitad de la apuesta |
+| [#343](https://github.com/ale-dm/bot-discord/issues/343) | Pista de estrategia básica | — |
+| [#354](https://github.com/ale-dm/bot-discord/issues/354) | Tirada automática en la tragaperras | — |
+| [#456](https://github.com/ale-dm/bot-discord/issues/456) | Historial de jackpots ganados | — |
+| [#457](https://github.com/ale-dm/bot-discord/issues/457) | PPT al mejor de tres | — |
+| [#458](https://github.com/ale-dm/bot-discord/issues/458) | Últimos números de la ruleta | — |
+| [#459](https://github.com/ale-dm/bot-discord/issues/459) | Apuesta a calle en la ruleta | Pago 11 a 1 |
+| [#462](https://github.com/ale-dm/bot-discord/issues/462) | Doble o nada tras ganar | — |
+
+## Fase 4: Apuestas y quinielas
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Apuestas y quinielas (11)
 
 *Requiere: #473, #474.*
 
@@ -224,7 +244,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#380](https://github.com/ale-dm/bot-discord/issues/380) | Liga de pronósticos por competición | — |
 | [#384](https://github.com/ale-dm/bot-discord/issues/384) | Guardar el borrador de la quiniela | — |
 
-### 3.3 Pase de batalla (11)
+## Fase 5: Pase de batalla y sonidos avanzados
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Pase de batalla (11)
 
 *Requiere: #472, #473.*
 
@@ -242,7 +268,22 @@ trabajan en paralelo, cada uno va en su PR.
 | [#359](https://github.com/ale-dm/bot-discord/issues/359) | XP de pase por retos ganados | Tope propio |
 | [#364](https://github.com/ale-dm/bot-discord/issues/364) | Un nivel puede dar un objeto | — |
 
-### 3.4 Niveles, XP y logros (11)
+### Sonidos avanzados (2)
+
+*Requiere: #471, #472.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#326](https://github.com/ale-dm/bot-discord/issues/326) | Sonidos ligados a eventos | ¿Cuántos eventos en la primera versión? (propuesta: dos) |
+| [#301](https://github.com/ale-dm/bot-discord/issues/301) | Sonido de entrada al usar `/conectar` | — |
+
+## Fase 6: Niveles, XP y logros
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Niveles, XP y logros (11)
 
 *Requiere: #472, #480, #483 (la XP por mensaje, para no añadir consultas).*
 
@@ -260,25 +301,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#378](https://github.com/ale-dm/bot-discord/issues/378) | Recordatorio semanal de logros sin reclamar | — |
 | [#383](https://github.com/ale-dm/bot-discord/issues/383) | Logros de XP ganada en un solo día | Umbrales (1.000 y 3.000) |
 
-### 3.5 Utilidades y comandos generales (11)
+## Fase 7: Economía y tienda
 
-*Requiere: #477, #471 (para `/recordar`, que usa el planificador).*
+Requiere: la fase 2 completa, y lo que indique cada grupo.
 
-| # | Título | Decisión pendiente |
-|---|---|---|
-| [#320](https://github.com/ale-dm/bot-discord/issues/320) | `/recordar`: avisos personales por DM | Máximo de recordatorios (propuesta: 10) |
-| [#426](https://github.com/ale-dm/bot-discord/issues/426) | `/encuesta` en el canal | — |
-| [#427](https://github.com/ale-dm/bot-discord/issues/427) | Felicitación automática de cumpleaños | — |
-| [#428](https://github.com/ale-dm/bot-discord/issues/428) | Buzón de sugerencias con votos | — |
-| [#429](https://github.com/ale-dm/bot-discord/issues/429) | Buscar en `/ayuda` por palabra | — |
-| [#430](https://github.com/ale-dm/bot-discord/issues/430) | Presentación personal en el perfil | — |
-| [#431](https://github.com/ale-dm/bot-discord/issues/431) | Preferencias de avisos por DM con `/avisos` | Relación con #422 |
-| [#432](https://github.com/ale-dm/bot-discord/issues/432) | Avisar a la víctima de `/robar` por DM | Decidir con #414 (siempre o por opción) |
-| [#433](https://github.com/ale-dm/bot-discord/issues/433) | Publicar en un canal desde `/mensaje` | — |
-| [#434](https://github.com/ale-dm/bot-discord/issues/434) | Aviso cuando vuelve `/trabajar` o `/robar` | — |
-| [#435](https://github.com/ale-dm/bot-discord/issues/435) | Mensaje de bienvenida | — |
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
 
-### 3.6 Economía, tienda y banco (13)
+### Economía, tienda y banco (12)
 
 *Requiere: #473, #476, y #484 (el resumen del casino, de la fase 2).*
 
@@ -288,18 +317,37 @@ trabajan en paralelo, cada uno va en su PR.
 | [#374](https://github.com/ale-dm/bot-discord/issues/374) | Mercado de objetos entre jugadores | Comisión |
 | [#379](https://github.com/ale-dm/bot-discord/issues/379) | Vender objetos a la tienda | Porcentaje (propuesta: 50 %) |
 | [#387](https://github.com/ale-dm/bot-discord/issues/387) | Mejora de negocios por niveles | Coste de cada nivel |
-| [#392](https://github.com/ale-dm/bot-discord/issues/392) | Impuesto de ingresos por tramos | Tramos y porcentajes |
 | [#404](https://github.com/ale-dm/bot-discord/issues/404) | Lista de deseos con avisos por DM | — |
 | [#409](https://github.com/ale-dm/bot-discord/issues/409) | Códigos canjeables | — |
 | [#411](https://github.com/ale-dm/bot-discord/issues/411) | Exportar movimientos a CSV | — |
 | [#412](https://github.com/ale-dm/bot-discord/issues/412) | Precio dinámico en la tienda | Tope y ritmo de vuelta |
 | [#413](https://github.com/ale-dm/bot-discord/issues/413) | Ofertas temporales | — |
-| [#414](https://github.com/ale-dm/bot-discord/issues/414) | Aviso opcional a la víctima de un robo | Decidir con #432 |
 | [#415](https://github.com/ale-dm/bot-discord/issues/415) | Meta comunitaria financiada con el bote | — |
 | [#416](https://github.com/ale-dm/bot-discord/issues/416) | Sueldo diario por rol de Discord | Impuesto aplicable |
 | [#487](https://github.com/ale-dm/bot-discord/issues/487) | El panel de economía recalcula todo en cada clic | Medir por partes (#481) |
 
-### 3.7 Perfil, clasificación y patrimonio (12)
+## Fase 8: Impuestos y robos
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Impuestos y robos (2)
+
+*Requiere: #473, #476, y #484 (el resumen del casino, de la fase 2).*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#392](https://github.com/ale-dm/bot-discord/issues/392) | Impuesto de ingresos por tramos | Tramos y porcentajes |
+| [#414](https://github.com/ale-dm/bot-discord/issues/414) | Aviso opcional a la víctima de un robo | Decidir con #432 |
+
+## Fase 9: Perfil, clasificación y patrimonio
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Perfil, clasificación y patrimonio (12)
 
 *Requiere: #472, #473.*
 
@@ -318,23 +366,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#397](https://github.com/ale-dm/bot-discord/issues/397) | Exención del impuesto de patrimonio por rol | Interés aún por decidir |
 | [#401](https://github.com/ale-dm/bot-discord/issues/401) | Ranking de patrimonio neto | — |
 
-### 3.8 Casino (9)
+## Fase 10: Criptomonedas
 
-*Requiere: #474, #484 (el resumen, antes de añadir nuevas jugadas).*
+Requiere: la fase 2 completa, y lo que indique cada grupo.
 
-| # | Título | Decisión pendiente |
-|---|---|---|
-| [#333](https://github.com/ale-dm/bot-discord/issues/333) | Seguro en blackjack | — |
-| [#337](https://github.com/ale-dm/bot-discord/issues/337) | Rendirse en blackjack | Mitad de la apuesta |
-| [#343](https://github.com/ale-dm/bot-discord/issues/343) | Pista de estrategia básica | — |
-| [#354](https://github.com/ale-dm/bot-discord/issues/354) | Tirada automática en la tragaperras | — |
-| [#456](https://github.com/ale-dm/bot-discord/issues/456) | Historial de jackpots ganados | — |
-| [#457](https://github.com/ale-dm/bot-discord/issues/457) | PPT al mejor de tres | — |
-| [#458](https://github.com/ale-dm/bot-discord/issues/458) | Últimos números de la ruleta | — |
-| [#459](https://github.com/ale-dm/bot-discord/issues/459) | Apuesta a calle en la ruleta | Pago 11 a 1 |
-| [#462](https://github.com/ale-dm/bot-discord/issues/462) | Doble o nada tras ganar | — |
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
 
-### 3.9 Criptomonedas (13)
+### Criptomonedas (13)
 
 *Requiere: #473.*
 
@@ -354,7 +392,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#454](https://github.com/ale-dm/bot-discord/issues/454) | Tope de impacto en el precio | Valor del tope |
 | [#455](https://github.com/ale-dm/bot-discord/issues/455) | Cooldown visible en el panel | — |
 
-### 3.10 Retos entre jugadores (12)
+## Fase 11: Retos entre jugadores
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Retos entre jugadores (12)
 
 *Requiere: #472, #474.*
 
@@ -373,7 +417,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#450](https://github.com/ale-dm/bot-discord/issues/450) | Bloquear retos de una persona | — |
 | [#452](https://github.com/ale-dm/bot-discord/issues/452) | Aviso por DM cuando te toca jugar | — |
 
-### 3.11 El Duende e IA (13)
+## Fase 12: El Duende e IA
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### El Duende e IA (13)
 
 *Requiere: #472, #475, #486 (el historial, antes de añadir más memoria).*
 
@@ -393,7 +443,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#405](https://github.com/ale-dm/bot-discord/issues/405) | Olvidar una sola nota de un perfil | — |
 | [#408](https://github.com/ale-dm/bot-discord/issues/408) | Cuota diaria de imágenes por persona | Valor (propuesta: 10) |
 
-### 3.12 Plex y Seerr (13)
+## Fase 13: Plex y Seerr
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Plex y Seerr (13)
 
 *Requiere: #478.*
 
@@ -413,7 +469,13 @@ trabajan en paralelo, cada uno va en su PR.
 | [#466](https://github.com/ale-dm/bot-discord/issues/466) | Lista de «quiero ver» con aviso | — |
 | [#467](https://github.com/ale-dm/bot-discord/issues/467) | Trofeo por ver días seguidos | Días (propuesta: 7 y 30) |
 
-### 3.13 Administración y tareas automáticas (12)
+## Fase 14: Administración y tareas automáticas
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Administración y tareas automáticas (12)
 
 *Requiere: #471, #473.*
 
@@ -432,7 +494,29 @@ trabajan en paralelo, cada uno va en su PR.
 | [#424](https://github.com/ale-dm/bot-discord/issues/424) | `/mensaje` programado | — |
 | [#425](https://github.com/ale-dm/bot-discord/issues/425) | Modo mantenimiento | — |
 
----
+## Fase 15: Utilidades y comandos generales
+
+Requiere: la fase 2 completa, y lo que indique cada grupo.
+
+Condición de salida: cada issue de la fase probada en Discord y cerrada, con `npm run check` en verde.
+
+### Utilidades y comandos generales (11)
+
+*Requiere: #477, #471 (para `/recordar`, que usa el planificador).*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#320](https://github.com/ale-dm/bot-discord/issues/320) | `/recordar`: avisos personales por DM | Máximo de recordatorios (propuesta: 10) |
+| [#426](https://github.com/ale-dm/bot-discord/issues/426) | `/encuesta` en el canal | — |
+| [#427](https://github.com/ale-dm/bot-discord/issues/427) | Felicitación automática de cumpleaños | — |
+| [#428](https://github.com/ale-dm/bot-discord/issues/428) | Buzón de sugerencias con votos | — |
+| [#429](https://github.com/ale-dm/bot-discord/issues/429) | Buscar en `/ayuda` por palabra | — |
+| [#430](https://github.com/ale-dm/bot-discord/issues/430) | Presentación personal en el perfil | — |
+| [#431](https://github.com/ale-dm/bot-discord/issues/431) | Preferencias de avisos por DM con `/avisos` | Relación con #422 |
+| [#432](https://github.com/ale-dm/bot-discord/issues/432) | Avisar a la víctima de `/robar` por DM | Decidir con #414 (siempre o por opción) |
+| [#433](https://github.com/ale-dm/bot-discord/issues/433) | Publicar en un canal desde `/mensaje` | — |
+| [#434](https://github.com/ale-dm/bot-discord/issues/434) | Aviso cuando vuelve `/trabajar` o `/robar` | — |
+| [#435](https://github.com/ale-dm/bot-discord/issues/435) | Mensaje de bienvenida | — |
 
 ## Cómo se cierra una issue
 
