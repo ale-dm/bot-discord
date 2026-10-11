@@ -1,7 +1,7 @@
 # Siguientes pasos
 
 Para quien coja el proyecto ahora: dónde está, qué comprobar primero y qué decisiones quedan abiertas. Actualizado el
-2026-10-10. Si algo de aquí ya está hecho, borrarlo (y apuntarlo en el [CHANGELOG](CHANGELOG.md)).
+2026-10-11. Si algo de aquí ya está hecho, borrarlo (y apuntarlo en el [CHANGELOG](CHANGELOG.md)).
 
 Para entender el proyecto en general: [README](../README.md) (puesta en marcha y convenciones),
 [FUNCIONALIDADES](FUNCIONALIDADES.md) (qué hace el bot), [DEPLOY](DEPLOY.md) (cómo se despliega) y las ideas, que son
@@ -46,24 +46,20 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
   los permisos del servidor los decide el servidor. Si se quieren, se harían uno a uno y con confirmación explícita.
 - **Recompensa del pase**: ahora son monedas (80…2.500, más un bonus de 2.000 al final). Se podría cambiar a TTCL.
 - **Cancelar una combinada** antes de que empiece algún partido (hoy solo se cancelan apuestas sueltas).
-- **Sonidos**: el próximo paso acordado es mejorar el funcionamiento de `/sonidos`. Antes de empezar, hay que decidir
-  qué se quiere mejorar (ver el apartado 4).
+- **Sonidos**: #321 (renombrar y cambiar archivo) y #322 (probar desde el panel) están hechas en
+  `claude/compassionate-newton-udiuga`, sin probar en Discord. Lo siguiente son los bugs #468–#470 y luego la ola 1
+  del [plan](planificacion/PLAN_ISSUES.md).
 - **Trofeos por país**: dependen de que Tautulli devuelva los `guid` `tmdb://`. Si no lo hace, los trofeos por país no
   salen.
 - **Recomendaciones de Seerr**: se asume que `/{movie|tv}/{id}/recommendations` responde como en la documentación. Si
   devuelve otra cosa, el panel "🎯 Para ti" quedaría vacío sin error.
 
-## 4. Ideas abiertas (sin empezar)
+## 4. Ideas abiertas y plan
 
-Son issues con la etiqueta `feature-idea`. De las que más aportan con menos trabajo, en orden de esfuerzo estimado:
-
-- Alertas de precio de TTCL por DM (S).
-- Cancelar combinadas antes de que empiecen (S).
-- Estadísticas de uso de los sonidos: cuáles se usan más (S).
-- Sonido de entrada al usar `/conectar` (M).
-- Estrenos de la semana en `/plex`, con 📥 para pedirlos (M).
-- Resumen diario del canal del Duende (M).
-- Historial de temporadas del pase (M).
+Hay 178 issues abiertas: 3 bugs (#468–#470), 10 refactors de arquitectura (#471–#480), 150 features y 15 anteriores.
+El orden de trabajo, por olas y grupos, con las dependencias de cada grupo y las decisiones pendientes, está en
+[PLAN_ISSUES](planificacion/PLAN_ISSUES.md). Resumen: primero los bugs y la verificación en Discord de los modales,
+luego los sonidos, después los refactors de cimientos y por último las features por área.
 
 ## 5. Mapa de lo nuevo
 

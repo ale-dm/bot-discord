@@ -1,0 +1,358 @@
+# Plan de las issues abiertas
+
+Estado a 2026-10-11: **178 issues abiertas**, en cuatro tipos:
+
+| Tipo | Nº | Números |
+|---|---|---|
+| Bugs | 3 | #468, #469, #470 |
+| Refactor (arquitectura limpia) | 10 | #471 a #480 |
+| Features nuevas | 150 | #318 a #320 y #321 a #467 |
+| Anteriores (ideas, modales, docs) | 15 | #282, #296 a #303, #305 a #310 |
+
+Este documento es el orden de trabajo. Cada issue aparece una vez, en un grupo. Si cambia algo, actualizar aquí y en
+[SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
+
+## Principios
+
+1. **Bugs antes que features.** Los tres de #468 a #470 afectan a lo que ya está en producción o en la rama de sonidos.
+2. **Cimientos antes que el área.** Un grupo de features que toca código acoplado empieza después de su refactor
+   (columna *Requiere*). Así no se añade acoplamiento nuevo.
+3. **Los refactors no cambian el comportamiento.** Su criterio es que los tests de comportamiento pasen sin tocar sus
+   expectativas, y que el grep de dependencias quede limpio.
+4. **Cada grupo termina con una prueba en Discord** de lo que se ha tocado, antes de cerrar sus issues.
+5. **Un grupo, un PR a `developer`** (squash), y de `developer` a `main` cuando se pida la release.
+
+## Olas
+
+| Ola | Qué | Por qué en este orden |
+|---|---|---|
+| 0 | Bugs #468–#470 y verificación en Discord | Son fallos reales; la verificación no cuesta código |
+| 1 | Sonidos (#321–#330, #297, #301) | Es lo que se empezó; #323 depende de #470 |
+| 2 | Cimientos: refactor #479, #477, #471, #473, #472, #474, #476, #475, #478, #480 | Desbloquean las features de cada área |
+| 3 | Features por grupo (3.1 a 3.13) | Cada grupo cuando su refactor esté hecho |
+
+---
+
+## Ola 0: bugs y verificación
+
+### Bugs
+
+| # | Título | Prioridad | Nota |
+|---|---|---|---|
+| [#468](https://github.com/ale-dm/bot-discord/issues/468) | Cambiar el archivo mientras suena otro lo sobrescribe | Alta | En código de #321 (rama de sonidos). Corregir antes de subir a `developer` |
+| [#469](https://github.com/ale-dm/bot-discord/issues/469) | La descarga del archivo no tiene tiempo límite | Media | También en código de #321 |
+| [#470](https://github.com/ale-dm/bot-discord/issues/470) | Listas de Discord cortadas a 25 sin avisar | Media | Existía antes; #323 lo resuelve en parte |
+
+### Verificación en Discord (sin código nuevo)
+
+| # | Qué probar | Estado |
+|---|---|---|
+| [#305](https://github.com/ale-dm/bot-discord/issues/305) | G1: sí/no en grupos de radio | Pendiente |
+| [#306](https://github.com/ale-dm/bot-discord/issues/306) | G2: canales con selector | Pendiente |
+| [#307](https://github.com/ale-dm/bot-discord/issues/307) | G3: roles y personas con selector | Pendiente |
+| [#308](https://github.com/ale-dm/bot-discord/issues/308) | G4: opciones cerradas y horas | Pendiente |
+| [#309](https://github.com/ale-dm/bot-discord/issues/309) | G5: importes rápidos | Pendiente |
+| [#310](https://github.com/ale-dm/bot-discord/issues/310) | G6: ruleta en dos pasos y cine | Pendiente |
+| [#303](https://github.com/ale-dm/bot-discord/issues/303) | Idea original de los modales | Cerrar cuando #305–#310 pasen |
+| [#321](https://github.com/ale-dm/bot-discord/issues/321) | Renombrar y cambiar archivo | Hecho en `claude/compassionate-newton-udiuga`, sin probar en Discord |
+| [#322](https://github.com/ale-dm/bot-discord/issues/322) | Probar desde el panel | Hecho en la misma rama, sin probar en Discord |
+| [#282](https://github.com/ale-dm/bot-discord/issues/282) | Protección de ramas y Project board | Lo tiene que hacer el dueño en GitHub |
+
+---
+
+## Ola 1: sonidos
+
+Orden sugerido: #468, #469, #470, luego las features.
+
+| # | Título | Requiere | Decisión pendiente |
+|---|---|---|---|
+| [#323](https://github.com/ale-dm/bot-discord/issues/323) | Buscar en /sonidos por nombre | #470 | — |
+| [#324](https://github.com/ale-dm/bot-discord/issues/324) | Cooldown por persona y sonido aleatorio | — | ¿El cooldown aplica a los admins? (propuesta: no) |
+| [#297](https://github.com/ale-dm/bot-discord/issues/297) | Estadísticas de uso de sonidos | — | Si cuenta el probar del admin (#322: propuesta: sí) |
+| [#325](https://github.com/ale-dm/bot-discord/issues/325) | Categorías para agrupar | Migración nueva | ¿Listas fijas o libres? (propuesta: libres) |
+| [#327](https://github.com/ale-dm/bot-discord/issues/327) | Cola de sonidos en vez de rechazar | — | Tamaño de la cola (propuesta: 5) |
+| [#328](https://github.com/ale-dm/bot-discord/issues/328) | Volumen por sonido | — | Rango (propuesta: 25 % a 200 %) |
+| [#329](https://github.com/ale-dm/bot-discord/issues/329) | Sonidos solo para ciertos roles | — | — |
+| [#330](https://github.com/ale-dm/bot-discord/issues/330) | Horario de silencio | — | — |
+| [#326](https://github.com/ale-dm/bot-discord/issues/326) | Sonidos ligados a eventos | #472 | ¿Cuántos eventos en la primera versión? (propuesta: dos) |
+| [#301](https://github.com/ale-dm/bot-discord/issues/301) | Sonido de entrada al usar `/conectar` | #472 | — |
+
+---
+
+## Ola 2: cimientos (refactor)
+
+Orden: #479 → #477 → #471 → #473 → #472 → #474 → #476 → #475 → #478 → #480.
+
+| # | Título | Desbloquea | Criterio |
+|---|---|---|---|
+| [#479](https://github.com/ale-dm/bot-discord/issues/479) | Medir ciclos de dependencias y bloquear los nuevos | Todos (sin medir no sabemos si los refactors ayudan) | `npm run check` falla con un ciclo nuevo |
+| [#477](https://github.com/ale-dm/bot-discord/issues/477) | `core/` sin `discord.js` | #471, #472 | `grep` de `discord.js` en `core/` vacío |
+| [#471](https://github.com/ale-dm/bot-discord/issues/471) | Punto de composición para las tareas | Admin (#420, #421), sonidos (#326) | `core/` no importa `systems` |
+| [#473](https://github.com/ale-dm/bot-discord/issues/473) | Repositorios para el SQL de paneles y juegos | Economía, perfil, cripto, apuestas, admin | Sin `db.prepare` en paneles, admin, juegos |
+| [#472](https://github.com/ale-dm/bot-discord/issues/472) | `systems/` sin embeds ni Discord | Pase, niveles, perfil, retos, Duende, sonidos | `grep` de `discord.js` en `systems/` vacío |
+| [#474](https://github.com/ale-dm/bot-discord/issues/474) | Reglas de los juegos separadas de los manejadores | Casino, apuestas, retos, juego responsable | Quiniela con tests sin Discord |
+| [#476](https://github.com/ale-dm/bot-discord/issues/476) | `perfil/dinero.js` partido en enrutador y casos de uso | Economía | Enrutador sin cálculos |
+| [#475](https://github.com/ale-dm/bot-discord/issues/475) | Herramientas del Duende con dependencias inyectadas | Duende | Sin `require` diferido en herramientas |
+| [#478](https://github.com/ale-dm/bot-discord/issues/478) | Cliente HTTP separado de la caché | Plex y Seerr, apuestas (cuotas) | Clientes sin `core/db` |
+| [#480](https://github.com/ale-dm/bot-discord/issues/480) | Dividir el catálogo de logros | Niveles y logros | Ningún archivo de `logros/` > 400 líneas |
+
+---
+
+## Ola 3: features por grupo
+
+Cada grupo indica qué refactor necesita. Si el refactor no está hecho, la feature se puede hacer, pero añadirá
+acoplamiento que luego hay que quitar, así que se evita.
+
+### 3.1 Juego responsable (4)
+
+*Requiere: #474 (límites en casino y apuestas).* Empezar aquí: protege al jugador y son cambios pequeños.
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#319](https://github.com/ale-dm/bot-discord/issues/319) | Límite de pérdidas que se pone uno mismo | Pérdidas netas o total apostado (propuesta: netas) |
+| [#460](https://github.com/ale-dm/bot-discord/issues/460) | Tope de apuesta por juego | — |
+| [#461](https://github.com/ale-dm/bot-discord/issues/461) | Cooldown por juego | — |
+| [#463](https://github.com/ale-dm/bot-discord/issues/463) | Autoexclusión temporal del casino | — |
+
+### 3.2 Apuestas y quinielas (11)
+
+*Requiere: #473, #474.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#296](https://github.com/ale-dm/bot-discord/issues/296) | Cancelar una combinada antes de que empiece algún partido | — |
+| [#340](https://github.com/ale-dm/bot-discord/issues/340) | Recordatorio de quiniela a quien no ha apostado | — |
+| [#345](https://github.com/ale-dm/bot-discord/issues/345) | Alerta por DM cuando la cuota llega a un valor | — |
+| [#349](https://github.com/ale-dm/bot-discord/issues/349) | Repetir la última apuesta | — |
+| [#356](https://github.com/ale-dm/bot-discord/issues/356) | Exportar mis apuestas a CSV | — |
+| [#361](https://github.com/ale-dm/bot-discord/issues/361) | Resumen semanal de apuestas por DM | — |
+| [#366](https://github.com/ale-dm/bot-discord/issues/366) | Sugerir pronósticos según las cuotas | — |
+| [#370](https://github.com/ale-dm/bot-discord/issues/370) | Probabilidad implícita en la ficha | — |
+| [#375](https://github.com/ale-dm/bot-discord/issues/375) | Cuota apostada frente a la actual | — |
+| [#380](https://github.com/ale-dm/bot-discord/issues/380) | Liga de pronósticos por competición | — |
+| [#384](https://github.com/ale-dm/bot-discord/issues/384) | Guardar el borrador de la quiniela | — |
+
+### 3.3 Pase de batalla (11)
+
+*Requiere: #472, #473.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#300](https://github.com/ale-dm/bot-discord/issues/300) | Historial de temporadas anteriores | — |
+| [#331](https://github.com/ale-dm/bot-discord/issues/331) | Ver los topes diarios que quedan | — |
+| [#332](https://github.com/ale-dm/bot-discord/issues/332) | Tu posición fuera del top 10 | — |
+| [#334](https://github.com/ale-dm/bot-discord/issues/334) | Bonus por las 3 misiones del día | Cuánto XP extra |
+| [#335](https://github.com/ale-dm/bot-discord/issues/335) | Racha de días con las misiones completas | Qué rachas dan XP |
+| [#338](https://github.com/ale-dm/bot-discord/issues/338) | Misiones de tienda y de logros | — |
+| [#344](https://github.com/ale-dm/bot-discord/issues/344) | Anuncio en canal al subir de nivel | — |
+| [#348](https://github.com/ale-dm/bot-discord/issues/348) | Avisar de recompensas sin reclamar antes de acabar la temporada | Cuántos días antes |
+| [#353](https://github.com/ale-dm/bot-discord/issues/353) | Ajustes del pase en `/paneladmin` | — |
+| [#359](https://github.com/ale-dm/bot-discord/issues/359) | XP de pase por retos ganados | Tope propio |
+| [#364](https://github.com/ale-dm/bot-discord/issues/364) | Un nivel puede dar un objeto | — |
+
+### 3.4 Niveles, XP y logros (11)
+
+*Requiere: #472, #480.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#336](https://github.com/ale-dm/bot-discord/issues/336) | Logros por rachas de días seguidos | Días de los logros (3, 7, 30, 100) |
+| [#339](https://github.com/ale-dm/bot-discord/issues/339) | Mejor racha histórica y ranking de rachas | — |
+| [#342](https://github.com/ale-dm/bot-discord/issues/342) | DM al perder una racha larga | Umbral (propuesta: 3 días) |
+| [#346](https://github.com/ale-dm/bot-discord/issues/346) | Día de gracia para no perder la racha | — |
+| [#352](https://github.com/ale-dm/bot-discord/issues/352) | Tope diario de XP por persona | — |
+| [#358](https://github.com/ale-dm/bot-discord/issues/358) | XP por reacciones recibidas | Cooldown por autor |
+| [#362](https://github.com/ale-dm/bot-discord/issues/362) | Roles sin XP | — |
+| [#369](https://github.com/ale-dm/bot-discord/issues/369) | Multiplicador de XP por canal | — |
+| [#373](https://github.com/ale-dm/bot-discord/issues/373) | Desactivar mis anuncios de subida de nivel | — |
+| [#378](https://github.com/ale-dm/bot-discord/issues/378) | Recordatorio semanal de logros sin reclamar | — |
+| [#383](https://github.com/ale-dm/bot-discord/issues/383) | Logros de XP ganada en un solo día | Umbrales (1.000 y 3.000) |
+
+### 3.5 Utilidades y comandos generales (11)
+
+*Requiere: #477.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#320](https://github.com/ale-dm/bot-discord/issues/320) | `/recordar`: avisos personales por DM | Máximo de recordatorios (propuesta: 10) |
+| [#426](https://github.com/ale-dm/bot-discord/issues/426) | `/encuesta` en el canal | — |
+| [#427](https://github.com/ale-dm/bot-discord/issues/427) | Felicitación automática de cumpleaños | — |
+| [#428](https://github.com/ale-dm/bot-discord/issues/428) | Buzón de sugerencias con votos | — |
+| [#429](https://github.com/ale-dm/bot-discord/issues/429) | Buscar en `/ayuda` por palabra | — |
+| [#430](https://github.com/ale-dm/bot-discord/issues/430) | Presentación personal en el perfil | — |
+| [#431](https://github.com/ale-dm/bot-discord/issues/431) | Preferencias de avisos por DM con `/avisos` | Relación con #422 |
+| [#432](https://github.com/ale-dm/bot-discord/issues/432) | Avisar a la víctima de `/robar` por DM | Decidir con #414 (siempre o por opción) |
+| [#433](https://github.com/ale-dm/bot-discord/issues/433) | Publicar en un canal desde `/mensaje` | — |
+| [#434](https://github.com/ale-dm/bot-discord/issues/434) | Aviso cuando vuelve `/trabajar` o `/robar` | — |
+| [#435](https://github.com/ale-dm/bot-discord/issues/435) | Mensaje de bienvenida | — |
+
+### 3.6 Economía, tienda y banco (13)
+
+*Requiere: #473, #476.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#302](https://github.com/ale-dm/bot-discord/issues/302) | Regalar un objeto del inventario | — |
+| [#374](https://github.com/ale-dm/bot-discord/issues/374) | Mercado de objetos entre jugadores | Comisión |
+| [#379](https://github.com/ale-dm/bot-discord/issues/379) | Vender objetos a la tienda | Porcentaje (propuesta: 50 %) |
+| [#387](https://github.com/ale-dm/bot-discord/issues/387) | Mejora de negocios por niveles | Coste de cada nivel |
+| [#392](https://github.com/ale-dm/bot-discord/issues/392) | Impuesto de ingresos por tramos | Tramos y porcentajes |
+| [#404](https://github.com/ale-dm/bot-discord/issues/404) | Lista de deseos con avisos por DM | — |
+| [#409](https://github.com/ale-dm/bot-discord/issues/409) | Códigos canjeables | — |
+| [#411](https://github.com/ale-dm/bot-discord/issues/411) | Exportar movimientos a CSV | — |
+| [#412](https://github.com/ale-dm/bot-discord/issues/412) | Precio dinámico en la tienda | Tope y ritmo de vuelta |
+| [#413](https://github.com/ale-dm/bot-discord/issues/413) | Ofertas temporales | — |
+| [#414](https://github.com/ale-dm/bot-discord/issues/414) | Aviso opcional a la víctima de un robo | Decidir con #432 |
+| [#415](https://github.com/ale-dm/bot-discord/issues/415) | Meta comunitaria financiada con el bote | — |
+| [#416](https://github.com/ale-dm/bot-discord/issues/416) | Sueldo diario por rol de Discord | Impuesto aplicable |
+
+### 3.7 Perfil, clasificación y patrimonio (12)
+
+*Requiere: #472, #473.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#347](https://github.com/ale-dm/bot-discord/issues/347) | Próximo cobro del impuesto de patrimonio | — |
+| [#350](https://github.com/ale-dm/bot-discord/issues/350) | Total pagado en intereses e impuestos | — |
+| [#355](https://github.com/ale-dm/bot-discord/issues/355) | Contador de premios semanales en el perfil | — |
+| [#360](https://github.com/ale-dm/bot-discord/issues/360) | Histórico de ganadores semanales | Cuántas semanas (propuesta: 8) |
+| [#368](https://github.com/ale-dm/bot-discord/issues/368) | Clasificación de la semana en curso | — |
+| [#372](https://github.com/ale-dm/bot-discord/issues/372) | Premio distinto por categoría | Valores de cada premio |
+| [#377](https://github.com/ale-dm/bot-discord/issues/377) | Ocultar la economía en el perfil ajeno | — |
+| [#388](https://github.com/ale-dm/bot-discord/issues/388) | Evolución del dinero de 30 días | — |
+| [#391](https://github.com/ale-dm/bot-discord/issues/391) | Categoría «El más constante» | — |
+| [#394](https://github.com/ale-dm/bot-discord/issues/394) | Aviso del domingo a quien va primero | — |
+| [#397](https://github.com/ale-dm/bot-discord/issues/397) | Exención del impuesto de patrimonio por rol | Interés aún por decidir |
+| [#401](https://github.com/ale-dm/bot-discord/issues/401) | Ranking de patrimonio neto | — |
+
+### 3.8 Casino (9)
+
+*Requiere: #474.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#333](https://github.com/ale-dm/bot-discord/issues/333) | Seguro en blackjack | — |
+| [#337](https://github.com/ale-dm/bot-discord/issues/337) | Rendirse en blackjack | Mitad de la apuesta |
+| [#343](https://github.com/ale-dm/bot-discord/issues/343) | Pista de estrategia básica | — |
+| [#354](https://github.com/ale-dm/bot-discord/issues/354) | Tirada automática en la tragaperras | — |
+| [#456](https://github.com/ale-dm/bot-discord/issues/456) | Historial de jackpots ganados | — |
+| [#457](https://github.com/ale-dm/bot-discord/issues/457) | PPT al mejor de tres | — |
+| [#458](https://github.com/ale-dm/bot-discord/issues/458) | Últimos números de la ruleta | — |
+| [#459](https://github.com/ale-dm/bot-discord/issues/459) | Apuesta a calle en la ruleta | Pago 11 a 1 |
+| [#462](https://github.com/ale-dm/bot-discord/issues/462) | Doble o nada tras ganar | — |
+
+### 3.9 Criptomonedas (13)
+
+*Requiere: #473.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#298](https://github.com/ale-dm/bot-discord/issues/298) | Alertas de precio de TTCL por DM | — |
+| [#341](https://github.com/ale-dm/bot-discord/issues/341) | Stop-loss de TTCL | — |
+| [#351](https://github.com/ale-dm/bot-discord/issues/351) | Compra recurrente de TTCL | — |
+| [#365](https://github.com/ale-dm/bot-discord/issues/365) | Vender por cantidad de monedas | — |
+| [#441](https://github.com/ale-dm/bot-discord/issues/441) | Comisión visible en el historial | — |
+| [#443](https://github.com/ale-dm/bot-discord/issues/443) | Ganancia realizada en la cartera | — |
+| [#445](https://github.com/ale-dm/bot-discord/issues/445) | Ranking de ganancias | — |
+| [#447](https://github.com/ale-dm/bot-discord/issues/447) | Estadísticas del periodo en Mercado | — |
+| [#449](https://github.com/ale-dm/bot-discord/issues/449) | Historial de eventos de TTCL | — |
+| [#451](https://github.com/ale-dm/bot-discord/issues/451) | Anuncio de eventos en canal | — |
+| [#453](https://github.com/ale-dm/bot-discord/issues/453) | Pausa para admins | — |
+| [#454](https://github.com/ale-dm/bot-discord/issues/454) | Tope de impacto en el precio | Valor del tope |
+| [#455](https://github.com/ale-dm/bot-discord/issues/455) | Cooldown visible en el panel | — |
+
+### 3.10 Retos entre jugadores (12)
+
+*Requiere: #472, #474.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#318](https://github.com/ale-dm/bot-discord/issues/318) | Revancha tras un duelo | — |
+| [#436](https://github.com/ale-dm/bot-discord/issues/436) | Duelo al mejor de tres | — |
+| [#437](https://github.com/ale-dm/bot-discord/issues/437) | Historial cara a cara | — |
+| [#438](https://github.com/ale-dm/bot-discord/issues/438) | Reto abierto que cualquiera puede aceptar | Plazo de caducidad |
+| [#439](https://github.com/ale-dm/bot-discord/issues/439) | Recordatorio de reto pendiente | — |
+| [#440](https://github.com/ale-dm/bot-discord/issues/440) | Mensaje de provocación | — |
+| [#442](https://github.com/ale-dm/bot-discord/issues/442) | Contraoferta de cantidad | — |
+| [#444](https://github.com/ale-dm/bot-discord/issues/444) | Doblar en el blackjack de un duelo | — |
+| [#446](https://github.com/ale-dm/bot-discord/issues/446) | Rendirse en un duelo | — |
+| [#448](https://github.com/ale-dm/bot-discord/issues/448) | Cierre automático de porras | — |
+| [#450](https://github.com/ale-dm/bot-discord/issues/450) | Bloquear retos de una persona | — |
+| [#452](https://github.com/ale-dm/bot-discord/issues/452) | Aviso por DM cuando te toca jugar | — |
+
+### 3.11 El Duende e IA (13)
+
+*Requiere: #472, #475.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#357](https://github.com/ale-dm/bot-discord/issues/357) | Historial de imágenes generadas | — |
+| [#363](https://github.com/ale-dm/bot-discord/issues/363) | Botón «Otra versión» de una imagen | — |
+| [#367](https://github.com/ale-dm/bot-discord/issues/367) | El Duende genera imágenes desde el chat | — |
+| [#371](https://github.com/ale-dm/bot-discord/issues/371) | Cuota diaria de respuestas por persona | Valor (propuesta: 15) |
+| [#376](https://github.com/ale-dm/bot-discord/issues/376) | Transcribir notas de voz del chat | — |
+| [#382](https://github.com/ale-dm/bot-discord/issues/382) | `/resumen` del canal | — |
+| [#386](https://github.com/ale-dm/bot-discord/issues/386) | Editar un recuerdo propuesto | — |
+| [#390](https://github.com/ale-dm/bot-discord/issues/390) | Caducar recuerdos sin decidir | Plazo (propuesta: 7 días) |
+| [#395](https://github.com/ale-dm/bot-discord/issues/395) | Resumen al cerrar `/conversación` | — |
+| [#396](https://github.com/ale-dm/bot-discord/issues/396) | Voz del Duende según la personalidad | — |
+| [#400](https://github.com/ale-dm/bot-discord/issues/400) | Mensajes espontáneos sin repetir | Espera configurable |
+| [#405](https://github.com/ale-dm/bot-discord/issues/405) | Olvidar una sola nota de un perfil | — |
+| [#408](https://github.com/ale-dm/bot-discord/issues/408) | Cuota diaria de imágenes por persona | Valor (propuesta: 10) |
+
+### 3.12 Plex y Seerr (13)
+
+*Requiere: #478.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#299](https://github.com/ale-dm/bot-discord/issues/299) | Estrenos de la semana en `/plex` | — |
+| [#381](https://github.com/ale-dm/bot-discord/issues/381) | Plex Wrapped anual | — |
+| [#385](https://github.com/ale-dm/bot-discord/issues/385) | Qué se reproduce ahora desde `/plex` | — |
+| [#389](https://github.com/ale-dm/bot-discord/issues/389) | Historial de campeones del ranking semanal | — |
+| [#393](https://github.com/ale-dm/bot-discord/issues/393) | Votar la película de la sesión de cine | — |
+| [#399](https://github.com/ale-dm/bot-discord/issues/399) | Sugerir películas según los apuntados | — |
+| [#403](https://github.com/ale-dm/bot-discord/issues/403) | Sesión de cine semanal fija | — |
+| [#406](https://github.com/ale-dm/bot-discord/issues/406) | Avisar cuando se rechaza una petición de Seerr | — |
+| [#410](https://github.com/ale-dm/bot-discord/issues/410) | Cancelar mis peticiones de Seerr | — |
+| [#464](https://github.com/ale-dm/bot-discord/issues/464) | Cupo diario a los 📥 de «Para ti» | — |
+| [#465](https://github.com/ale-dm/bot-discord/issues/465) | Seguir una serie y avisar de episodios | — |
+| [#466](https://github.com/ale-dm/bot-discord/issues/466) | Lista de «quiero ver» con aviso | — |
+| [#467](https://github.com/ale-dm/bot-discord/issues/467) | Trofeo por ver días seguidos | Días (propuesta: 7 y 30) |
+
+### 3.13 Administración y tareas automáticas (12)
+
+*Requiere: #471, #473.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#398](https://github.com/ale-dm/bot-discord/issues/398) | Auditoría: filtrar por familia de acción | — |
+| [#402](https://github.com/ale-dm/bot-discord/issues/402) | Auditar consultas de datos sensibles | — |
+| [#407](https://github.com/ale-dm/bot-discord/issues/407) | Auditar cambios de ajustes con valor anterior y nuevo | — |
+| [#417](https://github.com/ale-dm/bot-discord/issues/417) | Copias de seguridad desde el panel | — |
+| [#418](https://github.com/ale-dm/bot-discord/issues/418) | Comprobar la integridad de cada copia | — |
+| [#419](https://github.com/ale-dm/bot-discord/issues/419) | Copia al arrancar si falta la de hoy | — |
+| [#420](https://github.com/ale-dm/bot-discord/issues/420) | Panel de tareas con su última ejecución | — |
+| [#421](https://github.com/ale-dm/bot-discord/issues/421) | Lanzar una tarea a mano | — |
+| [#422](https://github.com/ale-dm/bot-discord/issues/422) | Elegir qué alertas llegan por DM | Relación con #431 |
+| [#423](https://github.com/ale-dm/bot-discord/issues/423) | Canal de respaldo si el DM no llega | — |
+| [#424](https://github.com/ale-dm/bot-discord/issues/424) | `/mensaje` programado | — |
+| [#425](https://github.com/ale-dm/bot-discord/issues/425) | Modo mantenimiento | — |
+
+---
+
+## Decisiones que bloquean código
+
+Estas respuestas hacen falta antes de empezar la feature indicada:
+
+- **#432 o #414**: avisar a la víctima siempre, o solo si lo activa. Se excluyen entre sí.
+- **#422 o #431**: alertas de administración y preferencias personales se pueden unir o mantener separadas.
+- **#319**: pérdidas netas o total apostado.
+- **#397**: si el interés del impuesto de patrimonio se exime también.
+
+## Cómo se cierra una issue
+
+1. Código en una rama, con `npm run check` en verde y los criterios de la issue cumplidos.
+2. PR a `developer` (squash), con «Closes #N» en la descripción solo si la prueba en Discord ya se ha hecho.
+3. Prueba en Discord de lo que cambia, anotada en [TAREAS](TAREAS.md) si es un paso manual.
+4. Entrada en el [CHANGELOG](../CHANGELOG.md).
