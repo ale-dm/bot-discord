@@ -151,3 +151,84 @@ describe("los comandos", () => {
         des.mockRestore();
     });
 });
+
+describe("probar, renombrar y cambiar el archivo desde el panel (#321, #322)", () => {
+    const interaccion = (customId, extra = {}) => ({
+        customId,
+        guildId: G,
+        user: { id: "admin", tag: "admin#0001" },
+        member: { voice: { channel: null } },
+        update: jest.fn(async () => {}),
+        showModal: jest.fn(async () => {}),
+        reply: jest.fn(async () => {}),
+        deferUpdate: jest.fn(async () => {}),
+        followUp: jest.fn(async () => {}),
+        ...extra,
+    });
+
+    test("▶ Probar aparece con sonidos y lleva a un menú de elegir", async () => {
+        await sonidos.guardar(G, {
+            nombre: "Trompeta",
+            archivo: { nombreArchivo: "t.mp3", url: "u", tamano: 10, fetchFn: global.fetch },
+            userId: "admin",
+        });
+        const home = admin.buildSonidosHome(G);
+        expect(botones(home).find((b) => b.custom_id === "paneladmin_sonidos_probar").disabled).toBeFalsy();
+        const i = interaccion("paneladmin_sonidos_probar");
+        expect(await admin.handleSonidosButton(i)).toBe(true);
+        const menu = i.update.mock.calls[0][0].components[0].components[0].data;
+        expect(menu.custom_id).toBe("paneladmin_sonidos_probar_select");
+    });
+
+    test("probar sin estar en voz avisa en privado y no suena nada", async () => {
+        const s = (
+            await sonidos.guardar(G, {
+                nombre: "Bocina",
+                archivo: { nombreArchivo: "b.mp3", url: "u", tamano: 10, fetchFn: global.fetch },
+                userId: "admin",
+            })
+        ).sonido;
+        const i = interaccion("paneladmin_sonidos_probar_select", { values: [String(s.id)] });
+        const des = jest.spyOn(presencia, "actual").mockReturnValue(null);
+        expect(await admin.handleSonidosStringSelect(i)).toBe(true);
+        expect(i.deferUpdate).toHaveBeenCalledTimes(1);
+        await new Promise((r) => setImmediate(r));
+        expect(i.followUp.mock.calls[0][0].content).toMatch(/Entra en un canal de voz/);
+        des.mockRestore();
+    });
+
+    test("renombrar: el botón abre un formulario con el nombre actual y guardar lo cambia", async () => {
+        const s = (
+            await sonidos.guardar(G, {
+                nombre: "Viejo",
+                archivo: { nombreArchivo: "v.mp3", url: "u", tamano: 10, fetchFn: global.fetch },
+                userId: "admin",
+            })
+        ).sonido;
+        const abrir = interaccion(`paneladmin_sonidos_renombrar_${s.id}`);
+        await admin.handleSonidosButton(abrir);
+        const json = abrir.showModal.mock.calls[0][0].toJSON();
+        expect(json.custom_id).toBe(`paneladmin_sonidos_modal_renombrar_${s.id}`);
+        expect(json.components[0].component.value).toBe("Viejo");
+
+        const guardar = interaccion(`paneladmin_sonidos_modal_renombrar_${s.id}`, {
+            fields: { getTextInputValue: () => "Nuevo" },
+        });
+        expect(await admin.handleSonidosModal(guardar)).toBe(true);
+        expect(sonidos.obtener(G, s.id).nombre).toBe("Nuevo");
+    });
+
+    test("editar: el menú lleva a las dos opciones de cambio", async () => {
+        const s = (
+            await sonidos.guardar(G, {
+                nombre: "Caja",
+                archivo: { nombreArchivo: "c.mp3", url: "u", tamano: 10, fetchFn: global.fetch },
+                userId: "admin",
+            })
+        ).sonido;
+        const i = interaccion("paneladmin_sonidos_editar_select", { values: [String(s.id)] });
+        await admin.handleSonidosStringSelect(i);
+        const ids = i.update.mock.calls[0][0].components[0].components.map((b) => b.data.custom_id);
+        expect(ids).toEqual([`paneladmin_sonidos_renombrar_${s.id}`, `paneladmin_sonidos_archivo_${s.id}`, "paneladmin_sonidos_editar"]);
+    });
+});
