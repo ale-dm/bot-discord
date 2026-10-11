@@ -10,40 +10,64 @@ Estado a 2026-10-11: **185 issues abiertas**, en cinco tipos:
 | Features nuevas | 150 | #318 a #320 y #321 a #467 |
 | Anteriores (ideas, modales, docs) | 15 | #282, #296 a #303, #305 a #310 |
 
-Este documento es el orden de trabajo. Cada issue aparece una vez, en un grupo. Si cambia algo, actualizar aquí y en
-[SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
+Este documento es el orden de trabajo. Cada issue aparece **una sola vez**, en una fase. Si cambia algo, actualizar aquí y
+en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
 
 ## Principios
 
-0. **Medir antes de optimizar.** Las cifras de rendimiento son benchmarks aislados; #481 mide en producción.
-1. **Bugs antes que features.** Los tres de #468 a #470 afectan a lo que ya está en producción o en la rama de sonidos.
-2. **Cimientos antes que el área.** Un grupo de features que toca código acoplado empieza después de su refactor
-   (columna *Requiere*). Así no se añade acoplamiento nuevo.
-3. **Los refactors no cambian el comportamiento.** Su criterio es que los tests de comportamiento pasen sin tocar sus
+1. **Medir antes de optimizar.** Las cifras de rendimiento salen de benchmarks aislados. #481 mide en producción, y las
+   demás issues de rendimiento citan esa medida antes de tocar código.
+2. **Bugs antes que features.** #468 y #469 están en código de #321 que todavía no está en `developer`: se arreglan antes
+   de mergear la rama.
+3. **Cimientos antes que el área.** Un grupo de features que toca código acoplado empieza después de su refactor (columna
+   *Requiere*). Así no se añade acoplamiento nuevo.
+4. **Los refactors no cambian el comportamiento.** Su criterio es que los tests de comportamiento pasen sin tocar sus
    expectativas, y que el grep de dependencias quede limpio.
-4. **Cada grupo termina con una prueba en Discord** de lo que se ha tocado, antes de cerrar sus issues.
-5. **Un grupo, un PR a `developer`** (squash), y de `developer` a `main` cuando se pida la release.
+5. **Cada fase termina con una prueba en Discord** de lo que se ha tocado. No se pasa a la siguiente fase sin ella.
+6. **Un grupo, un PR a `developer`** (squash). De `developer` a `main`, cuando se pida la release.
 
-## Olas
+## Fases de un vistazo
 
-| Ola | Qué | Por qué en este orden |
-|---|---|---|
-| 0 | Bugs #468–#470 y verificación en Discord | Son fallos reales; la verificación no cuesta código |
-| 1 | Sonidos (#321–#330, #297, #301) | Es lo que se empezó; #323 depende de #470 |
-| 2 | Cimientos: refactor #479, #477, #471, #473, #472, #474, #476, #475, #478, #480, y rendimiento (#481 primero) | Desbloquean las features de cada área; medir antes de optimizar |
-| 3 | Features por grupo (3.1 a 3.13) | Cada grupo cuando su refactor esté hecho |
+| Fase | Qué contiene | Nº | Condición de salida |
+|---|---|---|---|
+| [0](#fase-0-cerrar-lo-abierto-y-medir) | Cerrar lo abierto: bugs de sonidos, PR de sonidos, verificación de modales, medición | 14 | Sonidos en `developer`; medición publicada; decisiones tomadas |
+| [1](#fase-1-victorias-rápidas-sin-refactor) | Victorias rápidas que no dependen de refactors | 11 | Sonidos y dedupe probados en Discord; mediciones antes/después |
+| [2](#fase-2-cimientos-refactor-y-rendimiento-que-depende-de-ellos) | Refactors de arquitectura y los dos rendimientos que los necesitan | 12 | `grep` de dependencias limpio; tests de comportamiento sin cambios |
+| [3](#fase-3-features-por-dominio) | Features por dominio, cada grupo cuando su refactor está hecho | 148 | Cada grupo probado en Discord y cerrado |
+
+Cada fase depende de la anterior, salvo indicación. Dentro de una fase, los grupos son independientes entre sí y pueden
+ir en paralelo.
+
+## Riesgos
+
+| Riesgo | Mitigación |
+|---|---|
+| Un refactor cambia un comportamiento sin que los tests lo vean | Tests de caracterización antes de mover código (en #479 y en cada refactor) |
+| Límites de Discord (25 opciones en un menú, 45 caracteres en una etiqueta) | #470 lo resuelve de forma general; revisarlo en cada feature nueva |
+| Una decisión de producto bloquea una feature a mitad | Las decisiones se toman en la fase 0 (sección final), no al empezar el grupo |
+| Dos migraciones con el mismo número | Número libre en el momento de crear la migración (hoy, el 044); #325 y #484 la usan |
+| Un PR de un grupo arrastra cambios de otro | Un grupo por PR; si toca un refactor a medias, esperar a que se mergee |
 
 ---
 
-## Ola 0: bugs y verificación
+## Fase 0: cerrar lo abierto y medir
 
-### Bugs
+Es la fase que bloquea todo lo demás: sin ella, la rama de sonidos no se puede subir.
+
+### Bugs que bloquean la rama de sonidos
 
 | # | Título | Prioridad | Nota |
 |---|---|---|---|
-| [#468](https://github.com/ale-dm/bot-discord/issues/468) | Cambiar el archivo mientras suena otro lo sobrescribe | Alta | En código de #321 (rama de sonidos). Corregir antes de subir a `developer` |
+| [#468](https://github.com/ale-dm/bot-discord/issues/468) | Cambiar el archivo mientras suena otro lo sobrescribe | Alta | En código de #321 (rama `claude/compassionate-newton-udiuga`). Arreglar antes de mergear |
 | [#469](https://github.com/ale-dm/bot-discord/issues/469) | La descarga del archivo no tiene tiempo límite | Media | También en código de #321 |
-| [#470](https://github.com/ale-dm/bot-discord/issues/470) | Listas de Discord cortadas a 25 sin avisar | Media | Existía antes; #323 lo resuelve en parte |
+| [#470](https://github.com/ale-dm/bot-discord/issues/470) | Listas de Discord cortadas a 25 sin avisar | Media | Existía antes. #323 (fase 1) depende de ella |
+
+### Sonidos listos para mergear
+
+| # | Título | Estado |
+|---|---|---|
+| [#321](https://github.com/ale-dm/bot-discord/issues/321) | Renombrar y cambiar archivo | En la rama, sin probar en Discord. Mergear tras #468 y #469 |
+| [#322](https://github.com/ale-dm/bot-discord/issues/322) | Probar desde el panel | En la rama, sin probar en Discord. Mergear tras #468 y #469 |
 
 ### Verificación en Discord (sin código nuevo)
 
@@ -56,74 +80,124 @@ Este documento es el orden de trabajo. Cada issue aparece una vez, en un grupo. 
 | [#309](https://github.com/ale-dm/bot-discord/issues/309) | G5: importes rápidos | Pendiente |
 | [#310](https://github.com/ale-dm/bot-discord/issues/310) | G6: ruleta en dos pasos y cine | Pendiente |
 | [#303](https://github.com/ale-dm/bot-discord/issues/303) | Idea original de los modales | Cerrar cuando #305–#310 pasen |
-| [#321](https://github.com/ale-dm/bot-discord/issues/321) | Renombrar y cambiar archivo | Hecho en `claude/compassionate-newton-udiuga`, sin probar en Discord |
-| [#322](https://github.com/ale-dm/bot-discord/issues/322) | Probar desde el panel | Hecho en la misma rama, sin probar en Discord |
-| [#282](https://github.com/ale-dm/bot-discord/issues/282) | Protección de ramas y Project board | Lo tiene que hacer el dueño en GitHub |
+| [#282](https://github.com/ale-dm/bot-discord/issues/282) | Protección de ramas y Project board | Lo hace el dueño en GitHub |
+
+### Medición
+
+| # | Título | Medido |
+|---|---|---|
+| [#481](https://github.com/ale-dm/bot-discord/issues/481) | Medir latencias por manejador antes de optimizar | Es la medida que valida el resto de rendimiento |
+
+### Decisiones a tomar en esta fase
+
+Ninguna de estas bloquea código ahora, pero cada una bloquea un grupo de la fase 3 si no se toma:
+
+- **#432 o #414**: avisar a la víctima de `/robar` siempre, o solo si lo activa. Se excluyen entre sí. Bloquea 3.6 y 3.5.
+- **#422 o #431**: alertas de administración y preferencias personales, unidas o separadas. Bloquea 3.13 y 3.5.
+- **#319**: pérdidas netas o total apostado. Bloquea 3.1.
+- **#397**: si el interés del impuesto de patrimonio se exime también. Bloquea 3.7.
+- **#324**: si el cooldown de sonidos aplica a los admins (propuesta: no). Bloquea 1.
+- **#297**: si el probar del admin cuenta en las estadísticas (propuesta: sí). Bloquea 1.
+
+**Condición de salida de la fase 0:** #321 y #322 mergeadas a `developer` con #468 y #469 arreglados; #481 publicada; los
+modales (#305–#310) verificados en Discord; las decisiones de arriba registradas en su issue.
 
 ---
 
-## Ola 1: sonidos
+## Fase 1: victorias rápidas sin refactor
 
-Orden sugerido: #468, #469, #470, luego las features.
+Features y rendimientos que no necesitan ningún refactor de la fase 2. Son de riesgo bajo y mejoran la experiencia
+en cuanto salen.
+
+### 1.1 Sonidos (5)
 
 | # | Título | Requiere | Decisión pendiente |
 |---|---|---|---|
-| [#323](https://github.com/ale-dm/bot-discord/issues/323) | Buscar en /sonidos por nombre | #470 | — |
+| [#323](https://github.com/ale-dm/bot-discord/issues/323) | Buscar en /sonidos por nombre | #470 (fase 0) | — |
 | [#324](https://github.com/ale-dm/bot-discord/issues/324) | Cooldown por persona y sonido aleatorio | — | ¿El cooldown aplica a los admins? (propuesta: no) |
-| [#297](https://github.com/ale-dm/bot-discord/issues/297) | Estadísticas de uso de sonidos | — | Si cuenta el probar del admin (#322: propuesta: sí) |
+| [#297](https://github.com/ale-dm/bot-discord/issues/297) | Estadísticas de uso de sonidos | — | Si cuenta el probar del admin (propuesta: sí) |
 | [#325](https://github.com/ale-dm/bot-discord/issues/325) | Categorías para agrupar | Migración nueva | ¿Listas fijas o libres? (propuesta: libres) |
 | [#327](https://github.com/ale-dm/bot-discord/issues/327) | Cola de sonidos en vez de rechazar | — | Tamaño de la cola (propuesta: 5) |
-| [#328](https://github.com/ale-dm/bot-discord/issues/328) | Volumen por sonido | — | Rango (propuesta: 25 % a 200 %) |
-| [#329](https://github.com/ale-dm/bot-discord/issues/329) | Sonidos solo para ciertos roles | — | — |
-| [#330](https://github.com/ale-dm/bot-discord/issues/330) | Horario de silencio | — | — |
-| [#326](https://github.com/ale-dm/bot-discord/issues/326) | Sonidos ligados a eventos | #472 | ¿Cuántos eventos en la primera versión? (propuesta: dos) |
-| [#301](https://github.com/ale-dm/bot-discord/issues/301) | Sonido de entrada al usar `/conectar` | #472 | — |
+
+### 1.2 Sonidos, ajustes (3)
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#328](https://github.com/ale-dm/bot-discord/issues/328) | Volumen por sonido | Rango (propuesta: 25 % a 200 %) |
+| [#329](https://github.com/ale-dm/bot-discord/issues/329) | Sonidos solo para ciertos roles | — |
+| [#330](https://github.com/ale-dm/bot-discord/issues/330) | Horario de silencio | — |
+
+### 1.3 Rendimiento (3)
+
+| # | Título | Medido |
+|---|---|---|
+| [#482](https://github.com/ale-dm/bot-discord/issues/482) | El dedupe de mensajes recorre todo el mapa | 25 µs → 248 µs por mensaje (500 → 20.000). Independiente |
+| [#485](https://github.com/ale-dm/bot-discord/issues/485) | Fuga de memoria en el buffer de recuerdos del Duende | Estimado. Independiente |
+| [#486](https://github.com/ale-dm/bot-discord/issues/486) | El historial del Duende se escribe entero tras cada respuesta | 1 ms por guardado (300 KB). Independiente |
+
+**Condición de salida de la fase 1:** sonidos probados en Discord (buscar, cooldown, categorías, cola, volumen, roles,
+horario); cada issue de rendimiento con su medida antes y después.
 
 ---
 
-## Ola 2: cimientos (refactor)
+## Fase 2: cimientos (refactor y rendimiento que depende de ellos)
 
-Orden: #479 → #477 → #471 → #473 → #472 → #474 → #476 → #475 → #478 → #480.
+Refactors de arquitectura que no cambian el comportamiento. Orden de dependencias:
+
+1. **Primero, sin dependencias:** #479 (medir ciclos y bloquear los nuevos), #477 (`core/` sin Discord).
+2. **Después:** #471 (composición de tareas), #473 (repositorios).
+3. **Después:** #472 (`systems/` sin Discord), #474 (reglas de juegos), #478 (clientes HTTP), #475 (herramientas del Duende).
+4. **Al final:** #476 (`perfil/dinero.js`, necesita #473), #480 (catálogo de logros, independiente).
 
 | # | Título | Desbloquea | Criterio |
 |---|---|---|---|
-| [#479](https://github.com/ale-dm/bot-discord/issues/479) | Medir ciclos de dependencias y bloquear los nuevos | Todos (sin medir no sabemos si los refactors ayudan) | `npm run check` falla con un ciclo nuevo |
+| [#479](https://github.com/ale-dm/bot-discord/issues/479) | Medir ciclos de dependencias y bloquear los nuevos | Todos | `npm run check` falla con un ciclo nuevo |
 | [#477](https://github.com/ale-dm/bot-discord/issues/477) | `core/` sin `discord.js` | #471, #472 | `grep` de `discord.js` en `core/` vacío |
 | [#471](https://github.com/ale-dm/bot-discord/issues/471) | Punto de composición para las tareas | Admin (#420, #421), sonidos (#326) | `core/` no importa `systems` |
-| [#473](https://github.com/ale-dm/bot-discord/issues/473) | Repositorios para el SQL de paneles y juegos | Economía, perfil, cripto, apuestas, admin | Sin `db.prepare` en paneles, admin, juegos |
-| [#472](https://github.com/ale-dm/bot-discord/issues/472) | `systems/` sin embeds ni Discord | Pase, niveles, perfil, retos, Duende, sonidos | `grep` de `discord.js` en `systems/` vacío |
+| [#473](https://github.com/ale-dm/bot-discord/issues/473) | Repositorios para el SQL de paneles y juegos | Economía, perfil, cripto, apuestas, admin, #483 | Sin `db.prepare` en paneles, admin, juegos |
+| [#472](https://github.com/ale-dm/bot-discord/issues/472) | `systems/` sin embeds ni Discord | Pase, niveles, perfil, retos, Duende, #326, #301 | `grep` de `discord.js` en `systems/` vacío |
 | [#474](https://github.com/ale-dm/bot-discord/issues/474) | Reglas de los juegos separadas de los manejadores | Casino, apuestas, retos, juego responsable | Quiniela con tests sin Discord |
-| [#476](https://github.com/ale-dm/bot-discord/issues/476) | `perfil/dinero.js` partido en enrutador y casos de uso | Economía | Enrutador sin cálculos |
+| [#478](https://github.com/ale-dm/bot-discord/issues/478) | Cliente HTTP separado de la caché | Plex y Seerr, cuotas | Clientes sin `core/db` |
 | [#475](https://github.com/ale-dm/bot-discord/issues/475) | Herramientas del Duende con dependencias inyectadas | Duende | Sin `require` diferido en herramientas |
-| [#478](https://github.com/ale-dm/bot-discord/issues/478) | Cliente HTTP separado de la caché | Plex y Seerr, apuestas (cuotas) | Clientes sin `core/db` |
+| [#476](https://github.com/ale-dm/bot-discord/issues/476) | `perfil/dinero.js` partido en enrutador y casos de uso | Economía | Enrutador sin cálculos |
 | [#480](https://github.com/ale-dm/bot-discord/issues/480) | Dividir el catálogo de logros | Niveles y logros | Ningún archivo de `logros/` > 400 líneas |
 
-### Rendimiento (7)
-
-Primero #481, que mide en producción. Las demás están ordenadas por lo que se midió (o estimó) como coste.
+### Rendimiento que depende de la fase 2 (2)
 
 | # | Título | Requiere | Medido |
 |---|---|---|---|
-| [#481](https://github.com/ale-dm/bot-discord/issues/481) | Medir latencias por manejador antes de optimizar | — | Es la medida |
-| [#482](https://github.com/ale-dm/bot-discord/issues/482) | El dedupe de mensajes recorre todo el mapa | — | 25 µs → 248 µs por mensaje (500 → 20.000) |
-| [#484](https://github.com/ale-dm/bot-discord/issues/484) | El resumen del casino suma todas las jugadas | — | 6 ms por render con 50.000 jugadas |
 | [#483](https://github.com/ale-dm/bot-discord/issues/483) | La XP por mensaje hace demasiadas consultas | #473 | 263 µs por mensaje |
-| [#487](https://github.com/ale-dm/bot-discord/issues/487) | El panel de economía recalcula todo en cada clic | #484 | No medido por partes |
-| [#485](https://github.com/ale-dm/bot-discord/issues/485) | Fuga de memoria en el buffer de recuerdos del Duende | — | Estimado, no medido |
-| [#486](https://github.com/ale-dm/bot-discord/issues/486) | El historial del Duende se escribe entero tras cada respuesta | — | 1 ms por guardado (300 KB) |
+| [#484](https://github.com/ale-dm/bot-discord/issues/484) | El resumen del casino suma todas las jugadas | — | 6 ms por render con 50.000 jugadas |
 
-Esto no es un cuello de botella hoy, pero sube con el uso: #482 y #484 son los que crecen con la carga.
+**Condición de salida de la fase 2:** `grep` de dependencias limpio en `core/`, `systems/` y paneles; ciclos medidos y
+sin ciclos nuevos (#479); tests de comportamiento sin cambios en sus expectativas; #483 medido antes y después.
 
 ---
 
-## Ola 3: features por grupo
+## Fase 3: features por dominio
 
-Cada grupo indica qué refactor necesita. Si el refactor no está hecho, la feature se puede hacer, pero añadirá
-acoplamiento que luego hay que quitar, así que se evita.
+Cada grupo empieza cuando su refactor está hecho (columna *Requiere*). Los grupos son independientes entre sí. Si se
+trabajan en paralelo, cada uno va en su PR.
+
+**Orden sugerido**, por valor frente a riesgo (los primeros tienen menos dependencias abiertas):
+
+1. 3.1 Juego responsable, 3.2 Apuestas, 3.6 Economía, 3.8 Casino.
+2. 3.9 Criptomonedas, 3.10 Retos, 3.3 Pase, 3.4 Niveles.
+3. 3.11 Duende, 3.12 Plex y Seerr, 3.13 Administración.
+4. 3.5 Utilidades, 3.7 Perfil. Y 3.0 Sonidos avanzados, cuando #472 esté hecho.
+
+### 3.0 Sonidos avanzados (2)
+
+*Requiere: #471, #472.*
+
+| # | Título | Decisión pendiente |
+|---|---|---|
+| [#326](https://github.com/ale-dm/bot-discord/issues/326) | Sonidos ligados a eventos | ¿Cuántos eventos en la primera versión? (propuesta: dos) |
+| [#301](https://github.com/ale-dm/bot-discord/issues/301) | Sonido de entrada al usar `/conectar` | — |
 
 ### 3.1 Juego responsable (4)
 
-*Requiere: #474 (límites en casino y apuestas).* Empezar aquí: protege al jugador y son cambios pequeños.
+*Requiere: #474.*
 
 | # | Título | Decisión pendiente |
 |---|---|---|
@@ -170,7 +244,7 @@ acoplamiento que luego hay que quitar, así que se evita.
 
 ### 3.4 Niveles, XP y logros (11)
 
-*Requiere: #472, #480.*
+*Requiere: #472, #480, #483 (la XP por mensaje, para no añadir consultas).*
 
 | # | Título | Decisión pendiente |
 |---|---|---|
@@ -188,7 +262,7 @@ acoplamiento que luego hay que quitar, así que se evita.
 
 ### 3.5 Utilidades y comandos generales (11)
 
-*Requiere: #477.*
+*Requiere: #477, #471 (para `/recordar`, que usa el planificador).*
 
 | # | Título | Decisión pendiente |
 |---|---|---|
@@ -206,7 +280,7 @@ acoplamiento que luego hay que quitar, así que se evita.
 
 ### 3.6 Economía, tienda y banco (13)
 
-*Requiere: #473, #476.*
+*Requiere: #473, #476, y #484 (el resumen del casino, de la fase 2).*
 
 | # | Título | Decisión pendiente |
 |---|---|---|
@@ -223,6 +297,7 @@ acoplamiento que luego hay que quitar, así que se evita.
 | [#414](https://github.com/ale-dm/bot-discord/issues/414) | Aviso opcional a la víctima de un robo | Decidir con #432 |
 | [#415](https://github.com/ale-dm/bot-discord/issues/415) | Meta comunitaria financiada con el bote | — |
 | [#416](https://github.com/ale-dm/bot-discord/issues/416) | Sueldo diario por rol de Discord | Impuesto aplicable |
+| [#487](https://github.com/ale-dm/bot-discord/issues/487) | El panel de economía recalcula todo en cada clic | Medir por partes (#481) |
 
 ### 3.7 Perfil, clasificación y patrimonio (12)
 
@@ -245,7 +320,7 @@ acoplamiento que luego hay que quitar, así que se evita.
 
 ### 3.8 Casino (9)
 
-*Requiere: #474.*
+*Requiere: #474, #484 (el resumen, antes de añadir nuevas jugadas).*
 
 | # | Título | Decisión pendiente |
 |---|---|---|
@@ -300,7 +375,7 @@ acoplamiento que luego hay que quitar, así que se evita.
 
 ### 3.11 El Duende e IA (13)
 
-*Requiere: #472, #475.*
+*Requiere: #472, #475, #486 (el historial, antes de añadir más memoria).*
 
 | # | Título | Decisión pendiente |
 |---|---|---|
@@ -359,18 +434,20 @@ acoplamiento que luego hay que quitar, así que se evita.
 
 ---
 
-## Decisiones que bloquean código
-
-Estas respuestas hacen falta antes de empezar la feature indicada:
-
-- **#432 o #414**: avisar a la víctima siempre, o solo si lo activa. Se excluyen entre sí.
-- **#422 o #431**: alertas de administración y preferencias personales se pueden unir o mantener separadas.
-- **#319**: pérdidas netas o total apostado.
-- **#397**: si el interés del impuesto de patrimonio se exime también.
-
 ## Cómo se cierra una issue
 
 1. Código en una rama, con `npm run check` en verde y los criterios de la issue cumplidos.
 2. PR a `developer` (squash), con «Closes #N» en la descripción solo si la prueba en Discord ya se ha hecho.
 3. Prueba en Discord de lo que cambia, anotada en [TAREAS](TAREAS.md) si es un paso manual.
 4. Entrada en el [CHANGELOG](../CHANGELOG.md).
+
+## Comprobación del plan
+
+Cada issue aparece una vez en una fase. Para comprobarlo tras un cambio:
+
+```bash
+python3 -c "import re,collections;s=open('docs/planificacion/PLAN_ISSUES.md').read();c=collections.Counter(int(x) for x in re.findall(r'^\| \[#(\d+)\]',s,flags=re.M));print(len(c),'unicas;',sorted(n for n,v in c.items() if v>1),'duplicadas')"
+```
+
+El total esperado es 185 y ninguna duplicada (las menciones en «Decisiones» y en «Requiere» no cuentan, porque no empiezan
+por fila de tabla).

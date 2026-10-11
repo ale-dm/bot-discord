@@ -47,8 +47,8 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 - **Recompensa del pase**: ahora son monedas (80…2.500, más un bonus de 2.000 al final). Se podría cambiar a TTCL.
 - **Cancelar una combinada** antes de que empiece algún partido (hoy solo se cancelan apuestas sueltas).
 - **Sonidos**: #321 (renombrar y cambiar archivo) y #322 (probar desde el panel) están hechas en
-  `claude/compassionate-newton-udiuga`, sin probar en Discord. Lo siguiente son los bugs #468–#470 y luego la ola 1
-  del [plan](planificacion/PLAN_ISSUES.md).
+  `claude/compassionate-newton-udiuga`, sin probar en Discord. Lo siguiente es la fase 0 del
+  [plan](planificacion/PLAN_ISSUES.md): #468 y #469 antes de mergear, y luego #470.
 - **Trofeos por país**: dependen de que Tautulli devuelva los `guid` `tmdb://`. Si no lo hace, los trofeos por país no
   salen.
 - **Recomendaciones de Seerr**: se asume que `/{movie|tv}/{id}/recommendations` responde como en la documentación. Si
@@ -57,9 +57,9 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 ## 4. Ideas abiertas y plan
 
 Hay 185 issues abiertas: 3 bugs (#468–#470), 10 refactors de arquitectura (#471–#480), 7 de rendimiento (#481–#487), 150 features y 15 anteriores.
-El orden de trabajo, por olas y grupos, con las dependencias de cada grupo y las decisiones pendientes, está en
-[PLAN_ISSUES](planificacion/PLAN_ISSUES.md). Resumen: primero los bugs y la verificación en Discord de los modales,
-luego los sonidos, después los refactors de cimientos y por último las features por área.
+El orden de trabajo está en [PLAN_ISSUES](planificacion/PLAN_ISSUES.md), en cuatro fases con condición de salida:
+0) cerrar lo abierto (bugs de sonidos, PR de sonidos, verificación de modales, medición), 1) victorias rápidas sin
+refactor, 2) cimientos de arquitectura y el rendimiento que los necesita, 3) features por dominio.
 
 ## 5. Mapa de lo nuevo
 
