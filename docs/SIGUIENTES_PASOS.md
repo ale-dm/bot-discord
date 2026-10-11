@@ -56,7 +56,7 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 
 ## 4. Ideas abiertas y plan
 
-Hay 178 issues abiertas: 3 bugs (#468–#470), 10 refactors de arquitectura (#471–#480), 150 features y 15 anteriores.
+Hay 185 issues abiertas: 3 bugs (#468–#470), 10 refactors de arquitectura (#471–#480), 7 de rendimiento (#481–#487), 150 features y 15 anteriores.
 El orden de trabajo, por olas y grupos, con las dependencias de cada grupo y las decisiones pendientes, está en
 [PLAN_ISSUES](planificacion/PLAN_ISSUES.md). Resumen: primero los bugs y la verificación en Discord de los modales,
 luego los sonidos, después los refactors de cimientos y por último las features por área.

@@ -1,11 +1,12 @@
 # Plan de las issues abiertas
 
-Estado a 2026-10-11: **178 issues abiertas**, en cuatro tipos:
+Estado a 2026-10-11: **185 issues abiertas**, en cinco tipos:
 
 | Tipo | Nº | Números |
 |---|---|---|
 | Bugs | 3 | #468, #469, #470 |
 | Refactor (arquitectura limpia) | 10 | #471 a #480 |
+| Rendimiento | 7 | #481 a #487 |
 | Features nuevas | 150 | #318 a #320 y #321 a #467 |
 | Anteriores (ideas, modales, docs) | 15 | #282, #296 a #303, #305 a #310 |
 
@@ -14,6 +15,7 @@ Este documento es el orden de trabajo. Cada issue aparece una vez, en un grupo. 
 
 ## Principios
 
+0. **Medir antes de optimizar.** Las cifras de rendimiento son benchmarks aislados; #481 mide en producción.
 1. **Bugs antes que features.** Los tres de #468 a #470 afectan a lo que ya está en producción o en la rama de sonidos.
 2. **Cimientos antes que el área.** Un grupo de features que toca código acoplado empieza después de su refactor
    (columna *Requiere*). Así no se añade acoplamiento nuevo.
@@ -28,7 +30,7 @@ Este documento es el orden de trabajo. Cada issue aparece una vez, en un grupo. 
 |---|---|---|
 | 0 | Bugs #468–#470 y verificación en Discord | Son fallos reales; la verificación no cuesta código |
 | 1 | Sonidos (#321–#330, #297, #301) | Es lo que se empezó; #323 depende de #470 |
-| 2 | Cimientos: refactor #479, #477, #471, #473, #472, #474, #476, #475, #478, #480 | Desbloquean las features de cada área |
+| 2 | Cimientos: refactor #479, #477, #471, #473, #472, #474, #476, #475, #478, #480, y rendimiento (#481 primero) | Desbloquean las features de cada área; medir antes de optimizar |
 | 3 | Features por grupo (3.1 a 3.13) | Cada grupo cuando su refactor esté hecho |
 
 ---
@@ -95,6 +97,22 @@ Orden: #479 → #477 → #471 → #473 → #472 → #474 → #476 → #475 → #
 | [#475](https://github.com/ale-dm/bot-discord/issues/475) | Herramientas del Duende con dependencias inyectadas | Duende | Sin `require` diferido en herramientas |
 | [#478](https://github.com/ale-dm/bot-discord/issues/478) | Cliente HTTP separado de la caché | Plex y Seerr, apuestas (cuotas) | Clientes sin `core/db` |
 | [#480](https://github.com/ale-dm/bot-discord/issues/480) | Dividir el catálogo de logros | Niveles y logros | Ningún archivo de `logros/` > 400 líneas |
+
+### Rendimiento (7)
+
+Primero #481, que mide en producción. Las demás están ordenadas por lo que se midió (o estimó) como coste.
+
+| # | Título | Requiere | Medido |
+|---|---|---|---|
+| [#481](https://github.com/ale-dm/bot-discord/issues/481) | Medir latencias por manejador antes de optimizar | — | Es la medida |
+| [#482](https://github.com/ale-dm/bot-discord/issues/482) | El dedupe de mensajes recorre todo el mapa | — | 25 µs → 248 µs por mensaje (500 → 20.000) |
+| [#484](https://github.com/ale-dm/bot-discord/issues/484) | El resumen del casino suma todas las jugadas | — | 6 ms por render con 50.000 jugadas |
+| [#483](https://github.com/ale-dm/bot-discord/issues/483) | La XP por mensaje hace demasiadas consultas | #473 | 263 µs por mensaje |
+| [#487](https://github.com/ale-dm/bot-discord/issues/487) | El panel de economía recalcula todo en cada clic | #484 | No medido por partes |
+| [#485](https://github.com/ale-dm/bot-discord/issues/485) | Fuga de memoria en el buffer de recuerdos del Duende | — | Estimado, no medido |
+| [#486](https://github.com/ale-dm/bot-discord/issues/486) | El historial del Duende se escribe entero tras cada respuesta | — | 1 ms por guardado (300 KB) |
+
+Esto no es un cuello de botella hoy, pero sube con el uso: #482 y #484 son los que crecen con la carga.
 
 ---
 
