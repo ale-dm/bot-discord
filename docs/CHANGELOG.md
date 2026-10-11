@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-11 (sonidos: renombrar, cambiar archivo y probar; correcciones #468 y #469)
+
+- **🔊 Panel de sonidos** (#321, #322): en `/paneladmin` → Sonidos, ✏️ Editar permite renombrar un sonido o cambiar su
+  archivo (el id y el sitio se conservan), y ▶ Probar lo reproduce en tu canal de voz sin salir del panel.
+- **Corrección #468**: cambiar el archivo mientras suena otro lo sobrescribía. Ahora el servidor queda reservado durante la
+  descarga y la escritura, y ningún sonido puede empezar en medio.
+- **Corrección #469**: la descarga de un adjunto tiene un límite de 15 s, y un adjunto que anuncia más de 1 MB se rechaza
+  sin leerlo.
+- **Plan**: las issues abiertas se organizan en fases con condición de salida (`docs/planificacion/PLAN_ISSUES.md`).
+
 ## 2026-10-10 (sin recompensa diaria; #315)
 
 - **Eliminada la 🎁 recompensa diaria**: el botón de `/perfil` → 💰 Economía, su formulario en el panel admin (Config Global → 🎁 Diario), la herramienta `consultar_recompensa_diaria` del Duende y `systems/diario.js`, con sus tests. Los ajustes `diario.*` salen de `guildSettings`.

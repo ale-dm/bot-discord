@@ -71,8 +71,8 @@ Es la fase que bloquea todo lo demás: sin ella, la rama de sonidos no se puede 
 
 | # | Título | Prioridad | Nota |
 |---|---|---|---|
-| [#468](https://github.com/ale-dm/bot-discord/issues/468) | Cambiar el archivo mientras suena otro lo sobrescribe | Alta | En código de #321 (rama `claude/compassionate-newton-udiuga`). Arreglar antes de mergear |
-| [#469](https://github.com/ale-dm/bot-discord/issues/469) | La descarga del archivo no tiene tiempo límite | Media | También en código de #321 |
+| [#468](https://github.com/ale-dm/bot-discord/issues/468) | Cambiar el archivo mientras suena otro lo sobrescribe | Alta | Corregido en la rama `claude/compassionate-newton-udiuga` (cambio de archivo reserva el servidor). Falta probarlo en Discord |
+| [#469](https://github.com/ale-dm/bot-discord/issues/469) | La descarga del archivo no tiene tiempo límite | Media | Corregido en la rama (descarga con tiempo límite y tamaño anunciado). Falta probarlo en Discord |
 | [#470](https://github.com/ale-dm/bot-discord/issues/470) | Listas de Discord cortadas a 25 sin avisar | Media | Existía antes. #323 (fase 1) depende de ella |
 
 ### Sonidos listos para mergear
