@@ -31,7 +31,7 @@ function crearEmbedAnimacion(frame, apuesta, jackpot, usuario) {
             `**${usuario}** está jugando${dots}\n\n` +
                 `🎰 ${frameActual[0]} • ${frameActual[1]} • ${frameActual[2]} 🎰\n\n` +
                 `💰 Apuesta: **${apuesta}** monedas\n` +
-                `🏆 Jackpot: **${jackpot.toLocaleString()}** monedas\n` +
+                `🏆 Jackpot: **${jackpot.toLocaleString("es")}** monedas\n` +
                 `⏳ Girando los carretes${dots}`,
         )
         .setColor(0xf39c12)
@@ -74,7 +74,7 @@ function crearEmbedResultado(carretes, resultado, apuesta, jackpot, usuario, sal
     const resultadoNeto = resultado.ganancia - apuesta;
     const { color, titulo, banner } = estiloResultado(resultado, resultadoNeto);
 
-    const gananciaTexto = resultadoNeto >= 0 ? `+${resultadoNeto.toLocaleString()}` : `-${apuesta}`;
+    const gananciaTexto = resultadoNeto >= 0 ? `+${resultadoNeto.toLocaleString("es")}` : `-${apuesta}`;
 
     const gananciaIcon = resultadoNeto >= 0 ? "✅" : "❌";
 
@@ -83,7 +83,7 @@ function crearEmbedResultado(carretes, resultado, apuesta, jackpot, usuario, sal
         `🎰 ${s1} • ${s2} • ${s3} 🎰\n` +
         `${resultado.mensaje}\n\n` +
         `━━━━━━━━━━━━━━━━━━━━━\n` +
-        `💵 **Apuesta:** ${apuesta.toLocaleString()} monedas\n` +
+        `💵 **Apuesta:** ${apuesta.toLocaleString("es")} monedas\n` +
         `${gananciaIcon} **Resultado:** ${gananciaTexto} monedas`;
 
     if (resultado.multiplicador !== "JACKPOT") {
@@ -92,12 +92,12 @@ function crearEmbedResultado(carretes, resultado, apuesta, jackpot, usuario, sal
         descripcion += `\n`;
     }
 
-    descripcion += `💰 **Saldo:** ${saldoFinal.toLocaleString()} monedas\n` + `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    descripcion += `💰 **Saldo:** ${saldoFinal.toLocaleString("es")} monedas\n` + `━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     if (resultado.tipo !== "jackpot") {
-        descripcion += `🏆 Jackpot: **${jackpot.toLocaleString()}** monedas`;
+        descripcion += `🏆 Jackpot: **${jackpot.toLocaleString("es")}** monedas`;
     } else {
-        descripcion += `🏆 Jackpot reiniciado: **${jackpot.toLocaleString()}** monedas`;
+        descripcion += `🏆 Jackpot reiniciado: **${jackpot.toLocaleString("es")}** monedas`;
     }
 
     return new EmbedBuilder()

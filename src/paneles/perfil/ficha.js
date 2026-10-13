@@ -6,6 +6,7 @@ const plexLinks = require("../../systems/plexLinks");
 const plexTrofeos = require("../../systems/plexTrofeos");
 const plexIdiomas = require("../../systems/plexIdiomas");
 const plexResumen = require("../../systems/plexResumen");
+const presentaciones = require("../../systems/presentaciones");
 const { filaPestanasPerfil } = require("../pestanasPerfil");
 const { buildProfileEmbed, buildRewardsEmbed } = require("./embeds");
 
@@ -19,6 +20,9 @@ async function buildPerfil(guild, ownerId, targetId) {
         value: `💵 ${c.efectivo.toLocaleString("es")} · 🏦 ${c.banco.toLocaleString("es")}`,
         inline: true,
     });
+    // 💬 La presentación que cada uno escribe con /presentacion (#430).
+    const presentacion = presentaciones.obtener(targetId);
+    if (presentacion) embed.addFields({ name: "💬 Presentación", value: presentaciones.escapar(presentacion), inline: false });
     const extra = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`perfil_recompensas_${ownerId}_${targetId}`)
@@ -29,6 +33,12 @@ async function buildPerfil(guild, ownerId, targetId) {
     if (plexLinks.getLinkByDiscordId(guild.id, targetId) && (propio || !plexTrofeos.oculto(guild.id, targetId))) {
         extra.addComponents(
             new ButtonBuilder().setCustomId(`perfil_plex_${ownerId}_${targetId}`).setLabel("🍿 Plex").setStyle(ButtonStyle.Secondary),
+        );
+    }
+    // ✏️ Editar la presentación: solo en el perfil propio.
+    if (propio) {
+        extra.addComponents(
+            new ButtonBuilder().setCustomId(`presentacion_editar_${ownerId}`).setLabel("✏️ Presentación").setStyle(ButtonStyle.Secondary),
         );
     }
     return { content: "", embeds: [embed], components: [extra, filaPestanasPerfil(ownerId, targetId, "perfil")] };
