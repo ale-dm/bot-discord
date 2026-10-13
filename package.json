@@ -19,6 +19,7 @@
     "voz:test": "node scripts/voz-test.js",
     "plex:check": "node scripts/plex-check.js",
     "db:backup": "node scripts/db-backup.js",
+    "ciclos": "node scripts/ciclos.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -47,6 +48,7 @@
     "eslint": "^9.39.5",
     "globals": "^17.12.0",
     "jest": "^30.1.3",
+    "madge": "^8.0.0",
     "prettier": "^3.9.9"
   },
   "jest": {
