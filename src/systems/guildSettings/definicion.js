@@ -20,6 +20,7 @@ const DEFAULT_FLAT = {
     "cripto.max_buy": 500000,
     "cripto.min_sell": 100,
     "cripto.max_sell": 500000,
+    "cripto.pausa": false,
 
     "casino.min_bet": 10,
     "casino.max_bet": 100000,
@@ -101,6 +102,7 @@ const KEY_TYPES = {
     "cripto.max_buy": "number",
     "cripto.min_sell": "number",
     "cripto.max_sell": "number",
+    "cripto.pausa": "boolean",
 
     "casino.min_bet": "number",
     "casino.max_bet": "number",

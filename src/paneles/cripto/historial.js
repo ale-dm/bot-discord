@@ -7,7 +7,9 @@ const POR_PAGINA = 8;
 
 function lineaHistorial(f) {
     const icono = f.tipo === "compra" ? "🟢 Compra" : "🔴 Venta";
-    return `${icono} · ${mercado.formatCryptoAmt(f.cantidad)} TTCL · ${fmtMonedas(f.monedas)} · ${mercado.formatCoins(f.precio)}/u · ${fechaMadrid(f.timestamp)}`;
+    // Las operaciones anteriores a guardar la comisión (null) enseñan «—», no un 0 que parezca real.
+    const comision = f.comision === null || f.comision === undefined ? "—" : fmtMonedas(f.comision);
+    return `${icono} · ${mercado.formatCryptoAmt(f.cantidad)} TTCL · ${fmtMonedas(f.monedas)} · ${mercado.formatCoins(f.precio)}/u · comisión ${comision} · ${fechaMadrid(f.timestamp)}`;
 }
 
 async function pantallaHistorial(userId, pagina = 0) {
@@ -40,4 +42,4 @@ async function pantallaHistorial(userId, pagina = 0) {
     return pantalla({ embeds: [embed], filas: [paginar], actual: "historial" });
 }
 
-module.exports = { pantallaHistorial, POR_PAGINA };
+module.exports = { pantallaHistorial, lineaHistorial, POR_PAGINA };

@@ -137,8 +137,8 @@ function comprarTtcl(guildId, userId, monedasInvertidas) {
             ).run(userId, ttcl);
             dinero.apuntar(userId, "cripto", `Compra ${formatCryptoAmt(ttcl)} TTCL${fee > 0 ? ` (comisión ${fee})` : ""}`, -costeTotal);
             db.prepare(
-                "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp) VALUES (?,?,?,?,?,?,?)",
-            ).run(userId, "compra", "TTCL", ttcl, monedasInvertidas / ttcl, costeTotal, Date.now());
+                "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp, comision) VALUES (?,?,?,?,?,?,?,?)",
+            ).run(userId, "compra", "TTCL", ttcl, monedasInvertidas / ttcl, costeTotal, Date.now(), fee);
             db.prepare("INSERT INTO cripto_ttcl_precios (precio, timestamp) VALUES (?, ?)").run(getTtclPrecio(), Date.now());
             return { ok: true, cantidad: ttcl, precio: monedasInvertidas / ttcl, monedas: monedasInvertidas, fee, costeTotal };
         })();
@@ -190,8 +190,8 @@ function venderTtcl(userId, ttclAVender, pct, minSell, maxSell, feeSellPct) {
                 neto,
             );
             db.prepare(
-                "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp) VALUES (?,?,?,?,?,?,?)",
-            ).run(userId, "venta", "TTCL", ttclAVender, brutas / ttclAVender, neto, Date.now());
+                "INSERT INTO cripto_historial (userId, tipo, cripto, cantidad, precio, monedas, timestamp, comision) VALUES (?,?,?,?,?,?,?,?)",
+            ).run(userId, "venta", "TTCL", ttclAVender, brutas / ttclAVender, neto, Date.now(), fee);
             db.prepare("INSERT INTO cripto_ttcl_precios (precio, timestamp) VALUES (?, ?)").run(getTtclPrecio(), Date.now());
             return { ok: true, cantidad: ttclAVender, precio: brutas / ttclAVender, monedas: neto, fee };
         })();
@@ -208,8 +208,31 @@ function venderTtcl(userId, ttclAVender, pct, minSell, maxSell, feeSellPct) {
 
 // ─── LÓGICA DE TRANSACCIONES ──────────────────────────────────────────────────
 
+/** Lo que se contesta a quien intenta operar con el mercado pausado por un admin (#453). */
+const MENSAJE_PAUSA = "⏸️ El mercado de $TTCL está en pausa: un admin lo está revisando. Vuelve a intentarlo más tarde.";
+
+/** ¿Tiene un admin el mercado de TTCL pausado? Solo frena compras y ventas; los eventos diarios, la gráfica, la cartera y el historial siguen. */
+function mercadoPausado(guildId) {
+    return Boolean(guildSettings.getSettings(guildId).cripto.pausa);
+}
+
+/**
+ * Cuánto falta (en segundos) para que alguien pueda volver a comprar o vender, según el cooldown configurado; 0 si
+ * puede operar ya o no hay cooldown. No gasta el cooldown (consume: false), así que el panel puede preguntarlo sin
+ * efectos (#455).
+ */
+function cooldownRestante(guildId, userId, tipo) {
+    const cfg = guildSettings.getSettings(guildId).cripto;
+    const compra = tipo === "compra";
+    const cooldownSec = Number((compra ? cfg.cooldown_buy_sec : cfg.cooldown_sell_sec) || 0);
+    if (!(cooldownSec > 0)) return 0;
+    const r = guildSettings.checkAndConsumeLimit(guildId, compra ? "cripto_buy" : "cripto_sell", userId, { cooldownSec, consume: false });
+    return r.ok ? 0 : r.retrySeconds || 1;
+}
+
 async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
     if (sym !== "TTCL") return { ok: false, msg: "Esa cripto ya no se opera." };
+    if (mercadoPausado(guildId)) return { ok: false, msg: MENSAJE_PAUSA };
     const cfg = guildSettings.getSettings(guildId).cripto;
     const minBuy = Math.max(1, Number(cfg.min_buy || 0));
     const maxBuy = Math.max(minBuy, Number(cfg.max_buy || minBuy));
@@ -239,6 +262,7 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
 
 async function ejecutarVenta(guildId, userId, sym, pct) {
     if (sym !== "TTCL") return { ok: false, msg: "Esa cripto ya no se opera." };
+    if (mercadoPausado(guildId)) return { ok: false, msg: MENSAJE_PAUSA };
     const cfg = guildSettings.getSettings(guildId).cripto;
     const row = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId);
     if (!row || row.cantidad <= 0) return { ok: false, msg: "No tienes esa cripto en cartera." };
@@ -297,7 +321,7 @@ function cotizarVenta(ttcl, feePct) {
 function historialTtcl(userId, limite, offset) {
     return db
         .prepare(
-            "SELECT tipo, cantidad, precio, monedas, timestamp FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?",
+            "SELECT tipo, cantidad, precio, monedas, comision, timestamp FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?",
         )
         .all(String(userId), limite, offset);
 }
@@ -314,6 +338,33 @@ function costeMedioTtcl(userId) {
         )
         .get(String(userId));
     return r.unidades > 0 ? r.pagado / r.unidades : 0;
+}
+
+/**
+ * Ganancia (o pérdida) ya cobrada con las ventas de TTCL de alguien, en monedas. Se recorre el historial en orden con
+ * coste medio móvil: cada venta gana lo recibido (neto, ya sin su comisión) menos lo que costaron esas unidades al coste
+ * medio de ese momento, comisión de compra incluida. 0 si nunca ha vendido.
+ */
+function gananciaRealizadaTtcl(userId) {
+    const filas = db
+        .prepare("SELECT tipo, cantidad, monedas FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp ASC, id ASC")
+        .all(String(userId));
+    let unidades = 0;
+    let coste = 0;
+    let realizada = 0;
+    for (const f of filas) {
+        if (f.tipo === "compra") {
+            unidades += f.cantidad;
+            coste += f.monedas;
+        } else if (unidades > 0) {
+            const vendidas = Math.min(f.cantidad, unidades);
+            const costeVendido = (coste / unidades) * vendidas;
+            realizada += f.monedas - costeVendido;
+            unidades -= vendidas;
+            coste -= costeVendido;
+        }
+    }
+    return Math.round(realizada);
 }
 
 /** Quien más TTCL tiene en cartera. */
@@ -335,7 +386,11 @@ module.exports = {
     historialTtcl,
     totalHistorialTtcl,
     costeMedioTtcl,
+    gananciaRealizadaTtcl,
     topTenedoresTtcl,
+    MENSAJE_PAUSA,
+    mercadoPausado,
+    cooldownRestante,
     fetchCryptoHistory,
     formatCoins,
     formatCryptoAmt,

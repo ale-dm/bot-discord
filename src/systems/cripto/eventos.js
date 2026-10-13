@@ -132,4 +132,16 @@ function ultimoEvento() {
     );
 }
 
-module.exports = { minutoMadrid, revisar, revisarYAvisar, destinatarios, ultimoEvento };
+/**
+ * Los últimos eventos ya aplicados, del más reciente al más antiguo (#449). Cada día tiene un solo evento
+ * (cripto_eventos.dia es único), así que el cron de 5 minutos no puede duplicarlos aunque lo revise varias veces.
+ */
+function ultimosEventos(limite = 10) {
+    return db
+        .prepare(
+            "SELECT dia, minuto, direccion, porcentaje, aplicado_en, precio_antes, precio_despues, avisados FROM cripto_eventos WHERE aplicado_en IS NOT NULL ORDER BY aplicado_en DESC LIMIT ?",
+        )
+        .all(limite);
+}
+
+module.exports = { minutoMadrid, revisar, revisarYAvisar, destinatarios, ultimoEvento, ultimosEventos };

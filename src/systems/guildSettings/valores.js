@@ -42,6 +42,7 @@ function nodoEconomia(flat) {
             max_buy: flat["cripto.max_buy"],
             min_sell: flat["cripto.min_sell"],
             max_sell: flat["cripto.max_sell"],
+            pausa: flat["cripto.pausa"],
         },
         casino: {
             min_bet: flat["casino.min_bet"],
