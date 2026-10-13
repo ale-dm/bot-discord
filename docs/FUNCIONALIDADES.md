@@ -617,6 +617,9 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 - **🎉 Fin de semana del casino** (F-EC-02): si un admin lo activa (`/paneladmin` → ⚙️ Config Global → 🎉 Eventos), el
   sábado y el domingo (hora de Madrid) el premio neto de esos cuatro juegos sube (al 150 % por defecto), encima de su
   RTP. Mientras dura, la pantalla de 🎰 Casino lo dice arriba.
+- **Tope y cooldown por juego** (#460, #461): `/paneladmin` → ⚙️ Config Global → 🎰 Casino → 🎯 Tope por juego y ⏱️ Cooldown por juego. Un juego sin ajuste propio usa el general; el cupo diario cuenta todos los juegos juntos.
+- **🔒 Autoexclusión** (#463): desde el resumen del casino, 1 día, 1 semana o 1 mes. Ningún juego cobra apuestas (tampoco doblar o separar) mientras dure, no se puede levantar antes (ni un admin), y al acabar el casino vuelve solo.
+- **🎲 Doble o nada** (#462): tras una victoria, un botón con la ganancia como importe, a una tirada de 50 %. Perder descuenta solo esa ganancia; ganar la duplica. Se registra como una partida distinta, se usa una sola vez por victoria y no se encadena. Caduca a los 10 minutos o al empezar otra partida.
 - **Partidas a medias**: no puedes tener dos partidas del mismo juego a la vez. Una partida sin tocar
   15 minutos se da por perdida. Si el bot se reinicia a mitad de partida, **se devuelve lo apostado**.
 - Todo queda registrado en el historial y cuenta para los logros de casino.
@@ -634,9 +637,9 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 |---|---|---|
 | 🃏 Blackjack | Contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
 | 🎰 Tragaperras | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
-| 🎡 Ruleta | Ruleta europea (0–36): primero el tipo de apuesta (color, par/impar, mitad, docena o número exacto, con un formulario) y después el importe. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · Número exacto ×36 |
+| 🎡 Ruleta | Ruleta europea (0–36): primero el tipo de apuesta (color, par/impar, mitad, docena o número exacto, con un formulario) y después el importe. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · **Calle** (3 números de una fila del tapete: 1-2-3, 4-5-6…) ×12 · Número exacto ×36 |
 | 🔮 Adivinar | "Ride the bus": 4 rondas — color, mayor/menor, dentro/fuera, palo. Te puedes retirar desde la ronda 3. | Acumulado ×2 → ×3 → ×4 → **×20** si aciertas las 4 |
-| ✂️ Piedra, papel o tijera | Contra el Duende: importe y después jugada. | Victoria ×2 · Empate: recuperas la apuesta |
+| ✂️ Piedra, papel o tijera | Contra el Duende: importe y después jugada. | Victoria ×2 · Empate: recuperas la apuesta. **Al mejor de 3** (#457): misma apuesta, fija, cobrada una vez; gana quien llega a 2 manos o lleva más tras la tercera (empate: recuperas); una serie sin responder 15 min se cierra y se devuelve |
 
 ---
 
@@ -748,6 +751,8 @@ queda nada**: el ganador se lleva lo de todos. Entre 10 y 100.000 por persona. T
   también en el canal de resultados.
 - La pestaña ⚔️ Retos enseña los retos que te han lanzado, los que esperan respuesta, lo que está en juego y los
   últimos cerrados (con lo que ganaste o perdiste), cada uno con un enlace a su mensaje.
+- **Más formas de jugar** (fase 4): un duelo puede ser **🌐 abierto** (lo acepta el primero que pulse, #438), **al mejor de 3** (#436: el bote se paga una vez al final; un empate no suma y tres seguidos devuelven el reto), se puede **🏳️ rendir** (#446: el rival cobra todo) y en el blackjack **✖️2 doblar** con las dos primeras cartas (#444). El rival puede hacer una **💬 contraoferta** de cantidad (#442, una por reto; quien retó la acepta o cancela y se ajusta lo cobrado). **🚫 Bloquear** a quien te reta (#450, en un sentido; devuelve los pendientes entre los dos; se quita en ⚔️ Retos → 🚫 Bloqueos) y **🆚 Cara a cara** (#437: victorias de cada uno, beneficio neto y los últimos 5). Las porras aceptan un cierre automático («2h», «1d», #448).
+- **DM de retos** (#452, #439): cuando el otro ya ha jugado en un duelo, un DM con el enlace (uno por persona y partida); y un recordatorio al rival a mitad del plazo de un reto pendiente. Respetan `/avisos`.
 - Las partidas se guardan en la BD (no en memoria): un reinicio del bot no pierde ningún reto.
 - También se puede retar al Duende, desde su chat: ver el apartado siguiente.
 
@@ -793,6 +798,8 @@ propuso, y la propuesta caduca a los 10 minutos. Por voz no se ofrece (no hay bo
   en el pool. ⏱️ El precio se registra cada 10 minutos para el gráfico.
 - Las **ventas** de TTCL no pagan impuesto de ingresos. Sí se descuenta la deuda con el Duende, si la hay.
 - **Eventos de mercado**: cada día hay uno de **±5 %** del precio de TTCL, a una hora aleatoria (hora de Madrid, elegida al empezar el día). Mueve la reserva de TTCL del pool, así que el precio sube o baja sin que nadie opere. Se avisa por DM a quien tenga TTCL.
+- **Estadísticas y ranking** en 📈 Mercado (#447, #445): resumen del periodo elegido (precio al inicio y al final, máximo, mínimo, variación y volumen de compras y ventas) y 🏆 quién gana más (ganancia realizada + sin vender, con el precio de 💼 Cartera).
+- **Tope de impacto** (#454): `cripto.max_impacto_pct`; una compra o venta que moviera el precio más que eso se rechaza (la vista previa lo dice). **Anuncio de eventos** (#451): canal opcional donde se publica cada evento diario. Ambos, en ⚙️ Config Global → 📈 Cripto → 📊 TTCL + fees.
 - Configurable: comisiones de compra/venta, cooldowns y mínimos/máximos por operación. Las reservas del pool no se
   configuran (van fijas en el código).
 
@@ -926,7 +933,9 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | Cada 5 minutos | Liquida como perdidas las partidas de casino abandonadas (>15 min) · ⏰ recordatorio por DM de los partidos que empiezan pronto · ⚔️ retos colgados: devuelve los que nadie aceptó a tiempo y las porras de más de 30 días, y cierra los duelos abandonados (>15 min) · 🧙 cobra los préstamos del Duende vencidos (efectivo y luego banco) y avisa por DM |
 | Cada 10 minutos | Registra el precio de $TTCL |
 | Cada 30 minutos | Novedades de Plex · "ya está en Plex" a quien lo pidió en Seerr · copia del historial de Plex, fichas de Tautulli, idioma de lo visto y logros y trofeos de Plex (con los nombres de Gemini que falten y los roles de Gordos) |
+| Cada minuto | 📊 Cierra las encuestas vencidas · 🔔 DM de los cooldowns que acaban |
 | Cada hora (min. 15) | Liquidación de apuestas deportivas, retos a partidos y quinielas + DM a ganadores + resumen en el canal de resultados |
+| Cada hora, desde las 09:00 (Madrid) | 🎂 Felicitaciones de cumpleaños (una por persona y año) |
 | Cada hora | Limpia historiales de conversación del Duende sin actividad en 24 h |
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
 | 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
@@ -944,6 +953,12 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
+| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
+| `/cumpleaños` | 🎂 `fecha dia mes`, `ver` (los próximos 5) y `borrar`. El bot felicita en el canal elegido desde las 09:00 (Madrid); el 29 de febrero se celebra el 28 los años no bisiestos |
+| `/sugerencia` | 💡 Formulario → idea en el canal del buzón con su número y 👍/👎 (un voto, cambiable); hasta 3 al día por persona. Un admin la acepta o descarta (con motivo) en ⚙️ Config Global → 📣 Comunidad y el autor lo recibe por DM |
+| Bienvenida | 👋 Al entrar alguien (no bots), mensaje en el canal elegido con `{usuario}` y `{miembros}` + cómo empezar (`/perfil`, `/ayuda`). Canal y texto en 📣 Comunidad |
+| 🔔 Avisarme | Las respuestas de cooldown de `/trabajar` y `/robar` traen el botón: un DM cuando acaba (una sola vez; sobrevive a un reinicio) |
 
 ---
 
@@ -1122,11 +1137,14 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 
 | Comando | Sección |
 |---|---|
+| `/avisos` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/ayuda` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/bola8` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/conectar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/conversación` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
+| `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
@@ -1140,6 +1158,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/plex` | [Plex y Seerr](#11-plex-y-seerr) |
 | `/robar` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/sonidos` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/sugerencia` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/tienda` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/trabajar` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/tts` | [IA y multimedia](#3-ia-y-multimedia) |

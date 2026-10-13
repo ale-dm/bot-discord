@@ -1,5 +1,9 @@
 // Lista de ajustes del servidor y cómo es cada uno (datos, sin lógica).
 
+// Juegos del casino con tope de apuesta y cooldown propios (#460, #461): `casino.max_bet_<juego>` y
+// `casino.cooldown_sec_<juego>`. 0 = sin ajuste propio, vale el general (`casino.max_bet` y `casino.global_cooldown_sec`).
+const JUEGOS_CASINO = ["blackjack", "tragaperras", "ruleta", "ppt", "adivinar"];
+
 const DEFAULT_FLAT = {
     "duende.model": "",
     "duende.temperature": 0.7,
@@ -21,6 +25,8 @@ const DEFAULT_FLAT = {
     "cripto.min_sell": 100,
     "cripto.max_sell": 500000,
     "cripto.pausa": false,
+    "cripto.max_impacto_pct": 0,
+    "cripto.eventos_canal": "",
 
     "casino.min_bet": 10,
     "casino.max_bet": 100000,
@@ -68,6 +74,11 @@ const DEFAULT_FLAT = {
     "alertas.enabled": true,
     "alertas.admin_ids": "",
 
+    "avisos.cumple_channel_id": "",
+    "bienvenida.canal_id": "",
+    "bienvenida.texto": "",
+    "sugerencias.canal_id": "",
+
     "clasificacion.canal": "",
     "clasificacion.premio": 500,
     "clasificacion.ultima_semana": "",
@@ -103,6 +114,8 @@ const KEY_TYPES = {
     "cripto.min_sell": "number",
     "cripto.max_sell": "number",
     "cripto.pausa": "boolean",
+    "cripto.max_impacto_pct": "number",
+    "cripto.eventos_canal": "string",
 
     "casino.min_bet": "number",
     "casino.max_bet": "number",
@@ -150,6 +163,11 @@ const KEY_TYPES = {
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
 
+    "avisos.cumple_channel_id": "string",
+    "bienvenida.canal_id": "string",
+    "bienvenida.texto": "string",
+    "sugerencias.canal_id": "string",
+
     "clasificacion.canal": "string",
     "clasificacion.premio": "number",
     "clasificacion.ultima_semana": "string",
@@ -164,4 +182,11 @@ const KEY_TYPES = {
     "eventos.casino_pct": "number",
 };
 
-module.exports = { DEFAULT_FLAT, KEY_TYPES };
+for (const juego of JUEGOS_CASINO) {
+    DEFAULT_FLAT[`casino.max_bet_${juego}`] = 0;
+    DEFAULT_FLAT[`casino.cooldown_sec_${juego}`] = 0;
+    KEY_TYPES[`casino.max_bet_${juego}`] = "number";
+    KEY_TYPES[`casino.cooldown_sec_${juego}`] = "number";
+}
+
+module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };

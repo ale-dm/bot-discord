@@ -3,7 +3,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { lineaDinero } = require("./economia");
 const { backBtn, filaMontos, filaSacar, getSaldo } = require("./casinoComun");
-const { ultimosNumeros } = require("../systems/casino/ruleta");
+const { ultimosNumeros, CALLES } = require("../systems/casino/ruleta");
 
 function filaVolverRuleta(label) {
     return new ActionRowBuilder().addComponents(
@@ -32,6 +32,7 @@ function buildPickRuleta(userId) {
         { label: "Alto 19-36 (×2)", value: "mitad_alto" },
         { label: "🎲 Docenas (×3)", value: "docenas" },
         { label: "🔢 Número exacto (×36)", value: "numero" },
+        { label: "🛣️ Calle (×12)", value: "calle" },
     ];
     const mkBtn = (t) => new ButtonBuilder().setCustomId(`casino_pick_ruleta_${t.value}`).setLabel(t.label).setStyle(ButtonStyle.Secondary);
     const embed = new EmbedBuilder()
@@ -112,14 +113,37 @@ function buildPickNumeroRuleta(userId, grupo) {
     return { embeds: [embed], components: [desplegable, volver] };
 }
 
+/** Ruleta, calle, paso 1: qué fila del tapete (desplegable de las 12 calles; el valor es su primer número). */
+function buildPickCalle(userId) {
+    const desplegable = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId("casino_ruleta_calle_sel")
+            .setPlaceholder("Elige la calle")
+            .addOptions(CALLES.map((c) => ({ label: `${c}-${c + 1}-${c + 2}`, value: String(c) }))),
+    );
+    const embed = new EmbedBuilder()
+        .setTitle("🎡 Ruleta — Calle")
+        .setDescription(
+            `Tres números seguidos de una fila del tapete (cobra ×12).
+${lineaDinero(userId)}`,
+        )
+        .setColor(0xe74c3c);
+    return { embeds: [embed], components: [desplegable, filaVolverRuleta("◄ Tipos")] };
+}
+
 /** Ruleta, paso 2: importe (casino_play_ruleta_{importe}_{tipo}_{valor}). */
 function buildPickMontoRuleta(userId, tipo, valor) {
     const saldo = getSaldo(userId);
     const numero = tipo === "numero";
+    const calle = tipo === "calle";
     const embed = new EmbedBuilder()
-        .setTitle(numero ? "🎡 Ruleta — Número exacto" : "🎡 Ruleta — Elige tu apuesta")
+        .setTitle(numero ? "🎡 Ruleta — Número exacto" : calle ? "🎡 Ruleta — Calle" : "🎡 Ruleta — Elige tu apuesta")
         .setDescription(
-            numero ? `Número: **${valor}** (×36)\n${lineaDinero(userId)}` : `Tipo: **${tipo} ${valor}**\n${lineaDinero(userId)}`,
+            numero
+                ? `Número: **${valor}** (×36)\n${lineaDinero(userId)}`
+                : calle
+                  ? `Calle: **${Number(valor)}-${Number(valor) + 1}-${Number(valor) + 2}** (×12)\n${lineaDinero(userId)}`
+                  : `Tipo: **${tipo} ${valor}**\n${lineaDinero(userId)}`,
         )
         .setColor(0xe74c3c);
     return {
@@ -136,4 +160,4 @@ function buildPickMontoRuleta(userId, tipo, valor) {
     };
 }
 
-module.exports = { buildPickRuleta, buildPickDocenas, buildPickRangoNumero, buildPickNumeroRuleta, buildPickMontoRuleta };
+module.exports = { buildPickRuleta, buildPickCalle, buildPickDocenas, buildPickRangoNumero, buildPickNumeroRuleta, buildPickMontoRuleta };

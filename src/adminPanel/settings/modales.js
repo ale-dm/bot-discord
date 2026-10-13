@@ -100,6 +100,8 @@ async function modalCriptoMarket(interaction, id, guildId) {
     guildSettings.setManySettings(guildId, {
         "cripto.fee_buy_pct": interaction.fields.getTextInputValue("feeBuy").trim(),
         "cripto.fee_sell_pct": interaction.fields.getTextInputValue("feeSell").trim(),
+        "cripto.max_impacto_pct": interaction.fields.getTextInputValue("impacto").trim() || "0",
+        "cripto.eventos_canal": canalElegido(interaction.fields, "canal"),
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.cripto.market" });
     await interaction.reply({ content: "✅ Configuración de mercado cripto actualizada.", flags: MessageFlags.Ephemeral });
@@ -128,6 +130,31 @@ async function modalCasinoLimits(interaction, id, guildId) {
     });
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.limits" });
     await interaction.reply({ content: "✅ Límites de casino actualizados.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+// Tope de apuesta y cooldown por juego (#460, #461): un número por juego; vacío o 0 = vale el general.
+const JUEGOS_POR_CAMPO = { bj: "blackjack", slots: "tragaperras", ruleta: "ruleta", ppt: "ppt", adivinar: "adivinar" };
+
+function valoresPorJuego(interaction, prefijo) {
+    const valores = {};
+    for (const [campo, juego] of Object.entries(JUEGOS_POR_CAMPO)) {
+        valores[`casino.${prefijo}_${juego}`] = interaction.fields.getTextInputValue(campo).trim() || "0";
+    }
+    return valores;
+}
+
+async function modalCasinoTopes(interaction, id, guildId) {
+    guildSettings.setManySettings(guildId, valoresPorJuego(interaction, "max_bet"));
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.topes" });
+    await interaction.reply({ content: "✅ Topes de apuesta por juego actualizados.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+async function modalCasinoEsperas(interaction, id, guildId) {
+    guildSettings.setManySettings(guildId, valoresPorJuego(interaction, "cooldown_sec"));
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.esperas" });
+    await interaction.reply({ content: "✅ Cooldown por juego actualizado.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
@@ -238,6 +265,8 @@ const ACCIONES_MODAL = new Map([
     ["paneladmin_cfg_cripto_limits_modal", modalCriptoLimits],
     ["paneladmin_cfg_casino_limits_modal", modalCasinoLimits],
     ["paneladmin_cfg_casino_rtp_modal", modalCasinoRtp],
+    ["paneladmin_cfg_casino_topes_modal", modalCasinoTopes],
+    ["paneladmin_cfg_casino_esperas_modal", modalCasinoEsperas],
     ["paneladmin_cfg_tienda_modal", modalTienda],
     ["paneladmin_cfg_acl_modal", modalAcl],
     ["paneladmin_cfg_logros_modal", modalLogros],

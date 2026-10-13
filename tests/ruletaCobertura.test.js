@@ -239,6 +239,85 @@ describe("RTP de la ruleta", () => {
     });
 });
 
+describe("calle (#459)", () => {
+    const sistema = require("../src/systems/casino/ruleta");
+
+    test("solo es calle la primera casilla de una fila del tapete: 1, 4, 7… 34", () => {
+        expect(sistema.CALLES).toEqual([1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]);
+        for (const v of ["1", 4, "34"]) expect(sistema.esCalleValida(v)).toBe(true);
+        for (const v of ["0", "2", "35", "37", "-2", "", "x", null]) expect(sistema.esCalleValida(v)).toBe(false);
+        expect(sistema.numerosDeCalle("7")).toEqual([7, 8, 9]);
+        expect(sistema.numerosDeCalle("8")).toEqual([]);
+    });
+
+    test("una calle ganadora paga 11 a 1 y una perdedora descuenta la apuesta", () => {
+        for (const salido of [7, 8, 9]) expect(sistema.calcularPago("calle", "7", salido, 100)).toBe(1100);
+        for (const salido of [0, 6, 10, 36]) expect(sistema.calcularPago("calle", "7", salido, 100)).toBe(-100);
+        expect(sistema.calcularPago("calle", "8", 8, 100)).toBe(-100); // un valor que no es calle nunca gana
+    });
+
+    test("jugada completa: acierta una calle (de 900 a 2100) y falla otra", async () => {
+        const u = jugador(1000);
+        salidaEn(8);
+        const i = await jugar(comando(u, { tipo: "calle:7" }));
+        expect(titulo(i)).toBe(GANA);
+        expect(saldo(u)).toBe(2100);
+        expect(embedFinal(i).description).toContain("calle **7-8-9** (×12)");
+
+        salidaEn(20);
+        const j = await jugar(comando(u, { tipo: "calle:7" }));
+        expect(titulo(j)).toBe(PIERDE);
+        expect(saldo(u)).toBe(2000);
+    });
+
+    test("un valor que no forma calle se rechaza sin cobrar", async () => {
+        const u = jugador(1000);
+        const i = await jugar(comando(u, { tipo: "calle:5" }));
+        expect(i.reply.mock.calls[0][0].content).toMatch(/Esa calle no existe/);
+        expect(i.deferReply).not.toHaveBeenCalled();
+        expect(saldo(u)).toBe(1000);
+    });
+
+    test("Repetir vuelve a funcionar con una calle, y su identificador cabe en un botón", async () => {
+        const u = jugador(1000);
+        salidaEn(31);
+        const i = await jugar(comando(u, { tipo: "calle:31" }));
+        const repetir = i.editReply.mock.calls.at(-1)[0].components[0].components[0].data.custom_id;
+        expect(repetir).toBe("casino_play_ruleta_100_calle_31");
+        expect(repetir.length).toBeLessThanOrEqual(100);
+
+        salidaEn(33);
+        const r = await pulsar(boton(u, "ruleta_rept_100_calle_31"));
+        expect(titulo(r)).toBe(GANA);
+        expect(saldo(u)).toBe(3200); // 2100 tras la primera calle ganadora y otros 1.100 netos de la repetición
+    });
+
+    test("el panel ofrece la calle: tipo, desplegable de 12 filas y importe con su identificador", () => {
+        const casino = require("../src/paneles/casino");
+        const tipos = casino.buildPickRuleta("x").components.flatMap((f) => f.toJSON().components.map((c) => c.custom_id));
+        expect(tipos).toContain("casino_pick_ruleta_calle");
+
+        const sel = casino.buildPickCalle("x").components[0].toJSON().components[0];
+        expect(sel.custom_id).toBe("casino_ruleta_calle_sel");
+        expect(sel.options.map((o) => o.label)).toEqual(sistema.CALLES.map((c) => `${c}-${c + 1}-${c + 2}`));
+
+        const monto = casino.buildPickMontoRuleta("x", "calle", "7");
+        expect(monto.embeds[0].toJSON().description).toContain("7-8-9");
+        const ids = monto.components.flatMap((f) => f.toJSON().components.map((c) => c.custom_id));
+        expect(ids).toContain("casino_play_ruleta_100_calle_7");
+    });
+
+    test("el desplegable de calles lleva al importe de esa calle", async () => {
+        const juegos = require("../src/commands/juegos/juegos");
+        const i = { customId: "casino_ruleta_calle_sel", values: ["10"], user: { id: "x" }, update: jest.fn(async () => {}) };
+        await juegos.handleSelect(null, i);
+        expect(i.update.mock.calls[0][0].embeds[0].toJSON().description).toContain("10-11-12");
+        const n = { customId: "casino_ruleta_numero_sel", values: ["17"], user: { id: "x" }, update: jest.fn(async () => {}) };
+        await juegos.handleSelect(null, n);
+        expect(n.update.mock.calls[0][0].embeds[0].toJSON().description).toContain("Número: **17**");
+    });
+});
+
 describe("animación", () => {
     test("13 fotogramas, la última vuelta para en el número que sale, luego revela y muestra el resultado", async () => {
         const u = jugador(1000);

@@ -6,6 +6,7 @@ const {
     ButtonBuilder,
     ButtonStyle,
     StringSelectMenuBuilder,
+    LabelBuilder,
     UserSelectMenuBuilder,
     ModalBuilder,
     TextInputBuilder,
@@ -16,6 +17,9 @@ const { DEPORTES } = require("../services/oddsApi");
 const { fmtNumero } = require("../core/formato");
 const { ts, corto, VOLVER } = require("./retosComun");
 const { filasImporte } = require("./importes");
+
+/** El campo del formulario con las partidas del duelo. */
+const CAMPO_SERIE = "serie";
 
 // ─── Pasos para lanzar un reto ───────────────────────────────────────────────
 
@@ -97,9 +101,21 @@ function buildElegirJuego() {
     };
 }
 
-/** Elegir a quién se reta. `clave`: p_{eleccion}_{matchId} (partido) o d_{juego} (duelo). */
+/**
+ * Elegir a quién se reta. `clave`: p_{eleccion}_{matchId} (partido) o d_{juego} (duelo). Un duelo también se
+ * puede lanzar abierto (#438): sin rival, y lo acepta el primero que quiera.
+ */
 function buildElegirRival(clave, texto) {
     const embed = new EmbedBuilder().setTitle("⚔️ ¿A quién retas?").setDescription(texto).setColor(0x3498db);
+    const volver = new ActionRowBuilder().addComponents(VOLVER());
+    if (clave.startsWith("d_")) {
+        volver.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`retos_abierto_${clave}`)
+                .setLabel("🌐 Abierto: que acepte cualquiera")
+                .setStyle(ButtonStyle.Success),
+        );
+    }
     return {
         embeds: [embed],
         components: [
@@ -110,12 +126,33 @@ function buildElegirRival(clave, texto) {
                     .setMinValues(1)
                     .setMaxValues(1),
             ),
-            new ActionRowBuilder().addComponents(VOLVER()),
+            volver,
         ],
     };
 }
 
-function modalCantidad(customId, titulo, efectivo) {
+/** Las partidas del duelo (#436), en el formulario de la cantidad: una sola o al mejor de tres. */
+function campoSerie() {
+    return new LabelBuilder().setLabel("¿Cuántas partidas?").setStringSelectMenuComponent(
+        new StringSelectMenuBuilder()
+            .setCustomId(CAMPO_SERIE)
+            .setRequired(false)
+            .setMinValues(0)
+            .setMaxValues(1)
+            .setPlaceholder("Una partida")
+            .addOptions(
+                { label: "Una partida", value: "1", default: true },
+                {
+                    label: "Al mejor de 3",
+                    value: "3",
+                    description: "Gana quien llegue antes a dos victorias; el bote se paga al final",
+                },
+            ),
+    );
+}
+
+/** `conSerie`: añade el desplegable de partidas, para los duelos (#436). */
+function modalCantidad(customId, titulo, efectivo, { conSerie = false, conProvocacion = true } = {}) {
     return new ModalBuilder()
         .setCustomId(customId)
         .setTitle(corto(titulo, 45))
@@ -125,15 +162,20 @@ function modalCantidad(customId, titulo, efectivo) {
                 placeholder: `Tienes ${fmtNumero(efectivo)} en efectivo`,
             }),
             // Opcional: sale en el mensaje público del reto (#440).
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("provocacion")
-                    .setLabel("Una frase para picar al rival (opcional)")
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder("Te voy a dejar sin monedas")
-                    .setMaxLength(retos.MAX_PROVOCACION)
-                    .setRequired(false),
-            ),
+            ...(conProvocacion
+                ? [
+                      new ActionRowBuilder().addComponents(
+                          new TextInputBuilder()
+                              .setCustomId("provocacion")
+                              .setLabel("Una frase para picar al rival (opcional)")
+                              .setStyle(TextInputStyle.Short)
+                              .setPlaceholder("Te voy a dejar sin monedas")
+                              .setMaxLength(retos.MAX_PROVOCACION)
+                              .setRequired(false),
+                      ),
+                  ]
+                : []),
+            ...(conSerie ? [campoSerie()] : []),
         );
 }
 
@@ -153,7 +195,19 @@ function modalPorra() {
             input("cantidad", `Entrada para cada uno (${retos.MIN}-${fmtNumero(retos.MAX)})`, TextInputStyle.Short, (b) =>
                 b.setPlaceholder("100").setMaxLength(7).setRequired(true),
             ),
+            // Opcional (#448): sin él, la porra se cierra a mano.
+            input("cierre", "Se cierra en… (opcional: 30m, 2h, 1d)", TextInputStyle.Short, (b) =>
+                b.setPlaceholder("2h").setMaxLength(8).setRequired(false),
+            ),
         );
 }
 
-module.exports = { buildElegirPartido, buildElegirLado, buildElegirJuego, buildElegirRival, modalCantidad, modalPorra };
+module.exports = {
+    CAMPO_SERIE,
+    buildElegirPartido,
+    buildElegirLado,
+    buildElegirJuego,
+    buildElegirRival,
+    modalCantidad,
+    modalPorra,
+};

@@ -4,7 +4,8 @@ const retos = require("../systems/retos");
 const dinero = require("../systems/dinero");
 const { filaPestanas } = require("./pestanasJuegos");
 const { fmtNumero } = require("../core/formato");
-const { campo, corto, persona } = require("./retosComun");
+const { campo, corto, persona, VOLVER } = require("./retosComun");
+const { trozos } = require("./filas");
 
 /** Enlace al mensaje del reto (o su número, si no se sabe dónde está). */
 function enlace(reto) {
@@ -65,8 +66,43 @@ function buildRetos(userId, aviso = null) {
         new ButtonBuilder().setCustomId("retos_nuevo_partido").setLabel("⚽ Retar a un partido").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("retos_nuevo_duelo").setLabel("🎲 Duelo").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("retos_nuevo_porra").setLabel("🗳️ Porra").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("retos_caraacara").setLabel("🆚 Cara a cara").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("retos_bloqueos").setLabel("🚫 Bloqueos").setStyle(ButtonStyle.Secondary),
     );
     return { embeds: [embed], components: [acciones, filaPestanas(userId, "retos")] };
 }
 
-module.exports = { buildRetos };
+const MAX_BLOQUEOS_VISIBLES = 20;
+
+/** Las personas que tienes bloqueadas (#450), cada una con su botón para desbloquearla. */
+function buildBloqueos(userId, aviso = null) {
+    const todos = retos.listarBloqueos(userId);
+    const visibles = todos.slice(0, MAX_BLOQUEOS_VISIBLES);
+    const lista = visibles.length
+        ? [
+              "Estas personas no pueden retarte (ni a duelos ni a partidos). Los retos que ya estén en juego no se tocan.",
+              "",
+              ...visibles.map((id, n) => `${n + 1}. <@${id}>`),
+              ...(todos.length > visibles.length ? [`…y ${todos.length - visibles.length} más`] : []),
+          ]
+        : ["No tienes a nadie bloqueado. Para bloquear a alguien, pulsa 🚫 Bloquear en un reto que te haya lanzado."];
+    const embed = new EmbedBuilder()
+        .setTitle("🚫 Retos bloqueados")
+        .setColor(0x95a5a6)
+        .setDescription([...(aviso ? [aviso, ""] : []), ...lista].join("\n"));
+    const botones = visibles.map((id, n) =>
+        new ButtonBuilder()
+            .setCustomId(`retos_desbloquear_${id}`)
+            .setLabel(`Desbloquear ${n + 1}`)
+            .setStyle(ButtonStyle.Secondary),
+    );
+    return {
+        embeds: [embed],
+        components: [
+            ...trozos(botones).map((g) => new ActionRowBuilder().addComponents(g)),
+            new ActionRowBuilder().addComponents(VOLVER()),
+        ],
+    };
+}
+
+module.exports = { buildRetos, buildBloqueos };

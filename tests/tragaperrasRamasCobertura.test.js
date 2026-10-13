@@ -280,14 +280,14 @@ describe("botones", () => {
         const i = interaccion({ customId: "tragaperras_repetir_250" });
         await tragaperras.handleButton(null, i);
         expect(i.deferUpdate).toHaveBeenCalled();
-        expect(casinoTx.descontarApuesta).toHaveBeenCalledWith("u-tragaperras", 250, "g-tragaperras");
+        expect(casinoTx.descontarApuesta).toHaveBeenCalledWith("u-tragaperras", 250, "g-tragaperras", "tragaperras");
     });
 
     test("jugar con una cantidad concreta gira con esa cantidad", async () => {
         forzarCarretes("🍒", "🍋", "🍊");
         const i = interaccion({ customId: "tragaperras_jugar_500" });
         await tragaperras.handleButton(null, i);
-        expect(casinoTx.descontarApuesta).toHaveBeenCalledWith("u-tragaperras", 500, "g-tragaperras");
+        expect(casinoTx.descontarApuesta).toHaveBeenCalledWith("u-tragaperras", 500, "g-tragaperras", "tragaperras");
     });
 
     test("repetir o jugar mientras se gira avisa y no gira", async () => {

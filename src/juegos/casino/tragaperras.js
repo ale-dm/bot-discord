@@ -8,8 +8,8 @@ const casino = require("../../paneles/casino");
 const partidasActivas = new Map();
 
 // Al acabar (y, desactivada, mientras gira): 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.
-function crearBotonesResultado(apuesta, disabled = false) {
-    return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled });
+function crearBotonesResultado(apuesta, disabled = false, userId = null) {
+    return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled, userId });
 }
 
 /**
@@ -183,7 +183,7 @@ module.exports = {
 
             // Se cobra antes de tocar el mensaje: si no se puede (saldo, límite, espera), el aviso sale aparte
             // y el panel sigue ahí para cambiar la apuesta. Antes lo sustituía un texto sin botones.
-            const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
+            const descuento = descontarApuesta(userId, apuesta, interaction.guildId, "tragaperras");
             if (!descuento.exito) {
                 const aviso = { content: descuento.mensaje, flags: MessageFlags.Ephemeral };
                 await (yaDiferido ? interaction.followUp(aviso) : interaction.reply(aviso));
@@ -285,7 +285,7 @@ async function animarGiro(interaction, apuesta, jackpot, username) {
 async function mostrarResultado(interaction, { carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal }) {
     const embedResultado = crearEmbedResultado(carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal);
 
-    const row = crearBotonesResultado(apuesta, false);
+    const row = crearBotonesResultado(apuesta, false, interaction.user?.id);
 
     try {
         await interaction.editReply({ embeds: [embedResultado], components: [row] });

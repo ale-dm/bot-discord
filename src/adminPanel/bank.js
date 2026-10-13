@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, UserSelectMenuBuilder, MessageFlags } = require("discord.js");
-const db = require("../core/db");
+const repo = require("../repositorios/dinero");
 const adminAudit = require("../systems/adminAudit");
 const { modalConCampos, usuarioElegido, opcionElegida } = require("./common");
 
@@ -63,10 +63,8 @@ async function accionHistorialglobal(interaction, id, guildId) {
     if (id.startsWith("paneladmin_bank_historialglobal_page_")) page = parseInt(id.split("_").pop(), 10) || 0;
     const pageSize = 10;
     const offset = page * pageSize;
-    const historial = db
-        .prepare("SELECT userId, fecha, descripcion, cantidad FROM historial ORDER BY fecha DESC LIMIT ? OFFSET ?")
-        .all(pageSize, offset);
-    const total = db.prepare("SELECT COUNT(*) AS total FROM historial").get().total || 0;
+    const historial = repo.historialGlobal(pageSize, offset);
+    const total = repo.totalMovimientos();
     const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
 
     const lines = historial.length
@@ -109,7 +107,7 @@ async function accionHistorialglobal(interaction, id, guildId) {
 async function accionConfirmReset(interaction, id, guildId) {
     const userId = id.replace("paneladmin_bank_confirm_reset_", "");
     // Como una cuenta nueva: el dinero inicial en efectivo, banco vacío y sin dinero negro.
-    db.prepare("UPDATE banco SET saldo = 0, enMano = ?, negro = 0 WHERE userId = ?").run(require("../systems/dinero").INICIAL, userId);
+    repo.resetearCuenta(userId, require("../systems/dinero").INICIAL);
     require("../systems/dinero").apuntar(userId, "admin", "Reseteo admin", 0);
     adminAudit.logAdminAction({
         guildId: interaction.guildId,
@@ -126,7 +124,7 @@ async function accionConfirmReset(interaction, id, guildId) {
 
 async function accionConfirmBorrar(interaction, id, guildId) {
     const userId = id.replace("paneladmin_bank_confirm_borrar_", "");
-    db.prepare("DELETE FROM historial WHERE userId = ?").run(userId);
+    repo.borrarHistorial(userId);
     adminAudit.logAdminAction({
         guildId: interaction.guildId,
         actorId: interaction.user.id,
@@ -178,9 +176,7 @@ async function modificarSaldo(interaction, userId) {
         return true;
     }
     require("../systems/dinero").asegurarCuenta(userId);
-    if (destino === "banco") db.prepare("UPDATE banco SET saldo = saldo + ? WHERE userId = ?").run(cantidad, userId);
-    else if (destino === "negro") db.prepare("UPDATE banco SET negro = negro + ? WHERE userId = ?").run(cantidad, userId);
-    else db.prepare("UPDATE banco SET enMano = enMano + ? WHERE userId = ?").run(cantidad, userId);
+    repo.sumarA(destino, cantidad, userId);
     require("../systems/dinero").apuntar(userId, "admin", `Modificación admin (${tipo})`, cantidad);
     adminAudit.logAdminAction({
         guildId: interaction.guildId,
@@ -204,10 +200,8 @@ async function buscarMiembro(interaction, query) {
 }
 
 function textoResumenBanco(memberId) {
-    const datos = db.prepare("SELECT saldo, enMano, negro FROM banco WHERE userId = ?").get(memberId);
-    const historial = db
-        .prepare("SELECT fecha, descripcion, cantidad FROM historial WHERE userId = ? ORDER BY fecha DESC LIMIT 5")
-        .all(memberId);
+    const datos = repo.resumenCuenta(memberId);
+    const historial = repo.ultimosMovimientos(memberId, 5);
     let desc = datos
         ? `💵 Efectivo: **${datos.enMano}**\n🏦 Banco: **${datos.saldo}**\n🥷 Dinero negro: **${datos.negro || 0}**`
         : "Sin datos bancarios.";

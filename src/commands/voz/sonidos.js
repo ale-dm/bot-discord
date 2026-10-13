@@ -3,7 +3,7 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const sonidos = require("../../systems/sonidos");
 const { pantallaSonidos } = require("../../paneles/sonidos");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 
 module.exports = {
     componentHandlers: [{ types: ["button"], prefixes: ["sonido_"], method: "handleButton", acl: "sonidos" }],

@@ -14,7 +14,7 @@ const {
 const { isAdmin } = require("../../adminPanel/common");
 const adminAudit = require("../../systems/adminAudit");
 const { createLogger } = require("../../core/logger");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 
 const log = createLogger("Mensaje");
 const TEXTO_MAX = 1500; // deja sitio a la cabecera dentro de los 2000 caracteres de un DM

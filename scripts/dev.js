@@ -72,7 +72,7 @@ process.on("SIGTERM", () => stopAll(0, true));
         }
     });
 
-    const registro = await run("bot", "src/core/registerCommands.js");
+    const registro = await run("bot", "src/discord/registerCommands.js");
     if (registro !== 0) {
         process.stdout.write(`${LABELS.bot}${SEP}${paint("31", "no se pudieron registrar los comandos; el bot no arranca")}\n`);
         return stopAll(registro);

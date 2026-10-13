@@ -2,7 +2,7 @@
 // TTCL, el nivel de log en caliente, las 🔔 alertas por DM a los admins (y la vista previa del 📊 resumen semanal) y 🤖
 // probar el modelo de Gemini. Antes eran los comandos /diagnostico y /ttcl-diagnostico.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require("discord.js");
-const db = require("../core/db");
+const repo = require("../repositorios/sistema");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
 const alertas = require("../systems/alertas");
@@ -55,7 +55,7 @@ function textoCreditos() {
 // Comprueba que la base de datos responde y cuenta los usuarios del banco.
 function estadoBaseDatos() {
     try {
-        return { dbOk: "OK", dbUsers: db.prepare("SELECT COUNT(*) as total FROM banco").get()?.total || 0 };
+        return { dbOk: "OK", dbUsers: repo.usuariosDelBanco() };
     } catch (e) {
         log.error("La base de datos no responde:", e);
         return { dbOk: `ERROR: ${e.message}`, dbUsers: 0 };
@@ -149,13 +149,11 @@ function buildTtcl(guildId) {
     const cripto = require("../systems/cripto/mercado");
     const circulacion = cripto.ttclCirculacion();
     const pool = cripto.leerPool();
-    const ultimo = db.prepare("SELECT precio, timestamp FROM cripto_ttcl_precios ORDER BY timestamp DESC LIMIT 1").get();
-    const totalPuntos = db.prepare("SELECT COUNT(*) as total FROM cripto_ttcl_precios").get()?.total || 0;
-    const puntos24h =
-        db.prepare("SELECT COUNT(*) as total FROM cripto_ttcl_precios WHERE timestamp >= ?").get(Date.now() - 24 * 3600 * 1000)?.total || 0;
-    const holders =
-        db.prepare("SELECT COUNT(DISTINCT userId) as total FROM cripto_carteras WHERE cripto = 'TTCL' AND cantidad > 0").get()?.total || 0;
-    const totalTtcl = db.prepare("SELECT COALESCE(SUM(cantidad), 0) as total FROM cripto_carteras WHERE cripto = 'TTCL'").get()?.total || 0;
+    const ultimo = repo.ultimoPrecioTtcl();
+    const totalPuntos = repo.puntosDePrecio();
+    const puntos24h = repo.puntosDePrecioDesde(Date.now() - 24 * 3600 * 1000);
+    const holders = repo.tenedoresDeTtcl();
+    const totalTtcl = repo.ttclEnCarteras();
     const embed = new EmbedBuilder()
         .setTitle("💎 Diagnóstico TTCL")
         .setColor(0x9b59b6)

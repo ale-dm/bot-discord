@@ -19,6 +19,7 @@ const {
 const { error, SinEfectivo, jugadaAlAzar } = require("./comun");
 const { obtener, partidoDe, guardarDatos, guardarMensaje } = require("./persistencia");
 const { unir } = require("./cobros");
+const { bloqueado } = require("./bloqueos");
 
 const log = createLogger("Retos");
 
@@ -55,9 +56,9 @@ function insertar(campos, opcionCreador) {
             const info = db
                 .prepare(
                     `INSERT INTO retos (tipo, estado, creador, rival, cantidad, guildId, channelId, match_id, eleccion, juego, pregunta, opciones,
-                                        provocacion, creado_en, actualizado_en, expira_en)
+                                        provocacion, cierra_en, serie, creado_en, actualizado_en, expira_en)
                      VALUES (@tipo, @estado, @creador, @rival, @cantidad, @guildId, @channelId, @match_id, @eleccion, @juego, @pregunta, @opciones,
-                             @provocacion, @ahora, @ahora, @expira_en)`,
+                             @provocacion, @cierra_en, @serie, @ahora, @ahora, @expira_en)`,
                 )
                 .run({
                     guildId: null,
@@ -68,6 +69,8 @@ function insertar(campos, opcionCreador) {
                     pregunta: null,
                     opciones: null,
                     provocacion: null,
+                    cierra_en: null,
+                    serie: 1,
                     ...campos,
                     creador: String(campos.creador),
                     rival: campos.rival ? String(campos.rival) : null,
@@ -85,9 +88,14 @@ function insertar(campos, opcionCreador) {
     }
 }
 
-function validarDuelo(creador, rival, cantidad) {
-    if (!rival) return "❌ Elige a quién retas.";
-    if (String(rival) === String(creador)) return "❌ No puedes retarte a ti mismo.";
+/** Lo que se contesta a quien intenta retar a alguien que le ha bloqueado (#450): no dice que hay un bloqueo. */
+const NO_SE_PUEDE_RETAR = "❌ No puedes retar a esa persona ahora mismo.";
+
+/** `abierto` (#438): un duelo sin rival fijo, que acepta el primero que quiera. */
+function validarDuelo(creador, rival, cantidad, abierto = false) {
+    if (!rival && !abierto) return "❌ Elige a quién retas.";
+    if (rival && String(rival) === String(creador)) return "❌ No puedes retarte a ti mismo.";
+    if (rival && bloqueado(rival, creador)) return NO_SE_PUEDE_RETAR;
     const n = db.prepare("SELECT COUNT(*) AS n FROM retos WHERE creador = ? AND estado = 'pendiente'").get(String(creador)).n;
     if (n >= MAX_PENDIENTES) return `❌ Ya tienes ${n} retos sin aceptar: espera a que respondan o cancela alguno.`;
     return validarCantidad(cantidad);
@@ -123,10 +131,21 @@ function crearPartido({ creador, rival, matchId, eleccion, cantidad, provocacion
 }
 
 /** Duelo de casino (ppt, dados o blackjack) contra otra persona. */
-function crearDuelo({ creador, rival, juego, cantidad, provocacion = null, guildId = null, channelId = null }) {
-    const invalido = validarDuelo(creador, rival, cantidad);
+function crearDuelo({
+    creador,
+    rival = null,
+    abierto = false,
+    juego,
+    cantidad,
+    serie = 1,
+    provocacion = null,
+    guildId = null,
+    channelId = null,
+}) {
+    const invalido = validarDuelo(creador, rival, cantidad, abierto);
     if (invalido) return error(invalido);
     if (!JUEGOS[juego]) return error("❌ Ese juego no existe.");
+    if (![1, 3].includes(serie)) return error("❌ Un duelo se juega a una partida o al mejor de 3.");
     const frase = validarProvocacion(provocacion);
     if (!frase.ok) return error(frase.mensaje);
     return insertar(
@@ -134,11 +153,12 @@ function crearDuelo({ creador, rival, juego, cantidad, provocacion = null, guild
             tipo: "duelo",
             estado: "pendiente",
             creador,
-            rival,
+            rival: abierto ? null : rival,
             cantidad,
             guildId,
             channelId,
             juego,
+            serie,
             provocacion: frase.texto,
             expira_en: Date.now() + ESPERA_ACEPTAR_MS,
         },
@@ -155,8 +175,35 @@ function leerOpciones(texto) {
     return opciones.length ? opciones : ["Sí", "No"];
 }
 
-/** Porra: cualquiera entra con `cantidad` eligiendo una opción, y un admin decide cuál gana. */
-function crearPorra({ creador, pregunta, opciones, cantidad, guildId = null, channelId = null }) {
+const MINUTO_MS = 60 * 1000;
+const UNIDADES_CIERRE = { m: MINUTO_MS, h: 60 * MINUTO_MS, d: 24 * 60 * MINUTO_MS };
+
+/**
+ * Cuánto falta para cerrar una porra, escrito como «30m», «2h» o «1d» (un número solo son horas), en milisegundos (#448).
+ * Vacío = sin cierre automático (`ms: null`). Tiene que ser de al menos un minuto y de menos de PORRA_DIAS días, que es
+ * cuando una porra sin resolver se devuelve.
+ * @returns {{ ok: true, ms: number | null } | { ok: false, mensaje: string }}
+ */
+function leerCierre(texto) {
+    const t = String(texto ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "");
+    if (!t) return { ok: true, ms: null };
+    const m = /^(\d+(?:[.,]\d+)?)([mhd])?$/.exec(t);
+    const invalido = { ok: false, mensaje: "❌ El cierre se escribe como 30m, 2h o 1d (minutos, horas o días)." };
+    if (!m) return invalido;
+    const ms = Math.round(Number(m[1].replace(",", ".")) * UNIDADES_CIERRE[m[2] || "h"]);
+    if (!(ms >= MINUTO_MS)) return { ok: false, mensaje: "❌ El cierre tiene que ser de al menos un minuto." };
+    if (ms >= PORRA_DIAS * UNIDADES_CIERRE.d) return { ok: false, mensaje: `❌ El cierre tiene que ser de menos de ${PORRA_DIAS} días.` };
+    return { ok: true, ms };
+}
+
+/**
+ * Porra: cualquiera entra con `cantidad` eligiendo una opción, y un admin decide cuál gana. Con `cierraEn` (ms desde ahora,
+ * ver leerCierre), la porra pasa sola a cerrada al llegar ese momento (#448); sin él se cierra a mano.
+ */
+function crearPorra({ creador, pregunta, opciones, cantidad, cierraEn = null, guildId = null, channelId = null }) {
     const texto = String(pregunta || "").trim();
     if (texto.length < 3 || texto.length > 200) return error("❌ La pregunta tiene que tener entre 3 y 200 caracteres.");
     if (opciones.length < 2 || opciones.length > PORRA_MAX_OPCIONES) {
@@ -168,6 +215,9 @@ function crearPorra({ creador, pregunta, opciones, cantidad, guildId = null, cha
     if (new Set(opciones.map((o) => o.toLowerCase())).size !== opciones.length) return error("❌ Hay opciones repetidas.");
     const invalida = validarCantidad(cantidad);
     if (invalida) return error(invalida);
+    if (cierraEn !== null && !(cierraEn >= MINUTO_MS && cierraEn < PORRA_DIAS * UNIDADES_CIERRE.d)) {
+        return error("❌ El cierre automático tiene que estar entre un minuto y el plazo de la porra.");
+    }
     return insertar({
         tipo: "porra",
         estado: "abierta",
@@ -177,6 +227,7 @@ function crearPorra({ creador, pregunta, opciones, cantidad, guildId = null, cha
         channelId,
         pregunta: texto,
         opciones: JSON.stringify(opciones),
+        cierra_en: cierraEn === null ? null : Date.now() + cierraEn,
         expira_en: Date.now() + PORRA_DIAS * 24 * 3600 * 1000,
     });
 }
@@ -250,12 +301,14 @@ function crearContraDuende({ userId, cantidad, matchId = null, eleccion = null, 
 }
 
 module.exports = {
+    validarCantidad,
     MAX_PROVOCACION,
     validarProvocacion,
     crearPartido,
     crearDuelo,
     crearPorra,
     leerOpciones,
+    leerCierre,
     motivoNoContraDuende,
     crearContraDuende,
 };

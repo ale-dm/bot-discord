@@ -4,8 +4,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("
 const { DEPORTES } = require("../../../services/oddsApi");
 const { QUINIELA_LOCK_MINUTES, estaBloqueadoPorTiempo } = require("../../../systems/apuestas/quinielas");
 
-const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
-const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
+const { MAX_BET_AMOUNT, MIN_BET_AMOUNT } = require("../../../systems/apuestas/quinielaReglas");
 const sesionesQuiniela = new Map();
 
 function getSesionKey(userId, quinielaId) {

@@ -1,6 +1,8 @@
 // /robar: intenta quitarle efectivo a alguien (cooldown global de 2h). Lógica en systems/robar.js.
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { robar, textoAvisoVictima, MIN_VICTIMA } = require("../../systems/robar");
+const avisosDm = require("../../systems/avisosDm");
+const { filaAvisar } = require("../../paneles/avisoCooldown");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Robar");
@@ -9,6 +11,7 @@ const log = createLogger("Robar");
 async function avisarVictima(victima, r) {
     const contenido = textoAvisoVictima(r);
     if (!contenido) return;
+    if (avisosDm.silenciado(victima.id, "robo")) return;
     try {
         await victima.send({ content: contenido });
     } catch (e) {
@@ -44,6 +47,7 @@ module.exports = {
                 const minutos = Math.ceil(r.retrySeconds / 60);
                 await interaction.reply({
                     content: `⏳ Todavía no puedes volver a robar. Espera ${minutos} min más.`,
+                    components: [filaAvisar("robar", r.retrySeconds)],
                     flags: MessageFlags.Ephemeral,
                 });
                 return;

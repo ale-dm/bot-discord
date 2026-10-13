@@ -2,7 +2,7 @@
 // editar, eliminar, poner a la venta y quitar de la venta. Antes eran /objeto y los subcomandos de admin de
 // /tienda (añadir, editar, eliminar). La configuración de la tienda (activa, límites, canal) está en Config Global.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
-const db = require("../core/db");
+const repo = require("../repositorios/catalogo");
 const adminAudit = require("../systems/adminAudit");
 const { simpleModal, modalConCampos, opcionElegida } = require("./common");
 const { efectoProteccion } = require("../systems/robar");
@@ -26,12 +26,7 @@ const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
 const idRol = (texto) => String(texto || "").replace(/[<@&>\s]/g, "") || null;
 
 function buildCatalogo(pagina = 1, aviso = "") {
-    const objetos = db
-        .prepare(
-            `SELECT o.*, t.id AS tiendaId, t.precio, t.stock
-             FROM objeto o LEFT JOIN tienda t ON t.objetoId = o.id ORDER BY o.id ASC`,
-        )
-        .all();
+    const objetos = repo.listarObjetosConVenta();
     const paginas = Math.max(1, Math.ceil(objetos.length / POR_PAGINA));
     pagina = Math.min(Math.max(1, pagina), paginas);
     const lineas = objetos.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA).map((o) => {
@@ -145,9 +140,7 @@ function crearObjeto(interaction) {
     const rolId = tipo === "rol" ? idRol(extra) : null;
     const errorEfecto = validarEfecto(efecto);
     if (errorEfecto) return { error: errorEfecto };
-    const r = db
-        .prepare("INSERT INTO objeto (nombre, descripcion, imagen, tipo, unico, rolId, efecto) VALUES (?, ?, ?, ?, 0, ?, ?)")
-        .run(v("nombre"), v("descripcion"), v("imagen") || null, tipo, rolId, efecto);
+    const r = repo.crearObjeto(v("nombre"), v("descripcion"), v("imagen") || null, tipo, rolId, efecto);
     auditar(interaction, "objeto.create", { id: r.lastInsertRowid, nombre: v("nombre"), tipo, rolId, efecto });
     return { aviso: `✅ Objeto **#${r.lastInsertRowid} ${v("nombre")}** creado. Ponlo a la venta con 🏷️.` };
 }
@@ -163,17 +156,15 @@ function editarObjeto(interaction, obj) {
     if (campo === "unico") valor = ["si", "sí", "1", "true"].includes(String(valor).toLowerCase()) ? 1 : 0;
     if (campo === "rol") valor = idRol(valor);
     const columna = campo === "rol" ? "rolId" : campo;
-    db.prepare(`UPDATE objeto SET ${columna} = ? WHERE id = ?`).run(valor, obj.id);
+    repo.editarCampoObjeto(columna, valor, obj.id);
     auditar(interaction, "objeto.edit", { id: obj.id, campo, antes: obj[columna], valor });
     return { aviso: `✏️ **#${obj.id} ${obj.nombre}**: ${campo} actualizado.` };
 }
 
 function eliminarObjeto(interaction, obj) {
-    if (db.prepare("SELECT 1 FROM inventario WHERE itemId = ? LIMIT 1").get(obj.id))
-        return { error: "No se puede eliminar: alguien lo tiene en su inventario." };
-    if (db.prepare("SELECT 1 FROM tienda WHERE objetoId = ? LIMIT 1").get(obj.id))
-        return { error: "No se puede eliminar: está a la venta (quítalo antes con ❌)." };
-    db.prepare("DELETE FROM objeto WHERE id = ?").run(obj.id);
+    if (repo.alguienTieneObjeto(obj.id)) return { error: "No se puede eliminar: alguien lo tiene en su inventario." };
+    if (repo.objetoEstaEnVenta(obj.id)) return { error: "No se puede eliminar: está a la venta (quítalo antes con ❌)." };
+    repo.borrarObjeto(obj.id);
     auditar(interaction, "objeto.delete", { id: obj.id, nombre: obj.nombre });
     return { aviso: `🗑️ Objeto **${obj.nombre}** eliminado.` };
 }
@@ -186,9 +177,9 @@ function venderObjeto(interaction, obj) {
     if (!Number.isInteger(precio) || precio < 0) return { error: "El precio tiene que ser un número (0 o más)." };
     if (stock !== null && (!Number.isInteger(stock) || stock < 0))
         return { error: "El stock tiene que ser un número, o vacío para ilimitado." };
-    const enVenta = db.prepare("SELECT id, objetoId, precio, stock FROM tienda WHERE objetoId = ?").get(obj.id);
+    const enVenta = repo.ventaDeObjeto(obj.id);
     if (enVenta) {
-        db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio, stock, enVenta.id);
+        repo.cambiarVenta(precio, stock, enVenta.id);
         auditar(interaction, "tienda.item.edit", {
             tiendaId: enVenta.id,
             antes: { precio: enVenta.precio, stock: enVenta.stock },
@@ -196,14 +187,14 @@ function venderObjeto(interaction, obj) {
             stock,
         });
     } else {
-        db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, ?, ?)").run(obj.id, precio, stock);
+        repo.ponerEnVenta(obj.id, precio, stock);
         auditar(interaction, "tienda.item.add", { objetoId: obj.id, nombre: obj.nombre, precio, stock });
     }
     return { aviso: `🏷️ **${obj.nombre}** a la venta por ${precio} 🪙 (stock ${stock ?? "ilimitado"}).` };
 }
 
 function quitarDeVenta(interaction, obj) {
-    const r = db.prepare("DELETE FROM tienda WHERE objetoId = ?").run(obj.id);
+    const r = repo.quitarDeVenta(obj.id);
     if (!r.changes) return { error: "Ese objeto no estaba a la venta." };
     auditar(interaction, "tienda.item.remove", { objetoId: obj.id, nombre: obj.nombre });
     return { aviso: `❌ **${obj.nombre}** ya no está a la venta.` };
@@ -213,11 +204,7 @@ function quitarDeVenta(interaction, obj) {
 function aplicar(interaction) {
     const id = interaction.customId;
     const objetoId = parseInt(leerCampo(interaction, "id"), 10);
-    const obj = Number.isInteger(objetoId)
-        ? db
-              .prepare("SELECT id, nombre, descripcion, imagen, tipo, unico, categoria, rareza, rolId, efecto FROM objeto WHERE id = ?")
-              .get(objetoId)
-        : null;
+    const obj = Number.isInteger(objetoId) ? repo.objetoPorId(objetoId) : null;
 
     if (id === "paneladmin_cat_crear_modal") return crearObjeto(interaction);
     if (!obj) return { error: "No existe un objeto con ese ID." };

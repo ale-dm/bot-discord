@@ -24,6 +24,22 @@ function unir(reto, userId, opcion = null) {
 }
 
 /**
+ * Cobra otra vez `cantidad` a alguien que ya está en el reto y la suma a lo suyo (doblar en el blackjack de un duelo, #444),
+ * para que el bote que paga `ganar` y lo que devuelve `devolver` incluyan lo doblado. Va dentro de una transacción.
+ * @returns {boolean} false si no le llega el efectivo (y no se toca nada)
+ */
+function cobrarExtra(reto, userId, cantidad) {
+    if (!dinero.cobrar(userId, cantidad)) return false;
+    db.prepare("UPDATE retos_participantes SET cantidad = cantidad + ? WHERE reto_id = ? AND userId = ?").run(
+        cantidad,
+        reto.id,
+        String(userId),
+    );
+    dinero.apuntar(userId, "retos", `Reto: doblar en ${descripcion(reto)}`, -cantidad);
+    return true;
+}
+
+/**
  * Cierra un reto que sigue abierto, con lo que recibe cada participante (`premios`: userId → monedas). Si ya estaba
  * cerrado (dos clics a la vez, el cron y un botón...) no hace nada y devuelve null.
  * @returns {{ reto: object, pagos: Array<{userId, premio, descripcion, reembolso}> } | null}
@@ -84,4 +100,4 @@ function ganar(retoId, ganadores, resultado) {
     return cerrar(retoId, premios, "resuelto", resultado);
 }
 
-module.exports = { unir, cerrar, devolver, ganar };
+module.exports = { unir, cobrarExtra, cerrar, devolver, ganar };

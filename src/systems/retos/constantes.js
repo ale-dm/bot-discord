@@ -12,6 +12,10 @@ const PORRA_DIAS = 30;
 const PORRA_MAX_OPCIONES = 5;
 const PORRA_MAX_LARGO_OPCION = 40;
 const MAX_RONDAS_PPT = 5;
+/** Partidas de una serie que se pueden empatar seguidas antes de devolver el reto (#436). */
+const MAX_EMPATES_SERIE = 3;
+/** Victorias que ganan una serie al mejor de tres (#436). */
+const VICTORIAS_SERIE = 2;
 /** El Duende como participante de un reto (en vez de un id de Discord). */
 const DUENDE = "duende";
 /** Lo máximo que se juega contra el Duende (su parte la pone la banca). */
@@ -40,6 +44,8 @@ module.exports = {
     PORRA_MAX_OPCIONES,
     PORRA_MAX_LARGO_OPCION,
     MAX_RONDAS_PPT,
+    MAX_EMPATES_SERIE,
+    VICTORIAS_SERIE,
     DUENDE,
     TOPE_DUENDE,
     JUEGOS,

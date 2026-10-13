@@ -26,6 +26,19 @@ function infoNum(n) {
     };
 }
 
+// Calle (#459): tres números seguidos de una misma fila del tapete (1-2-3, 4-5-6… 34-35-36). Se elige por su primer número,
+// así que un valor válido es 1, 4, 7… 34. Paga 11 a 1.
+const CALLES = Array.from({ length: 12 }, (_, i) => 1 + i * 3);
+
+function esCalleValida(valor) {
+    return CALLES.includes(Number(valor)) && String(valor).trim() !== "";
+}
+
+/** Los tres números de una calle, o [] si el valor no es la primera casilla de una fila. */
+function numerosDeCalle(valor) {
+    return esCalleValida(valor) ? [Number(valor), Number(valor) + 1, Number(valor) + 2] : [];
+}
+
 // Retorna ganancia NETA (negativo = pierde apuesta)
 function calcularPago(tipo, valor, n, apuesta) {
     const info = infoNum(n);
@@ -42,6 +55,9 @@ function calcularPago(tipo, valor, n, apuesta) {
             break;
         case "mitad":
             mult = n !== 0 && valor === info.mitad ? 1 : -1;
+            break;
+        case "calle":
+            mult = numerosDeCalle(valor).includes(n) ? 11 : -1;
             break;
         case "docena":
             mult = n !== 0 && Number(valor) === info.docena ? 2 : -1;
@@ -91,4 +107,15 @@ function ultimosNumeros(limite = 10) {
         .map((f) => ({ n: Number(f.n), color: infoNum(Number(f.n)).colorNombre }));
 }
 
-module.exports = { WHEEL, esRojo, infoNum, calcularPago, tirarNumero, liquidarTirada, ultimosNumeros };
+module.exports = {
+    WHEEL,
+    CALLES,
+    esCalleValida,
+    numerosDeCalle,
+    esRojo,
+    infoNum,
+    calcularPago,
+    tirarNumero,
+    liquidarTirada,
+    ultimosNumeros,
+};

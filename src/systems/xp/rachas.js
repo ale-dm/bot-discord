@@ -1,9 +1,10 @@
 // Rachas diarias (días seguidos ganando XP, en hora de Madrid): el bonus de XP que dan, el DM al
 // continuarla y el aviso diario a quien está a punto de perderla.
 const db = require("../../core/db");
-const { EmbedBuilder } = require("discord.js");
 const { createLogger } = require("../../core/logger");
 const { getConfig, ensureUser } = require("./config");
+const { sendDm, enviarAviso } = require("../avisosDm");
+const { buildStreakContinuedEmbed, buildStreakWarningEmbed } = require("../../discord/mensajes/rachas");
 
 const log = createLogger("XP");
 
@@ -56,39 +57,6 @@ function getEffectiveStreak(guildId, userId) {
     return user.streak_dias || 0;
 }
 
-async function sendDm(client, userId, payload) {
-    try {
-        const user = await client.users.fetch(userId);
-        await user.send(payload);
-        return true;
-    } catch (e) {
-        // Lo normal es que tenga los DMs cerrados (código 50007): no es un error del bot.
-        log.debug(`No se pudo enviar DM a ${userId}: ${e.code === 50007 ? "DMs cerrados" : e.message}`);
-        return false;
-    }
-}
-
-function buildStreakContinuedEmbed(guild, streakDias, bonusPct) {
-    return new EmbedBuilder()
-        .setTitle("🔥 ¡Racha activa!")
-        .setDescription(`Llevas **${streakDias} días seguidos** ganando XP en **${guild.name}**.`)
-        .addFields({ name: "Bonus actual", value: `+${bonusPct.toFixed(0)}% XP`, inline: true })
-        .setColor(0xff6b35)
-        .setFooter({ text: "Sigue así para no perder la racha" })
-        .setTimestamp();
-}
-
-function buildStreakWarningEmbed(guild, streakDias) {
-    return new EmbedBuilder()
-        .setTitle("⏳ Tu racha está en peligro")
-        .setDescription(
-            `Llevas **${streakDias} días** de racha en **${guild.name}**, pero hoy todavía no has ganado XP.\n` +
-                `Escribe un mensaje o entra a un canal de voz antes de medianoche para no perderla.`,
-        )
-        .setColor(0xe74c3c)
-        .setTimestamp();
-}
-
 async function runStreakWarningJob(client) {
     const yesterday = madridYesterdayStr();
     const rows = db
@@ -107,7 +75,7 @@ async function runStreakWarningJob(client) {
         if (!guild) continue;
         if (getConfig(row.guildId, "streak_enabled") === "0") continue;
         const embed = buildStreakWarningEmbed(guild, row.streak_dias);
-        if (await sendDm(client, row.userId, { embeds: [embed] })) enviados++;
+        if (await enviarAviso(client, row.userId, "racha_peligro", { embeds: [embed] })) enviados++;
     }
     log.info(`Aviso de racha en peligro: ${enviados}/${rows.length} DMs enviados`);
 }

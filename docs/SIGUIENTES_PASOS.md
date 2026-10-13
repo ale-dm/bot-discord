@@ -16,7 +16,7 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
 - Auditoría de código del 2026-10-10: #238 a #244 y #278 a #281 están cerradas. #243 y #244 se comprobaron en Discord (T-03) y están en `main`. La puntuación del código está en 9,6 / 10 ([PUNTUACION](planificacion/PUNTUACION.md)). Lo que queda: #282 (configuración de GitHub sin verificar) y revisar `juegos/` fichero a fichero (Organización, 9 de 10).
 - Migraciones: hasta la `043_resumen_apuestas`, la tabla del ranking (#285). La siguiente es la `044`.
 - Los cabos sueltos de la revisión del 2026-10-08 están cerrados (ver el CHANGELOG).
-- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 1994 tests en 168 suites. Los tests usan una
+- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2406 tests en 204 suites. Los tests usan una
   BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
 - No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica no tiene filas abiertas
   ([DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md)); lo pendiente está en issues.
@@ -93,7 +93,7 @@ Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del 
 
 ## 6. Recetas
 
-- **Una migración nueva**: el siguiente número libre (hoy el `044`) en `src/core/migrations`, con `up(db)`. Nunca editar
+- **Una migración nueva**: el siguiente número libre (hoy el `060`) en `src/core/migrations`, con `up(db)`. Nunca editar
   una que ya se haya aplicado en producción. Actualizar el número de migraciones en `tests/plexImportacion.test.js`
   (`runMigrations(bd)`, hoy 26) y la lista de su comentario.
 - **Un comando nuevo**: el módulo en `src/commands/…`, con `data` y `run`, y su nombre en la lista de

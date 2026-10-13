@@ -1,6 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const guildSettings = require("../../systems/guildSettings");
 const impuestos = require("../../systems/impuestos");
+const { JUEGOS_CASINO } = require("../../systems/guildSettings/definicion");
 const { fmtNumero } = require("../../core/formato");
 
 function navRow() {
@@ -81,6 +82,7 @@ function filasConfigHome() {
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("🏛️ Impuestos").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_semanal_home").setLabel("🏆 Semanal").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("paneladmin_com_home").setLabel("📣 Comunidad").setStyle(ButtonStyle.Success),
     );
     return [row1, row2];
 }
@@ -168,6 +170,11 @@ function buildCriptoPanel(guildId) {
             },
             { name: "TTCL", value: "Pool de liquidez: reservas fijas en el código", inline: true },
             { name: "Fees", value: `Compra: **${c.fee_buy_pct}%**\nVenta: **${c.fee_sell_pct}%**`, inline: true },
+            {
+                name: "Impacto y anuncios",
+                value: `Impacto máx.: **${c.max_impacto_pct > 0 ? `${c.max_impacto_pct} %` : "sin tope"}**\nEventos: ${c.eventos_canal ? `<#${c.eventos_canal}>` : "solo DM"}`,
+                inline: true,
+            },
             { name: "Compra", value: `Min/Max: **${c.min_buy} / ${c.max_buy}**\nCooldown: **${c.cooldown_buy_sec}s**`, inline: true },
             { name: "Venta", value: `Min/Max: **${c.min_sell} / ${c.max_sell}**\nCooldown: **${c.cooldown_sell_sec}s**`, inline: true },
         )
@@ -191,7 +198,7 @@ function buildCasinoPanel(guildId) {
     const embed = new EmbedBuilder()
         .setTitle("🎰 Casino")
         .setDescription(
-            "Configura apuesta mínima/máxima, cooldown global, límites diarios y RTP por juego.\n\n_El RTP escala el **premio neto** de cada victoria (100% = sin cambios, 50% = la mitad de premio, 150% = 1.5x premio). Nunca afecta la probabilidad de ganar ni la apuesta devuelta en un empate._",
+            "Configura apuesta mínima/máxima, cooldown global, límites diarios y RTP por juego, y un tope de apuesta y un cooldown propios para cada juego.\n\n_El RTP escala el **premio neto** de cada victoria (100% = sin cambios, 50% = la mitad de premio, 150% = 1.5x premio). Nunca afecta la probabilidad de ganar ni la apuesta devuelta en un empate._",
         )
         .addFields(
             { name: "Límites", value: `Min: **${c.min_bet}**\nMax: **${c.max_bet}**`, inline: true },
@@ -201,6 +208,7 @@ function buildCasinoPanel(guildId) {
                 value: `BJ **${c.rtp_blackjack}%** · Slots **${c.rtp_tragaperras}%**\nRuleta **${c.rtp_ruleta}%** · Adivinar **${c.rtp_adivinar}%**`,
                 inline: false,
             },
+            { name: "Por juego (tope · cooldown)", value: textoPorJuego(c), inline: false },
         )
         .setColor(0xf39c12)
         .setTimestamp();
@@ -208,9 +216,22 @@ function buildCasinoPanel(guildId) {
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_casino_limits").setLabel("💰 Límites").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_cfg_casino_rtp").setLabel("🎲 RTP").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_casino_topes").setLabel("🎯 Tope por juego").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_cfg_casino_esperas").setLabel("⏱️ Cooldown por juego").setStyle(ButtonStyle.Secondary),
     );
 
     return { embeds: [embed], components: [row, navRow()] };
+}
+
+const NOMBRES_JUEGO = { blackjack: "Blackjack", tragaperras: "Tragaperras", ruleta: "Ruleta", ppt: "PPT", adivinar: "Adivinar" };
+
+/** Una línea por juego con su tope y su cooldown, o «general»/«global» cuando no tiene el suyo (#460, #461). */
+function textoPorJuego(c) {
+    return JUEGOS_CASINO.map((juego) => {
+        const tope = Number(c[`max_bet_${juego}`] || 0);
+        const espera = Number(c[`cooldown_sec_${juego}`] || 0);
+        return `${NOMBRES_JUEGO[juego]}: **${tope > 0 ? tope : "general"}** · **${espera > 0 ? `${espera}s` : "global"}**`;
+    }).join("\n");
 }
 
 function buildTiendaPanel(guildId) {

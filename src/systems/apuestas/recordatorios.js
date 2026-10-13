@@ -3,7 +3,7 @@
 // un único mensaje con todas. Se configura en /paneladmin → ⚽ Apuestas (apuestas.recordatorio y _min).
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
-const { sendDm } = require("../xp/rachas");
+const { enviarAviso } = require("../avisosDm");
 const { DEPORTES } = require("../../services/oddsApi");
 const { marcadorDe } = require("./marcador");
 const mercados = require("./mercados");
@@ -72,7 +72,7 @@ async function enviarRecordatorios(client, { ahora = Date.now() } = {}) {
     for (const a of apuestas) porUsuario.set(a.user_id, [...(porUsuario.get(a.user_id) || []), a]);
     let enviados = 0;
     for (const [userId, suyas] of porUsuario) {
-        if (await sendDm(client, userId, { content: mensaje(suyas, cfg.minutos) })) enviados++;
+        if (await enviarAviso(client, userId, "recordatorio_partido", { content: mensaje(suyas, cfg.minutos) })) enviados++;
     }
     log.info(`Recordatorio de partidos: ${enviados}/${porUsuario.size} DMs (${apuestas.length} apuestas)`);
     return enviados;

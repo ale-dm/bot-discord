@@ -2,7 +2,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const pase = require("../../systems/pase/pase");
 const { pantallaPase } = require("../../paneles/pase");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 
 module.exports = {
     componentHandlers: [{ types: ["button"], prefixes: ["pase_"], method: "handleButton", acl: "pase" }],

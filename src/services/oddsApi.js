@@ -4,7 +4,7 @@
 // Coste en el plan gratuito (500 créditos al mes): cuotas = 1 crédito por mercado y competición (con los tres
 // mercados, h2h + totals + spreads, son 3 por actualización; ODDS_MERCADOS=h2h para volver a 1), resultados con
 // daysFrom = 2 créditos.
-const db = require("../core/db");
+const repoOdds = require("../repositorios/odds");
 const { createLogger } = require("../core/logger");
 const { LINEA_GOLES, LINEA_HCAP } = require("../systems/apuestas/mercados");
 const directo = require("../systems/apuestas/directo");
@@ -122,57 +122,15 @@ function cuotasH2H(match) {
     return { home: precio(match.home_team), draw: precio("Draw"), away: precio(match.away_team) };
 }
 
-// Si el partido ya existe y sigue abierto se actualizan cuotas y hora: antes era INSERT OR IGNORE
-// y se quedaban para siempre las cuotas de la primera consulta y la hora original aunque el
-// partido se aplazara (y con ella el cierre de apuestas). La cuota de cada apuesta ya hecha está
-// guardada en apuestas_usuario, así que no le afecta.
-const upsertPartido = () =>
-    db.prepare(`
-        INSERT INTO apuestas_partidos (match_id, deporte, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away,
-            cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(match_id) DO UPDATE SET
-            start_time = excluded.start_time,
-            cuota_home = COALESCE(excluded.cuota_home, cuota_home),
-            cuota_draw = COALESCE(excluded.cuota_draw, cuota_draw),
-            cuota_away = COALESCE(excluded.cuota_away, cuota_away),
-            cuota_mas = COALESCE(excluded.cuota_mas, cuota_mas),
-            cuota_menos = COALESCE(excluded.cuota_menos, cuota_menos),
-            total_linea = COALESCE(excluded.total_linea, total_linea),
-            cuota_casa = COALESCE(excluded.cuota_casa, cuota_casa),
-            cuota_fuera = COALESCE(excluded.cuota_fuera, cuota_fuera),
-            hcap_linea = COALESCE(excluded.hcap_linea, hcap_linea)
-        WHERE apuestas_partidos.estado = 'abierto'
-    `);
-
 function guardarPartidos(deporteKey, partidos) {
-    const stmt = upsertPartido();
-    // Lo mismo en las quinielas: con la hora antigua, un partido aplazado bloqueaba la quiniela
-    // antes de tiempo (o la caducaba) aunque aún no se hubiera jugado.
-    const horaQuiniela = db.prepare("UPDATE quiniela_partidos SET start_time = ? WHERE match_id = ? AND resultado_final IS NULL");
-    db.transaction(() => {
-        for (const m of partidos) {
+    repoOdds.guardarPartidos(
+        deporteKey,
+        partidos.map((m) => {
             const c = cuotasH2H(m);
             const x = cuotasMercados(m);
-            stmt.run(
-                m.id,
-                deporteKey,
-                m.home_team,
-                m.away_team,
-                m.commence_time,
-                c.home,
-                c.draw,
-                c.away,
-                x.cuota_mas,
-                x.cuota_menos,
-                x.total_linea,
-                x.cuota_casa,
-                x.cuota_fuera,
-                x.hcap_linea,
-            );
-            horaQuiniela.run(m.commence_time, m.id);
-        }
-    })();
+            return { m, c, x };
+        }),
+    );
 }
 
 /**
@@ -210,10 +168,7 @@ async function pedirCuotas(deporteKey) {
  */
 async function refrescarEnDirecto(ahora = Date.now()) {
     if (!directo.directoActivo()) return 0;
-    const enJuego = db
-        .prepare("SELECT DISTINCT deporte FROM apuestas_partidos WHERE estado = 'abierto' AND start_time <= ? AND start_time > ?")
-        .all(new Date(ahora).toISOString(), directo.enJuegoDesde(ahora))
-        .map((r) => r.deporte);
+    const enJuego = repoOdds.deportesEnJuego(new Date(ahora).toISOString(), directo.enJuegoDesde(ahora));
     let refrescadas = 0;
     for (const deporteKey of enJuego) {
         if (!DEPORTES[deporteKey]) continue;

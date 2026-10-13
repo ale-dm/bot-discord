@@ -1,32 +1,17 @@
 const axios = require("axios");
-const db = require("../core/db");
+const { canalesPermitidos } = require("../repositorios/canalesPermitidos");
+const novedades = require("../repositorios/plexNovedades");
 const guildSettings = require("../systems/guildSettings");
 const { createLogger, registerSecret } = require("../core/logger");
 const log = createLogger("Tautulli");
 
 // Lista vacía = sin restricción (Plex disponible en cualquier canal). En cuanto se añade
 // un canal, la lista pasa a ser una allowlist: solo esos canales pueden usar las tools de Plex.
-function getAllowedChannels(guildId) {
-    return db.prepare(`SELECT channelId, channelName FROM plex_allowed_channels WHERE guildId = ? ORDER BY channelName ASC`).all(guildId);
-}
-
-function addAllowedChannel(guildId, channelId, channelName) {
-    db.prepare(
-        `
-        INSERT INTO plex_allowed_channels (guildId, channelId, channelName)
-        VALUES (?, ?, ?)
-        ON CONFLICT(guildId, channelId) DO UPDATE SET channelName = excluded.channelName
-    `,
-    ).run(guildId, channelId, channelName || null);
-}
-
-function removeAllowedChannel(guildId, channelId) {
-    db.prepare(`DELETE FROM plex_allowed_channels WHERE guildId = ? AND channelId = ?`).run(guildId, channelId);
-}
-
-function clearAllowedChannels(guildId) {
-    db.prepare(`DELETE FROM plex_allowed_channels WHERE guildId = ?`).run(guildId);
-}
+const canales = canalesPermitidos("plex");
+const getAllowedChannels = canales.todos;
+const addAllowedChannel = (guildId, channelId, channelName) => void canales.agregar(guildId, channelId, channelName);
+const removeAllowedChannel = (guildId, channelId) => void canales.quitar(guildId, channelId);
+const clearAllowedChannels = (guildId) => void canales.vaciar(guildId);
 
 function isChannelAllowed(guildId, channelId) {
     const rows = getAllowedChannels(guildId);
@@ -211,19 +196,8 @@ async function testConnection(guildId) {
 }
 
 // ─── Canal de novedades automático ─────────────────────────────────────────
-function getLastAddedAt(guildId) {
-    const row = db.prepare(`SELECT lastAddedAt FROM plex_novedades_state WHERE guildId = ?`).get(guildId);
-    return row ? Number(row.lastAddedAt) : 0;
-}
-
-function setLastAddedAt(guildId, ts) {
-    db.prepare(
-        `
-        INSERT INTO plex_novedades_state (guildId, lastAddedAt) VALUES (?, ?)
-        ON CONFLICT(guildId) DO UPDATE SET lastAddedAt = excluded.lastAddedAt
-    `,
-    ).run(guildId, ts);
-}
+const getLastAddedAt = novedades.ultimaNovedad;
+const setLastAddedAt = (guildId, ts) => void novedades.guardarUltimaNovedad(guildId, ts);
 
 async function checkAllGuildsForNewContent(client) {
     for (const guild of client.guilds.cache.values()) {

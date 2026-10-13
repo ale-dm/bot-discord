@@ -2,8 +2,9 @@
 // vinculada recibe por DM su propio resumen del mes anterior: sus horas vistas, sus películas y episodios, y sus series más
 // vistas. Es privado: no se publica nada en ningún canal ni se muestran datos de otras personas. Usa la copia local del
 // historial (plex_reproducciones), como el ranking semanal. Una vez por mes y persona (plex_wrapped_enviados).
-const { AttachmentBuilder } = require("discord.js");
+const { adjuntoWrapped } = require("../discord/mensajes/wrapped");
 const db = require("../core/db");
+const avisosDm = require("./avisosDm");
 const plexLinks = require("./plexLinks");
 const plexHistorial = require("./plexHistorial");
 const tautulli = require("../services/tautulliClient");
@@ -139,9 +140,10 @@ async function enviarPorDm(client, guild, mes) {
         const r = resumenPersonal(guild.id, link.tautulliUserId, mes);
         if (r.horas <= 0) continue;
         try {
+            if (avisosDm.silenciado(link.discordUserId, "wrapped")) continue;
             const usuario = await client.users.fetch(link.discordUserId);
             const buf = graficoPersonal(r);
-            const files = buf ? [new AttachmentBuilder(buf, { name: "wrapped.png" })] : [];
+            const files = adjuntoWrapped(buf);
             await usuario.send({ content: mensajePersonal(r), files, allowedMentions: { parse: [] } });
             db.prepare("INSERT INTO plex_wrapped_enviados (guildId, tautulliUserId, mes, enviado_en) VALUES (?, ?, ?, ?)").run(
                 String(guild.id),

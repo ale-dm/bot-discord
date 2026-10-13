@@ -1,6 +1,7 @@
 // /trabajar: ingreso con cooldown corto. Lógica en systems/duende/trabajo.js.
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { trabajar } = require("../../systems/duende/trabajo");
+const { filaAvisar } = require("../../paneles/avisoCooldown");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Trabajar");
@@ -17,7 +18,10 @@ module.exports = {
         const r = await trabajar(interaction.guildId, interaction.user, interaction.channelId);
         if (!r.ok) {
             const minutos = Math.ceil(r.retrySeconds / 60);
-            await interaction.editReply(`⏳ Todavía no puedes volver a trabajar. Espera ${minutos} min más.`);
+            await interaction.editReply({
+                content: `⏳ Todavía no puedes volver a trabajar. Espera ${minutos} min más.`,
+                components: [filaAvisar("trabajar", r.retrySeconds)],
+            });
             return;
         }
 

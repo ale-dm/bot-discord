@@ -1,6 +1,6 @@
 // Lectura de valores: convertir lo guardado al tipo de cada ajuste y pasarlo a la forma anidada.
 
-const { DEFAULT_FLAT, KEY_TYPES } = require("./definicion");
+const { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO } = require("./definicion");
 
 function parseValue(key, value) {
     const type = KEY_TYPES[key] || "string";
@@ -31,6 +31,16 @@ function nodoDuende(flat) {
     };
 }
 
+/** Tope de apuesta y cooldown propios de cada juego del casino (#460, #461): max_bet_<juego> y cooldown_sec_<juego>. */
+function nodoCasinoPorJuego(flat) {
+    const nodo = {};
+    for (const juego of JUEGOS_CASINO) {
+        nodo[`max_bet_${juego}`] = flat[`casino.max_bet_${juego}`];
+        nodo[`cooldown_sec_${juego}`] = flat[`casino.cooldown_sec_${juego}`];
+    }
+    return nodo;
+}
+
 function nodoEconomia(flat) {
     return {
         cripto: {
@@ -43,6 +53,8 @@ function nodoEconomia(flat) {
             min_sell: flat["cripto.min_sell"],
             max_sell: flat["cripto.max_sell"],
             pausa: flat["cripto.pausa"],
+            max_impacto_pct: flat["cripto.max_impacto_pct"],
+            eventos_canal: flat["cripto.eventos_canal"],
         },
         casino: {
             min_bet: flat["casino.min_bet"],
@@ -53,6 +65,7 @@ function nodoEconomia(flat) {
             rtp_tragaperras: flat["casino.rtp_tragaperras"],
             rtp_ruleta: flat["casino.rtp_ruleta"],
             rtp_adivinar: flat["casino.rtp_adivinar"],
+            ...nodoCasinoPorJuego(flat),
         },
         tienda: {
             enabled: flat["tienda.enabled"],
@@ -107,6 +120,9 @@ function nodoOtros(flat) {
             enabled: flat["alertas.enabled"],
             admin_ids: flat["alertas.admin_ids"],
         },
+        avisos: { cumple_channel_id: flat["avisos.cumple_channel_id"] },
+        bienvenida: { canal_id: flat["bienvenida.canal_id"], texto: flat["bienvenida.texto"] },
+        sugerencias: { canal_id: flat["sugerencias.canal_id"] },
         clasificacion: {
             canal: flat["clasificacion.canal"],
             premio: flat["clasificacion.premio"],

@@ -23,7 +23,7 @@ const { pantallaSeries, pantallaQuieroVer, pantallaResultados } = require("../..
 const plexAvisos = require("../../systems/plexAvisos");
 const seerrClient = require("../../services/seerrClient");
 const perfilPaneles = require("../../paneles/perfil");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 const { tienePermiso } = require("../../core/permisos");
 
 // La hora de la sesión, en dos desplegables (hora, y minuto de 15 en 15): no hay que escribir HH:MM (#310, grupo G6).

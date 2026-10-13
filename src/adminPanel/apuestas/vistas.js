@@ -1,7 +1,7 @@
 // Panel admin → ⚽ Apuestas, pantalla principal: lo que hay en juego (partidos con apuestas pendientes, quinielas
 // abiertas y caducados), los límites por jugador, los premios de la liga, los avisos y los botones de acción.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const db = require("../../core/db");
+const repo = require("../../repositorios/apuestas");
 const guildSettings = require("../../systems/guildSettings");
 const { DEPORTES } = require("../../services/oddsApi");
 const { trozos } = require("../../paneles/filas");
@@ -9,29 +9,15 @@ const { trozos } = require("../../paneles/filas");
 const nombreDeporte = (d) => DEPORTES[d]?.name || d;
 
 function consultarPendientes() {
-    return db
-        .prepare(
-            `SELECT p.deporte, COUNT(DISTINCT p.match_id) AS partidos, COUNT(*) AS apuestas, COALESCE(SUM(a.cantidad), 0) AS importe
-             FROM apuestas_usuario a JOIN apuestas_partidos p ON a.match_id = p.match_id
-             WHERE a.pagado = 0 GROUP BY p.deporte`,
-        )
-        .all();
+    return repo.pendientesPorDeporte();
 }
 
 function consultarQuinielas() {
-    return db
-        .prepare(
-            `SELECT q.deporte, q.jornada, COUNT(qa.id) AS jugadores, COALESCE(SUM(qa.cantidad), 0) AS bote
-             FROM quinielas q LEFT JOIN quiniela_apuestas qa ON qa.quiniela_id = q.id
-             WHERE q.estado = 'abierta' GROUP BY q.id`,
-        )
-        .all();
+    return repo.quinielasAbiertas();
 }
 
 function consultarCaducados() {
-    return db
-        .prepare("SELECT COUNT(*) AS n FROM apuestas_partidos WHERE estado = 'caducado' AND start_time >= ?")
-        .get(new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()).n;
+    return repo.partidosCaducadosDesde(new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString());
 }
 
 function campoPendientes(pendientes) {

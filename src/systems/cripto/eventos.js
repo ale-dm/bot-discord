@@ -4,7 +4,9 @@
 const db = require("../../core/db");
 const { createLogger } = require("../../core/logger");
 const { madridDateStr } = require("../xp/rachas");
+const guildSettings = require("../guildSettings");
 const mercado = require("./mercado");
+const avisosDm = require("../avisosDm");
 
 const log = createLogger("Cripto");
 
@@ -100,15 +102,39 @@ function textoAviso(evento) {
 }
 
 /**
- * Cron (cada 5 min): aplica el evento del día cuando llega su hora y avisa por DM a quien tenga TTCL. Un aviso que
- * falla no para los demás.
+ * Publica el evento en el canal que cada servidor tenga configurado (cripto.eventos_canal, #451). Sin canal no hace nada. Si
+ * el canal no existe o el bot no puede escribir, el fallo queda en el log y no para nada más.
+ * @returns {Promise<number>} canales en los que se ha publicado
+ */
+async function anunciarEnCanales(client, texto) {
+    let publicados = 0;
+    for (const guild of client.guilds?.cache?.values() ?? []) {
+        const canalId = guildSettings.getSettings(guild.id).cripto.eventos_canal;
+        if (!canalId) continue;
+        try {
+            const canal = guild.channels.cache.get(canalId) || (await guild.channels.fetch(canalId));
+            await canal.send({ content: texto, allowedMentions: { parse: [] } });
+            publicados++;
+        } catch (e) {
+            log.warn(`No se pudo anunciar el evento de TTCL en el canal ${canalId} de ${guild.name}: ${e.message}`);
+        }
+    }
+    return publicados;
+}
+
+/**
+ * Cron (cada 5 min): aplica el evento del día cuando llega su hora, lo anuncia en el canal configurado y avisa por DM a
+ * quien tenga TTCL. Un aviso que falla no para los demás. El evento se aplica una sola vez al día (revisar solo lo
+ * devuelve cuando lo acaba de aplicar), así que el canal recibe uno por día.
  */
 async function revisarYAvisar(client, ahora = Date.now(), rng = Math.random) {
     const evento = revisar(ahora, rng);
     if (!evento) return null;
     const texto = textoAviso(evento);
+    await anunciarEnCanales(client, texto);
     let avisados = 0;
     for (const userId of destinatarios()) {
+        if (avisosDm.silenciado(userId, "cripto_evento")) continue;
         try {
             const usuario = await client.users.fetch(userId);
             await usuario.send(texto);

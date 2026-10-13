@@ -5,7 +5,7 @@
 # se cierran ordenadamente tanto el bot como Vosk.
 set -e
 
-node src/core/registerCommands.js
+node src/discord/registerCommands.js
 
 if [ "${STT_ENABLED:-1}" = "1" ]; then
     VOSK_MODEL_PATH="${VOSK_MODEL_PATH:-/app/models/vosk-model-small-es-0.42}"
