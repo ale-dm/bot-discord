@@ -3,12 +3,22 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { lineaDinero } = require("./economia");
 const { backBtn, filaMontos, filaSacar, getSaldo } = require("./casinoComun");
+const { ultimosNumeros } = require("../systems/casino/ruleta");
 
 function filaVolverRuleta(label) {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("casino_ruleta").setLabel(label).setStyle(ButtonStyle.Secondary),
         backBtn(),
     );
+}
+
+const EMOJI_COLOR = { rojo: "🔴", negro: "⚫", verde: "🟢" };
+
+/** «Últimos números: 🔴 7 · ⚫ 12 · 🟢 0 …» (el más reciente primero), o que aún no hay tiradas (#458). */
+function lineaUltimosNumeros() {
+    const numeros = ultimosNumeros(10);
+    if (!numeros.length) return "🎡 Últimos números: aún no hay tiradas.";
+    return `🎡 Últimos números (el más reciente primero): ${numeros.map((x) => `${EMOJI_COLOR[x.color]} ${x.n}`).join(" · ")}`;
 }
 
 /** Ruleta, paso 1: tipo de apuesta. */
@@ -26,7 +36,7 @@ function buildPickRuleta(userId) {
     const mkBtn = (t) => new ButtonBuilder().setCustomId(`casino_pick_ruleta_${t.value}`).setLabel(t.label).setStyle(ButtonStyle.Secondary);
     const embed = new EmbedBuilder()
         .setTitle("🎡 Ruleta — Elige tipo de apuesta")
-        .setDescription(`${lineaDinero(userId)}\n\nSelecciona el tipo antes de elegir cantidad:`)
+        .setDescription(`${lineaDinero(userId)}\n${lineaUltimosNumeros()}\n\nSelecciona el tipo antes de elegir cantidad:`)
         .setColor(0xe74c3c);
     return {
         embeds: [embed],

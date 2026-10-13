@@ -6,7 +6,7 @@ const db = require("../../core/db");
 function obtener(id) {
     const r = db
         .prepare(
-            "SELECT id, tipo, estado, creador, rival, cantidad, guildId, channelId, messageId, match_id, eleccion, juego, pregunta, opciones, datos, resultado, creado_en, actualizado_en, expira_en, resuelto_en FROM retos WHERE id = ?",
+            "SELECT id, tipo, estado, creador, rival, cantidad, guildId, channelId, messageId, match_id, eleccion, juego, pregunta, opciones, provocacion, datos, resultado, creado_en, actualizado_en, expira_en, resuelto_en FROM retos WHERE id = ?",
         )
         .get(Number(id));
     if (!r) return null;

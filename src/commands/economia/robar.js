@@ -1,9 +1,20 @@
 // /robar: intenta quitarle efectivo a alguien (cooldown global de 2h). Lógica en systems/robar.js.
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
-const { robar, MIN_VICTIMA } = require("../../systems/robar");
+const { robar, textoAvisoVictima, MIN_VICTIMA } = require("../../systems/robar");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Robar");
+
+/** Le cuenta a la víctima por DM lo que ha pasado (sin decir quién ha sido). Con los DM cerrados, el comando sigue igual. */
+async function avisarVictima(victima, r) {
+    const contenido = textoAvisoVictima(r);
+    if (!contenido) return;
+    try {
+        await victima.send({ content: contenido });
+    } catch (e) {
+        log.warn(`No pude avisar por DM a ${victima.id} de un intento de robo: ${e.message}`);
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -64,5 +75,6 @@ module.exports = {
             `${interaction.user.tag} usó /robar contra ${victima.tag}: ${r.exito ? `+${r.cantidad} (negro)` : `falló, multa ${r.multa}`}` +
                 `${r.candado ? ` · candado` : ""}${r.trampa ? ` · trampa` : ""}`,
         );
+        await avisarVictima(victima, r);
     },
 };

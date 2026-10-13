@@ -165,7 +165,7 @@ describe("resultado en el mensaje", () => {
             expect.any(Object),
         );
         expect(embed.footer.text).toBe("¡FELICIDADES! ¡Ganaste el JACKPOT! 🎉");
-        expect(embed.description).toContain("Jackpot reiniciado: **10,000** monedas");
+        expect(embed.description).toContain("Jackpot reiniciado: **10.000** monedas");
     });
 
     test("si el pago del jackpot falla, el bote no se reinicia", async () => {

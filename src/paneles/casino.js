@@ -7,6 +7,7 @@ const { lineaDinero } = require("./economia");
 const eventos = require("../systems/eventos");
 const { EMOJI, NOMBRE, getSaldo, backBtn, filaMontos, filaSacar } = require("./casinoComun");
 const ruleta = require("./casinoRuleta");
+const { ultimosJackpots } = require("../systems/casino/tragaperras");
 
 // ─── Datos ───────────────────────────────────────────────────────────────────
 // Con `juego`, solo las partidas de ese juego (la tragaperras antiguas se guardaban como "slots").
@@ -249,9 +250,40 @@ function buildPickApuesta(userId, juego) {
         .setTitle(`${emoji} ${NOMBRE[juego] || juego} — Elige tu apuesta`)
         .setDescription(`${lineaDinero(userId)}\n\nPulsa la cantidad que quieres apostar:`)
         .setColor(0xf39c12);
+    const botones = [backBtn()];
+    if (juego === "tragaperras")
+        botones.unshift(new ButtonBuilder().setCustomId("casino_jackpots").setLabel("🏆 Jackpots").setStyle(ButtonStyle.Secondary));
     return {
         embeds: [embed],
-        components: [filaMontos(saldo, (m) => `casino_play_${juego}_${m}`), filaSacar(userId, `casino_pick_${juego}`, backBtn())],
+        components: [filaMontos(saldo, (m) => `casino_play_${juego}_${m}`), filaSacar(userId, `casino_pick_${juego}`, ...botones)],
+    };
+}
+
+/** Los últimos 10 jackpots de la tragaperras: quién, cuándo y cuánto (#456). */
+function buildJackpots() {
+    const lista = ultimosJackpots(10);
+    const embed = new EmbedBuilder()
+        .setTitle("🏆 Jackpots de la tragaperras")
+        .setColor(0xf1c40f)
+        .setDescription(
+            lista.length
+                ? lista
+                      .map(
+                          (j) =>
+                              `<t:${Math.floor(Date.parse(j.fecha) / 1000)}:d> · <@${j.userId}> · **${j.cantidad.toLocaleString("es")}** 🪙`,
+                      )
+                      .join("\n")
+                : "Todavía nadie ha ganado el jackpot.",
+        )
+        .setFooter({ text: "Los últimos 10. Tras cada premio el bote vuelve a 10.000." });
+    return {
+        embeds: [embed],
+        components: [
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId("casino_pick_tragaperras").setLabel("🎰 Jugar").setStyle(ButtonStyle.Primary),
+                backBtn(),
+            ),
+        ],
     };
 }
 
@@ -321,6 +353,7 @@ module.exports = {
     buildHistorial,
     buildRanking,
     buildPickApuesta,
+    buildJackpots,
     buildPickRuleta: ruleta.buildPickRuleta,
     buildPickDocenas: ruleta.buildPickDocenas,
     buildPickRangoNumero: ruleta.buildPickRangoNumero,

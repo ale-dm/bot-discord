@@ -2,7 +2,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require("discord.js");
 const { generateLineChart } = require("../../systems/cripto/graficos");
 const mercado = require("../../systems/cripto/mercado");
-const { ultimoEvento } = require("../../systems/cripto/eventos");
+const { ultimoEvento, ultimosEventos } = require("../../systems/cripto/eventos");
 const { pantalla, fmtMonedas, fechaMadrid } = require("./comun");
 
 const RANGOS = [
@@ -47,6 +47,8 @@ async function pantallaMercado(guildId, dias = 7) {
     if (buf) embed.setImage("attachment://mercado.png");
     else embed.addFields({ name: "📊 Gráfica", value: "Todavía no hay suficiente historial para dibujarla.", inline: false });
 
+    if (mercado.mercadoPausado(guildId)) embed.addFields({ name: "⏸️ Mercado en pausa", value: mercado.MENSAJE_PAUSA, inline: false });
+
     const rangos = new ActionRowBuilder().addComponents(
         RANGOS.map((r) =>
             new ButtonBuilder()
@@ -55,8 +57,34 @@ async function pantallaMercado(guildId, dias = 7) {
                 .setStyle(r.dias === rango.dias ? ButtonStyle.Primary : ButtonStyle.Secondary),
         ),
     );
+    const masInfo = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("cripto_eventos").setLabel("📰 Eventos").setStyle(ButtonStyle.Secondary),
+    );
 
-    return pantalla({ embeds: [embed], filas: [rangos], actual: "mercado", files });
+    return pantalla({ embeds: [embed], filas: [rangos, masInfo], actual: "mercado", files });
 }
 
-module.exports = { pantallaMercado, RANGOS };
+/** Los últimos 10 eventos diarios de TTCL ya aplicados: fecha, dirección y porcentaje (#449). */
+function pantallaEventos() {
+    const eventos = ultimosEventos(10);
+    const embed = new EmbedBuilder()
+        .setTitle("📰 Eventos de $TTCL")
+        .setColor(parseInt(mercado.TTCL.color.slice(1), 16))
+        .setDescription(
+            eventos.length
+                ? eventos
+                      .map(
+                          (ev) =>
+                              `${lineaEvento(ev)} · ${mercado.formatCoins(ev.precio_antes)} → ${mercado.formatCoins(ev.precio_despues)}`,
+                      )
+                      .join("\n")
+                : "Todavía no ha habido ningún evento.",
+        )
+        .setFooter({ text: "Un evento al día, a una hora aleatoria. Los últimos 10." });
+    const volver = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("cripto_tab_mercado").setLabel("◀ Mercado").setStyle(ButtonStyle.Secondary),
+    );
+    return pantalla({ embeds: [embed], filas: [volver], actual: "mercado" });
+}
+
+module.exports = { pantallaMercado, pantallaEventos, lineaEvento, RANGOS };

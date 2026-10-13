@@ -62,6 +62,57 @@ describe("cuándo mira", () => {
     });
 });
 
+describe("la memoria de los buffers (#485)", () => {
+    const gemini = jest.fn(async () => '{"recuerdo": null}');
+    const HORA = 60 * 60 * 1000;
+
+    test("tras una hora sin actividad la entrada desaparece, con reloj simulado", () => {
+        let ahora = 1_000_000;
+        const reloj = { gemini, ahora: () => ahora };
+        recuerdos.observar(mensaje("inactivo"), reloj);
+        expect(recuerdos.tamanoBuffers()).toBe(1);
+
+        ahora += HORA; // justo una hora: todavía no caduca
+        expect(recuerdos.limpiar(ahora)).toBe(0);
+        ahora += 1;
+        expect(recuerdos.limpiar(ahora)).toBe(1);
+        expect(recuerdos.tamanoBuffers()).toBe(0);
+    });
+
+    test("quien sigue escribiendo no caduca, aunque su primera entrada sea antigua", () => {
+        let ahora = 1_000_000;
+        const reloj = { gemini, ahora: () => ahora };
+        recuerdos.observar(mensaje("activo"), reloj);
+        recuerdos.observar(mensaje("inactivo"), reloj);
+        ahora += HORA - 1000;
+        recuerdos.observar(mensaje("activo"), reloj); // renueva su última actividad
+        ahora += 2000;
+        expect(recuerdos.limpiar(ahora)).toBe(1); // solo «inactivo»
+        expect(recuerdos.tamanoBuffers()).toBe(1);
+        // «activo» conserva sus dos mensajes: con 8 más completa la ronda de 10 y llama a Gemini.
+        for (let i = 0; i < recuerdos.RONDA - 2; i++) recuerdos.observar(mensaje("activo"), reloj);
+        expect(recuerdos.tamanoBuffers()).toBe(0);
+        expect(gemini).toHaveBeenCalledTimes(1);
+        gemini.mockClear();
+    });
+
+    test("con 10.000 usuarios que escriben una vez, el mapa no pasa del tope y se desaloja al menos reciente", () => {
+        let ahora = 1_000_000;
+        const reloj = { gemini, ahora: () => ahora };
+        for (let i = 0; i < 10_000; i++) {
+            ahora += 1;
+            recuerdos.observar(mensaje(`masa-${i}`), reloj);
+        }
+        expect(recuerdos.tamanoBuffers()).toBe(recuerdos.MAX_BUFFERS);
+        // Se quedan los más recientes: el primero ya no está, el último sí. (Completar su ronda lo demuestra.)
+        for (let i = 0; i < recuerdos.RONDA - 1; i++) recuerdos.observar(mensaje("masa-9999"), reloj);
+        expect(gemini).toHaveBeenCalledTimes(1);
+        gemini.mockClear();
+        for (let i = 0; i < recuerdos.RONDA - 1; i++) recuerdos.observar(mensaje("masa-0"), reloj);
+        expect(gemini).not.toHaveBeenCalled(); // empezó de cero: le faltaba un mensaje
+    });
+});
+
 describe("la respuesta de Gemini", () => {
     test("un recuerdo válido se guarda como propuesta y avisa a los admins por DM", async () => {
         const u = `r-${++n}`;

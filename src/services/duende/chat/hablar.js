@@ -2,7 +2,7 @@
 
 const guildSettings = require("../../../systems/guildSettings");
 const { GEMINI_MODEL, DUENDE_DAILY_LIMIT, DUENDE_LOG_FULL_PROMPT } = require("../../../systems/duende/config");
-const { conversationHistory, saveHistory } = require("../../../systems/duende/memoria");
+const { conversationHistory, guardarDiferido } = require("../../../systems/duende/memoria");
 const { mentionizeKnownNames } = require("../../../systems/duende/personas");
 const { buildPromptFromParts } = require("../gemini");
 const { safeEditReply, buscarGifParaRespuesta, recortarParaDiscord, enviarRespuestaTexto, responderPorVoz } = require("./enviar");
@@ -88,7 +88,7 @@ async function entregarRespuesta(client, interaction, { text, userInput, channel
     const gifUrl = await buscarGifParaRespuesta(textoChat, userInput);
 
     conversationHistory[channelId].push({ role: "duende", name: "Duende", text: textoChat, timestamp: Date.now() });
-    saveHistory();
+    guardarDiferido();
 
     const sendText = recortarParaDiscord(textoChat);
     await enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas: toolContext.propuestas });

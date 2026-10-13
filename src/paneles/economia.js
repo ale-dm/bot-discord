@@ -40,21 +40,20 @@ function lineaDinero(userId) {
     return `💵 Efectivo: **${fmtNumero(c.efectivo)}** 🪙 · 🏦 Banco: **${fmtNumero(c.banco)}** 🪙`;
 }
 
-// Ganado y perdido en el casino, de la tabla `casino` (resultado neto de cada partida).
+/**
+ * Ganado y perdido en el casino (resultado neto de cada partida). Se lee una fila de `casino_resumen`, que mantienen
+ * triggers sobre la tabla `casino` (migración 048): no se suman todas las jugadas en cada render (#484).
+ */
 function resumenCasino(userId) {
-    return db
-        .prepare(
-            `SELECT COALESCE(SUM(CASE WHEN resultado > 0 THEN resultado ELSE 0 END), 0) AS ganado,
-                    COALESCE(SUM(CASE WHEN resultado < 0 THEN -resultado ELSE 0 END), 0) AS perdido
-             FROM casino WHERE userId = ?`,
-        )
-        .get(userId);
+    return db.prepare("SELECT ganado, perdido FROM casino_resumen WHERE userId = ?").get(String(userId)) || { ganado: 0, perdido: 0 };
 }
 
-/** La cartera cripto valorada. Si el mercado falla, sale sin valorar. */
+/** La cartera cripto valorada (con una caché de 30 s, #487). Si el mercado falla, sale sin valorar. */
 async function carteraDe(targetId, guildId) {
     try {
-        return await require("../systems/cripto/mercado").valorarCartera(targetId, guildId);
+        return await require("../systems/cripto/valoracion").obtener(guildId, targetId, () =>
+            require("../systems/cripto/mercado").valorarCartera(targetId, guildId),
+        );
     } catch {
         // Si el mercado falla, la cartera sale sin valorar.
         return { lineas: [], total: 0 };
@@ -259,6 +258,7 @@ function modalCantidad(customId, titulo, disponible) {
 }
 
 module.exports = {
+    resumenCasino,
     botonSacar,
     lineaDinero,
 

@@ -38,6 +38,21 @@ const DEFAULT_TITLES = [
 // ver core/migrations/002_xp_valores_por_defecto.js.)
 const seededGuilds = new CacheLimitada({ max: 500 });
 
+// Las sentencias de lo que pasa en cada mensaje se preparan una vez (db.prepare por mensaje costaba más que ejecutarlas).
+const preparadas = new Map();
+function sentencia(sql) {
+    let s = preparadas.get(sql);
+    if (!s) {
+        s = db.prepare(sql);
+        preparadas.set(sql, s);
+    }
+    return s;
+}
+
+// Lo que se lee de la configuración de XP en cada mensaje (cooldown, base y bonus por longitud), por servidor. Se
+// invalida al guardar cualquier valor con setConfig.
+const configMensajes = new CacheLimitada({ max: 500 });
+
 function ensureGuildDefaults(guildId) {
     if (seededGuilds.has(guildId)) return;
     const insertCfg = db.prepare(`INSERT OR IGNORE INTO xp_config (guildId, clave, valor) VALUES (?, ?, ?)`);
@@ -54,7 +69,35 @@ function ensureGuildDefaults(guildId) {
 
 function getConfig(guildId, key) {
     ensureGuildDefaults(guildId);
-    return db.prepare(`SELECT valor FROM xp_config WHERE guildId = ? AND clave = ?`).get(guildId, key)?.valor;
+    return sentencia(`SELECT valor FROM xp_config WHERE guildId = ? AND clave = ?`).get(guildId, key)?.valor;
+}
+
+/** { cooldownSec, base, bonusMax } de la XP por mensaje de un servidor, guardado hasta el siguiente setConfig. */
+function getConfigMensajes(guildId) {
+    const guardada = configMensajes.get(guildId);
+    if (guardada) return guardada;
+    const valores = {
+        cooldownSec: Number(getConfig(guildId, "xp_message_cooldown_sec") || 15),
+        base: Number(getConfig(guildId, "xp_message_base") || 15),
+        bonusMax: Number(getConfig(guildId, "xp_message_len_bonus_max") || 10),
+    };
+    configMensajes.set(guildId, valores);
+    return valores;
+}
+
+/** Cuándo (ms) fue el último mensaje que dio XP a alguien, o null si no tiene fila o nunca. Solo lee: no crea nada. */
+function getUltimoMensaje(guildId, userId) {
+    return sentencia(`SELECT ultimo_msg FROM xp_users WHERE guildId = ? AND userId = ?`).get(guildId, userId)?.ultimo_msg ?? null;
+}
+
+const apuntarMensaje = db.transaction((guildId, userId, ahora) => {
+    sentencia(`INSERT OR IGNORE INTO xp_users (guildId, userId) VALUES (?, ?)`).run(guildId, userId);
+    sentencia(`UPDATE xp_users SET ultimo_msg = ? WHERE guildId = ? AND userId = ?`).run(ahora, guildId, userId);
+});
+
+/** Crea la fila de la persona si no existe y apunta el momento de su mensaje, en una sola transacción. */
+function registrarMensaje(guildId, userId, ahora) {
+    apuntarMensaje(guildId, userId, ahora);
 }
 
 function getAllConfig(guildId) {
@@ -73,15 +116,14 @@ function setConfig(guildId, key, value) {
         ON CONFLICT(guildId, clave) DO UPDATE SET valor = excluded.valor
     `,
     ).run(guildId, key, String(value));
+    configMensajes.delete(guildId);
 }
 
 function ensureUser(guildId, userId) {
-    db.prepare(`INSERT OR IGNORE INTO xp_users (guildId, userId) VALUES (?, ?)`).run(guildId, userId);
-    return db
-        .prepare(
-            `SELECT guildId, userId, xp, nivel, xp_total, ultimo_msg, voz_inicio, voz_segundos, streak_dias, streak_last_day FROM xp_users WHERE guildId = ? AND userId = ?`,
-        )
-        .get(guildId, userId);
+    sentencia(`INSERT OR IGNORE INTO xp_users (guildId, userId) VALUES (?, ?)`).run(guildId, userId);
+    return sentencia(
+        `SELECT guildId, userId, xp, nivel, xp_total, ultimo_msg, voz_inicio, voz_segundos, streak_dias, streak_last_day FROM xp_users WHERE guildId = ? AND userId = ?`,
+    ).get(guildId, userId);
 }
 
 function getUserCostMultiplier(guildId, userId) {
@@ -150,7 +192,7 @@ function nextTitle(guildId, level) {
 
 function isIgnoredChannel(guildId, channelId) {
     if (!channelId) return false;
-    return !!db.prepare(`SELECT 1 FROM xp_ignored_channels WHERE guildId = ? AND channelId = ?`).get(guildId, channelId);
+    return !!sentencia(`SELECT 1 FROM xp_ignored_channels WHERE guildId = ? AND channelId = ?`).get(guildId, channelId);
 }
 
 function getIgnoredChannels(guildId) {
@@ -183,9 +225,12 @@ function getTitles(guildId) {
 module.exports = {
     ensureGuildDefaults,
     getConfig,
+    getConfigMensajes,
     getAllConfig,
     setConfig,
     ensureUser,
+    getUltimoMensaje,
+    registrarMensaje,
     getUserCostMultiplier,
     setUserCostMultiplier,
     removeUserCostMultiplier,

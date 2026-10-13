@@ -17,7 +17,14 @@ const MIN_CARACTERES = 60;
 const MAX_LLAMADAS_DIA = Number(process.env.DUENDE_RECUERDOS_MAX_DIA || 40);
 const MAX_TEXTO = 200;
 
-const buffers = new Map(); // "guild|user" -> textos desde la última ronda
+// Quien escribe menos de RONDA mensajes largos y se va dejaría su entrada para siempre: cada entrada guarda cuándo fue su
+// último mensaje, las que llevan más de CADUCA_MS sin actividad se borran de vez en cuando, y hay un tope de entradas
+// (se desaloja la menos reciente). Los Map conservan el orden de inserción: al actualizar una entrada se reinserta, y la
+// más antigua es siempre la primera.
+const CADUCA_MS = 60 * 60 * 1000;
+const LIMPIEZA_MS = 10 * 60 * 1000;
+const MAX_BUFFERS = 5000;
+const buffers = new Map(); // "guild|user" -> { textos desde la última ronda, ultimo: ms del último mensaje }
 const llamadasHoy = new Map(); // "guild|día" -> nº de llamadas
 
 const activo = () => process.env.DUENDE_RECUERDOS_AUTO !== "0";
@@ -110,9 +117,12 @@ function observar(message, deps = {}) {
     if (canalDuende && message.channelId !== canalDuende) return;
 
     const clave = `${message.guildId}|${message.author.id}`;
-    const textos = [...(buffers.get(clave) || []), texto].slice(-RONDA);
+    const ahora = deps.ahora ? deps.ahora() : Date.now();
+    const textos = [...(buffers.get(clave)?.textos || []), texto].slice(-RONDA);
     if (textos.length < RONDA) {
-        buffers.set(clave, textos);
+        buffers.delete(clave); // se reinserta al final: así el orden del mapa es el de la última actividad
+        buffers.set(clave, { textos, ultimo: ahora });
+        if (buffers.size > MAX_BUFFERS) buffers.delete(buffers.keys().next().value);
         return;
     }
     buffers.delete(clave);
@@ -142,10 +152,40 @@ function resolver(id, adminId, aprobar) {
     return { ok: true, mensaje: aprobar ? `🧠 Guardado en el perfil de ${p.nombre}.` : "❌ Descartado." };
 }
 
+/**
+ * Borra los buffers de quien lleva más de una hora sin escribir. Como el mapa va de la actividad más antigua a la más
+ * reciente, se para en cuanto encuentra uno que no ha caducado. @returns {number} entradas borradas
+ */
+function limpiar(ahora = Date.now()) {
+    let borradas = 0;
+    for (const [clave, entrada] of buffers) {
+        if (ahora - entrada.ultimo <= CADUCA_MS) break;
+        buffers.delete(clave);
+        borradas++;
+    }
+    return borradas;
+}
+setInterval(() => limpiar(), LIMPIEZA_MS).unref();
+
+/** Cuántas personas tienen mensajes acumulados esperando la siguiente ronda. */
+const tamanoBuffers = () => buffers.size;
+
 /** Olvida los buffers y los contadores del día (para los tests). */
 function reiniciar() {
     buffers.clear();
     llamadasHoy.clear();
 }
 
-module.exports = { RONDA, MAX_LLAMADAS_DIA, observar, analizar, leerRecuerdo, resolver, reiniciar };
+module.exports = {
+    RONDA,
+    MAX_LLAMADAS_DIA,
+    MAX_BUFFERS,
+    CADUCA_MS,
+    observar,
+    analizar,
+    leerRecuerdo,
+    resolver,
+    limpiar,
+    tamanoBuffers,
+    reiniciar,
+};

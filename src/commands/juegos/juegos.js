@@ -100,6 +100,7 @@ const PANTALLAS_CASINO = {
     casino_blackjack: (i) => casino.buildPickApuesta(i.user.id, "blackjack"),
     casino_adivinar: (i) => casino.buildPickApuesta(i.user.id, "adivinar"),
     casino_ruleta: (i) => casino.buildPickRuleta(i.user.id),
+    casino_jackpots: () => casino.buildJackpots(),
     casino_pick_ruleta_docenas: (i) => casino.buildPickDocenas(i.user.id),
 };
 

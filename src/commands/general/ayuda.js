@@ -46,6 +46,7 @@ const SECCIONES = {
             "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
             "`/perfil [usuario] [seccion]` — todo lo tuyo (o de otra persona) en pestañas: 👤 Perfil (nivel, progreso, rango, racha y recompensas de nivel) · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. Con Plex vinculado, 👤 Perfil → 🍿 Plex: tus horas, en qué idiomas lo ves y lo que te falta poco.",
             `**Logros**: ${CATALOG.length}, con recompensa en monedas; en 🏅 Logros se ven (también los secretos), se filtran por categoría o dificultad y se reclaman uno a uno o todos. Los de 🍿 Plex (horas vistas, películas, series, anime, maratones...) cuentan lo que ves si tienes la cuenta de Plex vinculada; además hay **trofeos** por terminar cada temporada, serie o saga, por géneros, directores y décadas, y los que crean los admins (algunos con fechas, como eventos), con lo raros que son; **por idioma**: en inglés, VOSE o castellano, y el anime doblado o en japonés con subtítulos; y **sociales**: la misma película que otro el mismo día, verlo en cuanto llega a Plex o ser el primero en ver un estreno. Cada uno tiene dificultad: 🟢 Fácil, 🟡 Normal o 🎰 Gordo del Plex (con rol al llegar a 1, 5 y 10, si los admins lo ponen). Lo que sale al importar tu historial da menos monedas. Con 🍿 Ocultar mis logros de Plex no se anuncian ni los ven los demás.`,
+            "`/presentacion` — una frase sobre ti (hasta 150 caracteres) que sale en 👤 Perfil cuando otra persona abre tu perfil. Enviarla vacía la borra; también se edita con ✏️ Presentación en tu propio perfil.",
             "**Rankings**: nivel, riqueza, casino, logros, TTCL, 🍿 Plex (logros, Gordos, políglota y horas) y ⚽ apostadores (beneficio, acierto y racha), en una pantalla con un menú.",
             "`/pase` — el pase de batalla de la temporada (15 días): cada cosa que haces (escribir, voz, casino, cripto, apuestas, tienda, completar un logro) da XP con un tope diario, y cada nivel da monedas, que se cobran a mano en el propio `/pase`. Cada día hay 3 misiones que dan XP extra.",
         ],
@@ -126,7 +127,7 @@ const SECCIONES = {
         texto: [
             "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas, premios de la liga, límites), 🛒 Catálogo (objetos y lo que está a la venta), 🔊 Sonidos (subir y borrar), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
             "`/duende` → 🎭 Personalidad — los admins añaden, quitan y eligen las personalidades del canal.",
-            "`/mensaje usuario` — manda un DM de parte del bot a alguien: eliges a quién y escribes el texto en un formulario; el DM lleva solo ese texto. Solo admins; cada envío queda en la auditoría.",
+            "`/mensaje [usuario] [canal]` — manda un DM de parte del bot a alguien (`usuario`) o publica el texto en un canal (`canal`, sin menciones que notifiquen): escribes el texto en un formulario y se manda tal cual. Solo admins; cada envío queda en la auditoría.",
         ],
     },
 };
@@ -221,11 +222,106 @@ function embedSeccion(id) {
         .setColor(0x00b894);
 }
 
+const MIN_BUSQUEDA = 2;
+const MAX_RESULTADOS = 8;
+const MAX_LINEA = 280;
+
+/** Sin tildes ni mayúsculas, para que «tienda», «Tienda» y «ECONOMÍA»/«economia» se encuentren. */
+const normalizar = (t) =>
+    String(t || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase();
+
+const recortar = (t, n) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+
+/**
+ * Las líneas de la guía que mencionan `termino`, sin tildes ni mayúsculas, solo de las secciones que ve quien pregunta
+ * (la de Admin, solo a admins). `{ seccion, linea }[]`, en el orden de la guía.
+ */
+function buscarEnGuia(termino, interaction) {
+    const buscado = normalizar(termino).trim();
+    if (buscado.length < MIN_BUSQUEDA) return [];
+    const encontradas = [];
+    for (const [seccion, s] of seccionesVisibles(interaction)) {
+        for (const linea of s.texto) {
+            if (normalizar(linea).includes(buscado)) encontradas.push({ seccion, linea });
+        }
+    }
+    return encontradas;
+}
+
+/** La respuesta de `/ayuda buscar:…`: las líneas encontradas y un botón por cada sección donde están. */
+function pantallaBusqueda(interaction, termino) {
+    const buscado = String(termino).trim();
+    if (normalizar(buscado).trim().length < MIN_BUSQUEDA) {
+        return {
+            embeds: [embedInicio(interaction).setDescription(`Escribe al menos ${MIN_BUSQUEDA} letras para buscar en la guía.`)],
+            components: botones(interaction, null),
+        };
+    }
+    const encontradas = buscarEnGuia(buscado, interaction);
+    if (!encontradas.length) {
+        return {
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle(`🔎 «${recortar(buscado, 60)}»`)
+                    .setDescription("No lo encuentro en la guía. Prueba con otra palabra, o pulsa 🏠 Inicio para ver todas las secciones.")
+                    .setColor(0x00b894),
+            ],
+            components: botones(interaction, null),
+        };
+    }
+    const mostradas = encontradas.slice(0, MAX_RESULTADOS);
+    const descripcion = mostradas.map(({ seccion, linea }) => `${SECCIONES[seccion].emoji} ${recortar(linea, MAX_LINEA)}`).join("\n\n");
+    const resto = encontradas.length - mostradas.length;
+    const embed = new EmbedBuilder()
+        .setTitle(`🔎 «${recortar(buscado, 60)}»`)
+        .setDescription(
+            descripcion + (resto > 0 ? `\n\n…y ${resto} línea${resto === 1 ? "" : "s"} más. Pulsa una sección para verlas.` : ""),
+        )
+        .setFooter({ text: "Pulsa una sección para ver su guía completa." })
+        .setColor(0x00b894);
+    const secciones = [...new Set(encontradas.map((e) => e.seccion))];
+    const filas = [];
+    for (let i = 0; i < secciones.length; i += 5) {
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                secciones
+                    .slice(i, i + 5)
+                    .map((id) =>
+                        new ButtonBuilder()
+                            .setCustomId(`ayuda_${id}`)
+                            .setLabel(SECCIONES[id].boton)
+                            .setEmoji(SECCIONES[id].emoji)
+                            .setStyle(ButtonStyle.Primary),
+                    ),
+            ),
+        );
+    }
+    filas.push(
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("ayuda_inicio").setLabel("Inicio").setEmoji("🏠").setStyle(ButtonStyle.Secondary),
+        ),
+    );
+    return { embeds: [embed], components: filas };
+}
+
 module.exports = {
     componentHandlers: [{ types: ["button"], prefixes: ["ayuda_"], method: "handleButton" }],
-    data: new SlashCommandBuilder().setName("ayuda").setDescription("Guía de todo lo que puede hacer el bot"),
+    data: new SlashCommandBuilder()
+        .setName("ayuda")
+        .setDescription("Guía de todo lo que puede hacer el bot")
+        .addStringOption((o) =>
+            o.setName("buscar").setDescription("Una palabra para buscar en la guía (tienda, sonidos, apuesta…)").setMaxLength(50),
+        ),
 
     async run(client, interaction) {
+        const termino = interaction.options?.getString?.("buscar");
+        if (termino) {
+            await interaction.reply(pantallaBusqueda(interaction, termino));
+            return;
+        }
         await interaction.reply({
             embeds: [embedInicio(interaction)],
             components: botones(interaction, null),
@@ -252,5 +348,5 @@ module.exports = {
     },
 
     // Para tests
-    __test: { SECCIONES },
+    __test: { SECCIONES, buscarEnGuia },
 };

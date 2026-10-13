@@ -1,5 +1,6 @@
 // Ayudas para registrar interacciones de Discord y tareas programadas de forma uniforme.
 const { createLogger } = require("./logger");
+const latencias = require("./latencias");
 
 const jobLog = createLogger("Tarea");
 
@@ -77,10 +78,12 @@ async function runJob(name, fn, { slowMs = 30_000 } = {}) {
     try {
         const result = await fn();
         const ms = Date.now() - t0;
+        latencias.registrar("tarea", name, ms);
         if (ms > slowMs) jobLog.warn(`${name}: terminó pero tardó ${ms} ms`);
         else jobLog.debug(`${name}: ok (${ms} ms)`);
         return result;
     } catch (e) {
+        latencias.registrar("tarea", name, Date.now() - t0);
         jobLog.error(`${name}: falló tras ${Date.now() - t0} ms`, e);
         return undefined;
     }
