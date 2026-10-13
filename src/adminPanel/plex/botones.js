@@ -117,9 +117,7 @@ async function accionTrofeoBorrar(interaction, id, guildId, pagina = null) {
     const menu = new StringSelectMenuBuilder()
         .setCustomId("paneladmin_plex_trofeo_borrar_select")
         .setPlaceholder("Qué trofeo borrar")
-        .addOptions(
-            pag.items.map((t) => ({ label: t.nombre.slice(0, 100), description: String(t.condicion).slice(0, 100), value: t.id })),
-        );
+        .addOptions(pag.items.map((t) => ({ label: t.nombre.slice(0, 100), description: String(t.condicion).slice(0, 100), value: t.id })));
     const paginas = filaPaginas(PREFIJO_TROFEO_BORRAR, pag);
     const vista = {
         content: "¿Qué trofeo borro? Se quita a quien lo tenga (lo ya reclamado no se devuelve).",
@@ -162,7 +160,9 @@ async function accionAnime(interaction, id, guildId) {
     await interaction.reply({
         content:
             "¿Qué bibliotecas son de anime (series y películas)? Con 🤖 Automático, las que tienen «anime» en el nombre." +
-            (libs.length > 24 ? `\n⚠️ Solo caben 24 de tus ${libs.length} bibliotecas en el menú; las demás no se pueden marcar desde aquí.` : ""),
+            (libs.length > 24
+                ? `\n⚠️ Solo caben 24 de tus ${libs.length} bibliotecas en el menú; las demás no se pueden marcar desde aquí.`
+                : ""),
         components: [new ActionRowBuilder().addComponents(menu)],
         flags: MessageFlags.Ephemeral,
     });

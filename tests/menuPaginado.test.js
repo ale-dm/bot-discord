@@ -44,7 +44,10 @@ describe("panel de sonidos con 40 sonidos", () => {
     beforeAll(() => {
         db.prepare("DELETE FROM sonidos WHERE guildId = ?").run(G);
         for (let i = 1; i <= sonidos.MAX_SONIDOS; i++)
-            db.prepare("INSERT INTO sonidos (guildId, nombre, archivo, creado_por, creado_en) VALUES (?, ?, 'x.mp3', 'a', 0)").run(G, `S${i}`);
+            db.prepare("INSERT INTO sonidos (guildId, nombre, archivo, creado_por, creado_en) VALUES (?, ?, 'x.mp3', 'a', 0)").run(
+                G,
+                `S${i}`,
+            );
     });
     afterAll(() => db.prepare("DELETE FROM sonidos WHERE guildId = ?").run(G));
 
@@ -79,5 +82,42 @@ describe("ningún menú nuevo se corta a 25 sin paginar", () => {
     test("no hay `slice(0, 25)` en src/: se usa paneles/menuPaginado.js", () => {
         const culpables = leer(path.join(__dirname, "..", "src")).filter((f) => /\.slice\(0,\s*25\)/.test(fs.readFileSync(f, "utf8")));
         expect(culpables).toEqual([]);
+    });
+});
+
+describe("cancelar apuestas en Mis jugadas con 30 apuestas", () => {
+    const cancelar = require("../src/systems/apuestas/cancelar");
+    const misJugadas = require("../src/paneles/misJugadas");
+    const U = "u-paginas";
+    const apuestas = Array.from({ length: 30 }, (_, i) => ({
+        id: i + 1,
+        home_team: `Local ${i + 1}`,
+        away_team: "Visitante",
+        cantidad: 10,
+        devolucion: 9,
+        cuota: 2,
+        eleccion: "home",
+        mercado: "h2h",
+    }));
+    afterEach(() => jest.restoreAllMocks());
+
+    test("la apuesta 30 sale en la página 2, y la pantalla no pasa de 5 filas", async () => {
+        jest.spyOn(cancelar, "cancelables").mockReturnValue(apuestas);
+        const primera = misJugadas.buildMisJugadas(U, "activas");
+        expect(primera.components.length).toBeLessThanOrEqual(5);
+        const json = primera.components.map((c) => c.toJSON());
+        const menu = json.find((f) => f.components[0].custom_id === `misapuestas_cancelarsel_${U}`);
+        expect(menu.components[0].options).toHaveLength(25);
+
+        let vista = null;
+        await misJugadas.handleButton(null, {
+            customId: `misapuestas_cancelpag_${U}_1`,
+            user: { id: U },
+            update: async (v) => (vista = v),
+        });
+        const segunda = vista.components.map((c) => c.toJSON());
+        const opciones = segunda.find((f) => f.components[0].custom_id === `misapuestas_cancelarsel_${U}`).components[0].options;
+        expect(opciones.map((o) => o.value)).toContain("30");
+        expect(vista.components.length).toBeLessThanOrEqual(5);
     });
 });

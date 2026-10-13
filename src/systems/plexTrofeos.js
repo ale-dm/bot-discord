@@ -22,7 +22,7 @@ const { PREFIJO, EVENTOS_FICHAS } = require("./plexTrofeos/base");
 const { catalogo, candidatos, datosUsuario, contexto } = require("./plexTrofeos/candidatos");
 const { CONDICIONES, AYUDA_FECHAS, rangoDe, parsearCondicion } = require("./plexTrofeos/condiciones");
 const { renombrar } = require("./plexTrofeos/nombres");
-const { EVENTOS_SOCIALES, eventosDe, sociales } = require("./plexTrofeos/sociales");
+const { EVENTOS_SOCIALES, EVENTO_DIAS_SEGUIDOS, eventosDe, sociales } = require("./plexTrofeos/sociales");
 const {
     buscar,
     crearAdmin,
@@ -40,6 +40,7 @@ module.exports = {
     PREFIJO,
     EVENTOS_FICHAS,
     EVENTOS_SOCIALES,
+    EVENTO_DIAS_SEGUIDOS,
     CONDICIONES,
     AYUDA_FECHAS,
     catalogo,

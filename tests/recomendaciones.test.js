@@ -107,7 +107,8 @@ describe("cupo diario compartido con el Duende (#464)", () => {
     const { DUENDE_SEERR_EXECUTORS } = require("../src/services/duende/herramientas/seerr");
     const U = "disc-cupo";
     const usados = () =>
-        db.prepare("SELECT dayCount FROM action_limits WHERE guildId = ? AND scope = 'seerr_request' AND userId = ?").get(G, U)?.dayCount ?? 0;
+        db.prepare("SELECT dayCount FROM action_limits WHERE guildId = ? AND scope = 'seerr_request' AND userId = ?").get(G, U)?.dayCount ??
+        0;
 
     beforeEach(() => {
         db.prepare("DELETE FROM action_limits WHERE guildId = ? AND userId = ?").run(G, U);
