@@ -118,3 +118,38 @@ test("paneles, panel de admin, comandos y juegos no escriben SQL: pasan por los 
     for (const d of ["paneles", "adminPanel", "commands", "juegos"]) recorrer(path.join(__dirname, "../src", d));
     expect(sql).toEqual([]);
 });
+
+test("los clientes de Tautulli, Seerr y la Odds API no tocan la base de datos: guardan por los repositorios (#478)", () => {
+    for (const f of ["tautulliClient", "seerrClient", "oddsApi"]) {
+        expect(fs.readFileSync(path.join(__dirname, `../src/services/${f}.js`), "utf8")).not.toMatch(/core\/db/);
+    }
+});
+
+describe("canales permitidos y novedades de Plex", () => {
+    const { canalesPermitidos } = require("../src/repositorios/canalesPermitidos");
+    const novedades = require("../src/repositorios/plexNovedades");
+
+    test("cada servicio tiene su lista: agregar cambia el nombre, quitar y vaciar", () => {
+        const plex = canalesPermitidos("plex");
+        const seerr = canalesPermitidos("seerr");
+        plex.agregar("g-rep", "c1", "uno");
+        plex.agregar("g-rep", "c1", "renombrado");
+        plex.agregar("g-rep", "c2", null);
+        seerr.agregar("g-rep", "c9", "otro");
+        expect(plex.todos("g-rep").map((c) => c.channelId)).toEqual(["c2", "c1"]); // por nombre; sin nombre, primero
+        expect(plex.todos("g-rep").find((c) => c.channelId === "c1").channelName).toBe("renombrado");
+        plex.quitar("g-rep", "c1");
+        expect(plex.todos("g-rep")).toHaveLength(1);
+        plex.vaciar("g-rep");
+        expect(plex.todos("g-rep")).toEqual([]);
+        expect(seerr.todos("g-rep")).toHaveLength(1);
+        expect(() => canalesPermitidos("nada")).toThrow(/desconocido/);
+    });
+
+    test("la última novedad anunciada se guarda y se actualiza", () => {
+        expect(novedades.ultimaNovedad("g-nov")).toBe(0);
+        novedades.guardarUltimaNovedad("g-nov", 100);
+        novedades.guardarUltimaNovedad("g-nov", 250);
+        expect(novedades.ultimaNovedad("g-nov")).toBe(250);
+    });
+});
