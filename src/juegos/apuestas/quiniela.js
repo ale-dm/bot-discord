@@ -2,7 +2,7 @@
 // el editor de pronósticos, en quiniela/editor.js, y los botones, en quiniela/botones.js.
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
-const db = require("../../core/db");
+const repo = require("../../repositorios/apuestas");
 const dinero = require("../../systems/dinero");
 const limites = require("../../systems/apuestas/limites");
 const { logInfo } = require("../../core/logger");
@@ -51,16 +51,7 @@ module.exports = {
             return;
         }
 
-        const quiniela = db
-            .prepare(
-                `
-            SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas
-            WHERE estado = 'abierta' AND deporte = ?
-            ORDER BY id DESC
-            LIMIT 1
-        `,
-            )
-            .get(deporteSeleccionado);
+        const quiniela = repo.ultimaQuinielaAbierta(deporteSeleccionado);
 
         if (!quiniela) {
             await responder(vistaSinQuiniela(interaction, deporte, deporteSeleccionado, esAdmin(interaction)));
@@ -82,11 +73,7 @@ module.exports = {
         if (!customId.startsWith("quiniela_modal_confirmar_")) return;
 
         const quinielaId = parseInt(customId.replace("quiniela_modal_confirmar_", ""), 10);
-        const quiniela = db
-            .prepare(
-                `SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas WHERE id = ? AND estado = 'abierta'`,
-            )
-            .get(quinielaId);
+        const quiniela = repo.quinielaAbierta(quinielaId);
         if (!quiniela) {
             await interaction.reply({ content: "❌ Quiniela no disponible.", flags: MessageFlags.Ephemeral });
             return;
@@ -160,14 +147,7 @@ function vistaSinQuiniela(interaction, deporte, deporteSeleccionado, isAdmin) {
 function vistaQuiniela(interaction, quiniela, deporte, deporteSeleccionado) {
     const partidos = obtenerPartidosQuiniela(quiniela.id);
     const listado = partidos.map((p) => `${p.orden}. ${p.home_team} vs ${p.away_team}`).join("\n");
-    const bote =
-        db
-            .prepare(
-                `
-            SELECT COALESCE(SUM(cantidad), 0) AS total FROM quiniela_apuestas WHERE quiniela_id = ?
-        `,
-            )
-            .get(quiniela.id)?.total || 0;
+    const bote = repo.boteQuiniela(quiniela.id);
 
     // Si ya has apostado, tus pronósticos con ✅/❌ en los partidos jugados (antes solo se decía que ya
     // habías apostado, y no había forma de volver a verlos).

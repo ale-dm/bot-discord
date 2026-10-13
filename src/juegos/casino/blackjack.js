@@ -1,7 +1,7 @@
 // /blackjack: cobra y paga, y lleva el flujo de la partida. Las reglas de cada jugada están en systems/blackjack;
 // los textos, embeds y botones, en ./blackjackVista.
 const { EmbedBuilder, MessageFlags } = require("discord.js");
-const db = require("../../core/db");
+const repo = require("../../repositorios/casino");
 const { registrarUsuario, descontarApuesta } = require("../../systems/casinoTransactions");
 const activeGames = require("../../systems/activeGames");
 const { hayPartidaEnCurso } = require("./partidaEnCurso");
@@ -136,20 +136,7 @@ async function liquidarManosSplit(interaction, state, userId, botVal, manos) {
 
 // Estadísticas de blackjack del jugador (para el resumen de un split).
 function estadisticasBJ(userId) {
-    return db
-        .prepare(
-            `
-        SELECT
-            COUNT(*) as partidas,
-            SUM(CASE WHEN resultado > 0 THEN 1 ELSE 0 END) as victorias,
-            SUM(CASE WHEN resultado = 0 THEN 1 ELSE 0 END) as empates,
-            SUM(resultado) as gananciaTotal,
-            MAX(resultado) as mejorGanancia
-        FROM casino
-        WHERE userId = ? AND juego = 'blackjack'
-    `,
-        )
-        .get(userId);
+    return repo.estadisticasBlackjack(userId);
 }
 
 // Fin del split: juega el crupier, se liquida cada mano por separado y se enseña el resumen.

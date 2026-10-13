@@ -4,7 +4,7 @@
 // canal de avisos) en /paneladmin → Config Global → Tienda. Los datos y el cobro están en systems/tienda y los mensajes
 // en paneles/tienda.
 const { SlashCommandBuilder, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require("discord.js");
-const db = require("../../core/db");
+const repo = require("../../repositorios/dinero");
 const guildSettings = require("../../systems/guildSettings");
 const achievements = require("../../systems/achievementsSystem");
 const tienda = require("../../systems/tienda");
@@ -64,7 +64,7 @@ async function entregarRol(interaction, item) {
 
 // Aviso público de la compra en el canal configurado (o el antiguo de la tabla config).
 async function anunciarCompra(interaction, item, tiendaCfg) {
-    const legacyCanal = db.prepare("SELECT valor FROM config WHERE clave = 'tienda_canal_notif'").get()?.valor;
+    const legacyCanal = repo.canalLegadoTienda();
     const notifChannelId = tiendaCfg.notif_channel_id || legacyCanal;
     if (!notifChannelId) return;
     try {
@@ -217,12 +217,7 @@ module.exports = {
             await interaction.reply(privado("⛔ La tienda está deshabilitada en este servidor."));
             return;
         }
-        db.prepare(
-            `
-            INSERT OR IGNORE INTO usuarios (id, nombre, tag, fechaRegistro)
-            VALUES (?, ?, ?, ?)
-        `,
-        ).run(interaction.user.id, interaction.user.username, interaction.user.tag, new Date().toISOString());
+        repo.registrarUsuario(interaction.user.id, interaction.user.username, interaction.user.tag, new Date().toISOString());
 
         try {
             await interaction.reply(vistaCatalogo(interaction, 1));

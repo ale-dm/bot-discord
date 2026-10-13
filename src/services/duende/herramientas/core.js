@@ -12,7 +12,7 @@ const objetos = require("../../../systems/objetos");
 const misJugadas = require("../../../systems/apuestas/misJugadas");
 const { marcadorDe } = require("../../../systems/apuestas/marcador");
 const mercados = require("../../../systems/apuestas/mercados");
-const db = require("../../../core/db");
+const repoCasino = require("../../../repositorios/casino");
 
 const DUENDE_CORE_TOOL_DECLARATIONS = [
     {
@@ -204,13 +204,7 @@ const DUENDE_CORE_EXECUTORS = {
     },
     consultar_partidas_casino(args, ctx) {
         const cantidad = Math.max(1, Math.min(15, Math.floor(Number(args?.cantidad) || 5)));
-        const { ganado, perdido } = db
-            .prepare(
-                `SELECT COALESCE(SUM(CASE WHEN resultado > 0 THEN resultado ELSE 0 END), 0) AS ganado,
-                        COALESCE(SUM(CASE WHEN resultado < 0 THEN -resultado ELSE 0 END), 0) AS perdido
-                 FROM casino WHERE userId = ?`,
-            )
-            .get(ctx.userId);
+        const { ganado, perdido } = repoCasino.totalesCasino(ctx.userId);
         return {
             ultimas_partidas: misJugadas
                 .ultimasCasino(ctx.userId, cantidad)

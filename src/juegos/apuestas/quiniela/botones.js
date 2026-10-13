@@ -2,7 +2,7 @@
 
 const { EmbedBuilder, ModalBuilder, MessageFlags } = require("discord.js");
 const { filasImporte } = require("../../../paneles/importes");
-const db = require("../../../core/db");
+const repo = require("../../../repositorios/apuestas");
 const { DEPORTES } = require("../../../services/oddsApi");
 const { esAdmin } = require("../../../core/permisos");
 const {
@@ -41,17 +41,13 @@ async function botonCrear(client, interaction, customId) {
 
 async function botonApostar(client, interaction, customId, userId) {
     const quinielaId = parseInt(customId.replace("quiniela_apostar_", ""), 10);
-    const quiniela = db
-        .prepare(
-            `SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas WHERE id = ? AND estado = 'abierta'`,
-        )
-        .get(quinielaId);
+    const quiniela = repo.quinielaAbierta(quinielaId);
     if (!quiniela) {
         await interaction.reply({ content: "❌ La quiniela ya no está disponible.", flags: MessageFlags.Ephemeral });
         return;
     }
 
-    const yaAposto = db.prepare(`SELECT 1 FROM quiniela_apuestas WHERE quiniela_id = ? AND user_id = ?`).get(quinielaId, userId);
+    const yaAposto = repo.yaApostoQuiniela(quinielaId, userId);
     if (yaAposto) {
         await interaction.reply({ content: "⚠️ Ya has enviado una apuesta para esta quiniela.", flags: MessageFlags.Ephemeral });
         return;
@@ -75,11 +71,7 @@ async function botonApostar(client, interaction, customId, userId) {
 // Sesión y quiniela abierta de quien pulsa, o null si ya no valen (ya se ha avisado).
 async function sesionYQuinielaAbierta(interaction, userId, quinielaId) {
     const sesion = sesionesQuiniela.get(getSesionKey(userId, quinielaId));
-    const quiniela = db
-        .prepare(
-            `SELECT id, deporte, jornada, estado, creador_id, creada_en, cerrada_en FROM quinielas WHERE id = ? AND estado = 'abierta'`,
-        )
-        .get(quinielaId);
+    const quiniela = repo.quinielaAbierta(quinielaId);
     if (!sesion || !quiniela) {
         await interaction.reply({
             content: "❌ Sesión no válida o expirada. Pulsa de nuevo en Apostar quiniela.",

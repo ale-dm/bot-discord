@@ -13,7 +13,7 @@ const {
     UserSelectMenuBuilder,
     ModalBuilder,
 } = require("discord.js");
-const db = require("../core/db");
+const repo = require("../repositorios/dinero");
 const dinero = require("../systems/dinero");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
 const { fmtNumero } = require("../core/formato");
@@ -45,7 +45,7 @@ function lineaDinero(userId) {
  * triggers sobre la tabla `casino` (migración 048): no se suman todas las jugadas en cada render (#484).
  */
 function resumenCasino(userId) {
-    return db.prepare("SELECT ganado, perdido FROM casino_resumen WHERE userId = ?").get(String(userId)) || { ganado: 0, perdido: 0 };
+    return repo.resumenCasino(userId) || { ganado: 0, perdido: 0 };
 }
 
 /** La cartera cripto valorada (con una caché de 30 s, #487). Si el mercado falla, sale sin valorar. */
@@ -161,7 +161,7 @@ async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = 
     const c = dinero.cuenta(targetId);
     const { ganado, perdido } = resumenCasino(targetId);
     const cartera = await carteraDe(targetId, guildId);
-    const objetos = db.prepare("SELECT COUNT(*) AS n FROM inventario WHERE userId = ?").get(targetId).n;
+    const objetos = repo.objetosEnInventario(targetId);
     const prestamo = require("../systems/prestamos").abierto(targetId);
 
     const embed = embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo });

@@ -1,5 +1,5 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const db = require("../core/db");
+const repo = require("../repositorios/dinero");
 const xp = require("../systems/xpSystem");
 const { fmtNumero } = require("../core/formato");
 
@@ -31,10 +31,10 @@ function buildMainRows() {
 }
 
 function buildMainEmbed(client) {
-    const totalUsuarios = db.prepare("SELECT COUNT(*) as total FROM banco").get().total || 0;
-    const totalBanco = db.prepare("SELECT SUM(saldo) as total FROM banco").get().total || 0;
-    const totalEnMano = db.prepare("SELECT SUM(enMano) as total FROM banco").get().total || 0;
-    const movimientos = db.prepare("SELECT COUNT(*) as total FROM historial").get().total || 0;
+    const totalUsuarios = repo.totalCuentas();
+    const totalBanco = repo.sumaBanco();
+    const totalEnMano = repo.sumaEfectivo();
+    const movimientos = repo.totalMovimientos();
 
     return new EmbedBuilder()
         .setTitle("🛠️ Panel Admin")
