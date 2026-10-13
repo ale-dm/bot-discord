@@ -230,6 +230,12 @@ async function getMediaTitle(guildId, mediaType, tmdbId) {
     }
 }
 
+/** El título y el estado en Plex (estadoCodigo: 5 disponible, 4 a medias…) de una película o serie de TMDB. */
+async function getMediaStatus(guildId, mediaType, tmdbId) {
+    const data = await call(guildId, "get", `/${mediaType}/${Number(tmdbId)}`);
+    return { titulo: (mediaType === "movie" ? data?.title : data?.name) || null, estadoCodigo: data?.mediaInfo?.status || 1 };
+}
+
 /**
  * Peticiones sin título (una sola llamada, para el aviso de "ya está en Plex", que mira muchas cada 30 min):
  * { id, mediaType, tmdbId, estadoCodigo, seerrUserId, plexUsername }.
@@ -274,6 +280,7 @@ module.exports = {
     getRequests,
     getRequestsRaw,
     getMediaTitle,
+    getMediaStatus,
 
     getAllowedChannels,
     addAllowedChannel,

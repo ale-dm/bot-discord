@@ -5,6 +5,7 @@
 const db = require("../core/db");
 const plexLinks = require("./plexLinks");
 const seerrClient = require("../services/seerrClient");
+const seerrCupo = require("./seerrCupo");
 
 const DIAS_HISTORIAL = 180;
 const SEMILLAS = 3;
@@ -91,12 +92,23 @@ async function generar(guildId, discordId, deps = reales, { ahora = Date.now() }
     return { ok: true, sugerencias };
 }
 
-/** Pide una sugerencia en Seerr a nombre de quien la ha pedido (su perfil de Seerr por Discord). */
+/**
+ * Pide una sugerencia en Seerr a nombre de quien la ha pedido (su perfil de Seerr por Discord). Gasta del mismo cupo
+ * diario que las peticiones al Duende, y solo si Seerr la acepta.
+ */
 async function pedir(guildId, discordId, mediaType, tmdbId) {
+    const cupo = seerrCupo.comprobar(guildId, discordId);
+    if (!cupo.ok) {
+        return {
+            ok: false,
+            mensaje: `Ya has gastado tus peticiones de hoy (las del Duende cuentan también). El cupo se reinicia <t:${cupo.reinicio}:R>.`,
+        };
+    }
     const usuario = await seerrClient.resolveSeerrUserByDiscordId(guildId, discordId);
     if (!usuario) return { ok: false, mensaje: "No encuentro tu perfil de Seerr: pide a un admin que lo vincule a tu Discord." };
     try {
         await seerrClient.createRequest(guildId, { mediaType, tmdbId, userId: usuario.id });
+        seerrCupo.gastar(guildId, discordId);
         return { ok: true };
     } catch (e) {
         return { ok: false, mensaje: `No se pudo pedir en Seerr: ${e.message}` };

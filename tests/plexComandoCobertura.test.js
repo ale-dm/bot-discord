@@ -45,9 +45,13 @@ function sesionDeCine(organizador = "ana") {
 }
 
 describe("definición y /plex", () => {
-    test("el comando es plex, y sus botones cuelgan de plex_, cine_ y recomendar_pedir_", () => {
+    test("el comando es plex, y sus botones cuelgan de plex_, cine_, recomendar_pedir_ y recomendar_quiero_", () => {
         expect(plex.data.name).toBe("plex");
-        expect(plex.componentHandlers.map((h) => h.prefixes)).toEqual([["plex_", "cine_", "recomendar_pedir_"], ["plex_modal_"]]);
+        expect(plex.componentHandlers.map((h) => h.prefixes)).toEqual([
+            ["plex_", "cine_", "recomendar_pedir_", "recomendar_quiero_"],
+            ["plex_sel_"],
+            ["plex_modal_"],
+        ]);
     });
 
     test("/plex responde en privado con el panel", async () => {

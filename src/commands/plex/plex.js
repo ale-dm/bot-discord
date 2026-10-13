@@ -19,6 +19,9 @@ const plexLinks = require("../../systems/plexLinks");
 const { pantallaSesion } = require("../../paneles/cine");
 const { pantallaRecomendaciones } = require("../../paneles/recomendar");
 const { pantallaPlex } = require("../../paneles/plex");
+const { pantallaSeries, pantallaQuieroVer, pantallaResultados } = require("../../paneles/plexAvisos");
+const plexAvisos = require("../../systems/plexAvisos");
+const seerrClient = require("../../services/seerrClient");
 const perfilPaneles = require("../../paneles/perfil");
 const { efimero } = require("../../core/respuestas");
 const { tienePermiso } = require("../../core/permisos");
@@ -58,7 +61,8 @@ function formularioCine() {
 
 module.exports = {
     componentHandlers: [
-        { types: ["button"], prefixes: ["plex_", "cine_", "recomendar_pedir_"], method: "handleButton", acl: "plex" },
+        { types: ["button"], prefixes: ["plex_", "cine_", "recomendar_pedir_", "recomendar_quiero_"], method: "handleButton", acl: "plex" },
+        { types: ["stringSelect"], prefixes: ["plex_sel_"], method: "handleSelect", acl: "plex" },
         { types: ["modal"], prefixes: ["plex_modal_"], method: "handleModal", acl: "plex" },
     ],
     data: new SlashCommandBuilder()
@@ -92,6 +96,23 @@ module.exports = {
             return interaction.editReply({ content: r.ok ? "✅ Pedido en Seerr. Te avisaremos cuando esté en Plex." : `❌ ${r.mensaje}` });
         }
 
+        // ➕ en 🎯 Para ti: apunta la sugerencia en «quiero ver» (#466).
+        const quiero = /^recomendar_quiero_(movie|tv)_(\d+)$/.exec(id);
+        if (quiero) {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            const r = await plexAvisos.anadirQuieroVer(guildId, userId, quiero[1], quiero[2]);
+            return interaction.editReply({
+                content: r.ok
+                    ? `📝 **${r.titulo}** apuntada en tu lista de «quiero ver». Te aviso cuando llegue a Plex.`
+                    : `❌ ${r.motivo}`,
+            });
+        }
+
+        if (id === "plex_inicio") return interaction.update(pantallaPlex(guildId, userId));
+        if (id === "plex_series") return interaction.update(pantallaSeries(guildId, userId));
+        if (id === "plex_quiero") return interaction.update(pantallaQuieroVer(guildId, userId));
+        if (id === "plex_quiero_anadir") return interaction.showModal(formularioQuieroVer());
+
         if (id === "plex_wrapped") {
             // Privado: solo tu resumen, y solo a ti (el Wrapped no se publica en ningún canal).
             await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -109,7 +130,42 @@ module.exports = {
         }
     },
 
+    // Los menús de 📺 Series y 📝 Quiero ver.
+    async handleSelect(client, interaction) {
+        const id = interaction.customId;
+        const userId = interaction.user.id;
+        const guildId = interaction.guildId;
+        const valor = interaction.values[0];
+
+        if (id === "plex_sel_seguir") {
+            const serie = plexAvisos.seriesParaSeguir(guildId, userId).find((s) => String(s.serie_key) === valor);
+            if (!serie) return interaction.update(pantallaSeries(guildId, userId, "❌ Esa serie ya no está en la lista."));
+            const r = plexAvisos.seguir(guildId, userId, serie.serie_key, serie.titulo);
+            const aviso = r.ok ? `✅ Sigues **${serie.titulo}**: te aviso por DM de los episodios nuevos.` : `❌ ${r.motivo}`;
+            return interaction.update(pantallaSeries(guildId, userId, aviso));
+        }
+        if (id === "plex_sel_dejar") {
+            const serie = plexAvisos.seguidas(guildId, userId).find((s) => String(s.serie_key) === valor);
+            plexAvisos.dejarDeSeguir(guildId, userId, valor);
+            return interaction.update(pantallaSeries(guildId, userId, serie ? `➖ Ya no sigues **${serie.titulo}**.` : ""));
+        }
+
+        const tmdb = /^(movie|tv)_(\d+)$/.exec(valor || "");
+        if (!tmdb) return;
+        if (id === "plex_sel_quitar") {
+            const t = plexAvisos.quieroVer(guildId, userId).find((x) => x.media_type === tmdb[1] && String(x.tmdb_id) === tmdb[2]);
+            plexAvisos.quitarQuieroVer(guildId, userId, tmdb[1], tmdb[2]);
+            return interaction.update(pantallaQuieroVer(guildId, userId, t ? `➖ Quitada **${t.titulo}** de tu lista.` : ""));
+        }
+        if (id === "plex_sel_anadir") {
+            await interaction.deferUpdate();
+            const r = await plexAvisos.anadirQuieroVer(guildId, userId, tmdb[1], tmdb[2]);
+            return interaction.editReply(pantallaQuieroVer(guildId, userId, r.ok ? `📝 Apuntada **${r.titulo}**.` : `❌ ${r.motivo}`));
+        }
+    },
+
     async handleModal(client, interaction) {
+        if (interaction.customId === "plex_modal_quiero") return buscarParaQuieroVer(interaction);
         if (interaction.customId !== "plex_modal_cine") return;
         const peli = interaction.fields.getTextInputValue("peli").trim();
         const hora = interaction.fields.getStringSelectValues("hora", true)[0];
@@ -128,6 +184,38 @@ module.exports = {
         cine.guardarMensaje(id, mensaje.id);
     },
 };
+
+function formularioQuieroVer() {
+    return new ModalBuilder()
+        .setCustomId("plex_modal_quiero")
+        .setTitle("📝 Añadir a «quiero ver»")
+        .addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId("titulo")
+                    .setLabel("Película o serie")
+                    .setStyle(TextInputStyle.Short)
+                    .setMaxLength(100)
+                    .setRequired(true),
+            ),
+        );
+}
+
+/** Busca en Seerr el título del formulario y enseña los resultados para elegir cuál añadir. */
+async function buscarParaQuieroVer(interaction) {
+    const titulo = interaction.fields.getTextInputValue("titulo").trim();
+    // Viene del botón de la pantalla de la lista (un mensaje privado): se actualiza ese mensaje.
+    await interaction.deferUpdate();
+    let resultados;
+    try {
+        resultados = (await seerrClient.searchMulti(interaction.guildId, titulo)).slice(0, 5);
+    } catch (e) {
+        return interaction.editReply(
+            pantallaQuieroVer(interaction.guildId, interaction.user.id, `❌ No se pudo buscar en Seerr: ${e.message}`),
+        );
+    }
+    return interaction.editReply(pantallaResultados(resultados, titulo));
+}
 
 /** Los botones de una sesión de cine (apuntarse, salirse, cancelar). */
 async function handleCineBoton(interaction, accion, id) {

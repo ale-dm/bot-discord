@@ -56,6 +56,7 @@ function unidad(event) {
             plex_cine_compartido: ["película", "películas"],
             plex_sin_spoilers: ["estreno", "estrenos"],
             plex_primero: ["estreno", "estrenos"],
+            plex_dias_seguidos: ["día", "días"],
         }[e] || null
     );
 }

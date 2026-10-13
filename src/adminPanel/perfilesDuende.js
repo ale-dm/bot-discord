@@ -16,6 +16,7 @@ const { buildPersonProfileText } = require("../systems/duende/personas");
 const apodos = require("../systems/apodos");
 const adminAudit = require("../systems/adminAudit");
 const { modalConCampos, usuarioElegido } = require("./common");
+const { paginaDeLista, filaPaginas, paginaDeId } = require("../paneles/menuPaginado");
 
 const P = "paneladmin_perfiles_";
 const cortar = (t, n) => (t.length > n ? t.slice(0, n - 1) + "…" : t);
@@ -55,8 +56,9 @@ function buildPerfilesHome() {
     return { embeds: [embed], components: [row] };
 }
 
-function buildSelector() {
+function buildSelector(pagina = 0) {
     const lista = perfiles.listarPerfiles();
+    const pag = paginaDeLista(lista, pagina);
     const rows = [];
     if (lista.length) {
         rows.push(
@@ -65,7 +67,7 @@ function buildSelector() {
                     .setCustomId(`${P}pick`)
                     .setPlaceholder("Perfiles que ya existen")
                     .addOptions(
-                        lista.slice(0, 25).map((p) => ({
+                        pag.items.map((p) => ({
                             label: cortar(p.name, 100),
                             description: cortar(
                                 `${p.username || "sin username"}${p.discordId ? "" : " · sin vincular"} · ${p.notas.length} notas`,
@@ -76,6 +78,8 @@ function buildSelector() {
                     ),
             ),
         );
+        const paginas = filaPaginas(`${P}pick_p_`, pag);
+        if (paginas) rows.push(paginas);
     }
     rows.push(
         new ActionRowBuilder().addComponents(
@@ -86,7 +90,7 @@ function buildSelector() {
         ),
     );
     return {
-        content: `Elige de quién ver el perfil.${lista.length > 25 ? " (En la primera lista solo caben 25: usa la segunda para el resto.)" : ""}`,
+        content: `Elige de quién ver el perfil.${pag.paginas > 1 ? " (La primera lista va por páginas: usa ◀ / ▶ o la segunda lista.)" : ""}`,
         embeds: [],
         components: rows,
     };
@@ -187,6 +191,11 @@ async function handlePerfilesButton(interaction) {
     }
     if (id === `${P}elegir`) {
         await interaction.reply({ ...buildSelector(), flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    const pagina = paginaDeId(`${P}pick_p_`, id);
+    if (pagina !== null) {
+        await interaction.update(buildSelector(pagina));
         return true;
     }
     if (id === `${P}elegir_otro`) {

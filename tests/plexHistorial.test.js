@@ -184,10 +184,10 @@ describe("estadísticas y logros", () => {
     });
 });
 
-test("hay 87 logros fijos de Plex (17 de la fase 1, 12 de anime y series terminadas, 51 por idioma y 7 sociales), todos con su evento y dificultad", () => {
+test("hay 89 logros fijos de Plex (17 de la fase 1, 12 de anime y series terminadas, 51 por idioma, 7 sociales y 2 de racha), todos con su evento y dificultad", () => {
     const plex = achievements.CATALOG.filter((a) => a.category === "plex");
-    expect(plex).toHaveLength(87);
-    const { EVENTOS_FICHAS, EVENTOS_SOCIALES } = require("../src/systems/plexTrofeos");
+    expect(plex).toHaveLength(89);
+    const { EVENTOS_FICHAS, EVENTOS_SOCIALES, EVENTO_DIAS_SEGUIDOS } = require("../src/systems/plexTrofeos");
     const plexIdiomas = require("../src/systems/plexIdiomas");
     const eventosIdioma = plexIdiomas.LOGROS.map(([, , modo, tipo]) => plexIdiomas.evento(tipo, modo));
     expect(new Set(plex.map((a) => a.event))).toEqual(
@@ -195,6 +195,7 @@ test("hay 87 logros fijos de Plex (17 de la fase 1, 12 de anime y series termina
             ...Object.values(plexHistorial.EVENTOS),
             ...Object.values(EVENTOS_FICHAS),
             ...Object.values(EVENTOS_SOCIALES),
+            EVENTO_DIAS_SEGUIDOS,
             ...eventosIdioma,
         ]),
     );

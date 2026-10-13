@@ -22,6 +22,7 @@ const CONDICIONES = {
     "anime-series": { n: true },
     "anime-episodios": { n: true },
     "anime-completas": { n: true },
+    "dias-seguidos": { n: true, ayuda: "`dias-seguidos 7` → ver algo en Plex 7 días seguidos" },
     // Por idioma: la versión va como valor (ingles, vose, ingles-sin-subs, castellano, anime-castellano, anime-jap-sub-es,
     // anime-ingles, anime-jap-sub-en, anime-jap-sin-subs).
     "idioma-episodios": {
@@ -190,6 +191,8 @@ function evaluarCondicion(cond, datos, ctx, stats = {}) {
             return { progreso: datos.cuentas.animeEpisodios, objetivo: n };
         case "anime-completas":
             return { progreso: datos.cuentas.animeCompletas, objetivo: n };
+        case "dias-seguidos":
+            return { progreso: datos.diasSeguidos || 0, objetivo: n };
         default:
             return null;
     }
@@ -211,6 +214,7 @@ function describirCondicion(cond) {
         "anime-series": `Ve episodios de ${n} series de anime`,
         "anime-episodios": `Ve ${n} episodios de anime`,
         "anime-completas": `Termina ${n} series de anime`,
+        "dias-seguidos": `Ve algo en Plex ${n} días seguidos`,
     };
     let texto = textos[tipo] || tipo;
     if (TIPO_IDIOMA[tipo]) {

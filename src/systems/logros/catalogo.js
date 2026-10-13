@@ -498,6 +498,9 @@ const CATALOG = [
             2500,
             "normal",
         ],
+        // Racha (systems/plexTrofeos.datosVistos.mejorRacha): días seguidos con algo visto, en hora de Madrid.
+        ["plex_racha_7", "Semana de sofá", "Ve algo en Plex 7 días seguidos", "plex_dias_seguidos", 7, 700, "normal"],
+        ["plex_racha_30", "Abonado al sofá", "Ve algo en Plex 30 días seguidos", "plex_dias_seguidos", 30, 4000, "gordo"],
     ].map(([id, name, desc, event, target, rewardCoins, dificultad, hidden]) => ({
         id,
         name,
