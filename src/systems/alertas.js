@@ -5,7 +5,7 @@
 // Para no inundar a nadie: la misma alerta (misma `clave`) no se repite hasta pasado su cooldown, y como mucho salen
 // MAX_POR_HORA a la hora. Lo que pasa antes de conectar a Discord (errores al arrancar) se guarda y se manda al
 // conectar. Aquí nunca se registra nada como error: un fallo al avisar de un error no puede generar otra alerta.
-const { EmbedBuilder } = require("discord.js");
+const { embedAlerta } = require("../discord/mensajes/alerta");
 const guildSettings = require("./guildSettings");
 const { sendDm } = require("./avisosDm");
 const { createLogger, onError } = require("../core/logger");
@@ -65,12 +65,7 @@ async function enviar({ titulo, detalle, at = Date.now() }) {
         log.info(`Alerta sin destinatarios (alertas desactivadas): ${titulo}`);
         return 0;
     }
-    const embed = new EmbedBuilder()
-        .setTitle(titulo.slice(0, 256))
-        .setDescription(String(detalle || "").slice(0, 3000))
-        .setColor(0xe74c3c)
-        .setFooter({ text: "El Duende · se configura en /paneladmin → 🩺 Sistema → 🔔 Alertas" })
-        .setTimestamp(at);
+    const embed = embedAlerta(titulo, detalle, at);
     let enviadas = 0;
     for (const id of ids) {
         if (await sendDm(client, id, { embeds: [embed] })) enviadas++;

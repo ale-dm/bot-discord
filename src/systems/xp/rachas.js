@@ -1,10 +1,10 @@
 // Rachas diarias (días seguidos ganando XP, en hora de Madrid): el bonus de XP que dan, el DM al
 // continuarla y el aviso diario a quien está a punto de perderla.
 const db = require("../../core/db");
-const { EmbedBuilder } = require("discord.js");
 const { createLogger } = require("../../core/logger");
 const { getConfig, ensureUser } = require("./config");
 const { sendDm, enviarAviso } = require("../avisosDm");
+const { buildStreakContinuedEmbed, buildStreakWarningEmbed } = require("../../discord/mensajes/rachas");
 
 const log = createLogger("XP");
 
@@ -55,27 +55,6 @@ function getEffectiveStreak(guildId, userId) {
     const yesterday = madridYesterdayStr();
     if (user.streak_last_day !== today && user.streak_last_day !== yesterday) return 0;
     return user.streak_dias || 0;
-}
-
-function buildStreakContinuedEmbed(guild, streakDias, bonusPct) {
-    return new EmbedBuilder()
-        .setTitle("🔥 ¡Racha activa!")
-        .setDescription(`Llevas **${streakDias} días seguidos** ganando XP en **${guild.name}**.`)
-        .addFields({ name: "Bonus actual", value: `+${bonusPct.toFixed(0)}% XP`, inline: true })
-        .setColor(0xff6b35)
-        .setFooter({ text: "Sigue así para no perder la racha" })
-        .setTimestamp();
-}
-
-function buildStreakWarningEmbed(guild, streakDias) {
-    return new EmbedBuilder()
-        .setTitle("⏳ Tu racha está en peligro")
-        .setDescription(
-            `Llevas **${streakDias} días** de racha en **${guild.name}**, pero hoy todavía no has ganado XP.\n` +
-                `Escribe un mensaje o entra a un canal de voz antes de medianoche para no perderla.`,
-        )
-        .setColor(0xe74c3c)
-        .setTimestamp();
 }
 
 async function runStreakWarningJob(client) {
