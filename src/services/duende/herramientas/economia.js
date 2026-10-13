@@ -1,5 +1,7 @@
 const { Type: SchemaType } = require("@google/genai");
 const { proponer, cantidadDe, sinNegritas } = require("./base");
+const retos = require("../../../systems/retos");
+const prestamos = require("../../../systems/prestamos");
 
 // 🧙 El Duende en la economía (F-DU-03): proponer un reto, una apuesta o un préstamo al que habla. Solo se ofrecen
 // donde la propuesta puede salir con botones (toolContext.propuestas: el chat de texto, no la voz).
@@ -54,13 +56,12 @@ const DUENDE_ECONOMIA_EXECUTORS = {
     retar_piedra_papel_tijera(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const cantidad = cantidadDe(args);
-        const motivo = require("../../../systems/retos").motivoNoContraDuende(ctx.userId, cantidad);
+        const motivo = retos.motivoNoContraDuende(ctx.userId, cantidad);
         if (motivo) return { error: sinNegritas(motivo) };
         return proponer(ctx, { tipo: "ppt", cantidad });
     },
     apostar_partido_con_duende(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const retos = require("../../../systems/retos");
         const cantidad = cantidadDe(args);
         const partido = retos.buscarPartido(`${args?.partido || ""} ${args?.equipo || ""}`);
         const proximos = () =>
@@ -87,7 +88,7 @@ const DUENDE_ECONOMIA_EXECUTORS = {
     ofrecer_prestamo(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const cantidad = cantidadDe(args);
-        const motivo = require("../../../systems/prestamos").motivoNoPrestar(ctx.userId, cantidad);
+        const motivo = prestamos.motivoNoPrestar(ctx.userId, cantidad);
         if (motivo) return { error: sinNegritas(motivo) };
         return proponer(ctx, { tipo: "prestamo", cantidad });
     },

@@ -4,6 +4,9 @@
 const achievementsSystem = require("../../../systems/achievementsSystem");
 const plexLinks = require("../../../systems/plexLinks");
 const { resolverPersonaVinculada } = require("./base");
+const plexRankings = require("../../../systems/plexRankings");
+const plexTrofeosSistema = require("../../../systems/plexTrofeos");
+const plexIdiomas = require("../../../systems/plexIdiomas");
 
 /** Los trofeos y logros de Plex que ha completado una persona del servidor. */
 async function trofeosDePersona(args, ctx, { plexTrofeos, nombre, dificultad }) {
@@ -63,7 +66,7 @@ function trofeosDeTitulo(args, ctx, { plexTrofeos, nombre, dificultad }) {
 
 /** Sin persona ni título: quién tiene más logros de Plex, más gordos del Plex y más logros de idioma. */
 function rankingTrofeos(ctx, nombre) {
-    const r = require("../../../systems/plexRankings").rankings(ctx.guildId);
+    const r = plexRankings.rankings(ctx.guildId);
     if (!r) return { error: "Nadie tiene la cuenta de Plex vinculada todavía." };
     return {
         mas_logros_de_plex: r.logros.map((x) => ({ persona: nombre(x.discordUserId), logros: x.n })),
@@ -74,14 +77,12 @@ function rankingTrofeos(ctx, nombre) {
 
 async function consultarTrofeosPlex(args, ctx) {
     if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-    const plexTrofeos = require("../../../systems/plexTrofeos");
-    const plexIdiomas = require("../../../systems/plexIdiomas");
     const nombre = (discordId) =>
         ctx.guild?.members?.cache?.get(discordId)?.displayName ||
         plexLinks.getLinkByDiscordId(ctx.guildId, discordId)?.plexUsername ||
         "alguien";
     const dificultad = (d) => plexIdiomas.DIFICULTADES[d]?.nombre || null;
-    const ayudas = { plexTrofeos, nombre, dificultad };
+    const ayudas = { plexTrofeos: plexTrofeosSistema, nombre, dificultad };
 
     if (args?.persona) return trofeosDePersona(args, ctx, ayudas);
     if (args?.titulo) return trofeosDeTitulo(args, ctx, ayudas);
