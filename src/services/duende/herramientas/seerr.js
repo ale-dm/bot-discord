@@ -1,5 +1,5 @@
 const { Type: SchemaType } = require("@google/genai");
-const guildSettings = require("../../../systems/guildSettings");
+const seerrCupo = require("../../../systems/seerrCupo");
 const seerrClient = require("../../seerrClient");
 const { resolveNameToDiscordId } = require("../../../systems/duende/personas");
 const { resolverSeerrUsuarioPorId } = require("./base");
@@ -82,13 +82,9 @@ const DUENDE_SEERR_EXECUTORS = {
 
         // El límite diario protege siempre a quien está hablando con el bot (evita que una
         // sola persona spamee peticiones aunque las reparta "en nombre de" varios amigos).
-        const { dailyRequestLimit } = seerrClient.getConfig(ctx.guildId);
-        // Solo se comprueba aquí: el cupo se gasta cuando la petición sale de verdad (más abajo).
-        const limitCheck = guildSettings.checkAndConsumeLimit(ctx.guildId, "seerr_request", ctx.userId, {
-            dailyLimit: dailyRequestLimit,
-            consume: false,
-        });
-        if (!limitCheck.ok) {
+        // Solo se comprueba aquí: el cupo se gasta cuando la petición sale de verdad (más abajo). Es el mismo que el 📥
+        // de 🎯 Para ti (systems/seerrCupo.js).
+        if (!seerrCupo.comprobar(ctx.guildId, ctx.userId).ok) {
             return { error: "Límite diario de peticiones de contenido alcanzado. Que lo pida mañana." };
         }
 
@@ -111,7 +107,7 @@ const DUENDE_SEERR_EXECUTORS = {
 
         try {
             await seerrClient.createRequest(ctx.guildId, { mediaType, tmdbId, userId: seerrUser.id });
-            guildSettings.checkAndConsumeLimit(ctx.guildId, "seerr_request", ctx.userId, { dailyLimit: dailyRequestLimit });
+            seerrCupo.gastar(ctx.guildId, ctx.userId);
             return { pedido: true, titulo: cached.titulo, pedido_por: seerrUser.displayName };
         } catch (e) {
             return { error: `No se pudo pedir: ${e.seerrMessage || e.message}` };

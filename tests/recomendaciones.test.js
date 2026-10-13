@@ -102,6 +102,59 @@ test("sin perfil de Seerr no se pide nada", async () => {
     jest.restoreAllMocks();
 });
 
+describe("cupo diario compartido con el Duende (#464)", () => {
+    const seerrCupo = require("../src/systems/seerrCupo");
+    const { DUENDE_SEERR_EXECUTORS } = require("../src/services/duende/herramientas/seerr");
+    const U = "disc-cupo";
+    const usados = () =>
+        db.prepare("SELECT dayCount FROM action_limits WHERE guildId = ? AND scope = 'seerr_request' AND userId = ?").get(G, U)?.dayCount ?? 0;
+
+    beforeEach(() => {
+        db.prepare("DELETE FROM action_limits WHERE guildId = ? AND userId = ?").run(G, U);
+        jest.spyOn(seerrClient, "getConfig").mockReturnValue({ dailyRequestLimit: 2 });
+        jest.spyOn(seerrClient, "resolveSeerrUserByDiscordId").mockResolvedValue({ id: 77 });
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    test("con el cupo agotado, 📥 no pide nada y dice cuándo se reinicia", async () => {
+        const crear = jest.spyOn(seerrClient, "createRequest").mockResolvedValue({ id: 1 });
+        expect((await recomendaciones.pedir(G, U, "movie", 1)).ok).toBe(true);
+        expect((await recomendaciones.pedir(G, U, "movie", 2)).ok).toBe(true);
+        const r = await recomendaciones.pedir(G, U, "movie", 3);
+        expect(r.ok).toBe(false);
+        expect(r.mensaje).toMatch(/se reinicia <t:\d+:R>/);
+        expect(crear).toHaveBeenCalledTimes(2);
+    });
+
+    test("una petición fallida en Seerr no gasta cupo", async () => {
+        jest.spyOn(seerrClient, "createRequest").mockRejectedValue(new Error("caído"));
+        expect((await recomendaciones.pedir(G, U, "movie", 1)).ok).toBe(false);
+        expect(usados()).toBe(0);
+    });
+
+    test("lo pedido con 📥 cuenta para el Duende y al revés", async () => {
+        jest.spyOn(seerrClient, "createRequest").mockResolvedValue({ id: 1 });
+        jest.spyOn(seerrClient, "getCachedSearchResult").mockReturnValue({ titulo: "X", estadoCodigo: 1 });
+        jest.spyOn(require("../src/services/duende/herramientas/base"), "resolverSeerrUsuarioPorId").mockResolvedValue({
+            id: 77,
+            displayName: "Ana",
+        });
+        expect((await recomendaciones.pedir(G, U, "movie", 1)).ok).toBe(true);
+        const duende = await DUENDE_SEERR_EXECUTORS.solicitar_contenido_seerr(
+            { tmdbId: 2, mediaType: "movie" },
+            { guildId: G, userId: U, channelId: "c" },
+        );
+        expect(duende.pedido).toBe(true);
+        expect(usados()).toBe(2);
+        expect(seerrCupo.comprobar(G, U).ok).toBe(false);
+        expect((await recomendaciones.pedir(G, U, "movie", 3)).ok).toBe(false);
+    });
+
+    test("el cupo se reinicia a la medianoche UTC siguiente", () => {
+        expect(seerrCupo.reinicio(Date.UTC(2026, 9, 13, 22, 30))).toBe(Date.UTC(2026, 9, 14) / 1000);
+    });
+});
+
 test("el panel enseña cada sugerencia con su 📥", () => {
     const p = pantallaRecomendaciones({
         ok: true,
