@@ -88,7 +88,7 @@ function robar(guildId, ladronId, victimaId) {
     const retrySeconds = cooldownRestante(ladronId);
     if (retrySeconds) return { ok: false, reason: "cooldown", retrySeconds };
 
-    // Sin aviso a la víctima en el momento: solo se nota mirando su saldo o sus Movimientos.
+    // El aviso a la víctima (DM) lo manda el comando (textoAvisoVictima); aquí solo se decide el robo.
     if (dinero.efectivo(victimaId) < MIN_VICTIMA) return { ok: false, reason: "victima-pobre" };
 
     marcarCooldown(ladronId);
@@ -124,4 +124,19 @@ function robar(guildId, ladronId, victimaId) {
     return { ok: true, exito: true, cantidad, candado, trampa: null };
 }
 
-module.exports = { robar, efectoProteccion, proteccionesDe, COOLDOWN_SEC, MIN_VICTIMA, PROB_EXITO };
+/**
+ * El DM que recibe la víctima de un intento de robo (#432), o null si no hay nada que contarle (un robo fallido en el que
+ * no saltó ningún objeto suyo). Dice lo que ha pasado y la cantidad, pero nunca quién ha sido el ladrón.
+ */
+function textoAvisoVictima(r) {
+    if (!r?.ok) return null;
+    const candado = r.candado ? ` Tu 🔒 **${r.candado}** se ha gastado en el intento.` : "";
+    if (r.exito) return `🥷 Alguien te ha robado **${r.cantidad.toLocaleString("es")}** 🪙 en efectivo.${candado}`;
+    if (!r.candado && !r.trampa) return null;
+    const trampa = r.trampa
+        ? ` Tu 💣 **${r.trampa}** ha saltado${r.multa > 0 ? `: ha pagado una multa de **${r.multa.toLocaleString("es")}** 🪙` : ""}.`
+        : "";
+    return `🛡️ Alguien ha intentado robarte y le ha salido mal.${candado}${trampa}`;
+}
+
+module.exports = { robar, textoAvisoVictima, efectoProteccion, proteccionesDe, COOLDOWN_SEC, MIN_VICTIMA, PROB_EXITO };
