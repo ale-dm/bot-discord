@@ -66,9 +66,4 @@ module.exports = [
             ],
         },
     },
-    {
-        // Catálogo de datos (logros): una lista larga por naturaleza, no lógica.
-        files: ["src/systems/logros/catalogo.js"],
-        rules: { "max-lines": "off" },
-    },
 ];
