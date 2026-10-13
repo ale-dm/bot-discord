@@ -1,7 +1,9 @@
 // 💬 Mensajes de texto: XP por escribir, cuándo responde el Duende (si le hablan o por probabilidad) y los filtros
 // (duplicados, mensajes de bajo esfuerzo que solo reciben una reacción).
 const { createLogger } = require("./logger");
+const { performance } = require("node:perf_hooks");
 const { whoWhere, cut } = require("./interactionLog");
+const latencias = require("./latencias");
 const guildSettings = require("../systems/guildSettings");
 const xpSystem = require("../systems/xpSystem");
 const duendeCommand = require("../commands/duende/duende");
@@ -201,18 +203,22 @@ function registrarMensajes(client) {
             return;
         }
 
+        const tXp = performance.now();
         try {
             await xpSystem.handleMessageXp(message);
         } catch (e) {
             msgLog.error(`Error dando XP por mensaje · ${whoWhere(message)}`, e);
         }
+        latencias.registrar("mensaje", "xp", performance.now() - tXp);
 
         // 🧠 Recuerdos automáticos del Duende (#15): mira la conversación en segundo plano; no bloquea nada.
+        const tRecuerdos = performance.now();
         try {
             require("../systems/duende/recuerdosAuto").observar(message);
         } catch (e) {
             msgLog.error(`Error mirando la conversación para los recuerdos del Duende · ${whoWhere(message)}`, e);
         }
+        latencias.registrar("mensaje", "recuerdos", performance.now() - tRecuerdos);
 
         const userText = message.content.trim();
         const imageAttachmentsRaw = message.attachments
@@ -224,7 +230,7 @@ function registrarMensajes(client) {
         if (userText.startsWith("/")) return;
         if (!userText && imageAttachmentsRaw.length === 0) return;
 
-        await atenderComoDuende(client, message, userText, imageAttachmentsRaw);
+        await latencias.medir("mensaje", "duende", () => atenderComoDuende(client, message, userText, imageAttachmentsRaw));
     });
 }
 
