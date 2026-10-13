@@ -5,7 +5,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, T
 const sugerencias = require("../../systems/sugerencias");
 const guildSettings = require("../../systems/guildSettings");
 const { mensajeSugerencia } = require("../../paneles/sugerencia");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Sugerencias");

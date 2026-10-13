@@ -4,7 +4,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const cumpleanos = require("../../systems/cumpleanos");
 const { momentoMadrid } = require("../../core/zonaMadrid");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 
 /** «<@id> · 14 de octubre (hoy)» / «(mañana)» / «(en 5 días)». */
 function lineaProximo(p) {

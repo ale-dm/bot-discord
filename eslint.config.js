@@ -39,6 +39,20 @@ module.exports = [
         },
     },
     {
+        // core/ no depende de Discord (#477): lo que sí es de Discord (respuestas, registro de comandos) vive en src/discord/.
+        files: ["src/core/**/*.js"],
+        rules: {
+            "no-restricted-imports": [
+                "error",
+                { paths: [{ name: "discord.js", message: "core/ no puede importar discord.js: muévelo a src/discord/." }] },
+            ],
+            "no-restricted-modules": [
+                "error",
+                { paths: [{ name: "discord.js", message: "core/ no puede importar discord.js: muévelo a src/discord/." }] },
+            ],
+        },
+    },
+    {
         // Catálogo de datos (logros): una lista larga por naturaleza, no lógica.
         files: ["src/systems/logros/catalogo.js"],
         rules: { "max-lines": "off" },

@@ -3,7 +3,7 @@
 const { EmbedBuilder, ModalBuilder, MessageFlags } = require("discord.js");
 const combinadas = require("../../systems/apuestas/combinadas");
 const { pantallaCombinada } = require("../../paneles/combinada");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 const { filasImporte, importeElegido } = require("../../paneles/importes");
 
 module.exports = {

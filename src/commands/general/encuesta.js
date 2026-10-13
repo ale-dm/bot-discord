@@ -4,7 +4,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const encuestas = require("../../systems/encuestas");
 const { mensajeEncuesta } = require("../../paneles/encuesta");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Encuestas");

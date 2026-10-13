@@ -3,7 +3,7 @@
 // Las reglas están en systems/avisosCooldown.
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const avisosCooldown = require("../systems/avisosCooldown");
-const { efimero } = require("../core/respuestas");
+const { efimero } = require("../discord/respuestas");
 
 const PREFIJO = "cooldown_avisar_";
 

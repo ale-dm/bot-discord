@@ -3,7 +3,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const avisosDm = require("../../systems/avisosDm");
 const { buildAvisos } = require("../../paneles/avisos");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 
 module.exports = {
     componentHandlers: [{ types: ["button"], prefixes: ["avisos_"], method: "handleButton" }],

@@ -9,9 +9,9 @@
   },
   "scripts": {
     "start": "node scripts/dev.js",
-    "start:bot": "node src/core/registerCommands.js && node src/index.js",
+    "start:bot": "node src/discord/registerCommands.js && node src/index.js",
     "start:vosk": "node scripts/start-vosk.js",
-    "commands": "node src/core/registerCommands.js",
+    "commands": "node src/discord/registerCommands.js",
     "test": "jest",
     "db:check": "node scripts/db-check.js",
     "stt:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-local-stt.ps1 -NoStart",
