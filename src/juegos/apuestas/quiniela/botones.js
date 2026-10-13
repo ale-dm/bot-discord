@@ -20,13 +20,14 @@ const {
     renderQuinielaEditorEmbed,
     renderQuinielaEditorRows,
 } = require("./editor");
+const vista = require("./vista");
 
 // Botones de la quiniela, en orden: el primero cuyo prefijo encaja se atiende (ver handleButton de module.exports).
 async function botonRefrescar(client, interaction, customId) {
     const deporteSeleccionado = customId.replace("quiniela_refrescar_", "");
     // Antes se pasaba una copia {...interaction}, que no tiene reply/update (son de la clase):
     // el botón fallaba siempre.
-    await require("../quiniela").run(client, interaction, deporteSeleccionado);
+    await vista.mostrar(interaction, deporteSeleccionado);
 }
 
 async function botonCrear(client, interaction, customId) {

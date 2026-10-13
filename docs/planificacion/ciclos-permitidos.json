@@ -1,5 +1,4 @@
 [
-    "juegos/apuestas/quiniela.js > juegos/apuestas/quiniela/botones.js",
     "paneles/juegos.js > paneles/misJugadas.js",
     "systems/achievementsSystem.js > systems/plexTrofeos.js > systems/plexTrofeos/candidatos.js > systems/plexTrofeos/condiciones.js > systems/plexHistorial.js",
     "systems/achievementsSystem.js > systems/plexTrofeos.js > systems/plexTrofeos/candidatos.js > systems/plexTrofeos/condiciones.js > systems/plexHistorial.js > systems/plexGordos.js",

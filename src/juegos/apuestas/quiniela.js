@@ -1,30 +1,19 @@
 // Quiniela (una jornada de 10 partidos): el comando y el reparto de sus botones. Las reglas están en systems/apuestas/quinielas.js;
 // el editor de pronósticos, en quiniela/editor.js, y los botones, en quiniela/botones.js.
 
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+const { MessageFlags } = require("discord.js");
 const repo = require("../../repositorios/apuestas");
 const dinero = require("../../systems/dinero");
-const limites = require("../../systems/apuestas/limites");
 const { logInfo } = require("../../core/logger");
-const { DEPORTES } = require("../../services/oddsApi");
-const { minimoAciertosQuiniela } = require("../../systems/apuestas/liquidacion");
-const misJugadas = require("../../systems/apuestas/misJugadas");
-const { lineaQuiniela, filaTrasApostar } = require("../../paneles/misJugadas");
-const { filaPestanas } = require("../../paneles/pestanasJuegos");
+const { filaTrasApostar } = require("../../paneles/misJugadas");
 const { importeElegido } = require("../../paneles/importes");
-const { esAdmin } = require("../../core/permisos");
-const {
-    QUINIELA_LOCK_MINUTES,
-    obtenerPartidosQuiniela,
-    estaBloqueadoPorTiempo,
-    yaApostoQuiniela,
-    apostarQuiniela,
-    crearQuiniela,
-} = require("../../systems/apuestas/quinielas");
-const { MAX_BET_AMOUNT, MIN_BET_AMOUNT, sesionesQuiniela, getSesionKey } = require("./quiniela/editor");
+const { QUINIELA_LOCK_MINUTES, obtenerPartidosQuiniela, apostarQuiniela, crearQuiniela } = require("../../systems/apuestas/quinielas");
+const { sesionesQuiniela, getSesionKey } = require("./quiniela/editor");
 const { ACCIONES_BOTON_QUINIELA } = require("./quiniela/botones");
+const reglas = require("../../systems/apuestas/quinielaReglas");
+const vista = require("./quiniela/vista");
 
-const SIN_EFECTIVO = "❌ No te llega el efectivo. Saca dinero del banco (💵 Sacar).";
+const { SIN_EFECTIVO } = reglas;
 
 /**
  * Crea la quiniela de la jornada de una competición con sus próximos 10 partidos (mínimo 5). La usan el botón
@@ -41,23 +30,7 @@ module.exports = {
 
     // Desde el botón "Refrescar" se llama con el deporte y la respuesta sustituye al mensaje.
     async run(client, interaction, deporteForzado = null) {
-        const deporteSeleccionado = deporteForzado || interaction.options?.getString?.("deporte") || "laliga";
-        const responder = (payload) =>
-            deporteForzado && interaction.isButton?.() ? interaction.update(payload) : interaction.reply(payload);
-        const deporte = DEPORTES[deporteSeleccionado];
-
-        if (!deporte) {
-            await interaction.reply({ content: "❌ Deporte no válido.", flags: MessageFlags.Ephemeral });
-            return;
-        }
-
-        const quiniela = repo.ultimaQuinielaAbierta(deporteSeleccionado);
-
-        if (!quiniela) {
-            await responder(vistaSinQuiniela(interaction, deporte, deporteSeleccionado, esAdmin(interaction)));
-            return;
-        }
-        await responder(vistaQuiniela(interaction, quiniela, deporte, deporteSeleccionado));
+        await vista.mostrar(interaction, deporteForzado);
     },
 
     async handleButton(client, interaction) {
@@ -88,7 +61,15 @@ module.exports = {
 
         const cantidad = importeElegido(interaction.fields);
         // Sin await entre las comprobaciones y el cobro: el tope diario y el cobro no pueden pasarse entre dos formularios.
-        const aviso = avisoDeFormulario({ interaction, quinielaId, partidos, sesion, pronosticos, cantidad });
+        const aviso = reglas.avisoDeApuesta({
+            userId: interaction.user.id,
+            guildId: interaction.guildId,
+            quinielaId,
+            partidos: partidos.length,
+            pronosticos,
+            pronosticosCompletos: !sesion || sesion.pronosticos.every(Boolean),
+            cantidad,
+        });
         if (aviso) {
             await interaction.reply({ content: aviso, flags: MessageFlags.Ephemeral });
             return;
@@ -115,83 +96,11 @@ module.exports = {
     },
 };
 
-// La quiniela sin partido abierto: aviso (y botón de crearla, si es admin) con sus pestañas.
-function vistaSinQuiniela(interaction, deporte, deporteSeleccionado, isAdmin) {
-    const embed = new EmbedBuilder()
-        .setTitle(`🧾 Quiniela ${deporte.name}`)
-        .setDescription(
-            "No hay quiniela activa para este deporte.\n\n" +
-                (isAdmin
-                    ? "Como admin, puedes crear una jornada con los próximos 10 partidos."
-                    : "Pide a un admin que cree la quiniela de la jornada."),
-        )
-        .setColor(0x95a5a6);
-
-    const components = [];
-    if (isAdmin) {
-        components.push(
-            new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`quiniela_crear_${deporteSeleccionado}`)
-                    .setLabel("🛠️ Crear quiniela")
-                    .setStyle(ButtonStyle.Primary),
-            ),
-        );
-    }
-
-    components.push(filaPestanas(interaction.user.id, "apuestas"));
-    return { embeds: [embed], components };
-}
-
-// La quiniela abierta: sus partidos, el bote, tu quiniela si ya has apostado y los botones de apostar.
-function vistaQuiniela(interaction, quiniela, deporte, deporteSeleccionado) {
-    const partidos = obtenerPartidosQuiniela(quiniela.id);
-    const listado = partidos.map((p) => `${p.orden}. ${p.home_team} vs ${p.away_team}`).join("\n");
-    const bote = repo.boteQuiniela(quiniela.id);
-
-    // Si ya has apostado, tus pronósticos con ✅/❌ en los partidos jugados (antes solo se decía que ya
-    // habías apostado, y no había forma de volver a verlos).
-    const tuya = misJugadas.quinielaDe(interaction.user.id, quiniela.id);
-    const embed = new EmbedBuilder()
-        .setTitle(`🧾 ${quiniela.jornada} — ${deporte.name}`)
-        .setDescription(
-            (tuya ? "" : `Rellena la quiniela partido a partido con botones **1 / X / 2**.\n\n`) +
-                `💰 Bote actual: **${bote}** monedas\n` +
-                `🏆 El 90 % se reparte entre quien más acierte, con **${minimoAciertosQuiniela(partidos.length)}** aciertos ` +
-                `como mínimo (si nadie llega, se devuelve lo apostado).\n\n` +
-                `**Partidos:**\n${listado}`,
-        )
-        .setColor(0x2ecc71)
-        .setFooter({ text: "1 = Local, X = Empate, 2 = Visitante" });
-    if (tuya) {
-        embed.addFields({ name: `🎟️ Tu quiniela (${tuya.cantidad} 🪙)`, value: lineaQuiniela(tuya.detalle) });
-    }
-
-    const row = new ActionRowBuilder().addComponents(
-        tuya
-            ? new ButtonBuilder()
-                  .setCustomId(`misapuestas_activas_${interaction.user.id}`)
-                  .setLabel("📋 Mis jugadas")
-                  .setStyle(ButtonStyle.Primary)
-            : new ButtonBuilder()
-                  .setCustomId(`quiniela_apostar_${quiniela.id}`)
-                  .setLabel("🎟️ Apostar quiniela")
-                  .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-            .setCustomId(`quiniela_refrescar_${deporteSeleccionado}`)
-            .setLabel("🔄 Refrescar")
-            .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`apuestas_pagina_${deporteSeleccionado}_1`).setLabel("⚽ Partidos").setStyle(ButtonStyle.Secondary),
-    );
-
-    return { embeds: [embed], components: [row, filaPestanas(interaction.user.id, "apuestas")] };
-}
-
 // Antes del primer partido la quiniela está cerrada. Se comprueba también al enviar el formulario: con uno abierto a
 // tiempo se podía apostar con la jornada empezada. True si está cerrada (ya se ha avisado).
 async function cerradaPorTiempo(interaction, quinielaId, partidos) {
-    const primerPartido = partidos.map((p) => p.start_time).sort()[0];
-    if (!primerPartido || !estaBloqueadoPorTiempo(primerPartido)) return false;
+    const primerPartido = reglas.cierreDeLaJornada(partidos);
+    if (!primerPartido) return false;
     logInfo(
         `[Quiniela] Apuesta rechazada de ${interaction.user.tag}: quiniela ${quinielaId} ya bloqueada (primer partido ${primerPartido})`,
     );
@@ -217,29 +126,4 @@ async function pronosticosDelFormulario(interaction, sesion, quinielaId) {
         });
         return null;
     }
-}
-
-// Las comprobaciones de la apuesta, en orden. Devuelve el aviso de la primera que falle, o null si se puede cobrar.
-// Síncrona a propósito: el tope diario va justo antes del cobro, sin await por medio.
-function avisoDeFormulario({ interaction, quinielaId, partidos, sesion, pronosticos, cantidad }) {
-    const userId = interaction.user.id;
-    if (pronosticos.length !== partidos.length || /[^12X]/.test(pronosticos) || (sesion && !sesion.pronosticos.every(Boolean))) {
-        return "❌ Pronósticos incompletos o inválidos. Completa todos los partidos antes de confirmar.";
-    }
-    if (isNaN(cantidad) || cantidad < MIN_BET_AMOUNT || cantidad > MAX_BET_AMOUNT) {
-        return `❌ Cantidad inválida. Debe estar entre ${MIN_BET_AMOUNT} y ${MAX_BET_AMOUNT}.`;
-    }
-    // Quien aún no tiene cuenta empieza con el saldo inicial (como en el casino); antes le salía
-    // "saldo insuficiente" hasta que usara otro comando que le creara la cuenta.
-    // Se apuesta con el 💵 efectivo + 🥷 dinero negro (systems/dinero, F-EC-06b: se gasta igual).
-    if (dinero.saldoGastable(userId) < cantidad) return SIN_EFECTIVO;
-    if (yaApostoQuiniela(quinielaId, userId)) return "⚠️ Ya has apostado esta quiniela.";
-
-    // 🚦 Tope diario del servidor (F-AP-09), que suma partidos y quiniela.
-    const limite = limites.comprobar(interaction.guildId, userId, cantidad);
-    if (limite) {
-        logInfo(`[Quiniela] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
-        return `🚦 ${limite}`;
-    }
-    return null;
 }
