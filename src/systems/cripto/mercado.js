@@ -8,6 +8,7 @@ const dinero = require("../dinero");
 const pase = require("../pase/pase");
 const { CacheLimitada } = require("../../core/cacheLimitada");
 const { gananciaRealizadaTtcl } = require("./ganancias");
+const valoracion = require("./valoracion");
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 
@@ -250,6 +251,7 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
 
     const r = comprarTtcl(guildId, userId, monedasInvertidas);
     if (r.ok) {
+        valoracion.invalidar(guildId, userId);
         pase.registrarSeguro(guildId, userId, "cripto");
         void achievements.applyEvent(guildId, userId, "cripto_buy_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
@@ -283,6 +285,7 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
 
     const r = venderTtcl(userId, cantAVender, pct, minSell, maxSell, feeSellPct);
     if (r.ok) {
+        valoracion.invalidar(guildId, userId);
         pase.registrarSeguro(guildId, userId, "cripto");
         void achievements.applyEvent(guildId, userId, "cripto_sell_count", 1);
         void achievements.applyEvent(guildId, userId, "cripto_ops_count", 1);
