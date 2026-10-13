@@ -4,7 +4,15 @@ const db = require("../../core/db");
 const achievements = require("../achievementsSystem");
 const { createLogger } = require("../../core/logger");
 const pase = require("../pase/pase");
-const { ensureGuildDefaults, getConfig, ensureUser, isIgnoredChannel } = require("./config");
+const {
+    ensureGuildDefaults,
+    getConfig,
+    getConfigMensajes,
+    getUltimoMensaje,
+    registrarMensaje,
+    ensureUser,
+    isIgnoredChannel,
+} = require("./config");
 const { addXp } = require("./progreso");
 
 const log = createLogger("XP");
@@ -47,21 +55,20 @@ async function handleMessageXp(message) {
     const guildId = message.guild.id;
     ensureGuildDefaults(guildId);
 
-    if (isIgnoredChannel(guildId, message.channelId)) return;
-
-    const cooldownSec = Number(getConfig(guildId, "xp_message_cooldown_sec") || 15);
-    const base = Number(getConfig(guildId, "xp_message_base") || 15);
-    const bonusMax = Number(getConfig(guildId, "xp_message_len_bonus_max") || 10);
-
-    const user = ensureUser(guildId, message.author.id);
+    // Lo más barato primero (#483): el cooldown se mira con la configuración guardada y una sola lectura, y un mensaje
+    // que no cuenta no hace nada más. Solo si cuenta se mira el canal y se escribe, en una transacción.
+    const { cooldownSec, base, bonusMax } = getConfigMensajes(guildId);
     const now = Date.now();
-    if (user.ultimo_msg && now - Number(user.ultimo_msg) < cooldownSec * 1000) return;
+    const ultimo = getUltimoMensaje(guildId, message.author.id);
+    if (ultimo && now - Number(ultimo) < cooldownSec * 1000) return;
+
+    if (isIgnoredChannel(guildId, message.channelId)) return;
 
     const len = Math.min(200, effectiveMessageLength(message.content));
     const bonus = Math.floor((len / 200) * bonusMax);
     const gain = Math.max(1, base + bonus);
 
-    db.prepare(`UPDATE xp_users SET ultimo_msg = ? WHERE guildId = ? AND userId = ?`).run(now, guildId, message.author.id);
+    registrarMensaje(guildId, message.author.id, now);
 
     const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
     await addXp(message.guild, member || { id: message.author.id }, gain);
