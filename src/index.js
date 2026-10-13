@@ -33,6 +33,7 @@ const cripto = require("./systems/cripto/mercado");
 const xpSystem = require("./systems/xpSystem");
 const guildSettings = require("./systems/guildSettings");
 const activeGames = require("./systems/activeGames");
+const bienvenida = require("./systems/bienvenida");
 const { createComponentRouter } = require("./core/componentRouter");
 // Mensajes de texto y filtros: src/core/mensajes.js
 const { registrarMensajes } = require("./core/mensajes");
@@ -156,6 +157,10 @@ client.on("shardResume", (id, replayed) => gwLog.info(`Shard ${id} reanudado (${
 client.on("shardError", (e, id) => gwLog.error(`Error en el shard ${id}:`, e));
 client.on("invalidated", () => gwLog.error("Sesión de Discord invalidada"));
 client.on("guildCreate", (g) => gwLog.info(`Añadido a un servidor: ${g.name} (${g.id})`));
+// 👋 Bienvenida a quien entra al servidor (#435): en el canal configurado; los bots no generan mensaje.
+client.on("guildMemberAdd", (member) => {
+    bienvenida.enviarBienvenida(member).catch((e) => gwLog.warn(`Error dando la bienvenida a ${member.id}:`, e));
+});
 client.on("guildDelete", (g) => gwLog.warn(`Expulsado o eliminado de un servidor: ${g.name ?? "?"} (${g.id})`));
 client.rest.on("rateLimited", (info) =>
     gwLog.warn(

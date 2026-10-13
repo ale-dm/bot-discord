@@ -59,7 +59,7 @@ module.exports = {
         if (await hayPartidaEnCurso(interaction, previa, "Adivinar", () => abandonarPartida(userId, previa))) return;
 
         registrarUsuario(userId, interaction.user.username, interaction.user.tag);
-        const resultado = descontarApuesta(userId, apuesta, interaction.guildId);
+        const resultado = descontarApuesta(userId, apuesta, interaction.guildId, "adivinar");
         if (!resultado.exito) {
             await interaction.reply({ content: resultado.mensaje, flags: MessageFlags.Ephemeral });
             return;

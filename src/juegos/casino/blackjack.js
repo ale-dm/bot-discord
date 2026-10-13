@@ -278,7 +278,7 @@ module.exports = {
         registrarUsuario(userId, interaction.user.username, interaction.user.tag);
 
         // Validar y descontar apuesta de forma segura
-        const resultado = descontarApuesta(userId, apuesta, interaction.guildId);
+        const resultado = descontarApuesta(userId, apuesta, interaction.guildId, "blackjack");
         if (!resultado.exito) {
             await interaction.reply({ content: resultado.mensaje, flags: MessageFlags.Ephemeral });
             return;

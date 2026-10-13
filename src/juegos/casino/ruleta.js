@@ -1,6 +1,6 @@
 const { EmbedBuilder, MessageFlags } = require("discord.js");
 const { registrarUsuario, descontarApuesta, obtenerSaldo } = require("../../systems/casinoTransactions");
-const { WHEEL, esRojo, infoNum, tirarNumero, liquidarTirada } = require("../../systems/casino/ruleta");
+const { WHEEL, esRojo, infoNum, tirarNumero, liquidarTirada, esCalleValida, numerosDeCalle } = require("../../systems/casino/ruleta");
 const { createLogger } = require("../../core/logger");
 const casino = require("../../paneles/casino");
 
@@ -16,6 +16,7 @@ function descApuesta(tipo, valor) {
     if (tipo === "paridad") return `**${valor}** (×2)`;
     if (tipo === "mitad") return `**${valor === "bajo" ? "Bajo 1-18" : "Alto 19-36"}** (×2)`;
     if (tipo === "docena") return `**${valor}ª docena** (×3)`;
+    if (tipo === "calle") return `calle **${numerosDeCalle(valor).join("-")}** (×12)`;
     return tipo;
 }
 
@@ -39,6 +40,8 @@ function seg(centerIdx, sides = 3) {
     }
     return `◄ ${parts.join("  ")} ►`;
 }
+
+const MENSAJE_CALLE_INVALIDA = "❌ Esa calle no existe: elige una fila del tapete (1-2-3, 4-5-6… 34-35-36).";
 
 // Si la transacción falla, no se anuncia un resultado que el saldo no refleja.
 const ERROR_PAGO_RULETA = "❌ No se pudo registrar el resultado de la ruleta. Avisa a un admin: tu saldo no refleja esta jugada.";
@@ -130,8 +133,11 @@ function embedResultado(numeroSalido, { apuesta, apDescCorta, gananciaNet, saldo
 }
 
 async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
+    // 0. Una calle tiene que ser una fila del tapete (#459): si no, no se cobra nada.
+    if (tipo === "calle" && !esCalleValida(valor))
+        return interaction.reply({ content: MENSAJE_CALLE_INVALIDA, flags: MessageFlags.Ephemeral });
     // 1. Descontar apuesta — comprometida antes de animar
-    const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
+    const descuento = descontarApuesta(userId, apuesta, interaction.guildId, "ruleta");
     if (!descuento.exito) {
         await interaction.reply({ content: `❌ ${descuento.mensaje}`, flags: MessageFlags.Ephemeral });
         return;

@@ -4,6 +4,7 @@ const db = require("../../core/db");
 const { EmbedBuilder } = require("discord.js");
 const { createLogger } = require("../../core/logger");
 const { getConfig, ensureUser } = require("./config");
+const { sendDm, enviarAviso } = require("../avisosDm");
 
 const log = createLogger("XP");
 
@@ -56,18 +57,6 @@ function getEffectiveStreak(guildId, userId) {
     return user.streak_dias || 0;
 }
 
-async function sendDm(client, userId, payload) {
-    try {
-        const user = await client.users.fetch(userId);
-        await user.send(payload);
-        return true;
-    } catch (e) {
-        // Lo normal es que tenga los DMs cerrados (código 50007): no es un error del bot.
-        log.debug(`No se pudo enviar DM a ${userId}: ${e.code === 50007 ? "DMs cerrados" : e.message}`);
-        return false;
-    }
-}
-
 function buildStreakContinuedEmbed(guild, streakDias, bonusPct) {
     return new EmbedBuilder()
         .setTitle("🔥 ¡Racha activa!")
@@ -107,7 +96,7 @@ async function runStreakWarningJob(client) {
         if (!guild) continue;
         if (getConfig(row.guildId, "streak_enabled") === "0") continue;
         const embed = buildStreakWarningEmbed(guild, row.streak_dias);
-        if (await sendDm(client, row.userId, { embeds: [embed] })) enviados++;
+        if (await enviarAviso(client, row.userId, "racha_peligro", { embeds: [embed] })) enviados++;
     }
     log.info(`Aviso de racha en peligro: ${enviados}/${rows.length} DMs enviados`);
 }

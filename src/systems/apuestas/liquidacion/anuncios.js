@@ -1,6 +1,7 @@
 // Lo que se dice al cerrar: el DM a quien cobra, el resumen público y el embed de resultados.
 
 const { EmbedBuilder } = require("discord.js");
+const avisosDm = require("../../avisosDm");
 const { logWarn, logDebug } = require("../../../core/logger");
 const { DEPORTES } = require("../../../services/oddsApi");
 const { fmtNumero } = require("../../../core/formato");
@@ -8,6 +9,7 @@ const { fmtNumero } = require("../../../core/formato");
 // Avisa por DM a quien haya cobrado algo. Best-effort: si tiene los DMs cerrados, se ignora.
 async function avisarGanadores(client, pagos) {
     for (const p of pagos) {
+        if (avisosDm.silenciado(p.userId, "apuesta_cobrada")) continue;
         try {
             const user = await client.users.fetch(p.userId);
             await user.send(

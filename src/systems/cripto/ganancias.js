@@ -2,14 +2,11 @@
 const db = require("../../core/db");
 
 /**
- * Ganancia (o pérdida) ya cobrada con las ventas de TTCL de alguien, en monedas. Se recorre el historial en orden con
- * coste medio móvil: cada venta gana lo recibido (neto, ya sin su comisión) menos lo que costaron esas unidades al coste
- * medio de ese momento, comisión de compra incluida. 0 si nunca ha vendido.
+ * La ganancia realizada de un historial ya ordenado (compras y ventas de una sola persona, de la más antigua a la más
+ * reciente). Se recorre con coste medio móvil: cada venta gana lo recibido (neto, ya sin su comisión) menos lo que
+ * costaron esas unidades al coste medio de ese momento, comisión de compra incluida.
  */
-function gananciaRealizadaTtcl(userId) {
-    const filas = db
-        .prepare("SELECT tipo, cantidad, monedas FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp ASC, id ASC")
-        .all(String(userId));
+function gananciaRealizadaDeFilas(filas) {
     let unidades = 0;
     let coste = 0;
     let realizada = 0;
@@ -28,4 +25,12 @@ function gananciaRealizadaTtcl(userId) {
     return Math.round(realizada);
 }
 
-module.exports = { gananciaRealizadaTtcl };
+/** Ganancia (o pérdida) ya cobrada con las ventas de TTCL de alguien, en monedas. 0 si nunca ha vendido. */
+function gananciaRealizadaTtcl(userId) {
+    const filas = db
+        .prepare("SELECT tipo, cantidad, monedas FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp ASC, id ASC")
+        .all(String(userId));
+    return gananciaRealizadaDeFilas(filas);
+}
+
+module.exports = { gananciaRealizadaTtcl, gananciaRealizadaDeFilas };

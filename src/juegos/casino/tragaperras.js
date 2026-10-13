@@ -183,7 +183,7 @@ module.exports = {
 
             // Se cobra antes de tocar el mensaje: si no se puede (saldo, límite, espera), el aviso sale aparte
             // y el panel sigue ahí para cambiar la apuesta. Antes lo sustituía un texto sin botones.
-            const descuento = descontarApuesta(userId, apuesta, interaction.guildId);
+            const descuento = descontarApuesta(userId, apuesta, interaction.guildId, "tragaperras");
             if (!descuento.exito) {
                 const aviso = { content: descuento.mensaje, flags: MessageFlags.Ephemeral };
                 await (yaDiferido ? interaction.followUp(aviso) : interaction.reply(aviso));

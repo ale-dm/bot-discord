@@ -172,6 +172,29 @@ function programarRetosYEconomia(client) {
     });
 }
 
+function programarComunidad(client) {
+    // 📊 Encuestas: cada minuto cierra las que han acabado su tiempo y repinta su mensaje con el resultado final.
+    cron.schedule("* * * * *", () => runJob("Encuestas vencidas", () => require("../commands/general/encuesta").cerrarVencidas(client)), {
+        noOverlap: true,
+    });
+    // 🔔 Avisos de cooldown (/trabajar y /robar): cada minuto manda los que han vencido, y al arrancar los que vencieron con el bot caído.
+    cron.schedule("* * * * *", () => runJob("Avisos de cooldown", () => require("../systems/avisosCooldown").enviarVencidos(client)), {
+        noOverlap: true,
+    });
+    runJob("Avisos de cooldown (arranque)", () => require("../systems/avisosCooldown").enviarVencidos(client));
+    // 🎂 Cumpleaños: desde las 09:00 (Madrid) felicita a quien cumple hoy (cada hora por si el bot estaba caído; una sola vez al año
+    // por persona), y al arrancar por si no se ha publicado.
+    cron.schedule(
+        "0 * * * *",
+        () => runJob("Felicitaciones de cumpleaños", () => require("../systems/cumpleanos").felicitarSiToca(client)),
+        {
+            timezone: "Europe/Madrid",
+            noOverlap: true,
+        },
+    );
+    runJob("Felicitaciones de cumpleaños (arranque)", () => require("../systems/cumpleanos").felicitarSiToca(client));
+}
+
 function programarLiquidacionApuestas(client) {
     // Liquidación automática de apuestas deportivas y quinielas (antes solo con /pagarapuestas).
     cron.schedule(
@@ -225,6 +248,7 @@ function programarTareas(client) {
     programarEspontaneos(client);
     programarApuestas(client);
     programarRetosYEconomia(client);
+    programarComunidad(client);
     programarLiquidacionApuestas(client);
     programarMantenimiento();
 }

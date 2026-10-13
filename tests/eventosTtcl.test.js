@@ -86,3 +86,81 @@ test("un aviso que falla no para a los demás", async () => {
     expect(r.avisados).toBe(1);
     expect(enviados).toEqual([b]);
 });
+
+describe("anuncio del evento en un canal (#451)", () => {
+    const guildSettings = require("../src/systems/guildSettings");
+    const G = "g-eventos-canal";
+
+    /** Un cliente con un servidor cuyo canal `canalId` guarda lo que se publica (o falla si `falla`). */
+    function clienteConCanal(canalId, { falla = false, dms = [] } = {}) {
+        const publicado = [];
+        const canal = {
+            send: async (payload) => {
+                if (falla) throw new Error("Missing Permissions");
+                publicado.push(payload);
+            },
+        };
+        const guild = {
+            id: G,
+            name: "Servidor",
+            channels: { cache: new Map(canalId ? [[canalId, canal]] : []), fetch: async () => canal },
+        };
+        const enviados = [];
+        return {
+            publicado,
+            enviados,
+            client: {
+                guilds: { cache: new Map([[G, guild]]) },
+                users: { fetch: async (id) => ({ send: async (t) => enviados.push({ id, t }) }) },
+            },
+            dms,
+        };
+    }
+    const conTtcl = (id) => db.prepare("INSERT INTO cripto_carteras (userId, cripto, cantidad) VALUES (?, 'TTCL', 2)").run(id);
+
+    afterEach(() => guildSettings.setSetting(G, "cripto.eventos_canal", ""));
+
+    test("con el canal configurado se publica una sola vez, con su variación, y los DM salen igual", async () => {
+        guildSettings.setSetting(G, "cripto.eventos_canal", "canal-eventos");
+        conTtcl("ev-canal-a");
+        const c = clienteConCanal("canal-eventos");
+        const r = await eventos.revisarYAvisar(c.client, DOCE, siempre);
+        expect(c.publicado).toHaveLength(1);
+        expect(c.publicado[0].content).toMatch(/Evento de mercado.*baja un \*\*5 %\*\*/);
+        expect(c.publicado[0].allowedMentions).toEqual({ parse: [] });
+        expect(c.enviados.map((e) => e.id)).toEqual(["ev-canal-a"]);
+        expect(r.avisados).toBe(1);
+
+        // El cron vuelve a pasar el mismo día: no hay otro evento, así que no hay otro anuncio.
+        await eventos.revisarYAvisar(c.client, DOCE + 600_000, siempre);
+        expect(c.publicado).toHaveLength(1);
+    });
+
+    test("sin canal configurado, solo DM", async () => {
+        conTtcl("ev-canal-b");
+        const c = clienteConCanal("canal-eventos");
+        await eventos.revisarYAvisar(c.client, DOCE, siempre);
+        expect(c.publicado).toHaveLength(0);
+        expect(c.enviados).toHaveLength(1);
+    });
+
+    test("si el bot no puede escribir en el canal, el fallo no para los DM", async () => {
+        guildSettings.setSetting(G, "cripto.eventos_canal", "canal-eventos");
+        conTtcl("ev-canal-c");
+        const c = clienteConCanal("canal-eventos", { falla: true });
+        const r = await eventos.revisarYAvisar(c.client, DOCE, siempre);
+        expect(c.publicado).toHaveLength(0);
+        expect(r.avisados).toBe(1);
+    });
+
+    test("si el canal ya no existe, tampoco para nada", async () => {
+        guildSettings.setSetting(G, "cripto.eventos_canal", "canal-borrado");
+        conTtcl("ev-canal-d");
+        const c = clienteConCanal(null);
+        c.client.guilds.cache.get(G).channels.fetch = async () => {
+            throw new Error("Unknown Channel");
+        };
+        const r = await eventos.revisarYAvisar(c.client, DOCE, siempre);
+        expect(r.avisados).toBe(1);
+    });
+});

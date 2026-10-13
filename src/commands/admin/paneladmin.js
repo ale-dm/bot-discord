@@ -36,6 +36,7 @@ const {
 const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPanel/impuestos");
 const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = require("../../adminPanel/sonidos");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
+const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
 
 /**
  * Un manejador de componentes del panel. Solo para admins. Si `antes` devuelve true, ya está resuelto. Si no, prueba
@@ -75,6 +76,7 @@ module.exports = {
                 "paneladmin_sis_",
                 "paneladmin_plex_",
                 "paneladmin_sonidos_",
+                "paneladmin_com_",
             ],
             method: "handleStringSelect",
         },
@@ -138,6 +140,7 @@ module.exports = {
             handleSistemaButton,
             handleImpuestosButton,
             handleClasificacionButton,
+            handleComunidadButton,
             handleSonidosButton,
         ],
         async (client, interaction) => {
@@ -161,6 +164,7 @@ module.exports = {
         handleSistemaModal,
         handleImpuestosModal,
         handleClasificacionModal,
+        handleComunidadModal,
     ]),
 
     handleUserSelect: manejador("handleUserSelect", "Error al procesar selector.", [
@@ -186,6 +190,7 @@ module.exports = {
         handleSistemaSelect,
         handlePlexStringSelect,
         handleSonidosStringSelect,
+        handleComunidadStringSelect,
         handleLevelsStringSelect,
     ]),
 };

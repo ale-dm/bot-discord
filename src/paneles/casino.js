@@ -7,6 +7,8 @@ const { lineaDinero } = require("./economia");
 const eventos = require("../systems/eventos");
 const { EMOJI, NOMBRE, getSaldo, backBtn, filaMontos, filaSacar } = require("./casinoComun");
 const ruleta = require("./casinoRuleta");
+const autoexclusion = require("./casinoAutoexclusion");
+const { mensajeBloqueo } = require("../systems/casinoAutoexclusion");
 const { ultimosJackpots } = require("../systems/casino/tragaperras");
 
 // ─── Datos ───────────────────────────────────────────────────────────────────
@@ -101,6 +103,7 @@ function filasHome(userId) {
         new ButtonBuilder().setCustomId("casino_ranking").setLabel("🏆 Ranking").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_historial").setLabel("📜 Historial").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_stats").setLabel("📊 Mis Stats").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("casino_autoex").setLabel("🔒 Autoexclusión").setStyle(ButtonStyle.Secondary),
         backToPerfilBtn(userId),
     );
     return [row1, row2];
@@ -115,6 +118,8 @@ function buildHome(userId, guildId = null) {
     const parts = [];
     const evento = eventos.lineaCasino(guildId);
     if (evento) parts.push(evento, "");
+    const bloqueo = mensajeBloqueo(userId);
+    if (bloqueo) parts.push(bloqueo, "");
     parts.push(lineaDinero(userId), ...lineasEstadisticasHome(stats, fav), ...lineasUltimasHome(last));
 
     const embed = new EmbedBuilder()
@@ -357,6 +362,10 @@ module.exports = {
     buildPickRuleta: ruleta.buildPickRuleta,
     buildPickDocenas: ruleta.buildPickDocenas,
     buildPickRangoNumero: ruleta.buildPickRangoNumero,
+    buildPickCalle: ruleta.buildPickCalle,
+    buildAutoexclusion: autoexclusion.buildAutoexclusion,
+    buildConfirmarAutoexclusion: autoexclusion.buildConfirmarAutoexclusion,
+    buildAutoexclusionActivada: autoexclusion.buildAutoexclusionActivada,
     buildPickNumeroRuleta: ruleta.buildPickNumeroRuleta,
     buildPickMontoRuleta: ruleta.buildPickMontoRuleta,
 };

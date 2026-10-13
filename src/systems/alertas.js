@@ -7,7 +7,7 @@
 // conectar. Aquí nunca se registra nada como error: un fallo al avisar de un error no puede generar otra alerta.
 const { EmbedBuilder } = require("discord.js");
 const guildSettings = require("./guildSettings");
-const { sendDm } = require("./xp/rachas");
+const { sendDm } = require("./avisosDm");
 const { createLogger, onError } = require("../core/logger");
 
 const log = createLogger("Alertas");

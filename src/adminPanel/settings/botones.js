@@ -143,9 +143,11 @@ async function accionDuendeEspontaneo(interaction, id, guildId) {
 
 async function accionCriptoMarket(interaction, id, guildId) {
     const c = guildSettings.getSettings(guildId).cripto;
-    const modal = simpleModal("paneladmin_cfg_cripto_market_modal", "Cripto: comisiones", [
+    const modal = modalConCampos("paneladmin_cfg_cripto_market_modal", "Cripto: comisiones y avisos", [
         { id: "feeBuy", label: "Fee compra %", value: String(c.fee_buy_pct) },
         { id: "feeSell", label: "Fee venta %", value: String(c.fee_sell_pct) },
+        { id: "impacto", label: "Impacto máx. por operación % (0 = sin tope)", value: String(c.max_impacto_pct || 0) },
+        { id: "canal", label: "Canal de anuncios de eventos", tipo: "canal", required: false, valor: c.eventos_canal || "" },
     ]);
     await interaction.showModal(modal);
     return true;
@@ -197,6 +199,45 @@ async function accionCasinoRtp(interaction, id, guildId) {
         { id: "ruleta", label: "Ruleta RTP %", value: String(c.rtp_ruleta) },
         { id: "adivinar", label: "Adivinar RTP %", value: String(c.rtp_adivinar) },
     ]);
+    await interaction.showModal(modal);
+    return true;
+}
+
+// Los juegos del casino en los formularios de tope y cooldown por juego (#460, #461): id del campo → juego.
+const CAMPOS_JUEGO = [
+    ["bj", "blackjack", "Blackjack"],
+    ["slots", "tragaperras", "Tragaperras"],
+    ["ruleta", "ruleta", "Ruleta"],
+    ["ppt", "ppt", "Piedra, papel o tijera"],
+    ["adivinar", "adivinar", "Adivinar la carta"],
+];
+
+async function accionCasinoTopes(interaction, id, guildId) {
+    const c = guildSettings.getSettings(guildId).casino;
+    const modal = simpleModal(
+        "paneladmin_cfg_casino_topes_modal",
+        "Casino: tope de apuesta por juego",
+        CAMPOS_JUEGO.map(([campo, juego, nombre]) => ({
+            id: campo,
+            label: `${nombre} (0 = el general)`.slice(0, 45),
+            value: String(c[`max_bet_${juego}`] || 0),
+        })),
+    );
+    await interaction.showModal(modal);
+    return true;
+}
+
+async function accionCasinoEsperas(interaction, id, guildId) {
+    const c = guildSettings.getSettings(guildId).casino;
+    const modal = simpleModal(
+        "paneladmin_cfg_casino_esperas_modal",
+        "Casino: cooldown por juego (s)",
+        CAMPOS_JUEGO.map(([campo, juego, nombre]) => ({
+            id: campo,
+            label: `${nombre} (0 = el global)`.slice(0, 45),
+            value: String(c[`cooldown_sec_${juego}`] || 0),
+        })),
+    );
     await interaction.showModal(modal);
     return true;
 }
@@ -256,6 +297,8 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_cripto_pausa", accionCriptoPausa],
     ["paneladmin_cfg_casino_limits", accionCasinoLimits],
     ["paneladmin_cfg_casino_rtp", accionCasinoRtp],
+    ["paneladmin_cfg_casino_topes", accionCasinoTopes],
+    ["paneladmin_cfg_casino_esperas", accionCasinoEsperas],
     ["paneladmin_cfg_tienda_edit", accionTiendaEdit],
     ["paneladmin_cfg_acl_edit", accionAclEdit],
     ["paneladmin_cfg_logros_edit", accionLogrosEdit],

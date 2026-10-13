@@ -91,6 +91,10 @@ function pantallaConfirmarCompra(userId, guildId, monedas) {
     let bloqueo = null;
     if (monedas < min || monedas > max) bloqueo = `La compra debe estar entre ${fmtMonedas(min)} y ${fmtMonedas(max)}.`;
     else if (cot.coste > saldo) bloqueo = "No te llega el efectivo. Saca dinero del banco o baja la cantidad.";
+    else {
+        const impacto = mercado.impactoDe(guildId, cot);
+        if (impacto.excede) bloqueo = mercado.mensajeImpacto(impacto, "compra").replace(/^📊 /, "");
+    }
 
     const embed = new EmbedBuilder()
         .setTitle("🛒 Confirmar compra")
@@ -179,10 +183,12 @@ function pantallaConfirmarVenta(userId, guildId, pct) {
     const ttcl = tenencia * (pct / 100);
     const cot = mercado.cotizarVenta(ttcl, fee);
 
-    const bloqueo =
+    let bloqueo =
         cot.brutas < min || cot.brutas > max
             ? `La venta debe estar entre ${fmtMonedas(min)} y ${fmtMonedas(max)} (antes de comisión).`
             : null;
+    const impacto = mercado.impactoDe(guildId, cot);
+    if (!bloqueo && impacto.excede) bloqueo = mercado.mensajeImpacto(impacto, "venta").replace(/^📊 /, "");
 
     const embed = new EmbedBuilder()
         .setTitle("💸 Confirmar venta")
