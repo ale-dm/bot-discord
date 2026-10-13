@@ -12,7 +12,7 @@ const apuestas = require("../../juegos/apuestas/apuestas");
 module.exports = {
     componentHandlers: [
         { types: ["button"], prefixes: ["casino_", "juegos_"], method: "handleButton", acl: "juegos" },
-        { types: ["stringSelect"], ids: ["casino_ruleta_numero_sel"], method: "handleSelect", acl: "juegos" },
+        { types: ["stringSelect"], ids: ["casino_ruleta_numero_sel", "casino_ruleta_calle_sel"], method: "handleSelect", acl: "juegos" },
     ],
     data: new SlashCommandBuilder()
         .setName("juegos")
@@ -81,10 +81,11 @@ module.exports = {
         await botonCasino(client, interaction);
     },
 
-    // Número exacto de la ruleta (desplegable del rango) → importe.
+    // Número exacto o calle de la ruleta (desplegables) → importe.
     async handleSelect(client, interaction) {
         const n = Number(interaction.values[0]);
-        await interaction.update(casino.buildPickMontoRuleta(interaction.user.id, "numero", n));
+        const tipo = interaction.customId === "casino_ruleta_calle_sel" ? "calle" : "numero";
+        await interaction.update(casino.buildPickMontoRuleta(interaction.user.id, tipo, n));
     },
 };
 
@@ -119,6 +120,31 @@ const JUEGOS = {
     ppt: { modulo: "../../juegos/casino/ppt", opciones: (apuesta, [jugada]) => ({ cantidad: apuesta, jugada }) },
 };
 
+// Pantallas que dependen del resto del customId, sin tocar dinero. Gana la primera que encaja (por eso los ids exactos y los
+// prefijos más largos van antes que los más cortos): { id } es un id exacto y { prefijo } deja el resto en `resto`.
+const RUTAS_CASINO = [
+    // Stats de un juego (botón 📊 al acabar una partida).
+    { prefijo: "casino_stats_", panel: (i, resto) => casino.buildStats(i.user.id, i.user.username, resto) },
+    // Número exacto: el rango (casino_pick_ruleta_numero), y luego el rango elegido (casino_pick_ruleta_rango_{g}).
+    { id: "casino_pick_ruleta_numero", panel: (i) => casino.buildPickRangoNumero(i.user.id) },
+    { prefijo: "casino_pick_ruleta_rango_", panel: (i, resto) => casino.buildPickNumeroRuleta(i.user.id, Number(resto)) },
+    // Calle: la fila (casino_pick_ruleta_calle) y luego el desplegable de las 12 calles.
+    { id: "casino_pick_ruleta_calle", panel: (i) => casino.buildPickCalle(i.user.id) },
+    // Autoexclusión (#463): los periodos (casino_autoex), confirmar uno (casino_autoex_{periodo}) y activarlo (casino_autoex_ok_{periodo}).
+    { id: "casino_autoex", panel: (i) => casino.buildAutoexclusion(i.user.id) },
+    { prefijo: "casino_autoex_ok_", panel: (i, resto) => casino.buildAutoexclusionActivada(i.user.id, resto) },
+    { prefijo: "casino_autoex_", panel: (i, resto) => casino.buildConfirmarAutoexclusion(i.user.id, resto) },
+    // Tipo de ruleta elegido (casino_pick_ruleta_color_rojo, …) → importe.
+    {
+        prefijo: "casino_pick_ruleta_",
+        panel: (i, resto) => {
+            const [tipo, valor] = resto.split("_");
+            return casino.buildPickMontoRuleta(i.user.id, tipo, valor);
+        },
+    },
+    { prefijo: "casino_pick_", panel: (i, resto) => casino.buildPickApuesta(i.user.id, resto) },
+];
+
 async function botonCasino(client, interaction) {
     const id = interaction.customId;
     const userId = interaction.user.id;
@@ -127,28 +153,9 @@ async function botonCasino(client, interaction) {
         await interaction.update(PANTALLAS_CASINO[id](interaction));
         return;
     }
-    // Stats de un juego (botón 📊 al acabar una partida).
-    if (id.startsWith("casino_stats_")) {
-        await interaction.update(casino.buildStats(userId, interaction.user.username, id.replace("casino_stats_", "")));
-        return;
-    }
-    // Número exacto: el rango (casino_pick_ruleta_numero), y luego el rango elegido (casino_pick_ruleta_rango_{g}).
-    if (id === "casino_pick_ruleta_numero") {
-        await interaction.update(casino.buildPickRangoNumero(userId));
-        return;
-    }
-    if (id.startsWith("casino_pick_ruleta_rango_")) {
-        await interaction.update(casino.buildPickNumeroRuleta(userId, Number(id.replace("casino_pick_ruleta_rango_", ""))));
-        return;
-    }
-    // Tipo de ruleta elegido (casino_pick_ruleta_color_rojo, …) → importe.
-    if (id.startsWith("casino_pick_ruleta_")) {
-        const [tipo, valor] = id.replace("casino_pick_ruleta_", "").split("_");
-        await interaction.update(casino.buildPickMontoRuleta(userId, tipo, valor));
-        return;
-    }
-    if (id.startsWith("casino_pick_")) {
-        await interaction.update(casino.buildPickApuesta(userId, id.replace("casino_pick_", "")));
+    const ruta = RUTAS_CASINO.find((r) => (r.id ? r.id === id : id.startsWith(r.prefijo)));
+    if (ruta) {
+        await interaction.update(ruta.panel(interaction, ruta.prefijo ? id.slice(ruta.prefijo.length) : ""));
         return;
     }
 

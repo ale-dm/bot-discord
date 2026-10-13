@@ -1,7 +1,7 @@
 // Roles de recompensa por nivel (darlos al subir, rellenar los que falten al arrancar y su
 // configuración) y el anuncio de subida de nivel.
 const db = require("../../core/db");
-const { EmbedBuilder } = require("discord.js");
+const { embedSubidaNivel } = require("../../discord/mensajes/nivel");
 const { createLogger } = require("../../core/logger");
 const { ensureGuildDefaults, getConfig, titleForLevel, nextTitle, xpForNextLevel } = require("./config");
 
@@ -56,28 +56,7 @@ async function maybeAnnounceLevelUp(guild, member, newLevel) {
     const nextNeed = xpForNextLevel(newLevel, guild.id, member.id);
     const rewardRole = db.prepare("SELECT roleId, roleName FROM xp_role_rewards WHERE guildId = ? AND nivel = ?").get(guild.id, newLevel);
 
-    const embed = new EmbedBuilder()
-        .setTitle("🎉 ¡Subida de nivel!")
-        .setDescription(`${mention} alcanzó el **Nivel ${newLevel}**`)
-        .addFields(
-            { name: "Rango actual", value: `${currentTitle.emoji || "▫️"} **${currentTitle.title || "SIN RANGO"}**`, inline: true },
-            { name: "XP próximo nivel", value: `${nextNeed}`, inline: true },
-            {
-                name: "Siguiente rango",
-                value: upcomingTitle
-                    ? `${upcomingTitle.emoji || "▫️"} ${upcomingTitle.title} (LV ${upcomingTitle.nivel})`
-                    : "🏁 Máximo rango",
-                inline: true,
-            },
-            {
-                name: "Recompensa de nivel",
-                value: rewardRole?.roleId ? `<@&${rewardRole.roleId}>` : "Sin recompensa de rol en este nivel",
-                inline: false,
-            },
-        )
-        .setColor(0x5865f2)
-        .setFooter({ text: `Servidor: ${guild.name}` })
-        .setTimestamp();
+    const embed = embedSubidaNivel({ mention, newLevel, currentTitle, upcomingTitle, nextNeed, rewardRole, guildName: guild.name });
 
     try {
         await channel.send({ embeds: [embed] });

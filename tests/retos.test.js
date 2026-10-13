@@ -358,6 +358,7 @@ describe("pestaña ⚔️ Retos y botones", () => {
             `retos_ppt_piedra_${reto.id}`,
             `retos_ppt_papel_${reto.id}`,
             `retos_ppt_tijera_${reto.id}`,
+            `retos_rendirse_${reto.id}`,
         ]);
 
         // La jugada se confirma en privado.

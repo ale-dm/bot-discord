@@ -6,7 +6,7 @@ const db = require("../core/db");
 const guildSettings = require("./guildSettings");
 const plexLinks = require("./plexLinks");
 const seerrClient = require("../services/seerrClient");
-const { sendDm } = require("./xp/rachas");
+const { enviarAviso } = require("./avisosDm");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Seerr");
@@ -92,7 +92,7 @@ async function avisarDisponibles(client) {
                 const contenido = texto(userId, titulo, p.estadoCodigo);
                 try {
                     if (canal) await canal.send({ content: contenido, allowedMentions: { users: [userId] } });
-                    else if (!(await sendDm(client, userId, { content: contenido }))) continue;
+                    else if (!(await enviarAviso(client, userId, "pedido_seerr", { content: contenido }))) continue;
                     avisos++;
                     log.info(
                         `Avisos de pedidos: ${titulo} (petición ${p.id}) avisado a ${userId}${canal ? ` en #${canal.name}` : " por DM"}`,

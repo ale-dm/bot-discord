@@ -42,7 +42,9 @@ const pulsar = async (userId, customId) => {
     await modulo.handleButton(null, i);
     return i;
 };
-const idsFila = (payload) => payload.components.at(-1).components.map((b) => b.data.custom_id);
+// Sin el 🎲 Doble o nada (#462): sale tras una victoria, y quién gana en estos tests depende del azar.
+const idsFilaTodos = (payload) => payload.components.at(-1).components.map((b) => b.data.custom_id);
+const idsFila = (payload) => idsFilaTodos(payload).filter((id) => !id.startsWith("casino_doble_"));
 
 test("el casino tiene botón de PPT y adivinar pasa por el selector de importes", async () => {
     const u = jugador(1000);
@@ -99,11 +101,13 @@ test("blackjack acaba con la fila común (Repetir con la apuesta del principio)"
     const u = jugador(1000);
     await pulsar(u, "casino_play_blackjack_100");
     const doblar = await pulsar(u, "bj_double");
-    expect(idsFila(doblar.update.mock.calls[0][0])).toEqual([
+    // Ganó doblando, así que además de la fila común se le ofrece 🎲 Doble o nada (#462).
+    expect(idsFilaTodos(doblar.update.mock.calls[0][0])).toEqual([
         "casino_play_blackjack_100",
         "casino_pick_blackjack",
         "casino_stats_blackjack",
         "casino_home",
+        "casino_doble_blackjack",
     ]);
 });
 

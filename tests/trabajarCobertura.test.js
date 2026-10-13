@@ -141,7 +141,9 @@ describe("cooldown", () => {
 
         const i = interaccion({ id: "u-cd" });
         await trabajarCmd.run({}, i);
-        expect(i.editReply).toHaveBeenCalledWith("⏳ Todavía no puedes volver a trabajar. Espera 30 min más.");
+        expect(i.editReply).toHaveBeenCalledWith(
+            expect.objectContaining({ content: "⏳ Todavía no puedes volver a trabajar. Espera 30 min más." }),
+        );
         expect(dinero.efectivo("u-cd")).toBe(antes);
     });
 

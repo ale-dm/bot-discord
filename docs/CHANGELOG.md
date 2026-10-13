@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fases 4 y 5: /avisos, casino, cripto, retos, comunidad y refactors)
+
+- **🔔 /avisos** (#431): todos los DM del bot pasan por una función de envío que respeta un interruptor por tipo y 🌙 no molestar (tabla `preferencias_dm`, migración 049).
+- **🎰 Casino**: tope de apuesta y cooldown por juego (#460, #461), apuesta a calle en la ruleta (#459), 🔒 autoexclusión de 1 día/1 semana/1 mes (#463, migración 050), PPT al mejor de 3 (#457) y 🎲 doble o nada tras ganar (#462).
+- **📈 Cripto**: tope de impacto en el precio (#454), anuncio de eventos en un canal (#451), resumen del periodo y ranking de ganancias en Mercado (#447, #445).
+- **⚔️ Retos**: DM de turno y recordatorio (#452, #439, migración 051), rendirse (#446), bloqueos (#450, 054), cierre automático de porras (#448, 052), contraoferta (#442, 053), cara a cara (#437), doblar en blackjack (#444), duelo abierto (#438) y al mejor de 3 (#436, 055).
+- **📣 Comunidad**: `/encuesta` (#426, 057), `/cumpleaños` (#427, 058), `/sugerencia` con votos y revisión de admin (#428, 059), avisos de cooldown con 🔔 Avisarme (#434, 056) y bienvenida (#435), con el panel ⚙️ Config Global → 📣 Comunidad.
+- **Refactors**: ciclos de dependencias medidos y bloqueados con madge (#479, `docs/planificacion/CICLOS.md`: 7 ciclos, solo puede bajar); `core/tareas.js` pasa a `app/tareas.js` sin `require` diferidos (#471); `core/` y `systems/` sin `discord.js`, con regla de ESLint (#477, #472: `src/discord/`); herramientas del Duende sin `require` diferidos (#475); SQL de paneles, admin, comandos y juegos en `src/repositorios/` (#473); reglas de la quiniela fuera del formulario (#474, quita un ciclo); `perfil/dinero.js` con tabla de rutas (#476); clientes de Tautulli, Seerr y Odds sin `core/db` (#478); catálogo de logros partido en `systems/logros/datos/` (#480).
+- **Pendiente** de #475 y #472: la inyección de dependencias completa (fábricas `crearHerramientas` y puertos de roles) no se ha hecho; se movió lo que pintaba Discord a `src/discord/mensajes/` y se subieron los `require` a la cabecera.
+
 ## 2026-10-11 (sonidos: renombrar, cambiar archivo y probar; correcciones #468 y #469)
 
 - **🔊 Panel de sonidos** (#321, #322): en `/paneladmin` → Sonidos, ✏️ Editar permite renombrar un sonido o cambiar su

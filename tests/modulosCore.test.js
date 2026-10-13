@@ -1,7 +1,7 @@
 // 🧩 Módulos que salieron de src/index.js (DT-21): cargan, exportan lo que se espera y los filtros de mensajes siguen igual.
 // No se arranca el bot ni se conecta a Discord.
 const mensajes = require("../src/core/mensajes");
-const tareas = require("../src/core/tareas");
+const tareas = require("../src/app/tareas");
 const cargar = require("../src/core/cargarModulos");
 
 test("los módulos nuevos exportan lo que usa index.js", () => {

@@ -4,7 +4,8 @@ const db = require("../../core/db");
 const achievements = require("../achievementsSystem");
 const { createLogger } = require("../../core/logger");
 const { ensureGuildDefaults, getConfig, ensureUser, xpForNextLevel, titleForLevel, nextTitle } = require("./config");
-const { updateStreak, streakBonusPct, getEffectiveStreak, sendDm, buildStreakContinuedEmbed } = require("./rachas");
+const { updateStreak, streakBonusPct, getEffectiveStreak, buildStreakContinuedEmbed } = require("./rachas");
+const { enviarAviso } = require("../avisosDm");
 const { tryAssignRewards, maybeAnnounceLevelUp } = require("./roles");
 const eventos = require("../eventos");
 
@@ -55,7 +56,7 @@ async function addXp(guild, member, amount) {
     if (streakEnabled && streak.incremented && streak.streakDias >= 2) {
         const pct = streakBonusPct(guildId, streak.streakDias);
         log.debug(`${userId}: racha de ${streak.streakDias} días (+${pct}% XP)`);
-        await sendDm(guild.client, userId, { embeds: [buildStreakContinuedEmbed(guild, streak.streakDias, pct)] });
+        await enviarAviso(guild.client, userId, "racha_activa", { embeds: [buildStreakContinuedEmbed(guild, streak.streakDias, pct)] });
     }
 
     return { ...user, gain, oldLevel, streak_dias: streak.streakDias, streakDias: streak.streakDias };

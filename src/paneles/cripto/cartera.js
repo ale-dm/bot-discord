@@ -2,6 +2,7 @@
 const { EmbedBuilder, AttachmentBuilder } = require("discord.js");
 const mercado = require("../../systems/cripto/mercado");
 const { generateDonutChart } = require("../../systems/cripto/graficos");
+const { gananciaSinVender } = require("../../systems/cripto/estadisticas");
 const { pantalla, fmtMonedas } = require("./comun");
 
 async function pantallaCartera(userId) {
@@ -15,10 +16,7 @@ async function pantallaCartera(userId) {
         return pantalla({ embeds: [embed], actual: "cartera" });
     }
 
-    const precio = mercado.getTtclPrecio();
-    const valor = tenencia * precio;
-    const costeMedio = mercado.costeMedioTtcl(userId);
-    const ganancia = valor - tenencia * costeMedio;
+    const { valor, costeMedio, ganancia } = gananciaSinVender(userId);
 
     const lineas = [
         `**Tienes:** ${mercado.formatCryptoAmt(tenencia)} TTCL`,

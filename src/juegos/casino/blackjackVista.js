@@ -44,7 +44,7 @@ const COLOR = { gana: 0x27ae60, empate: 0xf1c40f, pierde: 0xe74c3c, juego: 0x2ec
 const ERROR_RESULTADO = "❌ Error procesando el resultado. Contacta un administrador.";
 const cartas = (mano) => mano.map((c) => c.display).join(" ");
 // Repetir juega con la apuesta del principio (no la doblada ni la de las dos manos).
-const filaFin = (state) => casino.filaFinJuego("blackjack", state.apuestaBase);
+const filaFin = (state) => casino.filaFinJuego("blackjack", state.apuestaBase, { userId: state.userId });
 
 // Texto de la liquidación de una mano (lo que se dice al pagar, ganar, empatar o perder).
 const TEXTO_RESULTADO = {

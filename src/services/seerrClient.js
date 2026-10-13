@@ -1,32 +1,16 @@
 const axios = require("axios");
-const db = require("../core/db");
+const { canalesPermitidos } = require("../repositorios/canalesPermitidos");
 const guildSettings = require("../systems/guildSettings");
 const { createLogger, registerSecret } = require("../core/logger");
 const log = createLogger("Seerr");
 
 // Lista vacía = sin restricción. En cuanto se añade un canal, la lista pasa a ser
 // una allowlist: solo esos canales pueden pedir/buscar contenido en Seerr.
-function getAllowedChannels(guildId) {
-    return db.prepare(`SELECT channelId, channelName FROM seerr_allowed_channels WHERE guildId = ? ORDER BY channelName ASC`).all(guildId);
-}
-
-function addAllowedChannel(guildId, channelId, channelName) {
-    db.prepare(
-        `
-        INSERT INTO seerr_allowed_channels (guildId, channelId, channelName)
-        VALUES (?, ?, ?)
-        ON CONFLICT(guildId, channelId) DO UPDATE SET channelName = excluded.channelName
-    `,
-    ).run(guildId, channelId, channelName || null);
-}
-
-function removeAllowedChannel(guildId, channelId) {
-    db.prepare(`DELETE FROM seerr_allowed_channels WHERE guildId = ? AND channelId = ?`).run(guildId, channelId);
-}
-
-function clearAllowedChannels(guildId) {
-    db.prepare(`DELETE FROM seerr_allowed_channels WHERE guildId = ?`).run(guildId);
-}
+const canales = canalesPermitidos("seerr");
+const getAllowedChannels = canales.todos;
+const addAllowedChannel = (guildId, channelId, channelName) => void canales.agregar(guildId, channelId, channelName);
+const removeAllowedChannel = (guildId, channelId) => void canales.quitar(guildId, channelId);
+const clearAllowedChannels = (guildId) => void canales.vaciar(guildId);
 
 function isChannelAllowed(guildId, channelId) {
     const rows = getAllowedChannels(guildId);

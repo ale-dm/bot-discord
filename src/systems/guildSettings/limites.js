@@ -38,7 +38,9 @@ function checkAndConsumeLimit(guildId, scope, userId, options = {}) {
     // Con consume: false solo se comprueba el cupo (p. ej. antes de hacer algo que puede fallar).
     if (options.consume === false) return { ok: true };
 
+    // Con marcarTiempo: false se cuenta la jugada en el cupo del día sin tocar la última vez (la que mide el cooldown).
     const nextCount = row && row.day === today ? countToday + 1 : 1;
+    const lastTs = options.marcarTiempo === false ? Number(row?.lastTs || 0) : now;
     db.prepare(
         `
         INSERT INTO action_limits (guildId, scope, userId, lastTs, day, dayCount)
@@ -48,7 +50,7 @@ function checkAndConsumeLimit(guildId, scope, userId, options = {}) {
             day = excluded.day,
             dayCount = excluded.dayCount
     `,
-    ).run(guildId, scope, userId, now, today, nextCount);
+    ).run(guildId, scope, userId, lastTs, today, nextCount);
 
     return { ok: true };
 }

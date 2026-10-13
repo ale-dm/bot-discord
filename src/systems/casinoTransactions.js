@@ -7,6 +7,9 @@ const { createLogger } = require("../core/logger");
 
 const log = createLogger("Casino");
 const guildSettings = require("./guildSettings");
+const { validarApuesta, consumirLimites } = require("./casinoLimites");
+const { mensajeBloqueo } = require("./casinoAutoexclusion");
+const dobleONada = require("./casino/dobleONada");
 const eventos = require("./eventos");
 const achievements = require("./achievementsSystem");
 const { CacheLimitada } = require("../core/cacheLimitada");
@@ -99,36 +102,6 @@ function insertarHistorial(userId, descripcion, cantidad) {
     }
 }
 
-/**
- * Validar apuesta antes de procesar
- * @param {number} cantidad - Cantidad a apostar
- * @param {number} saldoDisponible - Saldo disponible del usuario
- * @returns {object} - {valida: boolean, mensaje: string}
- */
-function validarApuesta(cantidad, saldoDisponible, guildId = null) {
-    const cfg = guildSettings.getSettings(guildId).casino;
-    const minBet = Math.max(1, Number(cfg.min_bet || 10));
-    const maxBet = Math.max(minBet, Number(cfg.max_bet || 100000));
-
-    if (!cantidad || cantidad <= 0) {
-        return { valida: false, mensaje: "❌ La cantidad debe ser mayor que cero." };
-    }
-
-    if (cantidad < minBet) {
-        return { valida: false, mensaje: `❌ La apuesta mínima es de ${minBet.toLocaleString("es")} monedas.` };
-    }
-
-    if (cantidad > maxBet) {
-        return { valida: false, mensaje: `❌ La apuesta máxima es de ${maxBet.toLocaleString("es")} monedas.` };
-    }
-
-    if (cantidad > saldoDisponible) {
-        return { valida: false, mensaje: "❌ No te llega el efectivo para esa apuesta. Saca dinero del banco (💵 Sacar)." };
-    }
-
-    return { valida: true, mensaje: "" };
-}
-
 const RTP_SETTING_BY_GAME = {
     blackjack: "rtp_blackjack",
     tragaperras: "rtp_tragaperras",
@@ -214,6 +187,7 @@ function procesarGanancia(userId, juego, apuesta, gananciaTotal, descripcion, de
     if (ok) {
         const neto = Math.max(0, Number(gananciaTotal || 0) - Number(apuesta || 0));
         if (neto > 0) {
+            dobleONada.ofrecer(userId, juego, neto, { apuesta, guildId });
             void achievements.applyEvent(guildId, userId, "casino_win_count", 1);
             void achievements.applyEvent(guildId, userId, "casino_net_profit", neto);
         }
@@ -252,35 +226,33 @@ function procesarPerdida(userId, juego, apuesta, descripcion, detalle) {
  * Descontar apuesta de forma segura
  * @param {string} userId - ID del usuario
  * @param {number} cantidad - Cantidad a descontar
+ * @param {string|null} guildId
+ * @param {string|null} juego - Juego del casino: con tope de apuesta o cooldown propios (#460, #461) se usan esos
  * @returns {object} - {exito: boolean, saldoRestante: number, mensaje: string}
  */
-function descontarApuesta(userId, cantidad, guildId = null) {
+function descontarApuesta(userId, cantidad, guildId = null, juego = null) {
     const resultado = { exito: false, saldoRestante: 0, mensaje: "" };
+
+    // Autoexclusión (#463): no se cobra nada ni se gasta cooldown ni cupo.
+    const bloqueo = mensajeBloqueo(userId);
+    if (bloqueo) {
+        resultado.mensaje = bloqueo;
+        return resultado;
+    }
 
     // Validar ANTES de consumir cooldown/cupo diario: una apuesta rechazada (saldo
     // insuficiente, fuera de mínimo/máximo) no debe contar como jugada.
     const saldoActual = obtenerSaldo(userId);
-    const validacionPrevia = validarApuesta(cantidad, saldoActual, guildId);
+    const validacionPrevia = validarApuesta(cantidad, saldoActual, guildId, juego);
     if (!validacionPrevia.valida) {
         resultado.mensaje = validacionPrevia.mensaje;
         return resultado;
     }
 
-    const casinoCfg = guildSettings.getSettings(guildId).casino;
-    const limit = guildSettings.checkAndConsumeLimit(guildId, "casino_global", userId, {
-        cooldownSec: Number(casinoCfg.global_cooldown_sec || 0),
-        dailyLimit: Number(casinoCfg.daily_limit || 0),
-    });
-
+    const limit = consumirLimites(userId, guildId, juego);
     if (!limit.ok) {
-        if (limit.reason === "cooldown") {
-            resultado.mensaje = `⏳ Espera ${limit.retrySeconds}s antes de volver a jugar.`;
-            return resultado;
-        }
-        if (limit.reason === "daily") {
-            resultado.mensaje = "📛 Alcanzaste tu límite diario de jugadas en casino.";
-            return resultado;
-        }
+        resultado.mensaje = limit.mensaje;
+        return resultado;
     }
 
     transaccionSegura(userId, () => {
@@ -299,6 +271,7 @@ function descontarApuesta(userId, cantidad, guildId = null) {
 
     if (resultado.exito) {
         if (guildId) userGuildContext.set(userId, guildId);
+        dobleONada.cancelar(userId); // una partida nueva retira la oferta de doble o nada de la anterior
         void achievements.applyEvent(guildId, userId, "casino_bet", Number(cantidad || 0));
     }
 
@@ -316,6 +289,11 @@ function descontarApuesta(userId, cantidad, guildId = null) {
  */
 function descontarExtra(userId, cantidad, guildId = null) {
     const resultado = { exito: false, saldoRestante: 0, mensaje: "" };
+    const bloqueo = mensajeBloqueo(userId);
+    if (bloqueo) {
+        resultado.mensaje = bloqueo;
+        return resultado;
+    }
     if (!Number.isFinite(cantidad) || cantidad <= 0) {
         resultado.mensaje = "❌ La cantidad debe ser mayor que cero.";
         return resultado;

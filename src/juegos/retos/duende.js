@@ -5,6 +5,7 @@
 const { MessageFlags } = require("discord.js");
 const retos = require("../../systems/retos");
 const prestamos = require("../../systems/prestamos");
+const avisosDm = require("../../systems/avisosDm");
 const paneles = require("../../paneles/retos");
 const propuestas = require("../../paneles/duendeEconomia");
 const { createLogger } = require("../../core/logger");
@@ -23,6 +24,7 @@ async function revisarPrestamos(client) {
                 ? `🧙 Tu préstamo del Duende ha vencido: te he cobrado **${fmtNumero(c.cobrado)}** 🪙 y aún debes **${fmtNumero(c.falta)}** 🪙. ` +
                   "Se irá cobrando de lo que ganes, y hasta saldarlo no hay otro préstamo ni apuestas conmigo."
                 : `🧙 Tu préstamo del Duende ha vencido y te he cobrado los **${fmtNumero(c.cobrado)}** 🪙 que faltaban. Estamos en paz.`;
+        if (avisosDm.silenciado(c.userId, "prestamo")) continue;
         try {
             const usuario = await client.users.fetch(c.userId);
             await usuario.send(texto);

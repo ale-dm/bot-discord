@@ -10,14 +10,13 @@
 // se reinicie. Vista previa en /paneladmin → 🩺 Sistema → 🔔 Alertas → 📊 Resumen semanal.
 const fs = require("fs");
 const path = require("path");
-const { EmbedBuilder } = require("discord.js");
+const { embedResumen } = require("../discord/mensajes/resumenSemanal");
 const db = require("../core/db");
 const alertas = require("./alertas");
-const { sendDm } = require("./xp/rachas");
+const { sendDm } = require("./avisosDm");
 const { createLogger, getLogStats } = require("../core/logger");
 const { getUsage } = require("../services/geminiClient");
 const { creditosRestantes, CREDITOS_AVISO } = require("../services/oddsApi");
-const { fmtNumero } = require("../core/formato");
 
 const log = createLogger("Resumen");
 
@@ -103,49 +102,7 @@ function construir(ahora = Date.now(), { dir } = {}) {
     const c = comandos(desde, dir);
     const g = usoGemini();
     const odds = creditosRestantes();
-    const lineasErrores = e.lista.slice(0, 5).map((x) => `• ${x.veces}× ${x.texto}`);
-    const embed = new EmbedBuilder()
-        .setTitle("📊 Resumen semanal del bot")
-        .setDescription(`Lo de los últimos ${DIAS} días (desde <t:${Math.floor(desde / 1000)}:f>).`)
-        .addFields(
-            {
-                name: `❌ Errores: ${fmtNumero(e.total)}`,
-                value: (e.total
-                    ? lineasErrores.join("\n") + (e.lista.length > 5 ? `\n…y ${e.lista.length - 5} distintos más` : "")
-                    : "Ninguno. 🎉"
-                ).slice(0, 1024),
-            },
-            {
-                name: `⌨️ Comandos más usados: ${fmtNumero(c.total)} en total`,
-                value: c.total
-                    ? c.lista
-                          .slice(0, 5)
-                          .map((x, i) => `${i + 1}. \`/${x.comando}\` · ${fmtNumero(x.veces)}`)
-                          .join("\n")
-                    : "Ninguno.",
-            },
-            {
-                name: "🤖 Gemini",
-                value:
-                    `${fmtNumero(g.llamadas)} llamadas · ${fmtNumero(g.errores)} errores (${fmtNumero(g.cuotaAgotada)} por cuota) · tokens ` +
-                    `${fmtNumero(g.tokensEntrada)} de entrada / ${fmtNumero(g.tokensSalida)} de salida` +
-                    (g.desdeArranque ? `\n_Desde el arranque del bot, <t:${Math.floor(g.arranque / 1000)}:R>._` : ""),
-            },
-            {
-                name: "⚽ Odds API",
-                value:
-                    odds.restantes === null
-                        ? "Sin consultar desde el arranque."
-                        : `**${fmtNumero(odds.restantes)}** créditos restantes este mes${odds.restantes < CREDITOS_AVISO ? " ⚠️" : ""} (<t:${Math.floor(odds.at / 1000)}:R>)`,
-            },
-        )
-        .setColor(e.total ? 0xe67e22 : 0x2ecc71)
-        .setFooter({ text: "El Duende · llega a quien recibe las alertas (/paneladmin → 🩺 Sistema → 🔔 Alertas)" })
-        .setTimestamp(ahora);
-    if (e.principioPerdido || c.principioPerdido) {
-        embed.addFields({ name: "ℹ️ Logs", value: "Los logs han rotado durante la semana: lo más antiguo puede faltar." });
-    }
-    return embed;
+    return embedResumen({ ahora, desde, dias: DIAS, e, c, g, odds, creditosAviso: CREDITOS_AVISO });
 }
 
 const semanaEnviada = () => db.prepare("SELECT valor FROM config WHERE clave = ?").get(CLAVE)?.valor || "";

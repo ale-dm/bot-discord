@@ -50,7 +50,7 @@ module.exports = {
 
         registrarUsuario(userId, interaction.user.username, interaction.user.tag);
 
-        const resultadoApuesta = descontarApuesta(userId, cantidad, interaction.guildId);
+        const resultadoApuesta = descontarApuesta(userId, cantidad, interaction.guildId, "ppt");
         if (!resultadoApuesta.exito) {
             await interaction.reply({ content: resultadoApuesta.mensaje, flags: MessageFlags.Ephemeral });
             return;
@@ -71,6 +71,6 @@ module.exports = {
         const embed = embedResultado(tipo, { jugadaUsuario, jugadaDelDuende, cantidad, ganancia, saldoActual });
 
         // Repetir vuelve a pedir la jugada con el mismo importe.
-        await interaction.reply({ embeds: [embed], components: [casino.filaFinJuego("ppt", cantidad)] });
+        await interaction.reply({ embeds: [embed], components: [casino.filaFinJuego("ppt", cantidad, { userId })] });
     },
 };

@@ -1,9 +1,9 @@
 const path = require("path");
 const { REST, Routes } = require("discord.js");
 require("dotenv").config(); // Cargar el archivo .env
-const { createLogger, flushLogs } = require("./logger");
-const { ROOT, COMMANDS_DIR } = require("./paths");
-const { getAllJsFiles } = require("./cargarModulos");
+const { createLogger, flushLogs } = require("../core/logger");
+const { ROOT, COMMANDS_DIR } = require("../core/paths");
+const { getAllJsFiles } = require("../core/cargarModulos");
 
 const log = createLogger("Registro de comandos");
 

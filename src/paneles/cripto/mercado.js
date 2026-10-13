@@ -3,6 +3,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBu
 const { generateLineChart } = require("../../systems/cripto/graficos");
 const mercado = require("../../systems/cripto/mercado");
 const { ultimoEvento, ultimosEventos } = require("../../systems/cripto/eventos");
+const { resumenPeriodo, rankingGanancias } = require("../../systems/cripto/estadisticas");
 const { pantalla, fmtMonedas, fechaMadrid } = require("./comun");
 
 const RANGOS = [
@@ -16,6 +17,26 @@ function lineaEvento(ev) {
     if (!ev) return "Todavía no ha habido ninguno.";
     const sube = ev.direccion === "subida";
     return `${sube ? "📈 Sube" : "📉 Baja"} un **${ev.porcentaje} %** · ${fechaMadrid(ev.aplicado_en)}`;
+}
+
+const pct = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n).toFixed(2).replace(".", ",")} %`;
+const signoMonedas = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${fmtMonedas(Math.abs(n))}`;
+
+/** El resumen del periodo elegido (#447): precios, variación y volumen, o «sin datos suficientes» si no hay precios. */
+function textoResumen(r) {
+    const vol = (v) => `${fmtMonedas(v.monedas)} (${mercado.formatCryptoAmt(v.ttcl)} TTCL)`;
+    const volumen = `🛒 Compras: **${vol(r.compras)}** · 💸 Ventas: **${vol(r.ventas)}**`;
+    if (!r.suficientes) return `Sin datos suficientes para este periodo.\n${volumen}`;
+    return (
+        `Inicio **${mercado.formatCoins(r.inicio)}** → fin **${mercado.formatCoins(r.fin)}** · **${pct(r.variacionPct)}**\n` +
+        `Máximo **${mercado.formatCoins(r.max)}** · mínimo **${mercado.formatCoins(r.min)}**\n${volumen}`
+    );
+}
+
+/** El ranking de ganancias con TTCL (#445): la realizada más la que se tiene sin vender, con el precio de la 💼 Cartera. */
+function textoRankingGanancias(ranking) {
+    if (!ranking.length) return "Nadie ha operado con TTCL todavía.";
+    return ranking.map((r, i) => `${i + 1}. <@${r.userId}> · ${signoMonedas(r.total)}`).join("\n");
 }
 
 async function pantallaMercado(guildId, dias = 7) {
@@ -33,6 +54,7 @@ async function pantallaMercado(guildId, dias = 7) {
         .setDescription(`**Precio:** ${precio.toFixed(2)} monedas · **En carteras:** ${enCarteras.toFixed(2)} TTCL`)
         .addFields(
             { name: "💧 Pool", value: `${fmtMonedas(pool.monedas)} · ${pool.ttcl.toFixed(2)} TTCL`, inline: false },
+            { name: `📊 Resumen · ${rango.label}`, value: textoResumen(resumenPeriodo(rango.dias)), inline: false },
             { name: "📰 Último evento", value: lineaEvento(ultimoEvento()), inline: false },
             {
                 name: "👥 Quién tiene más",
@@ -41,9 +63,10 @@ async function pantallaMercado(guildId, dias = 7) {
                     : "Nadie todavía.",
                 inline: false,
             },
+            { name: "🏆 Quién gana más", value: textoRankingGanancias(rankingGanancias(5)), inline: false },
         )
         .setColor(parseInt(mercado.TTCL.color.slice(1), 16))
-        .setFooter({ text: "Comisión de compra y venta: se queda en el pool." });
+        .setFooter({ text: "Comisión de compra y venta: se queda en el pool. Ganancia = realizada + sin vender." });
     if (buf) embed.setImage("attachment://mercado.png");
     else embed.addFields({ name: "📊 Gráfica", value: "Todavía no hay suficiente historial para dibujarla.", inline: false });
 
@@ -87,4 +110,4 @@ function pantallaEventos() {
     return pantalla({ embeds: [embed], filas: [volver], actual: "mercado" });
 }
 
-module.exports = { pantallaMercado, pantallaEventos, lineaEvento, RANGOS };
+module.exports = { pantallaMercado, pantallaEventos, lineaEvento, textoResumen, textoRankingGanancias, RANGOS };

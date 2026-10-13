@@ -4,13 +4,13 @@
 //      empezar a seguirla; cada cosa se avisa una sola vez (plex_avisos_series).
 //   📝 Quiero ver (#466): una lista de películas y series por id de TMDB (el de Seerr). Cuando una llega a Plex (Seerr la
 //      da por disponible, o a medias si es una serie con episodios), se marca y se avisa por DM una sola vez.
-// Los dos los revisa el cron de novedades de Plex (cada 30 min, core/tareas.js). Un DM que no llega (DMs cerrados) se
+// Los dos los revisa el cron de novedades de Plex (cada 30 min, app/tareas.js). Un DM que no llega (DMs cerrados) se
 // apunta en el log y no para lo demás. Tablas en la migración 044.
 const db = require("../core/db");
 const plexLinks = require("./plexLinks");
 const tautulliClient = require("../services/tautulliClient");
 const seerrClient = require("../services/seerrClient");
-const { sendDm } = require("./xp/rachas");
+const { enviarAviso } = require("./avisosDm");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Plex").child("Avisos");
@@ -153,7 +153,7 @@ async function avisarSeries(client) {
             continue;
         }
         for (const [userId, textos] of pendientesDeSeries(guild.id, items)) {
-            if (await sendDm(client, userId, { content: textoAvisoSeries(guild.name, textos) })) enviados++;
+            if (await enviarAviso(client, userId, "plex_series", { content: textoAvisoSeries(guild.name, textos) })) enviados++;
             else log.info(`Series seguidas: no se pudo avisar a ${userId} por DM (${textos.length} novedades); ¿DMs cerrados?`);
         }
     }
@@ -251,7 +251,7 @@ async function avisarQuieroVer(client) {
                 `🍿 **${t.titulo}** ya está en Plex (${guild.name}). Estaba en tu lista de «quiero ver».` +
                 (info.estadoCodigo === PARCIAL ? " De momento hay algunos episodios." : "");
             for (const userId of quienes) {
-                if (await sendDm(client, userId, { content: contenido })) enviados++;
+                if (await enviarAviso(client, userId, "plex_quiero_ver", { content: contenido })) enviados++;
                 else log.info(`Quiero ver: no se pudo avisar a ${userId} de ${t.titulo} por DM; ¿DMs cerrados?`);
             }
         }

@@ -1,0 +1,9 @@
+[
+    "paneles/juegos.js > paneles/misJugadas.js",
+    "systems/achievementsSystem.js > systems/plexTrofeos.js > systems/plexTrofeos/candidatos.js > systems/plexTrofeos/condiciones.js > systems/plexHistorial.js",
+    "systems/achievementsSystem.js > systems/plexTrofeos.js > systems/plexTrofeos/candidatos.js > systems/plexTrofeos/condiciones.js > systems/plexHistorial.js > systems/plexGordos.js",
+    "systems/dinero.js > systems/prestamos.js",
+    "systems/plexGordos.js > systems/plexTrofeos.js > systems/plexTrofeos/candidatos.js > systems/plexTrofeos/condiciones.js > systems/plexHistorial.js",
+    "systems/plexHistorial.js > systems/plexTrofeos.js > systems/plexTrofeos/candidatos.js > systems/plexTrofeos/condiciones.js",
+    "systems/presencia.js > systems/sonidos.js"
+]

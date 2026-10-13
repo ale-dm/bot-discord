@@ -10,6 +10,7 @@ const dinero = require("../../systems/dinero");
 const paneles = require("../../paneles/retos");
 const { importeElegido } = require("../../paneles/importes");
 const { avisarGanadores } = require("../../systems/apuestas/liquidacion");
+const { avisarTurno, enviarRecordatorios } = require("./avisos");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { createLogger } = require("../../core/logger");
 const { esAdmin } = require("../../core/permisos");
@@ -20,17 +21,36 @@ const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
 // El número de reto va siempre al final del customId.
 const retoDe = (customId) => Number(customId.split("_").at(-1));
 const leerCantidad = (i) => importeElegido(i.fields);
-// La frase de provocación es opcional: un formulario antiguo, sin ese campo, la deja vacía.
-const leerProvocacion = (i) => {
+// Un campo opcional del formulario: uno antiguo, sin ese campo, lo deja vacío.
+const leerOpcional = (i, id) => {
     try {
-        return i.fields.getTextInputValue("provocacion");
+        return i.fields.getTextInputValue(id);
     } catch {
         return "";
     }
 };
+const leerProvocacion = (i) => leerOpcional(i, "provocacion");
+// Las partidas del duelo (#436): 3 si se eligió «al mejor de 3»; si no (o con un formulario sin ese campo), 1.
+const leerSerie = (i) => {
+    try {
+        return i.fields.getStringSelectValues(paneles.CAMPO_SERIE, false)?.[0] === "3" ? 3 : 1;
+    } catch {
+        return 1;
+    }
+};
 
-// Pasos para lanzar un reto (en el panel de /juegos).
-const PASOS_PANEL = ["retos_nuevo_", "retos_partido_select", "retos_lado_", "retos_juego_", "retos_rival_"];
+// Pasos para lanzar un reto (en el panel de /juegos) y las pantallas de la pestaña ⚔️ Retos.
+const PASOS_PANEL = [
+    "retos_nuevo_",
+    "retos_partido_select",
+    "retos_lado_",
+    "retos_juego_",
+    "retos_rival_",
+    "retos_abierto_",
+    "retos_bloqueos",
+    "retos_desbloquear_",
+    "retos_caraacara",
+];
 
 async function soloDueno(i) {
     const dueno = i.message?.interaction?.user?.id || i.message?.interactionMetadata?.user?.id;
@@ -55,16 +75,19 @@ async function actualizarMensajes(client, ids) {
     }
 }
 
-/** Cron: cierra lo que se ha quedado colgado, repinta sus mensajes y avisa por DM de lo devuelto o ganado. */
+/**
+ * Cron: cierra lo que se ha quedado colgado, repinta sus mensajes (también el de las porras que se cierran solas), avisa por
+ * DM de lo devuelto o ganado y recuerda los retos que van a caducar.
+ */
 async function revisarRetos(client) {
-    const { cerrados, pagos } = retos.revisar();
-    if (!cerrados.length) return 0;
+    const { cerrados, pagos, modificados, recordatorios } = retos.revisar();
     await actualizarMensajes(
         client,
-        cerrados.map((r) => r.id),
+        [...cerrados, ...modificados].map((r) => r.id),
     );
     await avisarGanadores(client, pagos);
-    return cerrados.length;
+    await enviarRecordatorios(client, recordatorios);
+    return cerrados.length + modificados.length;
 }
 
 // Publica un reto recién creado: el panel vuelve a ⚔️ Retos y el reto sale en un mensaje nuevo.
@@ -112,8 +135,31 @@ async function botonPanel(client, i) {
         const juego = id.replace("retos_juego_", "");
         const j = retos.JUEGOS[juego];
         if (!j) return i.reply(privado("❌ Ese juego no existe."));
-        return i.update(paneles.buildElegirRival(`d_${juego}`, `Duelo de ${j.emoji} **${j.nombre}**. Quien elijas tendrá que aceptar.`));
+        return i.update(
+            paneles.buildElegirRival(
+                `d_${juego}`,
+                `Duelo de ${j.emoji} **${j.nombre}**. Elige a quién retas, o lánzalo **abierto** para que lo acepte el primero que quiera.`,
+            ),
+        );
     }
+    // retos_abierto_d_{juego}: un duelo sin rival fijo (#438); el formulario de la cantidad ya no lleva a nadie.
+    if (id.startsWith("retos_abierto_")) {
+        const clave = id.replace("retos_abierto_", "");
+        const j = retos.JUEGOS[clave.replace("d_", "")];
+        if (!j) return i.reply(privado("❌ Ese juego no existe."));
+        return i.showModal(
+            paneles.modalCantidad(`retos_modal_${clave}_abierto`, "⚔️ ¿Cuánto os jugáis?", dinero.efectivo(i.user.id), { conSerie: true }),
+        );
+    }
+    // 🚫 Bloqueos (#450) y 🆚 cara a cara (#437), en la pestaña ⚔️ Retos.
+    if (id === "retos_bloqueos") return i.update(paneles.buildBloqueos(i.user.id));
+    if (id.startsWith("retos_desbloquear_")) {
+        const quito = retos.desbloquear(i.user.id, id.replace("retos_desbloquear_", ""));
+        return i.update(
+            paneles.buildBloqueos(i.user.id, quito ? "✅ Desbloqueado: ya puede retarte otra vez." : "Esa persona ya no estaba bloqueada."),
+        );
+    }
+    if (id === "retos_caraacara") return i.reply({ ...paneles.elegirRivalCaraACara(), flags: MessageFlags.Ephemeral });
 }
 
 // Lo que se responde a una acción sobre el mensaje público: el mensaje repintado o el error en privado.
@@ -121,6 +167,37 @@ async function responder(i, r) {
     if (!r.ok) return i.reply(privado(r.mensaje));
     await i.update(paneles.mensajeReto(r.reto));
     if (r.mensaje) await i.followUp(privado(r.mensaje));
+}
+
+/** 💬 Contraoferta (#442): solo el rival de un reto pendiente puede proponerla; abre el formulario con la cantidad. */
+async function abrirContraoferta(i, retoId) {
+    const reto = retos.obtener(retoId);
+    if (!reto || reto.estado !== "pendiente") return i.reply(privado("Este reto ya no está pendiente."));
+    if (reto.rival !== i.user.id) return i.reply(privado("⛔ Este reto no es para ti."));
+    if (reto.contraoferta) return i.reply(privado("💬 Ya has hecho una contraoferta en este reto: solo se permite una."));
+    return i.showModal(
+        paneles.modalCantidad(`retos_modal_contra_${retoId}`, "💬 Contraoferta de cantidad", dinero.efectivo(i.user.id), {
+            conProvocacion: false,
+        }),
+    );
+}
+
+/** 🚫 Bloquear (#450): el rival bloquea a quien le retó; se devuelven los retos pendientes entre los dos y se repintan. */
+async function bloquearDesdeReto(client, i, retoId) {
+    const r = retos.bloquearDesdeReto(retoId, i.user.id);
+    if (!r.ok) return i.reply(privado(r.mensaje));
+    const bloqueado = r.devueltos.find((d) => d.id === retoId)?.creador;
+    await i.reply(
+        privado(
+            `🚫 Has bloqueado a ${bloqueado ? `<@${bloqueado}>` : "esa persona"}: ya no puede retarte y los retos pendientes entre vosotros se han devuelto. ` +
+                "Puedes quitarlo en `/juegos` → ⚔️ Retos → 🚫 Bloqueos.",
+        ),
+    );
+    await actualizarMensajes(
+        client,
+        r.devueltos.map((d) => d.id),
+    );
+    void avisarGanadores(client, r.pagos);
 }
 
 async function botonReto(client, i) {
@@ -135,20 +212,36 @@ async function botonReto(client, i) {
     }
     if (id.startsWith("retos_rechazar_")) return responder(i, retos.rechazar(retoId, userId));
     if (id.startsWith("retos_cancelar_")) return responder(i, retos.cancelar(retoId, userId));
+    if (id.startsWith("retos_acepcontra_")) {
+        const r = retos.aceptarContraoferta(retoId, userId);
+        if (r.ok && r.reto.juego === "blackjack") r.mensaje = "🃏 Pulsa **Mi mano** para jugar tu mano (solo la ves tú).";
+        return responder(i, r);
+    }
+    if (id.startsWith("retos_contra_")) return abrirContraoferta(i, retoId);
+    if (id.startsWith("retos_bloquear_")) return bloquearDesdeReto(client, i, retoId);
+    if (id.startsWith("retos_rendirse_")) return responder(i, retos.rendirse(retoId, userId));
     // retos_ppt_{jugada}_{id}
-    if (id.startsWith("retos_ppt_")) return responder(i, retos.jugarPpt(retoId, userId, id.split("_")[2]));
+    if (id.startsWith("retos_ppt_")) {
+        const r = retos.jugarPpt(retoId, userId, id.split("_")[2]);
+        await responder(i, r);
+        if (r.ok) void avisarTurno(client, retoId, userId);
+        return;
+    }
 
     if (id.startsWith("retos_bj_ver_")) {
         const reto = retos.obtener(retoId);
         if (!reto || reto.tipo !== "duelo" || !retos.esParticipante(reto, userId)) return i.reply(privado("⛔ No juegas en este duelo."));
         return i.reply({ ...paneles.vistaManoBlackjack(reto, userId), flags: MessageFlags.Ephemeral });
     }
-    // Pedir o plantarse, desde tu mano (mensaje privado): se repinta tu mano y el mensaje del reto.
-    if (id.startsWith("retos_bj_pedir_") || id.startsWith("retos_bj_plantar_")) {
-        const r = retos.jugarBlackjack(retoId, userId, id.startsWith("retos_bj_pedir_") ? "pedir" : "plantarse");
+    // Pedir, plantarse o doblar, desde tu mano (mensaje privado): se repinta tu mano y el mensaje del reto.
+    const accionBj = ["pedir", "plantar", "doblar"].find((a) => id.startsWith(`retos_bj_${a}_`));
+    if (accionBj) {
+        const r = retos.jugarBlackjack(retoId, userId, accionBj === "plantar" ? "plantarse" : accionBj);
         if (!r.ok) return i.reply(privado(r.mensaje));
         await i.update(paneles.vistaManoBlackjack(r.reto, userId));
         await actualizarMensajes(client, [retoId]);
+        if (r.mensaje) await i.followUp(privado(r.mensaje));
+        void avisarTurno(client, retoId, userId);
         return;
     }
 
@@ -172,7 +265,7 @@ module.exports = {
     componentHandlers: [
         { types: ["button"], prefixes: ["retos_"], method: "handleButton", acl: "juegos" },
         { types: ["stringSelect"], prefixes: ["retos_partido_select", "retos_porra_ganadora_"], method: "handleSelect", acl: "juegos" },
-        { types: ["userSelect"], prefixes: ["retos_rival_"], method: "handleSelect", acl: "juegos" },
+        { types: ["userSelect"], prefixes: ["retos_rival_", "retos_cara_"], method: "handleSelect", acl: "juegos" },
         { types: ["modal"], prefixes: ["retos_modal_"], method: "handleModal", acl: "juegos" },
     ],
 
@@ -197,6 +290,13 @@ module.exports = {
             return;
         }
         if (!(await soloDueno(i))) return;
+        // retos_cara_sel: con quién se ve el cara a cara (#437), un resumen privado que sustituye al selector.
+        if (id === "retos_cara_sel") {
+            const otro = i.users?.first?.() || { id: i.values[0] };
+            if (otro.bot) return i.reply(privado("❌ Los bots no juegan retos."));
+            if (otro.id === i.user.id) return i.reply(privado("❌ Elige a otra persona."));
+            return i.update({ content: "", ...paneles.vistaCaraACara(i.user.id, otro.id, retos.caraACara(i.user.id, otro.id)) });
+        }
         if (id === "retos_partido_select") {
             const p = retos.partidoDe(i.values[0]);
             if (!p) return i.reply(privado("❌ No encuentro ese partido."));
@@ -218,18 +318,28 @@ module.exports = {
         const id = i.customId;
         const base = { creador: i.user.id, guildId: i.guildId, channelId: i.channelId };
         if (id === "retos_modal_porra") {
+            const cierre = retos.leerCierre(leerOpcional(i, "cierre"));
+            if (!cierre.ok) return i.reply(privado(cierre.mensaje));
             const r = retos.crearPorra({
                 ...base,
                 pregunta: i.fields.getTextInputValue("pregunta"),
                 opciones: retos.leerOpciones(i.fields.getTextInputValue("opciones")),
                 cantidad: leerCantidad(i),
+                cierraEn: cierre.ms,
             });
             if (!r.ok) return i.reply(privado(r.mensaje));
             return publicar(i, r.reto);
         }
-        // retos_modal_p_{eleccion}_{matchId}_{rival} · retos_modal_d_{juego}_{rival}
+        // retos_modal_contra_{id}: la contraoferta del rival (#442); el mensaje del reto se repinta con la propuesta.
+        if (id.startsWith("retos_modal_contra_")) {
+            const r = retos.contraofertar(retoDe(id), i.user.id, leerCantidad(i));
+            if (!r.ok) return i.reply(privado(r.mensaje));
+            return i.update(paneles.mensajeReto(r.reto));
+        }
+        // retos_modal_p_{eleccion}_{matchId}_{rival} · retos_modal_d_{juego}_{rival} · retos_modal_d_{juego}_abierto
         const [tipo, ...partes] = id.replace("retos_modal_", "").split("_");
         const rival = partes.pop();
+        const abierto = tipo === "d" && rival === "abierto";
         const r =
             tipo === "p"
                 ? retos.crearPartido({
@@ -240,9 +350,17 @@ module.exports = {
                       cantidad: leerCantidad(i),
                       provocacion: leerProvocacion(i),
                   })
-                : retos.crearDuelo({ ...base, rival, juego: partes[0], cantidad: leerCantidad(i), provocacion: leerProvocacion(i) });
+                : retos.crearDuelo({
+                      ...base,
+                      rival: abierto ? null : rival,
+                      abierto,
+                      juego: partes[0],
+                      cantidad: leerCantidad(i),
+                      serie: leerSerie(i),
+                      provocacion: leerProvocacion(i),
+                  });
         if (!r.ok) return i.reply(privado(r.mensaje));
-        return publicar(i, r.reto, rival);
+        return publicar(i, r.reto, abierto ? null : rival);
     },
 
     actualizarMensajes,

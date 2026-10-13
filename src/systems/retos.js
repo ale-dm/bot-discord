@@ -23,11 +23,15 @@ const crear = require("./retos/crear");
 const duelos = require("./retos/duelos");
 const porras = require("./retos/porras");
 const revision = require("./retos/revision");
+const contraoferta = require("./retos/contraoferta");
+const bloqueos = require("./retos/bloqueos");
+const avisos = require("./retos/avisos");
 
 module.exports = {
     MIN: constantes.MIN,
     MAX: constantes.MAX,
     MAX_PENDIENTES: constantes.MAX_PENDIENTES,
+    ESPERA_ACEPTAR_MS: constantes.ESPERA_ACEPTAR_MS,
 
     ABANDONO_MS: constantes.ABANDONO_MS,
     PORRA_DIAS: constantes.PORRA_DIAS,
@@ -50,6 +54,7 @@ module.exports = {
     crearDuelo: crear.crearDuelo,
     crearPorra: crear.crearPorra,
     leerOpciones: crear.leerOpciones,
+    leerCierre: crear.leerCierre,
     MAX_PROVOCACION: crear.MAX_PROVOCACION,
     guardarMensaje: persistencia.guardarMensaje,
     aceptar: duelos.aceptar,
@@ -57,6 +62,16 @@ module.exports = {
     cancelar: duelos.cancelar,
     jugarPpt: duelos.jugarPpt,
     jugarBlackjack: duelos.jugarBlackjack,
+    rendirse: duelos.rendirse,
+    textoUltimaPartida: duelos.textoUltimaPartida,
+    contraofertar: contraoferta.contraofertar,
+    aceptarContraoferta: contraoferta.aceptarContraoferta,
+    bloqueado: bloqueos.bloqueado,
+    listarBloqueos: bloqueos.listarBloqueos,
+    bloquearDesdeReto: bloqueos.bloquearDesdeReto,
+    desbloquear: bloqueos.desbloquear,
+    avisoDeTurno: avisos.avisoDeTurno,
+    caraACara: persistencia.caraACara,
     valorMano: duelos.valorMano,
     entrarPorra: porras.entrarPorra,
     cerrarPorra: porras.cerrarPorra,

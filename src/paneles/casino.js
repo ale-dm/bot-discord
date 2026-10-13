@@ -1,12 +1,15 @@
 // Panel de casino de /perfil: resumen, estadísticas, historial, ranking y los selectores de apuesta
 // de cada juego. Solo construye mensajes; las partidas las juega cada comando de casino.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const db = require("../core/db");
+const repo = require("../repositorios/casino");
 const { filaPestanas } = require("./pestanasJuegos");
 const { lineaDinero } = require("./economia");
 const eventos = require("../systems/eventos");
 const { EMOJI, NOMBRE, getSaldo, backBtn, filaMontos, filaSacar } = require("./casinoComun");
 const ruleta = require("./casinoRuleta");
+const autoexclusion = require("./casinoAutoexclusion");
+const dobleONada = require("../systems/casino/dobleONada");
+const { mensajeBloqueo } = require("../systems/casinoAutoexclusion");
 const { ultimosJackpots } = require("../systems/casino/tragaperras");
 
 // ─── Datos ───────────────────────────────────────────────────────────────────
@@ -20,34 +23,18 @@ function filtroJuego(juego) {
 
 function getUserStats(userId, juego = null) {
     const f = filtroJuego(juego);
-    return (
-        db
-            .prepare(
-                `
-        SELECT COUNT(*)                                              AS total,
-               COALESCE(SUM(apuesta),   0)                           AS apostado,
-               COALESCE(SUM(resultado), 0)                           AS ganancia,
-               COALESCE(MAX(resultado), 0)                           AS mejor,
-               COUNT(CASE WHEN resultado > 0 THEN 1 END)             AS wins,
-               COUNT(CASE WHEN resultado < 0 THEN 1 END)             AS losses
-        FROM casino WHERE userId = ?${f.sql}
-    `,
-            )
-            .get(userId, ...f.params) || { total: 0, apostado: 0, ganancia: 0, mejor: 0, wins: 0, losses: 0 }
-    );
+    return repo.resumenJugador(userId, f.sql, f.params) || { total: 0, apostado: 0, ganancia: 0, mejor: 0, wins: 0, losses: 0 };
 }
 
 function getFavoriteGame(userId) {
-    const row = db
-        .prepare("SELECT juego, COUNT(*) AS cnt FROM casino WHERE userId = ? GROUP BY juego ORDER BY cnt DESC LIMIT 1")
-        .get(userId);
+    const row = repo.juegoFavorito(userId);
     if (!row) return null;
     const norm = row.juego === "slots" ? "tragaperras" : row.juego;
     return `${EMOJI[norm] || "🎲"} ${norm.charAt(0).toUpperCase() + norm.slice(1)} (${row.cnt})`;
 }
 
 function getLastGames(userId, n = 5) {
-    return db.prepare("SELECT juego, resultado, apuesta FROM casino WHERE userId = ? ORDER BY fecha DESC LIMIT ?").all(userId, n);
+    return repo.ultimasPartidas(userId, n);
 }
 
 // ─── Botones comunes ─────────────────────────────────────────────────────────
@@ -101,6 +88,7 @@ function filasHome(userId) {
         new ButtonBuilder().setCustomId("casino_ranking").setLabel("🏆 Ranking").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_historial").setLabel("📜 Historial").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_stats").setLabel("📊 Mis Stats").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("casino_autoex").setLabel("🔒 Autoexclusión").setStyle(ButtonStyle.Secondary),
         backToPerfilBtn(userId),
     );
     return [row1, row2];
@@ -115,6 +103,8 @@ function buildHome(userId, guildId = null) {
     const parts = [];
     const evento = eventos.lineaCasino(guildId);
     if (evento) parts.push(evento, "");
+    const bloqueo = mensajeBloqueo(userId);
+    if (bloqueo) parts.push(bloqueo, "");
     parts.push(lineaDinero(userId), ...lineasEstadisticasHome(stats, fav), ...lineasUltimasHome(last));
 
     const embed = new EmbedBuilder()
@@ -134,15 +124,7 @@ function buildStats(userId, username, juego = null) {
     const winRate = stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : "0.0";
     const roi = stats.apostado > 0 ? ((stats.ganancia / stats.apostado) * 100).toFixed(1) : "0.0";
 
-    const byGame = db
-        .prepare(
-            `
-        SELECT juego, COUNT(*) AS p, SUM(resultado) AS g,
-               COUNT(CASE WHEN resultado > 0 THEN 1 END) AS w
-        FROM casino WHERE userId = ?${f.sql} GROUP BY juego ORDER BY p DESC
-    `,
-        )
-        .all(userId, ...f.params);
+    const byGame = repo.porJuego(userId, f.sql, f.params);
 
     const gameLines = byGame.map((r) => {
         const norm = r.juego === "slots" ? "tragaperras" : r.juego;
@@ -182,14 +164,7 @@ function buildStats(userId, username, juego = null) {
 }
 
 function buildHistorial(userId) {
-    const rows = db
-        .prepare(
-            `
-        SELECT juego, fecha, apuesta, resultado FROM casino
-        WHERE userId = ? ORDER BY fecha DESC LIMIT 15
-    `,
-        )
-        .all(userId);
+    const rows = repo.historialReciente(userId);
 
     const lines = rows.map((r) => {
         const norm = r.juego === "slots" ? "tragaperras" : r.juego;
@@ -210,18 +185,7 @@ function buildHistorial(userId) {
 }
 
 function buildRanking() {
-    const ranking = db
-        .prepare(
-            `
-        SELECT u.nombre, COUNT(c.id) AS partidas, SUM(c.resultado) AS gananciaTotal,
-               COUNT(CASE WHEN c.resultado > 0 THEN 1 END) AS victorias
-        FROM casino c
-        JOIN usuarios u ON c.userId = u.id
-        GROUP BY c.userId, u.nombre HAVING partidas >= 5
-        ORDER BY gananciaTotal DESC LIMIT 10
-    `,
-        )
-        .all();
+    const ranking = repo.ranking();
 
     const medals = ["🥇", "🥈", "🥉"];
     const lines = ranking.length
@@ -296,7 +260,9 @@ function buildPickJugadaPpt(userId, apuesta) {
     ];
     const embed = new EmbedBuilder()
         .setTitle("✂️ Piedra, papel o tijera")
-        .setDescription(`Apuesta: **${apuesta.toLocaleString("es")}** 🪙\n${lineaDinero(userId)}\n\n¿Qué sacas?`)
+        .setDescription(
+            `Apuesta: **${apuesta.toLocaleString("es")}** 🪙\n${lineaDinero(userId)}\n\n¿Qué sacas? Una mano, o 🏁 **al mejor de 3** (misma apuesta, gana quien llegue a 2 manos).`,
+        )
         .setColor(0xf39c12);
     return {
         embeds: [embed],
@@ -307,6 +273,15 @@ function buildPickJugadaPpt(userId, apuesta) {
                         .setCustomId(`casino_play_ppt_${apuesta}_${j.value}`)
                         .setLabel(j.label)
                         .setStyle(ButtonStyle.Primary),
+                ),
+            ),
+            // Al mejor de 3 (#457): la misma apuesta, fija, para tres manos; se cobra una sola vez.
+            new ActionRowBuilder().addComponents(
+                jugadas.map((j) =>
+                    new ButtonBuilder()
+                        .setCustomId(`casino_ppt3_ini_${apuesta}_${j.value}`)
+                        .setLabel(`🏁 ${j.label} (mejor de 3)`)
+                        .setStyle(ButtonStyle.Secondary),
                 ),
             ),
             new ActionRowBuilder().addComponents(
@@ -322,8 +297,8 @@ function buildPickJugadaPpt(userId, apuesta) {
  * `repetir` es el customId de "Repetir" cuando no basta con casino_play_{juego}_{apuesta} (la ruleta añade el
  * tipo, y en ppt se vuelve a elegir jugada). Los botones los atiende /perfil (casino_*).
  */
-function filaFinJuego(juego, apuesta, { repetir, desactivada = false } = {}) {
-    return new ActionRowBuilder().addComponents(
+function filaFinJuego(juego, apuesta, { repetir, desactivada = false, userId = null } = {}) {
+    const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(repetir || `casino_play_${juego}_${apuesta}`)
             .setLabel(`🔄 Repetir (${apuesta.toLocaleString("es")})`)
@@ -341,6 +316,17 @@ function filaFinJuego(juego, apuesta, { repetir, desactivada = false } = {}) {
             .setDisabled(desactivada),
         new ButtonBuilder().setCustomId("casino_home").setLabel("◀ Casino").setStyle(ButtonStyle.Secondary).setDisabled(desactivada),
     );
+    // 🎲 Doble o nada (#462): si la persona acaba de ganar en este juego, se le ofrece jugarse la ganancia a cara o cruz.
+    const oferta = userId && !desactivada ? dobleONada.oferta(userId, juego) : null;
+    if (oferta) {
+        fila.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`casino_doble_${juego}`)
+                .setLabel(`🎲 Doble o nada (${oferta.ganancia.toLocaleString("es")})`)
+                .setStyle(ButtonStyle.Danger),
+        );
+    }
+    return fila;
 }
 
 module.exports = {
@@ -357,6 +343,10 @@ module.exports = {
     buildPickRuleta: ruleta.buildPickRuleta,
     buildPickDocenas: ruleta.buildPickDocenas,
     buildPickRangoNumero: ruleta.buildPickRangoNumero,
+    buildPickCalle: ruleta.buildPickCalle,
+    buildAutoexclusion: autoexclusion.buildAutoexclusion,
+    buildConfirmarAutoexclusion: autoexclusion.buildConfirmarAutoexclusion,
+    buildAutoexclusionActivada: autoexclusion.buildAutoexclusionActivada,
     buildPickNumeroRuleta: ruleta.buildPickNumeroRuleta,
     buildPickMontoRuleta: ruleta.buildPickMontoRuleta,
 };

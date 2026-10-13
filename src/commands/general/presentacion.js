@@ -3,7 +3,7 @@
 // perfil (presentacion_editar_{userId}). Los datos están en systems/presentaciones.js.
 const { SlashCommandBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require("discord.js");
 const presentaciones = require("../../systems/presentaciones");
-const { efimero } = require("../../core/respuestas");
+const { efimero } = require("../../discord/respuestas");
 
 function formulario(userId) {
     const actual = presentaciones.obtener(userId);

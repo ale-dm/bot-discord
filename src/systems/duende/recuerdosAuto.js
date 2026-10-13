@@ -3,7 +3,7 @@
 // (alertas.admin_ids), con ✅ Guardar y ❌ Descartar. Nada se guarda sin que un admin lo apruebe.
 // Para no gastar Gemini en cada mensaje: se mira a cada persona cada RONDA mensajes con texto de verdad (60 caracteres o
 // más), en el canal del Duende si hay uno, y con un tope de llamadas por día y servidor. DUENDE_RECUERDOS_AUTO=0 lo apaga.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { mensajePropuesta } = require("../../discord/mensajes/recuerdos");
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
 const perfiles = require("./perfiles");
@@ -87,14 +87,7 @@ async function analizar(client, guildId, usuario, textos, deps = {}) {
 
 /** Un DM a cada admin con la propuesta y los dos botones. Un admin que tiene los DMs cerrados no para a los demás. */
 async function avisarAdmins(client, propuesta) {
-    const embed = new EmbedBuilder()
-        .setTitle("🧠 Recuerdo propuesto")
-        .setDescription(`Sobre <@${propuesta.userId}>: «${propuesta.texto}»\n\n¿Lo guardo en su perfil del Duende?`)
-        .setColor(0x9b59b6);
-    const fila = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`recuerdo_auto_ok_${propuesta.id}`).setLabel("✅ Guardar").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId(`recuerdo_auto_no_${propuesta.id}`).setLabel("❌ Descartar").setStyle(ButtonStyle.Danger),
-    );
+    const { embed, fila } = mensajePropuesta(propuesta);
     for (const adminId of adminsDe(propuesta.guildId)) {
         try {
             const usuario = await client.users.fetch(adminId);

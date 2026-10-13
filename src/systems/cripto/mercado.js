@@ -9,6 +9,7 @@ const pase = require("../pase/pase");
 const { CacheLimitada } = require("../../core/cacheLimitada");
 const { gananciaRealizadaTtcl } = require("./ganancias");
 const valoracion = require("./valoracion");
+const { impactoDe, mensajeImpacto } = require("./impacto");
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 
@@ -242,6 +243,10 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
         return { ok: false, msg: `La compra debe estar entre ${minBuy.toLocaleString("es")} y ${maxBuy.toLocaleString("es")} 🪙.` };
     }
 
+    // Tope de impacto (#454): antes del cooldown, para que una operación rechazada no cuente como hecha.
+    const impactoCompra = impactoDe(guildId, cotizarCompra(monedasInvertidas, Number(cfg.fee_buy_pct || 0)));
+    if (impactoCompra.excede) return { ok: false, msg: mensajeImpacto(impactoCompra, "compra") };
+
     const limiter = guildSettings.checkAndConsumeLimit(guildId, "cripto_buy", userId, {
         cooldownSec: Number(cfg.cooldown_buy_sec || 0),
     });
@@ -270,6 +275,13 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
     const row = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId);
     if (!row || row.cantidad <= 0) return { ok: false, msg: "No tienes esa cripto en cartera." };
 
+    pct = Math.min(100, Math.max(1, Number(pct) || 0));
+    const cantAVender = row.cantidad * (pct / 100);
+
+    // Tope de impacto (#454): antes del cooldown, para que una operación rechazada no cuente como hecha.
+    const impactoVenta = impactoDe(guildId, cotizarVenta(cantAVender, Number(cfg.fee_sell_pct || 0)));
+    if (impactoVenta.excede) return { ok: false, msg: mensajeImpacto(impactoVenta, "venta") };
+
     const limiter = guildSettings.checkAndConsumeLimit(guildId, "cripto_sell", userId, {
         cooldownSec: Number(cfg.cooldown_sell_sec || 0),
     });
@@ -277,8 +289,6 @@ async function ejecutarVenta(guildId, userId, sym, pct) {
         return { ok: false, msg: `⏳ Espera ${limiter.retrySeconds || 1}s antes de volver a vender.` };
     }
 
-    pct = Math.min(100, Math.max(1, Number(pct) || 0));
-    const cantAVender = row.cantidad * (pct / 100);
     const minSell = Math.max(1, Number(cfg.min_sell || 0));
     const maxSell = Math.max(minSell, Number(cfg.max_sell || minSell));
     const feeSellPct = Math.max(0, Number(cfg.fee_sell_pct || 0));
@@ -368,6 +378,8 @@ module.exports = {
     MENSAJE_PAUSA,
     mercadoPausado,
     cooldownRestante,
+    impactoDe,
+    mensajeImpacto,
     fetchCryptoHistory,
     formatCoins,
     formatCryptoAmt,

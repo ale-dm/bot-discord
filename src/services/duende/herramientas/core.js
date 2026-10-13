@@ -4,6 +4,15 @@ const achievementsSystem = require("../../../systems/achievementsSystem");
 const { resolveNameToDiscordId, buildPersonProfileText } = require("../../../systems/duende/personas");
 const perfiles = require("../../../systems/duende/perfiles");
 const { getTtclPrecio } = require("../../../systems/cripto/mercado");
+const dinero = require("../../../systems/dinero");
+const prestamos = require("../../../systems/prestamos");
+const plexTrofeos = require("../../../systems/plexTrofeos");
+const tienda = require("../../../systems/tienda");
+const objetos = require("../../../systems/objetos");
+const misJugadas = require("../../../systems/apuestas/misJugadas");
+const { marcadorDe } = require("../../../systems/apuestas/marcador");
+const mercados = require("../../../systems/apuestas/mercados");
+const repoCasino = require("../../../repositorios/casino");
 
 const DUENDE_CORE_TOOL_DECLARATIONS = [
     {
@@ -101,8 +110,8 @@ const DUENDE_CORE_EXECUTORS = {
         };
     },
     consultar_saldo(args, ctx) {
-        const c = require("../../../systems/dinero").cuenta(ctx.userId);
-        const p = require("../../../systems/prestamos").abierto(ctx.userId);
+        const c = dinero.cuenta(ctx.userId);
+        const p = prestamos.abierto(ctx.userId);
         return {
             efectivo: c.efectivo,
             banco: c.banco,
@@ -124,7 +133,7 @@ const DUENDE_CORE_EXECUTORS = {
     consultar_logros(args, ctx) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         // Como en su perfil: sin Plex vinculado, los de Plex que no tiene no cuentan.
-        const opciones = require("../../../systems/plexTrofeos").opcionesPerfil(ctx.guildId, ctx.userId, true);
+        const opciones = plexTrofeos.opcionesPerfil(ctx.guildId, ctx.userId, true);
         const s = achievementsSystem.getSummary(ctx.guildId, ctx.userId, opciones);
         return { logros_completados: s.completed, logros_totales: s.total, porcentaje: s.completionPct };
     },
@@ -134,7 +143,7 @@ const DUENDE_CORE_EXECUTORS = {
     },
     consultar_tienda(args) {
         const busqueda = String(args?.busqueda || "").trim() || undefined;
-        const items = require("../../../systems/tienda").itemsTienda({ busqueda });
+        const items = tienda.itemsTienda({ busqueda });
         return {
             a_la_venta: items.slice(0, 15).map((i) => ({
                 nombre: i.nombre,
@@ -149,7 +158,6 @@ const DUENDE_CORE_EXECUTORS = {
         };
     },
     consultar_inventario(args, ctx) {
-        const objetos = require("../../../systems/objetos");
         const items = objetos.inventarioDe(ctx.userId);
         return {
             objetos: items.slice(0, 20).map((o) => ({
@@ -163,13 +171,11 @@ const DUENDE_CORE_EXECUTORS = {
         };
     },
     consultar_mis_apuestas(args, ctx) {
-        const misJugadas = require("../../../systems/apuestas/misJugadas");
-        const { marcadorDe } = require("../../../systems/apuestas/marcador");
         const eleccion = (a) =>
             marcadorDe(a.eleccion)
                 ? `marcador exacto ${marcadorDe(a.eleccion)}`
-                : require("../../../systems/apuestas/mercados").esMercado(a.eleccion)
-                  ? require("../../../systems/apuestas/mercados").textoEleccion(a).toLowerCase()
+                : mercados.esMercado(a.eleccion)
+                  ? mercados.textoEleccion(a).toLowerCase()
                   : a.eleccion === "home"
                     ? a.home_team
                     : a.eleccion === "away"
@@ -198,15 +204,9 @@ const DUENDE_CORE_EXECUTORS = {
     },
     consultar_partidas_casino(args, ctx) {
         const cantidad = Math.max(1, Math.min(15, Math.floor(Number(args?.cantidad) || 5)));
-        const { ganado, perdido } = require("../../../core/db")
-            .prepare(
-                `SELECT COALESCE(SUM(CASE WHEN resultado > 0 THEN resultado ELSE 0 END), 0) AS ganado,
-                        COALESCE(SUM(CASE WHEN resultado < 0 THEN -resultado ELSE 0 END), 0) AS perdido
-                 FROM casino WHERE userId = ?`,
-            )
-            .get(ctx.userId);
+        const { ganado, perdido } = repoCasino.totalesCasino(ctx.userId);
         return {
-            ultimas_partidas: require("../../../systems/apuestas/misJugadas")
+            ultimas_partidas: misJugadas
                 .ultimasCasino(ctx.userId, cantidad)
                 .map((p) => ({ juego: p.juego, apostado: p.apuesta, resultado_neto: p.resultado })),
             total_ganado: ganado,

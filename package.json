@@ -9,9 +9,9 @@
   },
   "scripts": {
     "start": "node scripts/dev.js",
-    "start:bot": "node src/core/registerCommands.js && node src/index.js",
+    "start:bot": "node src/discord/registerCommands.js && node src/index.js",
     "start:vosk": "node scripts/start-vosk.js",
-    "commands": "node src/core/registerCommands.js",
+    "commands": "node src/discord/registerCommands.js",
     "test": "jest",
     "db:check": "node scripts/db-check.js",
     "stt:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-local-stt.ps1 -NoStart",
@@ -19,6 +19,7 @@
     "voz:test": "node scripts/voz-test.js",
     "plex:check": "node scripts/plex-check.js",
     "db:backup": "node scripts/db-backup.js",
+    "ciclos": "node scripts/ciclos.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -47,6 +48,7 @@
     "eslint": "^9.39.5",
     "globals": "^17.12.0",
     "jest": "^30.1.3",
+    "madge": "^8.0.0",
     "prettier": "^3.9.9"
   },
   "jest": {
