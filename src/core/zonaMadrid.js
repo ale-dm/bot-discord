@@ -6,12 +6,13 @@ const formatoFecha = new Intl.DateTimeFormat("en-CA", {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
+    minute: "2-digit",
     hourCycle: "h23",
 });
 const formatoSemana = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", weekday: "short" });
 
 /**
- * { anio, mes, dia: "AAAA-MM-DD", hora, lunes, finDeSemana } en hora de Madrid, de un instante (Date o milisegundos).
+ * { anio, mes, dia: "AAAA-MM-DD", hora, minuto, lunes, finDeSemana } en hora de Madrid, de un instante (Date o milisegundos).
  */
 function momentoMadrid(instante) {
     const fecha = new Date(instante);
@@ -22,6 +23,7 @@ function momentoMadrid(instante) {
         mes: Number(p.month),
         dia: `${p.year}-${p.month}-${p.day}`,
         hora: Number(p.hour),
+        minuto: Number(p.minute),
         lunes: diaSemana === "Mon",
         finDeSemana: diaSemana === "Sat" || diaSemana === "Sun",
     };

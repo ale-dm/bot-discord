@@ -16,6 +16,10 @@ const {
 const db = require("../core/db");
 const { DATA_DIR } = require("../core/paths");
 const { createLogger } = require("../core/logger");
+const guildSettings = require("./guildSettings");
+const ajustes = require("./sonidos/ajustes");
+const cola = require("./sonidos/cola");
+const { silencioAhora, avisoSilencio } = require("./sonidos/silencio");
 
 const log = createLogger("Sonidos");
 const MAX_SONIDOS = 40;
@@ -38,15 +42,23 @@ function validarNombre(texto) {
     return { ok: true, nombre: t };
 }
 
-/** Los sonidos de un servidor, por nombre. */
-function listar(guildId) {
-    return db.prepare("SELECT id, nombre, archivo FROM sonidos WHERE guildId = ? ORDER BY nombre COLLATE NOCASE").all(String(guildId));
+const COLUMNAS = "id, guildId, nombre, archivo, categoria, volumen, reproducciones, creado_por, creado_en";
+const minusculas = (t) => String(t ?? "").toLocaleLowerCase("es");
+
+/**
+ * Los sonidos de un servidor, por nombre. `categoria` deja solo los de esa categoría (SIN_CATEGORIA = los que no tienen) y
+ * `texto`, los que lo contienen en el nombre (#323, #325), sin distinguir mayúsculas.
+ */
+function listar(guildId, { categoria = null, texto = "" } = {}) {
+    let lista = db.prepare(`SELECT ${COLUMNAS} FROM sonidos WHERE guildId = ? ORDER BY nombre COLLATE NOCASE`).all(String(guildId));
+    if (categoria === ajustes.SIN_CATEGORIA) lista = lista.filter((s) => !s.categoria);
+    else if (categoria) lista = lista.filter((s) => s.categoria === categoria);
+    const buscado = minusculas(texto).trim();
+    return buscado ? lista.filter((s) => minusculas(s.nombre).includes(buscado)) : lista;
 }
 
 const obtener = (guildId, id) =>
-    db
-        .prepare("SELECT id, guildId, nombre, archivo, creado_por, creado_en FROM sonidos WHERE guildId = ? AND id = ?")
-        .get(String(guildId), Number(id)) || null;
+    db.prepare(`SELECT ${COLUMNAS} FROM sonidos WHERE guildId = ? AND id = ?`).get(String(guildId), Number(id)) || null;
 const rutaDe = (sonido) => path.join(carpetaDe(sonido.guildId), sonido.archivo);
 
 /**
@@ -163,7 +175,7 @@ async function reemplazarArchivo(guildId, id, archivo) {
         log.info(`Archivo de «${sonido.nombre}» cambiado en ${guildId}`);
         return { ok: true, sonido: obtener(guildId, sonido.id) };
     } finally {
-        ocupados.delete(gid);
+        liberar(gid);
     }
 }
 
@@ -171,7 +183,11 @@ async function reemplazarArchivo(guildId, id, archivo) {
 function borrar(guildId, id) {
     const sonido = obtener(guildId, id);
     if (!sonido) return false;
-    db.prepare("DELETE FROM sonidos WHERE id = ?").run(sonido.id);
+    db.transaction(() => {
+        db.prepare("DELETE FROM sonidos WHERE id = ?").run(sonido.id);
+        db.prepare("DELETE FROM sonido_roles WHERE sonidoId = ?").run(sonido.id);
+        db.prepare("DELETE FROM sonidos_eventos WHERE sonidoId = ?").run(sonido.id);
+    })();
     try {
         fs.rmSync(rutaDe(sonido), { force: true });
     } catch (e) {
@@ -196,6 +212,9 @@ const presencia = require("./presencia");
  * sonando ni colgado. `deps.alEmpezar` se llama en cuanto el sonido empieza a sonar de verdad.
  */
 function tocarEn(conexion, sonido, deps) {
+    // El recurso va primero: si el archivo no vale, falla antes de crear el reproductor y los temporizadores.
+    const recurso = (deps.crearRecurso || createAudioResource)(rutaDe(sonido), { inlineVolume: true });
+    recurso.volume?.setVolume((sonido.volumen ?? 100) / 100);
     const reproductor = (deps.crearReproductor || createAudioPlayer)();
     let limpiar = () => {};
     const acabado = new Promise((resolve, reject) => {
@@ -221,7 +240,7 @@ function tocarEn(conexion, sonido, deps) {
         };
     });
     const suscripcion = conexion.subscribe(reproductor);
-    reproductor.play((deps.crearRecurso || createAudioResource)(rutaDe(sonido)));
+    reproductor.play(recurso);
     return acabado.finally(() => {
         limpiar();
         suscripcion?.unsubscribe?.();
@@ -234,62 +253,102 @@ function sonando(guildId) {
     return ocupados.has(String(guildId));
 }
 
-/**
- * Reproduce un sonido. Si el bot ya está en un canal por /conectar, suena ahí (sin entrar ni salir). Si no, entra al
- * canal de quien lo pide (`canal`), lo toca y se sale. `deps` es para los tests.
- * @param {string} guildId
- * @param {object|null} canal el canal de voz de quien pide el sonido, o null
- * @returns {Promise<{ ok: boolean, motivo?: string }>}
- */
-async function reproducir(guildId, canal, sonido, deps = {}) {
-    const id = String(guildId);
-    if (ocupados.has(id)) return { ok: false, motivo: "Ya está sonando otro sonido en el servidor. Espera a que acabe." };
-
-    const presente = deps.presencia !== undefined ? deps.presencia : presencia.actual(id);
-    if (presente) {
-        ocupados.add(id);
-        try {
-            await tocarEn(presente.conexion, sonido, deps);
-            return { ok: true };
-        } catch (e) {
-            log.warn(`No se pudo reproducir «${sonido.nombre}» en ${id}: ${e.message}`);
-            return { ok: false, motivo: "No pude reproducirlo. Vuelve a intentarlo." };
-        } finally {
-            ocupados.delete(id);
-        }
-    }
-
-    if (!canal) return { ok: false, motivo: "Entra en un canal de voz, o pide al bot que se quede con /conectar." };
-    const enConversacion = deps.getConnection ? deps.getConnection(id) : getVoiceConnection(id);
-    if (enConversacion) return { ok: false, motivo: "Estoy en otra conversación de voz en este servidor." };
+/** El motivo por el que no se puede tocar ahora en el canal (o con la presencia), o null si se puede. `presente`: la presencia de /conectar. */
+function motivoNoSePuede(id, canal, presente, deps) {
+    if (presente) return null;
+    if (!canal) return "Entra en un canal de voz, o pide al bot que se quede con /conectar.";
+    if (deps.getConnection ? deps.getConnection(id) : getVoiceConnection(id)) return "Estoy en otra conversación de voz en este servidor.";
     const permisos = canal.permissionsFor(canal.guild.members.me);
-    if (!permisos || !permisos.has("Connect") || !permisos.has("Speak")) {
-        return { ok: false, motivo: "Me faltan permisos para entrar a ese canal o hablar en él." };
-    }
+    if (!permisos || !permisos.has("Connect") || !permisos.has("Speak"))
+        return "Me faltan permisos para entrar a ese canal o hablar en él.";
+    return null;
+}
 
-    ocupados.add(id);
-    let conexion = null;
+/** Toca el sonido en la presencia de /conectar o, si no la hay, entra al canal de quien lo pide, lo toca y se sale. */
+async function tocarSegunPresencia(id, canal, sonido, deps) {
+    const presente = deps.presencia !== undefined ? deps.presencia : presencia.actual(id);
+    const motivo = motivoNoSePuede(id, canal, presente, deps);
+    if (motivo) return { ok: false, motivo };
+    let conexion = presente?.conexion ?? null;
     try {
-        conexion = (deps.unirse || joinVoiceChannel)({
-            channelId: canal.id,
-            guildId: id,
-            adapterCreator: canal.guild.voiceAdapterCreator,
-            selfDeaf: true,
-        });
-        await (deps.esperarListo || ((c) => entersState(c, VoiceConnectionStatus.Ready, 10 * 1000)))(conexion);
+        if (!presente) {
+            conexion = (deps.unirse || joinVoiceChannel)({
+                channelId: canal.id,
+                guildId: id,
+                adapterCreator: canal.guild.voiceAdapterCreator,
+                selfDeaf: true,
+            });
+            await (deps.esperarListo || ((c) => entersState(c, VoiceConnectionStatus.Ready, 10 * 1000)))(conexion);
+        }
         await tocarEn(conexion, sonido, deps);
         return { ok: true };
     } catch (e) {
         log.warn(`No se pudo reproducir «${sonido.nombre}» en ${id}: ${e.message}`);
         return { ok: false, motivo: "No pude reproducirlo. Vuelve a intentarlo." };
     } finally {
-        try {
-            conexion?.destroy();
-        } catch {
-            /* ya estaba cerrada */
+        if (!presente) {
+            try {
+                conexion?.destroy();
+            } catch {
+                /* ya estaba cerrada */
+            }
         }
-        ocupados.delete(id);
     }
+}
+
+/** Al acabar un sonido: suena el siguiente de la cola, o se libera el servidor. El servidor sigue «ocupado» entre dos sonidos. */
+function liberar(id) {
+    const siguiente = cola.siguiente(id);
+    if (!siguiente) return void ocupados.delete(id);
+    ejecutar(id, siguiente.canal, siguiente.sonido, siguiente.deps).then(siguiente.resolve);
+}
+
+/** Toca un sonido con el servidor ya reservado, cuenta la reproducción y pasa al siguiente de la cola. */
+async function ejecutar(id, canal, sonido, deps) {
+    try {
+        const r = await tocarSegunPresencia(id, canal, sonido, deps);
+        if (r.ok) ajustes.contar(sonido.id);
+        return r;
+    } finally {
+        liberar(id);
+    }
+}
+
+/** Un sonido que llega con otro sonando espera su turno (hasta MAX_COLA); `deps.alEncolar(puesto)` avisa de su puesto. */
+function esperarTurno(id, canal, sonido, deps) {
+    return new Promise((resolve) => {
+        const puesto = cola.encolar(id, { canal, sonido, deps, resolve });
+        if (puesto === null) return resolve({ ok: false, motivo: `Hay ${cola.MAX_COLA} sonidos esperando: prueba cuando suene alguno.` });
+        deps.alEncolar?.(puesto);
+    });
+}
+
+/** Los ajustes de silencio del servidor, como { apagado, desde, hasta } (`deps.silencio` los sustituye en los tests). */
+function silencioDe(id, deps) {
+    if (deps.silencio) return deps.silencio;
+    const { apagado, silencio_desde: desde, silencio_hasta: hasta } = guildSettings.getSettings(id).sonidos;
+    return { apagado, desde, hasta };
+}
+
+/**
+ * Reproduce un sonido. Si el bot ya está en un canal por /conectar, suena ahí (sin entrar ni salir). Si no, entra al
+ * canal de quien lo pide (`canal`), lo toca y se sale. En horario de silencio no suena (#330). Con otro sonido sonando,
+ * espera en la cola (#327). `deps` es para los tests.
+ * @param {string} guildId
+ * @param {object|null} canal el canal de voz de quien pide el sonido, o null
+ * @returns {Promise<{ ok: boolean, motivo?: string }>}
+ */
+async function reproducir(guildId, canal, sonido, deps = {}) {
+    const id = String(guildId);
+    const silencio = silencioAhora(silencioDe(id, deps), deps.ahora);
+    if (silencio.silencio) return { ok: false, motivo: avisoSilencio(silencio) };
+    if (deps.sinCola && ocupados.has(id)) return { ok: false, motivo: "Ya está sonando otro sonido en el servidor. Espera a que acabe." };
+    const presente = deps.presencia !== undefined ? deps.presencia : presencia.actual(id);
+    const motivo = motivoNoSePuede(id, canal, presente, deps);
+    if (motivo) return { ok: false, motivo };
+    if (ocupados.has(id)) return esperarTurno(id, canal, sonido, deps);
+    ocupados.add(id);
+    return ejecutar(id, canal, sonido, deps);
 }
 
 /** Un reproductor de mentira para los tests (emite "idle" cuando se le pide tocar). */

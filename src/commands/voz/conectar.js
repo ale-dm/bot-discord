@@ -2,7 +2,35 @@
 // Sin canal: si ya está conectado, se sale; si no, entra al canal de quien lo pide. Ver systems/presencia.js.
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require("discord.js");
 const presencia = require("../../systems/presencia");
+const sonidos = require("../../systems/sonidos");
+const ajustes = require("../../systems/sonidos/ajustes");
+const { MAX_OPCIONES } = require("../../paneles/menuPaginado");
 const { efimero } = require("../../discord/respuestas");
+const { createLogger } = require("../../core/logger");
+
+const log = createLogger("Conectar");
+
+/**
+ * El sonido de entrada (#301): suena una vez, justo al entrar. Si no existe, no lo puede usar quien lo pide o no se puede tocar,
+ * la conexión sigue igual y queda en el log. @returns {string} lo que se añade a la respuesta ("" si no hubo sonido o va bien)
+ */
+function sonarAlEntrar(interaction) {
+    const elegido = interaction.options.getString("sonido");
+    if (!elegido) return "";
+    const sonido = sonidos.obtener(interaction.guildId, elegido);
+    if (!sonido) {
+        log.warn(`El sonido de entrada ${elegido} no existe en ${interaction.guildId}`);
+        return "\n⚠️ Ese sonido ya no existe, así que he entrado sin sonido.";
+    }
+    if (!ajustes.puedeUsar(sonido.id, interaction.member).ok)
+        return "\n🔒 Ese sonido es solo para algunos roles, así que he entrado sin sonido.";
+    // No se espera a que acabe: el sonido puede durar minutos.
+    sonidos
+        .reproducir(interaction.guildId, null, sonido, { sinCola: true })
+        .then((r) => !r.ok && log.warn(`No sonó el sonido de entrada «${sonido.nombre}» en ${interaction.guildId}: ${r.motivo}`))
+        .catch((e) => log.warn(`Falló el sonido de entrada «${sonido.nombre}»: ${e.message}`));
+    return "";
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -14,7 +42,17 @@ module.exports = {
                 .setDescription("El canal de voz (por defecto, el tuyo; sin canal y ya conectado, me salgo)")
                 .addChannelTypes(ChannelType.GuildVoice)
                 .setRequired(false),
+        )
+        .addStringOption((o) =>
+            o.setName("sonido").setDescription("Un sonido de /sonidos que suena al entrar (por defecto, ninguno)").setAutocomplete(true),
         ),
+
+    // Los sonidos del servidor que encajan con lo escrito (hasta 25, que es lo que admite Discord).
+    async autocomplete(client, interaction) {
+        const texto = String(interaction.options.getFocused() ?? "");
+        const lista = sonidos.listar(interaction.guildId, { texto }).slice(0, MAX_OPCIONES);
+        await interaction.respond(lista.map((s) => ({ name: s.nombre.slice(0, 100), value: String(s.id) })));
+    },
 
     async run(client, interaction) {
         const elegido = interaction.options.getChannel("canal");
@@ -29,8 +67,9 @@ module.exports = {
         const r = await presencia.conectar(canal);
         if (!r.ok) return interaction.editReply(`❌ ${r.motivo}`);
         const hasta = Math.floor(r.expira / 1000);
+        const aviso = sonarAlEntrar(interaction);
         return interaction.editReply(
-            `🔌 Conectado a **${r.canal}**. Me quedo hasta <t:${hasta}:t> (unos ${presencia.MINUTOS} minutos): ya puedes usar /sonidos.`,
+            `🔌 Conectado a **${r.canal}**. Me quedo hasta <t:${hasta}:t> (unos ${presencia.MINUTOS} minutos): ya puedes usar /sonidos.${aviso}`,
         );
     },
 };

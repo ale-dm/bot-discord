@@ -16,6 +16,9 @@ const {
 const sonidos = require("../systems/sonidos");
 const { createLogger } = require("../core/logger");
 const { paginaDeLista, filaPaginas } = require("../paneles/menuPaginado");
+const guildSettings = require("../systems/guildSettings");
+const eventos = require("../systems/sonidos/eventos");
+const ajustesAdmin = require("./sonidosAjustes");
 
 const log = createLogger("PanelAdmin").child("Sonidos");
 
@@ -30,7 +33,10 @@ function buildSonidosHome(guildId) {
         .setDescription(
             `Sonidos del servidor: **${lista.length}** de ${sonidos.MAX_SONIDOS}.\n` +
                 "Los reproduce **/sonidos** (con el botón de cada uno). Formatos: mp3, ogg o wav, hasta 1 MB.\n\n" +
-                (lista.length ? lista.map((s) => `🔊 ${s.nombre}`).join("\n") : "Todavía no hay ninguno."),
+                `${ajustesAdmin.lineaSilencio(guildSettings.getSettings(guildId).sonidos)}\n\n` +
+                (lista.length
+                    ? lista.map((s) => `🔊 ${s.nombre}${s.categoria ? ` · 🏷️ ${s.categoria}` : ""}`).join("\n")
+                    : "Todavía no hay ninguno."),
         );
     const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -55,7 +61,12 @@ function buildSonidosHome(guildId) {
             .setDisabled(!lista.length),
         new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
     );
-    return { content: "", embeds: [embed], components: [fila] };
+    const ajustes = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_sonidos_horario").setLabel("🌙 Horario").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_sonidos_eventos").setLabel("🔔 Eventos").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_sonidos_ranking").setLabel("📊 Más usados").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: "", embeds: [embed], components: [fila, ajustes] };
 }
 
 const filaVolver = () =>
@@ -105,21 +116,35 @@ const PANTALLAS_ELEGIR = {
 
 const buildPantallaElegir = (guildId, modo, pagina = 0) => buildElegir(guildId, modo, pagina, PANTALLAS_ELEGIR[modo]);
 
+/** La pantalla para elegir el sonido de un evento del bot (#326). */
+const buildElegirEvento = (guildId, evento, pagina = 0) =>
+    buildElegir(guildId, `evento_${evento}`, pagina, {
+        titulo: "🔔 Sonido de un evento",
+        descripcion: `Elige el sonido que suena con «${eventos.EVENTOS[evento]}».`,
+        placeholder: "Qué sonido",
+        color: 0x9b59b6,
+    });
+
 /** Lo que se puede cambiar de un sonido: el nombre o el archivo. */
 function buildOpcionesEditar(sonido) {
     const embed = new EmbedBuilder()
         .setTitle(`✏️ ${sonido.nombre}`)
         .setColor(0xf1c40f)
-        .setDescription("Qué quieres cambiar. El archivo nuevo sustituye al anterior, y el sonido conserva su sitio en la lista.");
+        .setDescription(
+            `${ajustesAdmin.resumenDeSonido(sonido)}\n\nQué quieres cambiar. El archivo nuevo sustituye al anterior, y el sonido conserva su sitio en la lista.`,
+        );
     const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`paneladmin_sonidos_renombrar_${sonido.id}`).setLabel("✏️ Renombrar").setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
             .setCustomId(`paneladmin_sonidos_archivo_${sonido.id}`)
             .setLabel("🔁 Cambiar archivo")
             .setStyle(ButtonStyle.Primary),
+    );
+    const ajustes = new ActionRowBuilder().addComponents(
+        ...ajustesAdmin.botonesDeAjustes(sonido),
         new ButtonBuilder().setCustomId("paneladmin_sonidos_editar").setLabel("◀ Otro sonido").setStyle(ButtonStyle.Secondary),
     );
-    return { content: "", embeds: [embed], components: [fila, filaVolver()] };
+    return { content: "", embeds: [embed], components: [fila, ajustes, filaVolver()] };
 }
 
 function modalSubir() {
@@ -187,13 +212,14 @@ async function handleSonidosButton(interaction) {
         if (!sonido) await interaction.update({ ...buildSonidosHome(guildId), content: "Ese sonido ya no existe." });
         else if (cambio[1] === "renombrar") await interaction.showModal(modalRenombrar(sonido));
         else await interaction.showModal(modalArchivo(sonido));
-    } else return false;
+    } else return (await ajustesAdmin.handleAjustesButton(interaction, buildSonidosHome, buildElegirEvento)) !== null;
     return true;
 }
 
 /** Los formularios de subir, renombrar y cambiar el archivo. Devuelve true si era de este panel. */
 async function handleSonidosModal(interaction) {
     const id = interaction.customId;
+    if (await ajustesAdmin.handleAjustesModal(interaction)) return true;
     const renombrar = /^paneladmin_sonidos_modal_renombrar_(\d+)$/.exec(id);
     const archivo = /^paneladmin_sonidos_modal_archivo_(\d+)$/.exec(id);
     if (id !== "paneladmin_sonidos_modal_subir" && !renombrar && !archivo) return false;
@@ -282,6 +308,11 @@ async function handleSonidosStringSelect(interaction) {
         const sonido = sonidos.obtener(guildId, interaction.values[0]);
         if (!sonido) await interaction.update({ ...buildSonidosHome(guildId), content: "Ese sonido ya no existe." });
         else await interaction.update(buildOpcionesEditar(sonido));
+        return true;
+    }
+    const evento = /^paneladmin_sonidos_evento_(\w+)_select$/.exec(id);
+    if (evento && eventos.EVENTOS[evento[1]]) {
+        await ajustesAdmin.asignarEvento(interaction, evento[1], interaction.values[0]);
         return true;
     }
     if (id !== "paneladmin_sonidos_borrar_select") return false;

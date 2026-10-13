@@ -27,8 +27,8 @@ const SECCIONES = {
         texto: [
             "`/tts texto [voz]` — el bot entra en tu canal de voz y lo lee en voz alta.",
             "`/escuchar [usuario]` — el Duende escucha lo que dices en voz y te contesta hablando; sigue la conversación mientras hables.",
-            "`/sonidos` — un tablero de botones con los sonidos del servidor: pulsas uno y el bot entra en tu canal de voz y lo reproduce. Los sube un admin en `/paneladmin` → 🔊 Sonidos.",
-            "`/conectar [canal]` — el bot se queda **30 minutos** en un canal de voz, para que `/sonidos` suene al momento sin entrar y salir. Sin canal, usa el tuyo; si ya está conectado, lo desconecta.",
+            "`/sonidos` — un tablero de botones con los sonidos del servidor: pulsas uno y el bot entra en tu canal de voz y lo reproduce (si suena otro, espera su turno). Puedes buscar por nombre, filtrar por categoría, pedir uno al azar o ver los más usados. Los sube un admin en `/paneladmin` → 🔊 Sonidos.",
+            "`/conectar [canal]` — el bot se queda **30 minutos** en un canal de voz, para que `/sonidos` suene al momento sin entrar y salir. Sin canal, usa el tuyo; si ya está conectado, lo desconecta. Con `sonido` toca uno al entrar.",
         ],
     },
     progresion: {
@@ -130,7 +130,7 @@ const SECCIONES = {
         soloAdmin: true,
         abrir: [["paneladmin", "", "Panel admin", "🛠️"]],
         texto: [
-            "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas, premios de la liga, límites), 🛒 Catálogo (objetos y lo que está a la venta), 🔊 Sonidos (subir y borrar), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
+            "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas, premios de la liga, límites), 🛒 Catálogo (objetos y lo que está a la venta), 🔊 Sonidos (subir, editar, volumen, roles, horario y eventos), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
             "`/duende` → 🎭 Personalidad — los admins añaden, quitan y eligen las personalidades del canal.",
             "`/mensaje [usuario] [canal]` — manda un DM de parte del bot a alguien (`usuario`) o publica el texto en un canal (`canal`, sin menciones que notifiquen): escribes el texto en un formulario y se manda tal cual. Solo admins; cada envío queda en la auditoría.",
         ],

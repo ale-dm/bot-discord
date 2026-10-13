@@ -79,6 +79,11 @@ const DEFAULT_FLAT = {
     "bienvenida.texto": "",
     "sugerencias.canal_id": "",
 
+    "sonidos.apagado": false,
+    "sonidos.silencio_desde": "",
+    "sonidos.silencio_hasta": "",
+    "sonidos.eventos_minutos": 5,
+
     "clasificacion.canal": "",
     "clasificacion.premio": 500,
     "clasificacion.ultima_semana": "",
@@ -167,6 +172,10 @@ const KEY_TYPES = {
     "bienvenida.canal_id": "string",
     "bienvenida.texto": "string",
     "sugerencias.canal_id": "string",
+    "sonidos.apagado": "boolean",
+    "sonidos.silencio_desde": "string",
+    "sonidos.silencio_hasta": "string",
+    "sonidos.eventos_minutos": "number",
 
     "clasificacion.canal": "string",
     "clasificacion.premio": "number",

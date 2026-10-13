@@ -98,7 +98,14 @@ describe("el panel", () => {
         const primera = pantallaSonidos(G, 0);
         const botonesPrimera = primera.components.flatMap((f) => f.components).filter((b) => b.data.custom_id.startsWith("sonido_play_"));
         expect(botonesPrimera).toHaveLength(20);
-        expect(primera.components.at(-1).components.map((b) => b.data.custom_id)).toEqual(["sonido_pagina_-1", "sonido_pagina_1"]);
+        // La última fila: buscar, aleatorio, más usados y las dos flechas (#323, #324, #297).
+        expect(primera.components.at(-1).components.map((b) => b.data.custom_id)).toEqual([
+            "sonido_buscar|",
+            "sonido_azar",
+            "sonido_top",
+            "sonido_pagina_-1",
+            "sonido_pagina_1",
+        ]);
         const segunda = pantallaSonidos(G, 1);
         expect(segunda.components.flatMap((f) => f.components).filter((b) => b.data.custom_id.startsWith("sonido_play_"))).toHaveLength(2);
         expect(segunda.embeds[0].data.footer.text).toMatch(/Página 2 de 2/);
@@ -175,7 +182,7 @@ describe("reproducir", () => {
         };
         const primero = sonidos.reproducir(G, canal(), sonido, d);
         await new Promise((r) => setImmediate(r));
-        expect((await sonidos.reproducir(G, canal(), sonido, deps())).motivo).toMatch(/Ya está sonando/);
+        expect((await sonidos.reproducir(G, canal(), sonido, { ...deps(), sinCola: true })).motivo).toMatch(/Ya está sonando/);
         liberar();
         expect((await primero).ok).toBe(true);
     });
@@ -394,7 +401,7 @@ describe("correcciones de #468 y #469: cambio de archivo y tiempo de descarga", 
         });
         await new Promise((r) => setImmediate(r));
         expect(sonidos.sonando(G)).toBe(true);
-        expect((await sonidos.reproducir(G, null, otro, {})).motivo).toMatch(/Ya está sonando/);
+        expect((await sonidos.reproducir(G, null, otro, { sinCola: true })).motivo).toMatch(/Ya está sonando/);
         liberar();
         expect((await cambio).ok).toBe(true);
         expect(sonidos.sonando(G)).toBe(false);

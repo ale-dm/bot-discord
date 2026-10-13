@@ -28,6 +28,8 @@ const client = new Client({
 
 // Los logros que se calculan sin el servidor a mano (casino, cripto) lo buscan aquí para anunciarse.
 require("./systems/achievementsSystem").setClient(client);
+// 🔔 Los sonidos ligados a eventos (#326) los toca el reproductor de sonidos en la presencia de /conectar.
+require("./systems/sonidos/eventos").conectar({ sonidos: require("./systems/sonidos"), presencia: require("./systems/presencia") });
 
 const cripto = require("./systems/cripto/mercado");
 const xpSystem = require("./systems/xpSystem");
@@ -179,6 +181,15 @@ async function replySafe(interaction, payload) {
     }
 }
 
+// Autocompletado de las opciones de un comando (/conectar sonido): lo responde el propio comando, sin ACL ni registro.
+async function responderAutocompletado(interaction) {
+    try {
+        await client.slashCommands.get(interaction.commandName)?.autocomplete?.(client, interaction);
+    } catch (e) {
+        cmdLog.warn(`Autocompletado de /${interaction.commandName} falló: ${e.message}`);
+    }
+}
+
 // Manejo de interacciones (slash commands)
 client.on("interactionCreate", async (interaction) => {
     const denyByAcl = async (commandName, logger, what) => {
@@ -206,6 +217,8 @@ client.on("interactionCreate", async (interaction) => {
         latencias.registrar("componente", latencias.prefijoDe(interaction.customId), performance.now() - medida);
         return;
     }
+
+    if (interaction.isAutocomplete?.()) return responderAutocompletado(interaction);
 
     if (!interaction.isChatInputCommand()) {
         if (interaction.customId)

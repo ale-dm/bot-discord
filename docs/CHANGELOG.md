@@ -2,6 +2,18 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 2 del plan restante: sonidos)
+
+- **🔍 Buscar y categorías** (#323, #325): `/sonidos` filtra por nombre (sin distinguir mayúsculas) y por categoría con un menú; el filtro viaja en el `customId` de la paginación. Con categorías salen 15 sonidos por página (20 sin ellas). La categoría la pone el admin al editar un sonido (migración 060).
+- **🎲 Aleatorio y ⏱️ cooldown** (#324): un sonido al azar de los que puede usar quien pulsa, y 10 s entre dos sonidos de una misma persona (los admins no tienen cooldown).
+- **🏆 Más usados** (#297): cada reproducción suma uno (también el probar del admin y los eventos); el ranking sale en `/sonidos` y en `/paneladmin` → 🔊 Sonidos → 📊.
+- **📋 Cola** (#327): con un sonido sonando, el pulsado espera su turno (hasta 5) y avisa «en cola, puesto N»; `/conectar` no corta entre dos sonidos.
+- **🔉 Volumen, 👥 roles y 🌙 silencio** (#328, #329, #330): volumen de 25 a 200 % por sonido, roles que pueden usarlo (con 🔒 en el panel y aviso a quien no lo tiene) y un horario de silencio en hora de Madrid, que puede cruzar la medianoche, con interruptor de apagado. Ajustes `sonidos.*` y migración 060.
+- **🔔 Eventos** (#326): el admin pone un sonido a «logro desbloqueado» y a «apuesta ganada grande» (desde 1.000 🪙); suena si el bot está en voz por `/conectar`, no más de una vez cada N minutos (5 por defecto). Se conecta al arrancar (`systems/sonidos/eventos.conectar`) para no crear ciclos de dependencias.
+- **🔌 Sonido de entrada** (#301): `/conectar sonido:<…>` (con autocompletado) lo toca una vez al entrar; si no existe o no se puede tocar, la conexión sigue y queda en el log. Primer comando con autocompletado: `index.js` llama a `autocomplete()` del comando.
+- **Corrección**: si `createAudioResource` fallaba, quedaba un temporizador de 4 minutos sin cancelar.
+- Tests: `tests/sonidosAvanzados.test.js` (reglas) y `tests/sonidosPaneles.test.js` (paneles, comandos y admin).
+
 ## 2026-10-14 (fase 1 del plan restante: cimientos #472, #474 y #475)
 
 - **#475 herramientas del Duende**: cada herramienta de `core`, `economia`, `plex` y `seerr` recibe sus dependencias como último argumento (`REALES_*` por defecto), así que el Duende responde igual y en los tests se pasan dobles. Nuevo `tests/herramientasDuendeInyeccion.test.js`, sin base de datos.

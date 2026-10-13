@@ -10,6 +10,7 @@ La reorganización de paneles, con los errores E-05 a E-15, va por partes según
 | [T-02](#t-02-desplegar-y-probar-en-discord) | Desplegar y probar en Discord | 🔴 Alta |
 | [T-03](#t-03-comprobar-en-discord-los-refactors-de-la-auditoría) | Comprobar en Discord los refactors de la auditoría (#243, #244). ✅ Confirmada por el usuario y liberada a `main` | ✅ Hecha |
 | [T-04](#t-04-comprobar-en-discord-los-refactors-de-tamaño-y-el-resumen-del-ranking) | Comprobar en Discord los refactors de tamaño (#278 a #281, #286), la eliminación de `/ia` y el ranking con resumen (#285) | 🔴 Alta |
+| [T-06](#t-06-probar-en-discord-las-fases-1-a-12-del-plan-restante) | Probar en Discord lo hecho en las fases 1 a 12 del plan restante (124 issues) | 🔴 Alta |
 | [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
 
 ---
@@ -538,3 +539,19 @@ Revisión del 2026-10-10. Fuentes: [página de retiradas de Gemini](https://ai.g
 - [ ] `discord.js` 14 sigue; la 15 está en prerelease según [su guía](https://discordjs.guide/v15). Cambios que afectan
   al bot: `webhookUpdate` pasa a `webhooksUpdate`, `ClientEvents` pasa a `ClientEventTypes`, y `ActionRow.from()` pasa a
   `ActionRowBuilder.from()`. Revisar cuando salga la versión estable.
+
+---
+
+## T-06 Probar en Discord las fases 1 a 12 del plan restante
+
+Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Orden y contenido: [PLAN_ISSUES](PLAN_ISSUES.md).
+
+**Fase 2: sonidos (#297, #301, #323 a #330)**
+- [ ] `/sonidos` con sonidos con categoría: el menú filtra; 🔍 Buscar «gol» deja solo los que lo contienen y ❌ quita la búsqueda.
+- [ ] 🎲 Aleatorio toca uno; con el servidor sin sonidos avisa. Dos sonidos seguidos tuyos en menos de 10 s: el segundo avisa de cuánto falta (un admin no tiene cooldown).
+- [ ] Pulsar un sonido con otro sonando: «en cola, puesto N»; suenan en orden y, con 5 esperando, el sexto se rechaza.
+- [ ] `/paneladmin` → 🔊 Sonidos → ✏️ Editar: 🔉 volumen (un sonido a 200 % suena más fuerte), 🏷️ categoría y 👥 roles (el botón sale con 🔒 y quien no tiene el rol recibe el aviso).
+- [ ] 🌙 Horario: con un tramo que incluya la hora actual no suena nada y avisa; con 📴 apagado también. Fuera del tramo vuelve a sonar.
+- [ ] 🔔 Eventos: con `/conectar` puesto, desbloquear un logro hace sonar su sonido; una segunda vez dentro del intervalo, no.
+- [ ] `/conectar sonido:` autocompleta los nombres y lo toca una vez al entrar.
+- [ ] 📊 Más usados (en `/sonidos` y en el panel admin) lista los sonidos por veces sonadas.
