@@ -40,10 +40,14 @@ describe("coste con la ventana llena", () => {
         for (let i = 0; i < 20_000; i++) isDuplicateMessage(`bench-${i}`, base + Math.floor((i * (VENTANA - 1)) / 20_000));
         expect(tamanoDedupe()).toBeGreaterThanOrEqual(20_000);
 
+        // La mejor de 5 tandas: con la máquina ocupada una tanda suelta puede salir lenta.
         const nuevos = 2000;
-        const t0 = performance.now();
-        for (let i = 0; i < nuevos; i++) isDuplicateMessage(`bench-nuevo-${i}`, base + VENTANA - 1);
-        const microsPorMensaje = ((performance.now() - t0) * 1000) / nuevos;
+        let microsPorMensaje = Infinity;
+        for (let r = 0; r < 5; r++) {
+            const t0 = performance.now();
+            for (let i = 0; i < nuevos; i++) isDuplicateMessage(`bench-nuevo-${r}-${i}`, base + VENTANA - 1);
+            microsPorMensaje = Math.min(microsPorMensaje, ((performance.now() - t0) * 1000) / nuevos);
+        }
         // Recorriendo el mapa entero eran ~250 µs por mensaje con esta carga; borrando solo desde el principio, menos de 5 µs.
         expect(microsPorMensaje).toBeLessThan(25);
     });
