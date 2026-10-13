@@ -162,7 +162,35 @@ function datosUsuario(guildId, tautulliUserId, ctx, rango = null) {
     const { porGenero, porDecada, porPais, animePeliculas } = resumenPeliculas(fichasVistas, ctx.anime);
     const porSerie = seriesVistas(guildId, tautulliUserId, ctx, desde, hasta);
     const { series, cuentas } = resumenSeries(porSerie, pelisPorModo, animePeliculas);
-    return { vistas, fichasVistas, porGenero, porDecada, porPais, series, cuentas };
+    const diasSeguidos = mejorRacha(guildId, tautulliUserId, desde, hasta);
+    return { vistas, fichasVistas, porGenero, porDecada, porPais, series, cuentas, diasSeguidos };
+}
+
+/** La racha más larga de días consecutivos de una lista de días AAAA-MM-DD (en cualquier orden, con repetidos). */
+function rachaMasLarga(dias) {
+    const ordenados = [...new Set(dias)].sort();
+    let mejor = 0;
+    let actual = 0;
+    let anterior = null;
+    for (const dia of ordenados) {
+        const t = Date.parse(`${dia}T00:00:00Z`);
+        actual = anterior !== null && t - anterior === 86400000 ? actual + 1 : 1;
+        mejor = Math.max(mejor, actual);
+        anterior = t;
+    }
+    return mejor;
+}
+
+/**
+ * La racha más larga de días seguidos (en hora de Madrid) en los que alguien ha visto algo en Plex, contando cualquier
+ * reproducción. Es la mejor de siempre, no la actual: un trofeo de racha ya ganado no se pierde al cortarla (#467).
+ */
+function mejorRacha(guildId, tautulliUserId, desde = 0, hasta = Number.MAX_SAFE_INTEGER) {
+    const { momento } = require("../plexHistorial");
+    const filas = db
+        .prepare("SELECT inicio FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND inicio >= ? AND inicio < ?")
+        .all(guildId, String(tautulliUserId), desde, hasta);
+    return rachaMasLarga(filas.map((f) => momento(f.inicio).dia));
 }
 
 /** Horas, películas y episodios distintos vistos entre dos fechas (unix, s): para los trofeos de admin con fechas. */
@@ -178,4 +206,4 @@ function estadisticasEntre(guildId, tautulliUserId, { desde, hasta }) {
     return { horas: Math.floor(r.segundos / 3600), peliculas: r.peliculas, episodios: r.episodios };
 }
 
-module.exports = { contexto, datosUsuario, estadisticasEntre };
+module.exports = { contexto, datosUsuario, estadisticasEntre, rachaMasLarga, mejorRacha };

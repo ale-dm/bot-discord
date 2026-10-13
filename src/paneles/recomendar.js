@@ -23,11 +23,9 @@ function pantallaRecomendaciones(resultado) {
         const anyo = s.anyo ? ` (${s.anyo})` : "";
         return `${i + 1}. **${s.titulo}**${anyo} · ${ETIQUETA_TIPO[s.mediaType] || s.mediaType}\n   Porque viste ${porque}`;
     });
-    const embed = new EmbedBuilder()
-        .setTitle("🎯 Para ti")
-        .setDescription(lineas.join("\n"))
-        .setColor(0x9b59b6)
-        .setFooter({ text: "Lo que ya has visto o ya está en Plex no sale. Pulsa 📥 para pedirlo en Seerr." });
+    const embed = new EmbedBuilder().setTitle("🎯 Para ti").setDescription(lineas.join("\n")).setColor(0x9b59b6).setFooter({
+        text: "Lo que ya has visto o ya está en Plex no sale. 📥 lo pide en Seerr; ➕ lo apunta en tu lista de «quiero ver».",
+    });
     const fila = new ActionRowBuilder().addComponents(
         resultado.sugerencias.map((s) =>
             new ButtonBuilder()
@@ -36,7 +34,15 @@ function pantallaRecomendaciones(resultado) {
                 .setStyle(ButtonStyle.Success),
         ),
     );
-    return { content: "", embeds: [embed], components: [fila] };
+    const quiero = new ActionRowBuilder().addComponents(
+        resultado.sugerencias.map((s) =>
+            new ButtonBuilder()
+                .setCustomId(`recomendar_quiero_${s.mediaType}_${s.tmdbId}`)
+                .setLabel(`➕ ${s.titulo}`.slice(0, 80))
+                .setStyle(ButtonStyle.Secondary),
+        ),
+    );
+    return { content: "", embeds: [embed], components: [fila, quiero] };
 }
 
 module.exports = { pantallaRecomendaciones };

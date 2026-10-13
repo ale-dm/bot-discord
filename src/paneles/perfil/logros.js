@@ -6,6 +6,7 @@ const plexLinks = require("../../systems/plexLinks");
 const plexTrofeos = require("../../systems/plexTrofeos");
 const plexIdiomas = require("../../systems/plexIdiomas");
 const { filaPestanasPerfil } = require("../pestanasPerfil");
+const { MAX_OPCIONES } = require("../menuPaginado");
 
 function barraLogro(progress, target) {
     const ratio = target > 0 ? Math.max(0, Math.min(1, progress / target)) : 0;
@@ -231,12 +232,18 @@ function menuReclamar(guildId, ownerId, targetId, filtro = "todos") {
     const pendientes = achievements.listUserAchievements(guildId, userId, { includeHidden: true }).filter((a) => a.claimable);
     if (!pendientes.length) return null;
     const conImportacion = achievements.porcentajeImportacion(guildId) < 100;
+    // La pantalla ya usa las 5 filas que permite Discord, así que no hay sitio para ◀ / ▶: con más de 25 se avisa en el
+    // propio menú, y 🎁 Reclamar todo (siempre visible si hay pendientes) cobra también los que no caben.
+    const placeholder =
+        pendientes.length > MAX_OPCIONES
+            ? `🎁 Reclamar un logro (${MAX_OPCIONES} de ${pendientes.length}; el resto con 🎁 Reclamar todo)`
+            : `🎁 Reclamar un logro (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})`;
     return new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId(`perfil_reclamar_${ownerId}_${targetId}${sufijoFiltro(filtro)}`)
-            .setPlaceholder(`🎁 Reclamar un logro (${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"})`)
+            .setPlaceholder(placeholder)
             .addOptions(
-                pendientes.slice(0, 25).map((a) => ({
+                pendientes.slice(0, MAX_OPCIONES).map((a) => ({
                     label: a.name.slice(0, 100),
                     description: `+${achievements.rewardCoinsFor(a, guildId).toLocaleString("es")} 🪙${a.importado && conImportacion ? " (📼 de la importación)" : ""}`,
                     value: a.id,
