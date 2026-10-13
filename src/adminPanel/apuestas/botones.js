@@ -35,9 +35,14 @@ async function quitarCanal(interaction) {
 async function abrirModalRecordatorio(interaction) {
     const cfg = guildSettings.getSettings(interaction.guildId).apuestas;
     await interaction.showModal(
-        modalConCampos("paneladmin_apu_recordatorio_modal", "Recordatorio antes del partido", [
+        modalConCampos("paneladmin_apu_recordatorio_modal", "Recordatorios de apuestas", [
             { id: "activo", label: "Recordatorio activo", tipo: "radio", opciones: SI_NO_NUMERICO, valor: cfg.recordatorio ? "1" : "0" },
             { id: "minutos", label: "Minutos antes del partido (5-1440)", value: String(cfg.recordatorio_min) },
+            {
+                id: "horas_quiniela",
+                label: "Horas antes de cerrar la quiniela (0 = no)",
+                value: String(cfg.recordatorio_quiniela_horas),
+            },
         ]),
     );
 }

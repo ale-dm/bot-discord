@@ -20,18 +20,7 @@ const log = createLogger("Clasificación");
 const HORA = 10;
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-const { momentoMadrid: momento } = require("../core/zonaMadrid");
-const aFecha = (dia) => new Date(`${dia}T00:00:00Z`);
-const sumarDias = (dia, n) => new Date(aFecha(dia).getTime() + n * 86400 * 1000).toISOString().slice(0, 10);
-/** 1 = lunes … 7 = domingo. */
-const diaSemana = (dia) => aFecha(dia).getUTCDay() || 7;
-
-/** La semana anterior completa (lunes y domingo, AAAA-MM-DD, en hora de Madrid) respecto a `ahora`. */
-function semanaAnterior(ahora = Date.now()) {
-    const { dia } = momento(ahora);
-    const lunesActual = sumarDias(dia, 1 - diaSemana(dia));
-    return { lunes: sumarDias(lunesActual, -7), domingo: sumarDias(lunesActual, -1) };
-}
+const { momentoMadrid: momento, aFecha, diaSemana, semanaAnterior } = require("../core/zonaMadrid");
 
 /** Quién gana cada premio (o null si nadie): { rico: {userId, total}, activo: {userId, xp}, apostador: {userId, beneficio, resueltas} }. */
 function ganadores(guildId, semana) {

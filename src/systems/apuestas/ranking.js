@@ -111,8 +111,9 @@ const diaDe = (fecha) => formatoDia.format(new Date(fecha));
 /**
  * El beneficio de cada uno en lo resuelto entre dos días (AAAA-MM-DD, hora de Madrid, ambos incluidos): partidos por el día
  * del partido y quinielas por el día en que se cerraron (las devueltas cuentan como recuperadas). De más a menos; solo
- * quien tiene algo resuelto esos días. Lo usa la clasificación semanal (F-EC-03) para el mejor apostador.
- * @returns {{ userId: string, beneficio: number, resueltas: number }[]}
+ * quien tiene algo resuelto esos días. Lo usan la clasificación semanal (F-EC-03) para el mejor apostador y el resumen semanal
+ * por DM (#361), que además enseña lo apostado y lo cobrado.
+ * @returns {{ userId: string, beneficio: number, resueltas: number, apostado: number, cobrado: number }[]}
  */
 function beneficioEntre(desde, hasta) {
     // Un día de margen en SQL (las fechas son texto ISO en UTC) y el día exacto, en hora de Madrid.
@@ -136,14 +137,16 @@ function beneficioEntre(desde, hasta) {
         .all(margenDesde, margenHasta)
         .filter(enRango);
     const porUsuario = new Map();
-    const sumar = (userId, beneficio) => {
-        const u = porUsuario.get(userId) || { userId, beneficio: 0, resueltas: 0 };
-        u.beneficio += beneficio;
+    const sumar = (userId, apostado, cobrado) => {
+        const u = porUsuario.get(userId) || { userId, beneficio: 0, resueltas: 0, apostado: 0, cobrado: 0 };
+        u.beneficio += cobrado - apostado;
+        u.apostado += apostado;
+        u.cobrado += cobrado;
         u.resueltas++;
         porUsuario.set(userId, u);
     };
-    for (const a of partidos) sumar(a.user_id, a.premio - a.cantidad);
-    for (const q of quinielas) sumar(q.user_id, (q.devuelta ? q.cantidad : q.premio) - q.cantidad);
+    for (const a of partidos) sumar(a.user_id, a.cantidad, a.premio);
+    for (const q of quinielas) sumar(q.user_id, q.cantidad, q.devuelta ? q.cantidad : q.premio);
     return [...porUsuario.values()].sort((a, b) => b.beneficio - a.beneficio || b.resueltas - a.resueltas);
 }
 

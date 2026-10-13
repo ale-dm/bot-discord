@@ -111,6 +111,7 @@ function nodoOtros(flat) {
             canal_resultados: flat["apuestas.canal_resultados"],
             recordatorio: flat["apuestas.recordatorio"],
             recordatorio_min: flat["apuestas.recordatorio_min"],
+            recordatorio_quiniela_horas: flat["apuestas.recordatorio_quiniela_horas"],
             tope_diario: flat["apuestas.tope_diario"],
             max_partido: flat["apuestas.max_partido"],
             destacado: flat["apuestas.destacado"],

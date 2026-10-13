@@ -562,3 +562,12 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] Blackjack: 🏳️ Rendirse recupera la mitad en la primera decisión y desaparece después de pedir carta; 💡 Consejo responde solo a ti.
 - [ ] Tragaperras: el desplegable 🔁 Auto x10 hace 10 tiradas y un solo resumen; ⏹️ Parar la corta; con cooldown global puesto, se corta y lo dice.
 - [ ] Duelo resuelto: 🔁 Revancha propone el mismo duelo al otro jugador y el botón desaparece del original.
+
+**Fase 4: apuestas y quinielas (#296, #340, #345, #349, #356, #361, #366, #370, #375, #380, #384)**
+- [ ] Ficha de un partido y partido destacado: porcentaje junto a cada cuota y «Margen de la casa».
+- [ ] 📋 Mis jugadas → ⏳ En juego: «apostado a X · ahora Y ↑/↓/=»; el menú ↩️ cancela también una combinada (devuelta entera) y una 🔔 alerta.
+- [ ] 🔁 Repetir última: elegir partido → confirmar → se cobra solo al confirmar. 📤 CSV: llega el fichero en privado y se abre en Excel con las tildes bien.
+- [ ] Quiniela: 🎯 Rellenar favoritos no toca lo ya elegido; reiniciar el bot y volver a pulsar Apostar recupera los pronósticos («📝 borrador recuperado»).
+- [ ] 🏅 Liga: el menú de competición cambia la clasificación; la general sigue igual.
+- [ ] `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio: con horas > 0, quien suele jugar y no ha enviado la quiniela recibe el DM antes del cierre (una sola vez).
+- [ ] Lunes tras las 10:00: DM del resumen semanal de apuestas, una sola vez por semana. 🔔 en la ficha de un partido: crear una alerta y comprobar que llega el DM al cruzar la cuota.

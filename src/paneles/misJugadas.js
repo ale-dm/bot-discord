@@ -1,12 +1,14 @@
 // Pestaña "📋 Mis jugadas" de /juegos: lo que tienes en juego y lo ya resuelto, con apuestas a partidos y
 // quinielas juntas. Las estadísticas de apuestas van en la pestaña 📊 Stats (paneles/juegos). Los datos, en
 // systems/apuestas.
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const jugadas = require("../systems/apuestas/misJugadas");
 const cancelar = require("../systems/apuestas/cancelar");
+const cancelarCombinada = require("../systems/apuestas/cancelarCombinada");
+const alertasCuota = require("../systems/apuestas/alertasCuota");
+const { filasCancelar, buildConfirmarCancelar, buildConfirmarCancelarCombinada } = require("./misJugadasCancelar");
 const mercados = require("../systems/apuestas/mercados");
 const { filaPestanas } = require("./pestanasJuegos");
-const { paginaDeLista, filaPaginas } = require("./menuPaginado");
 
 const EMOJI_JUEGO = { blackjack: "🃏", tragaperras: "🎰", slots: "🎰", ruleta: "🎡", adivinar: "🔮", ppt: "✂️" };
 const fecha = (iso) => new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -21,8 +23,16 @@ function lineaQuiniela(detalle) {
     return `${marcas}\n🎯 **${detalle.aciertos}** aciertos de ${detalle.jugados} jugados (${detalle.total} partidos)`;
 }
 
+/** La cuota de una apuesta pendiente (#375): «@2.5», o «apostado a 2.5 · ahora 2.8 ↑» si se sabe la actual y el partido no ha empezado. */
+function textoCuota(a) {
+    const actual = jugadas.cuotaActual(a);
+    if (actual == null || Date.parse(a.start_time) <= Date.now()) return `@${a.cuota}`;
+    const flecha = actual > a.cuota ? "↑" : actual < a.cuota ? "↓" : "=";
+    return `apostado a ${a.cuota} · ahora ${actual} ${flecha}`;
+}
+
 function textoPartidoPendiente(a) {
-    return `**${a.home_team}** vs **${a.away_team}** · ${fecha(a.start_time)}\n🎯 ${eleccionTexto(a)} · ${a.cantidad} 🪙 @${a.cuota} → ${Math.round(a.cantidad * a.cuota)} 🪙`;
+    return `**${a.home_team}** vs **${a.away_team}** · ${fecha(a.start_time)}\n🎯 ${eleccionTexto(a)} · ${a.cantidad} 🪙 ${textoCuota(a)} → ${Math.round(a.cantidad * a.cuota)} 🪙`;
 }
 
 function textoPartidoResuelto(a) {
@@ -48,7 +58,9 @@ function textoCombinada(c) {
               ? `🏆 Ganada (+${c.premio})`
               : c.estado === "perdida"
                 ? "❌ Perdida"
-                : "↩️ Devuelta";
+                : c.estado === "cancelada"
+                  ? "🚫 Cancelada (devuelta entera)"
+                  : "↩️ Devuelta";
     const patas = c.patas.map((p) => `• ${p.home_team} vs ${p.away_team} · ${eleccionTexto(p)}`).join("\n");
     return `**${cuando}** ${estado}\n${patas}`;
 }
@@ -69,6 +81,9 @@ function filaVistas(userId, vista, deporteQuiniela = "laliga") {
             boton("activas", "⏳ En juego"),
             boton("historial", "📋 Resueltas"),
             new ButtonBuilder().setCustomId(`quiniela_refrescar_${deporteQuiniela}`).setLabel("🧾 Quiniela").setStyle(ButtonStyle.Success),
+            // 🔁 Repetir la última apuesta (#349) y 📤 exportar el historial (#356): los atienden juegos/apuestas/repetir y exportar.
+            new ButtonBuilder().setCustomId(`misapuestas_repetir_${userId}`).setLabel("🔁 Repetir última").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`misapuestas_exportar_${userId}`).setLabel("📤 CSV").setStyle(ButtonStyle.Secondary),
         ),
         filaPestanas(userId, "jugadas"),
     ];
@@ -110,6 +125,20 @@ function vistaActivas(userId, embed) {
         name: `🧩 Combinadas (${combinadas.length})`,
         value: campo(combinadas.map(textoCombinada).join("\n\n") || "Ninguna combinada abierta."),
     });
+    const alertas = alertasCuota.activasDe(userId);
+    if (alertas.length) {
+        embed.addFields({
+            name: `🔔 Alertas de cuota (${alertas.length}/${alertasCuota.MAX_ALERTAS})`,
+            value: campo(
+                alertas
+                    .map(
+                        (a) =>
+                            `**${a.home_team}** vs **${a.away_team}** · ${a.textoEleccion} ${a.direccion === "arriba" ? "≥" : "≤"} ${a.objetivo} (ahora ${a.actual ?? "—"})`,
+                    )
+                    .join("\n"),
+            ),
+        });
+    }
     if (casino.length) {
         embed.addFields({
             name: "🎰 Últimas partidas del casino",
@@ -171,30 +200,6 @@ function camposStatsApuestas(userId) {
 }
 
 /**
- * ↩️ Menú para cancelar una apuesta a un partido que aún no ha empezado (F-AP-05), por páginas de 25: las filas que
- * hay que añadir (el menú y, si no caben todas, ◀ / ▶), o ninguna si no hay apuestas cancelables.
- */
-function filasCancelar(userId, pagina = 0) {
-    const pag = paginaDeLista(cancelar.cancelables(userId), pagina);
-    if (!pag.total) return [];
-    const lista = pag.items;
-    const paginas = filaPaginas(`misapuestas_cancelpag_${userId}_`, pag);
-    const menu = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId(`misapuestas_cancelarsel_${userId}`)
-            .setPlaceholder(`↩️ Cancelar una apuesta (comisión del ${cancelar.COMISION_PCT} %)`)
-            .addOptions(
-                lista.map((a) => ({
-                    label: `${a.home_team} vs ${a.away_team}`.slice(0, 100),
-                    description: `${eleccionTexto(a)} · ${a.cantidad} 🪙 → te devuelvo ${a.devolucion} 🪙`.slice(0, 100),
-                    value: String(a.id),
-                })),
-            ),
-    );
-    return paginas ? [menu, paginas] : [menu];
-}
-
-/**
  * Mis jugadas: vista "activas" (en juego) o "historial" (resueltas). `content`: un aviso encima (p. ej. tras cancelar).
  * `paginaCancelar`: la página del menú de cancelar.
  */
@@ -206,31 +211,6 @@ function buildMisJugadas(userId, vista = "activas", content = "", paginaCancelar
     // El menú, antes de las pestañas de /juegos (que siempre van en la última fila).
     components.splice(components.length - 1, 0, ...menuCancelar);
     return { content, embeds: [embed], components };
-}
-
-/** ¿Seguro? Antes de cancelar una apuesta: qué se devuelve y cuánto se queda de comisión. */
-function buildConfirmarCancelar(userId, a) {
-    const unix = Math.floor(Date.parse(a.start_time) / 1000);
-    const embed = new EmbedBuilder()
-        .setTitle("↩️ ¿Cancelar esta apuesta?")
-        .setDescription(
-            `**${a.home_team}** vs **${a.away_team}** · empieza <t:${unix}:R>
-` +
-                `🎯 ${eleccionTexto(a)} · ${a.cantidad.toLocaleString("es")} 🪙 @${a.cuota}
-
-` +
-                `Te devuelvo **${a.devolucion.toLocaleString("es")}** 🪙 al efectivo: lo apostado menos **${a.comision.toLocaleString("es")}** 🪙 ` +
-                `de comisión (el ${cancelar.COMISION_PCT} %).`,
-        )
-        .setColor(0xe67e22);
-    const fila = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`misapuestas_cancelarok_${a.id}_${userId}`)
-            .setLabel("↩️ Sí, cancélala")
-            .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId(`misapuestas_activas_${userId}`).setLabel("◀ No, volver").setStyle(ButtonStyle.Secondary),
-    );
-    return { content: "", embeds: [embed], components: [fila] };
 }
 
 /** Botones para después de apostar: ver lo apostado o seguir. */
@@ -264,6 +244,13 @@ const componentHandlers = [
 // misapuestas_cancelarok_{apuestaId}_{userId}: confirma la cancelación.
 async function handleButton(client, interaction) {
     const partes = interaction.customId.split("_");
+    if (partes[1] === "cancelarokc") {
+        const [, , combinadaId, userId] = partes;
+        if (!(await soloSuyas(interaction, userId))) return;
+        const r = cancelarCombinada.cancelar(userId, combinadaId);
+        await interaction.update(buildMisJugadas(userId, "activas", r.mensaje));
+        return;
+    }
     if (partes[1] === "cancelarok") {
         const [, , apuestaId, userId] = partes;
         if (!(await soloSuyas(interaction, userId))) return;
@@ -291,6 +278,22 @@ async function handleButton(client, interaction) {
 async function handleSelect(client, interaction) {
     const userId = interaction.customId.split("_")[2];
     if (!(await soloSuyas(interaction, userId))) return;
+    // «n» y el id: una alerta de cuota (#345): se quita sin más, no hay dinero de por medio.
+    if (interaction.values[0].startsWith("n")) {
+        const quitada = alertasCuota.cancelar(userId, interaction.values[0].slice(1));
+        await interaction.update(buildMisJugadas(userId, "activas", quitada ? "🔔 Alerta cancelada." : "Esa alerta ya no existe."));
+        return;
+    }
+    // «c» y el id: una combinada (#296); si no, una apuesta suelta.
+    if (interaction.values[0].startsWith("c")) {
+        const c = cancelarCombinada.cancelable(userId, interaction.values[0].slice(1));
+        await interaction.update(
+            c
+                ? buildConfirmarCancelarCombinada(userId, c)
+                : buildMisJugadas(userId, "activas", "❌ Esa combinada ya no se puede cancelar: algún partido ha empezado."),
+        );
+        return;
+    }
     const a = cancelar.cancelable(userId, interaction.values[0]);
     if (!a) {
         await interaction.update(buildMisJugadas(userId, "activas", "❌ Esa apuesta ya no se puede cancelar: el partido ha empezado."));

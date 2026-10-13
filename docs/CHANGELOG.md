@@ -2,6 +2,23 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 4 del plan restante: apuestas y quinielas)
+
+- **📊 Probabilidad sin margen** (#370): la ficha del partido y el destacado enseñan, junto a cada cuota del 1X2, la probabilidad sin el margen de la casa (suman 100 %) y el margen total. Sin las tres cuotas, el partido se ve como antes. Solo el 1X2 (los mercados de goles y hándicap no).
+- **↑↓ Cuota apostada frente a la actual** (#375): en ⏳ En juego, «apostado a 1.8 · ahora 2 ↑» (↓ si baja, = si igual), con las cuotas ya guardadas; con el partido empezado, solo la apostada. Solo la flecha, sin diferencia.
+- **↩️ Cancelar una combinada** (#296): mientras ningún partido haya empezado, el menú de cancelar de Mis jugadas la devuelve entera, sin comisión; queda como «cancelada» (con lo devuelto como premio, sin cambiar el beneficio) y en el historial de dinero.
+- **🔁 Repetir la última apuesta** (#349): un botón en Mis jugadas propone tu última apuesta a un partido (misma elección e importe) sobre el partido que elijas, a la cuota de ahora; solo se cobra al confirmar, con las comprobaciones de siempre (partido abierto, duplicada, topes). Solo la última.
+- **📤 Exportar a CSV** (#356): un botón en Mis jugadas envía en privado un CSV con todas tus apuestas (partidos, combinadas y quinielas, solo deportivas), con el mismo cálculo de 📊 Stats. Sin apuestas, solo la cabecera.
+- **🎯 Rellenar favoritos** (#366): un botón en el editor de la quiniela rellena los partidos sin pronóstico con la cuota más baja (la X solo si es la menor sin empatar); no toca lo ya elegido ni lo bloqueado.
+- **📝 Borrador de la quiniela** (#384): los pronósticos a medias se guardan en la base de datos (uno por persona y quiniela) y se recuperan tras un reinicio, incluso con un botón de un editor viejo; el editor avisa de que los ha recuperado. Se borra al apostar, al cancelar y al cerrarse la quiniela.
+- **🏅 Liga por competición** (#380): un menú en 🏅 Liga elige una competición (solo informativa); la general y los premios de fin de temporada no cambian.
+- **🧾 Recordatorio de la quiniela** (#340): un DM unas horas antes del cierre (`apuestas.recordatorio_quiniela_horas`, 3 por defecto, 0 = no avisar; en ⏰ Recordatorio del panel) a quien suele jugar quinielas (ha apostado en otra, o tiene un borrador de esta) y no la ha enviado; una vez por quiniela y persona, y nunca después del bloqueo.
+- **📊 Resumen semanal de apuestas** (#361): los lunes desde las 10:00, un DM a quien tuvo apuestas resueltas la semana anterior (apostado, cobrado, beneficio y puesto en la liga); una vez por persona y semana. Usa `ranking.beneficioEntre`, que ahora devuelve también lo apostado y lo cobrado.
+- **🔔 Alertas de cuota** (#345): el botón 🔔 de la ficha del partido crea un aviso por DM cuando una elección llega a un valor (arriba o abajo); se comprueba tras cada refresco de cuotas (también las de directo), hasta 10 activas por persona, se ven y se cancelan en Mis jugadas y se borran al dispararse o al empezar el partido.
+- Los tres DM nuevos se pueden apagar en `/avisos` (quiniela sin enviar, resumen semanal, alertas de cuota). Migración 062.
+- **Refactor**: `lunesDe`, `sumarDias`, `diaSemana` y `semanaAnterior` pasan a `core/zonaMadrid.js` (estaban repetidos en la clasificación semanal y el ranking de Plex); el aviso de apuesta rechazada pasa a `juegos/apuestas/rechazo.js`; las pantallas de cancelar de Mis jugadas, a `paneles/misJugadasCancelar.js`.
+- Tests: `apuestasCuotasCombinadas`, `apuestasRepetirExportar`, `quinielaSugerirBorrador` y `apuestasResumenAlertas`.
+
 ## 2026-10-14 (fase 3 del plan restante: juego responsable, blackjack, tragaperras y revancha)
 
 - **🛡️ Límite de pérdidas personal** (#319): en `/perfil` → 💰 Economía → 🛡️ Límite de pérdidas, cada persona se pone un tope por día o por semana (hora de Madrid). Son pérdidas netas del casino y las apuestas (historial: lo perdido menos lo ganado; una apuesta sin resolver cuenta como perdida hasta que se cobra). Con el tope alcanzado, o si una apuesta lo pasaría, el casino (`descontarApuesta`) y las apuestas, combinadas y quiniela (`apuestas/limites.comprobar`) no la aceptan. Bajarlo vale al momento; subirlo, pasar a un periodo más holgado o quitarlo tarda 24 h. Migración 061 (`limite_perdidas`).

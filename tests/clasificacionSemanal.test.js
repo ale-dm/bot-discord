@@ -46,8 +46,8 @@ db.prepare(
 
 test("el beneficio de cada uno en lo resuelto esa semana, en hora de Madrid", () => {
     expect(beneficioEntre(SEMANA.lunes, SEMANA.domingo)).toEqual([
-        { userId: "marta", beneficio: 300, resueltas: 3 },
-        { userId: "pepe", beneficio: 200, resueltas: 1 },
+        { userId: "marta", beneficio: 300, resueltas: 3, apostado: 250, cobrado: 550 },
+        { userId: "pepe", beneficio: 200, resueltas: 1, apostado: 100, cobrado: 300 },
     ]);
 });
 
@@ -58,7 +58,7 @@ test("quién gana cada premio", () => {
     expect(clasificacion.ganadores(G, SEMANA)).toEqual({
         rico: { userId: "rico", total: 10000 },
         activo: { userId: "luis", xp: 300 },
-        apostador: { userId: "marta", beneficio: 300, resueltas: 3 },
+        apostador: { userId: "marta", beneficio: 300, resueltas: 3, apostado: 250, cobrado: 550 },
     });
     // Sin XP nueva ni beneficio, no hay más activo ni mejor apostador.
     expect(clasificacion.ganadores("g-vacio", { lunes: "2026-01-05", domingo: "2026-01-11" })).toMatchObject({

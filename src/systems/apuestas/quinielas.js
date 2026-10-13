@@ -35,6 +35,16 @@ function obtenerPartidosQuiniela(quinielaId) {
         .all(quinielaId);
 }
 
+/** Las cuotas 1/X/2 de cada partido de la quiniela, por orden (null donde el partido ya no está en las cuotas guardadas). */
+function cuotasDeQuiniela(quinielaId) {
+    return db
+        .prepare(
+            `SELECT ap.cuota_home, ap.cuota_draw, ap.cuota_away FROM quiniela_partidos qp
+             LEFT JOIN apuestas_partidos ap ON ap.match_id = qp.match_id WHERE qp.quiniela_id = ? ORDER BY qp.orden ASC`,
+        )
+        .all(quinielaId);
+}
+
 // La quiniela se cierra QUINIELA_LOCK_MINUTES antes del primer partido (y de cada partido, al elegirlo).
 function estaBloqueadoPorTiempo(startTime) {
     const inicio = new Date(startTime).getTime();
@@ -119,6 +129,7 @@ async function crearQuiniela(deporteSeleccionado, creadorId) {
 module.exports = {
     QUINIELA_LOCK_MINUTES,
     obtenerPartidosQuiniela,
+    cuotasDeQuiniela,
     estaBloqueadoPorTiempo,
     yaApostoQuiniela,
     apostarQuiniela,

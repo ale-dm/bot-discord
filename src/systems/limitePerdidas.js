@@ -7,7 +7,7 @@
 // apuesta en negativo al hacerla y cada premio o devolución en positivo), así que una apuesta sin resolver cuenta como perdida
 // hasta que se cobra.
 const db = require("../core/db");
-const { momentoMadrid } = require("../core/zonaMadrid");
+const { momentoMadrid, lunesDe } = require("../core/zonaMadrid");
 const { fmtNumero } = require("../core/formato");
 
 const ESPERA_CAMBIO_MS = 24 * 60 * 60 * 1000;
@@ -16,13 +16,6 @@ const LIMITE_MAX = 1_000_000_000;
 
 /** Lo que cabe en una semana con ese límite: sirve para saber si un cambio baja el límite (vale ya) o lo sube (espera 24 h). */
 const capacidadSemanal = (limite, periodo) => (periodo === "dia" ? limite * 7 : limite);
-
-/** El lunes (AAAA-MM-DD) de la semana de un día de Madrid. */
-function lunesDe(dia) {
-    const fecha = new Date(`${dia}T00:00:00Z`);
-    fecha.setUTCDate(fecha.getUTCDate() - ((fecha.getUTCDay() + 6) % 7));
-    return fecha.toISOString().slice(0, 10);
-}
 
 /** Lo que ha perdido en el periodo en curso (casino y apuestas, neto): 0 si va ganando. */
 function perdidasDelPeriodo(userId, periodo, ahora = Date.now()) {

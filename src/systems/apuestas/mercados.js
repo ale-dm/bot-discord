@@ -23,6 +23,23 @@ function cuotaDe(partido, eleccion) {
     return cuota ?? null;
 }
 
+/**
+ * La probabilidad implícita (%) de cada resultado del 1X2 sin el margen de la casa (#370), y ese margen: la suma de las
+ * probabilidades de las cuotas (1 / cuota) menos 100 %. Las tres suman 100 %. null si falta alguna cuota.
+ * @returns {{ home: number, draw: number, away: number, margen: number } | null}
+ */
+function probabilidadesSinMargen(partido) {
+    const cuotas = [partido.cuota_home, partido.cuota_draw, partido.cuota_away].map(Number);
+    if (cuotas.some((c) => !Number.isFinite(c) || c <= 0)) return null;
+    const implicitas = cuotas.map((c) => 1 / c);
+    const suma = implicitas.reduce((s, p) => s + p, 0);
+    const [home, draw, away] = implicitas.map((p) => (p / suma) * 100);
+    return { home, draw, away, margen: (suma - 1) * 100 };
+}
+
+/** Un porcentaje con una cifra decimal y coma: «41,2 %». */
+const fmtPorcentaje = (n) => `${n.toFixed(1).replace(".", ",")} %`;
+
 /** La línea que se guarda con la apuesta: goles para más/menos; hándicap del local para casa/fuera. */
 function lineaDe(partido, eleccion) {
     if (eleccion === "mas" || eleccion === "menos") return partido.total_linea ?? LINEA_GOLES;
@@ -101,6 +118,8 @@ module.exports = {
     esMercado,
     cuotaDe,
     lineaDe,
+    probabilidadesSinMargen,
+    fmtPorcentaje,
     acierta,
     botonesDisponibles,
     textoEleccion,

@@ -5,6 +5,7 @@ const dinero = require("../../dinero");
 const { logInfo, logDebug } = require("../../../core/logger");
 const { deporteValido, resultadoDeScore } = require("../../../services/oddsApi");
 const { minimoAciertosQuiniela } = require("./caducidad");
+const borradores = require("../borradorQuiniela");
 
 // Quinielas abiertas: guarda los resultados que ya se conocen y cierra y paga las jornadas que han acabado.
 async function liquidarQuinielas({ corte, resumen, scoresDe, origen }) {
@@ -126,6 +127,7 @@ function pagarJornada(q, apuestasConAciertos, premios, resumen) {
             ).run(a.aciertos, hayGanadores ? premio : 0, a.id);
         }
         db.prepare(`UPDATE quinielas SET estado = 'cerrada', cerrada_en = ? WHERE id = ?`).run(new Date().toISOString(), q.id);
+        borradores.borrarDeQuiniela(q.id); // ya no se puede apostar: los pronósticos a medias (#384) sobran
     })();
 }
 

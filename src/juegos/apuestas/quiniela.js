@@ -8,7 +8,7 @@ const { logInfo } = require("../../core/logger");
 const { filaTrasApostar } = require("../../paneles/misJugadas");
 const { importeElegido } = require("../../paneles/importes");
 const { QUINIELA_LOCK_MINUTES, obtenerPartidosQuiniela, apostarQuiniela, crearQuiniela } = require("../../systems/apuestas/quinielas");
-const { sesionesQuiniela, getSesionKey } = require("./quiniela/editor");
+const { obtenerSesion, descartarSesion } = require("./quiniela/editor");
 const { ACCIONES_BOTON_QUINIELA } = require("./quiniela/botones");
 const reglas = require("../../systems/apuestas/quinielaReglas");
 const vista = require("./quiniela/vista");
@@ -55,7 +55,7 @@ module.exports = {
         const partidos = obtenerPartidosQuiniela(quinielaId);
         if (await cerradaPorTiempo(interaction, quinielaId, partidos)) return;
 
-        const sesion = sesionesQuiniela.get(getSesionKey(interaction.user.id, quinielaId));
+        const sesion = obtenerSesion(interaction.user.id, quinielaId);
         const pronosticos = await pronosticosDelFormulario(interaction, sesion, quinielaId);
         if (pronosticos === null) return;
 
@@ -81,7 +81,7 @@ module.exports = {
             return;
         }
         logInfo(`[Quiniela] ${interaction.user.tag} (${userId}) apostó ${cantidad} a la quiniela ${quinielaId}: ${pronosticos}`);
-        sesionesQuiniela.delete(getSesionKey(userId, quinielaId));
+        descartarSesion(userId, quinielaId);
 
         const saldoActual = dinero.efectivo(userId);
         await interaction.reply({

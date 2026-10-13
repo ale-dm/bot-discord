@@ -17,6 +17,7 @@ const plexAvisos = require("../systems/plexAvisos");
 const plexHistorial = require("../systems/plexHistorial");
 const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
+const resumenApuestas = require("../systems/apuestas/resumenSemanal");
 const oddsApi = require("../services/oddsApi");
 const plexWrapped = require("../systems/plexWrapped");
 const cine = require("../systems/cine");
@@ -97,6 +98,12 @@ function programarClasificacionSemanal(client) {
         noOverlap: true,
     });
     runJob("Clasificación semanal (arranque)", () => clasificacionSemanal.publicarSiToca(client));
+    // 📊 Resumen semanal de apuestas por DM (#361): los lunes desde las 10:00, a quien tuvo apuestas resueltas la semana anterior.
+    cron.schedule("0 * * * 1", () => runJob("Resumen semanal de apuestas", () => resumenApuestas.enviarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Resumen semanal de apuestas (arranque)", () => resumenApuestas.enviarSiToca(client));
 }
 
 function programarCuotasEnDirecto(client) {

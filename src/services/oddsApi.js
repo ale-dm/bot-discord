@@ -37,6 +37,12 @@ const DIAS_RESULTADOS = 3;
 const ODDS_CACHE_MS = Number(process.env.ODDS_CACHE_MINUTES || 30) * 60 * 1000;
 const cacheCuotas = new Map(); // deporte -> { data, ts }
 
+// Quién quiere enterarse de que se han guardado cuotas nuevas (las alertas de cuota, #345): se registran al arrancar (index.js), así el
+// servicio no depende de las reglas de las apuestas.
+const oyentesDeCuotas = [];
+/** Registra una función que se llama cada vez que se guardan cuotas nuevas de una competición, con su clave. */
+const alRefrescarCuotas = (fn) => void oyentesDeCuotas.push(fn);
+
 // Se lee en cada llamada (no al cargar el módulo) para que los tests puedan fijarla.
 const getApiKey = () => process.env.ODDS_API_KEY || "";
 
@@ -157,6 +163,15 @@ async function pedirCuotas(deporteKey) {
     const partidos = Array.isArray(data) ? data : [];
     guardarPartidos(deporteKey, partidos);
     cacheCuotas.set(deporteKey, { data: partidos, ts: Date.now() });
+    for (const fn of oyentesDeCuotas) {
+        try {
+            Promise.resolve(fn(deporteKey)).catch((e) =>
+                log.warn(`Falló un aviso tras refrescar las cuotas de ${deporteKey}: ${e.message}`),
+            );
+        } catch (e) {
+            log.warn(`Falló un aviso tras refrescar las cuotas de ${deporteKey}: ${e.message}`);
+        }
+    }
     log.info(`Cuotas de ${deporte.name}: ${partidos.length} partidos · créditos restantes: ${restantes}`);
     return partidos;
 }
@@ -210,6 +225,7 @@ function resultadoDeScore(score) {
 module.exports = {
     cuotasMercados,
     refrescarEnDirecto,
+    alRefrescarCuotas,
     DEPORTES,
     DIAS_RESULTADOS,
     deporteValido,
