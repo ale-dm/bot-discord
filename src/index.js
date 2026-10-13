@@ -254,6 +254,12 @@ async function shutdown(motivo, exitCode) {
         log.warn("Error cerrando la conexión con Discord:", e);
     }
     try {
+        // El historial del Duende se guarda en diferido (#486): lo pendiente se escribe antes de salir.
+        require("./systems/duende/memoria").vaciarPendiente();
+    } catch (e) {
+        log.warn("Error guardando el historial del Duende:", e);
+    }
+    try {
         db.close();
     } catch (e) {
         log.warn("Error cerrando la base de datos:", e);
