@@ -10,6 +10,7 @@ const { runJob } = require("./interactionLog");
 const pagarapuestas = require("../systems/apuestas/liquidacion");
 const blackjack = require("../juegos/casino/blackjack.js");
 const adivinar = require("../juegos/casino/adivinar.js");
+const pptSerie = require("../systems/casino/pptSerie");
 
 const log = createLogger("Bot");
 const Estado = process.env.ESTADOS ? process.env.ESTADOS.split(",") : ["Jugando"];
@@ -231,6 +232,7 @@ function programarMantenimiento() {
             runJob("Partidas abandonadas", () => {
                 blackjack.limpiarAbandonadas();
                 adivinar.limpiarAbandonadas();
+                pptSerie.limpiarAbandonadas();
             }),
         5 * 60 * 1000,
     );

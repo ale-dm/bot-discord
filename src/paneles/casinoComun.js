@@ -12,6 +12,7 @@ const EMOJI = {
     ruleta: "🎡",
     adivinar: "🔮",
     ppt: "✂️",
+    doble_o_nada: "🎲",
     apuestas: "⚽",
     quiniela: "📋",
 };
@@ -21,6 +22,7 @@ const NOMBRE = {
     ruleta: "Ruleta",
     adivinar: "Adivinar",
     ppt: "Piedra, papel o tijera",
+    doble_o_nada: "Doble o nada",
 };
 const MONTOS = [50, 100, 500, 1000, 5000];
 

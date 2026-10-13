@@ -8,6 +8,7 @@ const eventos = require("../systems/eventos");
 const { EMOJI, NOMBRE, getSaldo, backBtn, filaMontos, filaSacar } = require("./casinoComun");
 const ruleta = require("./casinoRuleta");
 const autoexclusion = require("./casinoAutoexclusion");
+const dobleONada = require("../systems/casino/dobleONada");
 const { mensajeBloqueo } = require("../systems/casinoAutoexclusion");
 const { ultimosJackpots } = require("../systems/casino/tragaperras");
 
@@ -301,7 +302,9 @@ function buildPickJugadaPpt(userId, apuesta) {
     ];
     const embed = new EmbedBuilder()
         .setTitle("✂️ Piedra, papel o tijera")
-        .setDescription(`Apuesta: **${apuesta.toLocaleString("es")}** 🪙\n${lineaDinero(userId)}\n\n¿Qué sacas?`)
+        .setDescription(
+            `Apuesta: **${apuesta.toLocaleString("es")}** 🪙\n${lineaDinero(userId)}\n\n¿Qué sacas? Una mano, o 🏁 **al mejor de 3** (misma apuesta, gana quien llegue a 2 manos).`,
+        )
         .setColor(0xf39c12);
     return {
         embeds: [embed],
@@ -312,6 +315,15 @@ function buildPickJugadaPpt(userId, apuesta) {
                         .setCustomId(`casino_play_ppt_${apuesta}_${j.value}`)
                         .setLabel(j.label)
                         .setStyle(ButtonStyle.Primary),
+                ),
+            ),
+            // Al mejor de 3 (#457): la misma apuesta, fija, para tres manos; se cobra una sola vez.
+            new ActionRowBuilder().addComponents(
+                jugadas.map((j) =>
+                    new ButtonBuilder()
+                        .setCustomId(`casino_ppt3_ini_${apuesta}_${j.value}`)
+                        .setLabel(`🏁 ${j.label} (mejor de 3)`)
+                        .setStyle(ButtonStyle.Secondary),
                 ),
             ),
             new ActionRowBuilder().addComponents(
@@ -327,8 +339,8 @@ function buildPickJugadaPpt(userId, apuesta) {
  * `repetir` es el customId de "Repetir" cuando no basta con casino_play_{juego}_{apuesta} (la ruleta añade el
  * tipo, y en ppt se vuelve a elegir jugada). Los botones los atiende /perfil (casino_*).
  */
-function filaFinJuego(juego, apuesta, { repetir, desactivada = false } = {}) {
-    return new ActionRowBuilder().addComponents(
+function filaFinJuego(juego, apuesta, { repetir, desactivada = false, userId = null } = {}) {
+    const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(repetir || `casino_play_${juego}_${apuesta}`)
             .setLabel(`🔄 Repetir (${apuesta.toLocaleString("es")})`)
@@ -346,6 +358,17 @@ function filaFinJuego(juego, apuesta, { repetir, desactivada = false } = {}) {
             .setDisabled(desactivada),
         new ButtonBuilder().setCustomId("casino_home").setLabel("◀ Casino").setStyle(ButtonStyle.Secondary).setDisabled(desactivada),
     );
+    // 🎲 Doble o nada (#462): si la persona acaba de ganar en este juego, se le ofrece jugarse la ganancia a cara o cruz.
+    const oferta = userId && !desactivada ? dobleONada.oferta(userId, juego) : null;
+    if (oferta) {
+        fila.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`casino_doble_${juego}`)
+                .setLabel(`🎲 Doble o nada (${oferta.ganancia.toLocaleString("es")})`)
+                .setStyle(ButtonStyle.Danger),
+        );
+    }
+    return fila;
 }
 
 module.exports = {

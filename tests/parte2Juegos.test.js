@@ -99,11 +99,13 @@ test("blackjack acaba con la fila común (Repetir con la apuesta del principio)"
     const u = jugador(1000);
     await pulsar(u, "casino_play_blackjack_100");
     const doblar = await pulsar(u, "bj_double");
+    // Ganó doblando, así que además de la fila común se le ofrece 🎲 Doble o nada (#462).
     expect(idsFila(doblar.update.mock.calls[0][0])).toEqual([
         "casino_play_blackjack_100",
         "casino_pick_blackjack",
         "casino_stats_blackjack",
         "casino_home",
+        "casino_doble_blackjack",
     ]);
 });
 

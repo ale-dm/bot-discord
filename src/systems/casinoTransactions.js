@@ -9,6 +9,7 @@ const log = createLogger("Casino");
 const guildSettings = require("./guildSettings");
 const { validarApuesta, consumirLimites } = require("./casinoLimites");
 const { mensajeBloqueo } = require("./casinoAutoexclusion");
+const dobleONada = require("./casino/dobleONada");
 const eventos = require("./eventos");
 const achievements = require("./achievementsSystem");
 const { CacheLimitada } = require("../core/cacheLimitada");
@@ -186,6 +187,7 @@ function procesarGanancia(userId, juego, apuesta, gananciaTotal, descripcion, de
     if (ok) {
         const neto = Math.max(0, Number(gananciaTotal || 0) - Number(apuesta || 0));
         if (neto > 0) {
+            dobleONada.ofrecer(userId, juego, neto, { apuesta, guildId });
             void achievements.applyEvent(guildId, userId, "casino_win_count", 1);
             void achievements.applyEvent(guildId, userId, "casino_net_profit", neto);
         }
@@ -269,6 +271,7 @@ function descontarApuesta(userId, cantidad, guildId = null, juego = null) {
 
     if (resultado.exito) {
         if (guildId) userGuildContext.set(userId, guildId);
+        dobleONada.cancelar(userId); // una partida nueva retira la oferta de doble o nada de la anterior
         void achievements.applyEvent(guildId, userId, "casino_bet", Number(cantidad || 0));
     }
 

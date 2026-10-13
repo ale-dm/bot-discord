@@ -134,7 +134,10 @@ async function perderPartida(interaction, partida, ronda, carta) {
         .setColor(0xe74c3c)
         .setThumbnail("https://cdn-icons-png.flaticon.com/512/1828/1828843.png")
         .setFooter({ text: "Adivinar la carta" });
-    await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
+    await interaction.update({
+        embeds: [embed],
+        components: [casino.filaFinJuego("adivinar", partida.apuesta, { userId: interaction.user.id })],
+    });
 }
 
 // Ronda 1: Color
@@ -281,7 +284,7 @@ async function rondaPalo(interaction, partida) {
     terminarPartida(userId);
     await interaction.update({
         embeds: [embedPalo(acierta, carta4, partida.acumulado)],
-        components: [casino.filaFinJuego("adivinar", partida.apuesta)],
+        components: [casino.filaFinJuego("adivinar", partida.apuesta, { userId: interaction.user.id })],
     });
 }
 
@@ -336,5 +339,8 @@ async function handleRetiro(interaction, partida, ronda) {
         .setColor(0x27ae60)
         .setThumbnail("https://cdn-icons-png.flaticon.com/512/616/616492.png");
 
-    await interaction.update({ embeds: [embed], components: [casino.filaFinJuego("adivinar", partida.apuesta)] });
+    await interaction.update({
+        embeds: [embed],
+        components: [casino.filaFinJuego("adivinar", partida.apuesta, { userId: interaction.user.id })],
+    });
 }

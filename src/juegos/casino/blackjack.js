@@ -287,6 +287,7 @@ module.exports = {
 
         const state = bj.nuevaPartida({ apuesta, guildId: interaction.guildId, saldoRestante: resultado.saldoRestante });
         state.apuestaBase = apuesta;
+        state.userId = userId;
         partidasBJ[userId] = state;
 
         const natural = bj.naturales(state);

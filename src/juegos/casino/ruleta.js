@@ -181,7 +181,7 @@ async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
 
     // 7. Embed resultado final
     const resultEmbed = embedResultado(numeroSalido, { apuesta, apDescCorta, gananciaNet, saldoAntes, saldoDespues });
-    const row = buildRow(apuesta, tipo, valor);
+    const row = buildRow(apuesta, tipo, valor, userId);
     try {
         await interaction.editReply({ embeds: [resultEmbed], components: [row] });
     } catch (e) {
@@ -190,8 +190,8 @@ async function animarYGirar(interaction, userId, apuesta, tipo, valor) {
 }
 
 // La fila común de final de partida; Repetir lleva también el tipo de apuesta.
-function buildRow(apuesta, tipo, valor) {
-    return casino.filaFinJuego("ruleta", apuesta, { repetir: `casino_play_ruleta_${apuesta}_${tipo}_${valor}` });
+function buildRow(apuesta, tipo, valor, userId) {
+    return casino.filaFinJuego("ruleta", apuesta, { repetir: `casino_play_ruleta_${apuesta}_${tipo}_${valor}`, userId });
 }
 
 // ─── MÓDULO ───────────────────────────────────────────────────────────────────

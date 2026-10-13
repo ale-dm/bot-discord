@@ -8,8 +8,8 @@ const casino = require("../../paneles/casino");
 const partidasActivas = new Map();
 
 // Al acabar (y, desactivada, mientras gira): 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.
-function crearBotonesResultado(apuesta, disabled = false) {
-    return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled });
+function crearBotonesResultado(apuesta, disabled = false, userId = null) {
+    return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled, userId });
 }
 
 /**
@@ -285,7 +285,7 @@ async function animarGiro(interaction, apuesta, jackpot, username) {
 async function mostrarResultado(interaction, { carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal }) {
     const embedResultado = crearEmbedResultado(carretes, resultado, apuesta, nuevoJackpot, username, saldoFinal);
 
-    const row = crearBotonesResultado(apuesta, false);
+    const row = crearBotonesResultado(apuesta, false, interaction.user?.id);
 
     try {
         await interaction.editReply({ embeds: [embedResultado], components: [row] });

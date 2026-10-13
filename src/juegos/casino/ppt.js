@@ -71,6 +71,6 @@ module.exports = {
         const embed = embedResultado(tipo, { jugadaUsuario, jugadaDelDuende, cantidad, ganancia, saldoActual });
 
         // Repetir vuelve a pedir la jugada con el mismo importe.
-        await interaction.reply({ embeds: [embed], components: [casino.filaFinJuego("ppt", cantidad)] });
+        await interaction.reply({ embeds: [embed], components: [casino.filaFinJuego("ppt", cantidad, { userId })] });
     },
 };
