@@ -104,8 +104,8 @@ function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, pr
     return embed;
 }
 
-// Las filas de botones: acciones de dinero (solo en la propia cuenta), movimientos, y el préstamo y los negocios
-// en su fila: la de acciones ya puede tener 5 botones.
+// Las filas de botones: acciones de dinero (solo en la propia cuenta), movimientos, y el préstamo, los negocios y el límite
+// de pérdidas en su fila: la de acciones ya puede tener 5 botones.
 function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
     const movimientos = new ButtonBuilder()
         .setCustomId(`dinero_mov_todo_0_${targetId}`)
@@ -146,6 +146,7 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
         ? [
               new ActionRowBuilder().addComponents(
                   new ButtonBuilder().setCustomId("dinero_negocios").setLabel("🏪 Negocios").setStyle(ButtonStyle.Secondary),
+                  new ButtonBuilder().setCustomId("dinero_limite").setLabel("🛡️ Límite de pérdidas").setStyle(ButtonStyle.Secondary),
               ),
           ]
         : [];

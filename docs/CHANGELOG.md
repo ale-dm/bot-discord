@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 3 del plan restante: juego responsable, blackjack, tragaperras y revancha)
+
+- **🛡️ Límite de pérdidas personal** (#319): en `/perfil` → 💰 Economía → 🛡️ Límite de pérdidas, cada persona se pone un tope por día o por semana (hora de Madrid). Son pérdidas netas del casino y las apuestas (historial: lo perdido menos lo ganado; una apuesta sin resolver cuenta como perdida hasta que se cobra). Con el tope alcanzado, o si una apuesta lo pasaría, el casino (`descontarApuesta`) y las apuestas, combinadas y quiniela (`apuestas/limites.comprobar`) no la aceptan. Bajarlo vale al momento; subirlo, pasar a un periodo más holgado o quitarlo tarda 24 h. Migración 061 (`limite_perdidas`).
+- **🛡️ Seguro en blackjack** (#333): con un as visible se ofrece antes de mirar si el crupier tiene blackjack (la mitad de la apuesta, paga 2 a 1). No se ofrece si el jugador tiene blackjack ni sin efectivo para pagarlo. Va al historial de movimientos, no a las partidas del casino: no cuenta como partida ni para los logros de ganar o perder.
+- **🏳️ Rendirse en blackjack** (#337): en la primera decisión, recupera la mitad de la apuesta (redondeo hacia abajo); queda en las partidas como «rendido».
+- **💡 Consejo en blackjack** (#343): `systems/blackjackEstrategia.js` con la tabla básica (4 barajas, el crupier se planta en 17); responde en privado y no toca la partida.
+- **🔁 Tirada automática en la tragaperras** (#354): un desplegable «Auto x10 / x25 / x50» con la misma apuesta; cada tirada se cobra como una normal (saldo, cupo, cooldown, autoexclusión, topes y límite de pérdidas), una edición cada tres tiradas, ⏹️ Parar, y se corta al salir el jackpot. Un solo resumen al final.
+- **🔁 Revancha** (#318): un duelo resuelto entre dos personas ofrece 🔁 Revancha una sola vez, con el mismo juego, cantidad y serie; hace falta efectivo en los dos. No hay revancha contra el Duende ni de un reto a un partido (el partido ya ha acabado: se elige otro desde ⚔️ Retos).
+- **Refactor**: `juegos/casino/blackjack.js` se parte en `blackjackMesa.js` (partidas, cobro extra, natural) y `blackjackSplit.js`; `systems/limitePerdidas.js` es una pieza nueva sin dependencias de Discord.
+- Tests: `blackjackSeguroRendirseConsejo`, `tragaperrasAuto`, `limitePerdidas` y `retosRevancha`.
+
 ## 2026-10-14 (fase 2 del plan restante: sonidos)
 
 - **🔍 Buscar y categorías** (#323, #325): `/sonidos` filtra por nombre (sin distinguir mayúsculas) y por categoría con un menú; el filtro viaja en el `customId` de la paginación. Con categorías salen 15 sonidos por página (20 sin ellas). La categoría la pone el admin al editar un sonido (migración 060).

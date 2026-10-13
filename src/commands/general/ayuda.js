@@ -75,7 +75,7 @@ const SECCIONES = {
         ],
         texto: [
             "Empiezas con **1.000 monedas** en 💵 efectivo. Se juega y se compra con el **efectivo**; el 🏦 **banco** es el sitio seguro (hay que sacar el dinero para gastarlo).",
-            "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
+            "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro) · 🛡️ Límite de pérdidas (un tope que te pones tú en el casino y las apuestas), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
             "`/tienda` — un panel con pestañas: 🛒 Catálogo (compra con los botones, filtra por categoría y rareza, o busca por nombre), 🎒 Inventario (tus objetos, con un botón para usarlos: los de rol te dan un rol, los consumibles un efecto) y 🧾 Mis compras.",
         ],
     },
@@ -89,7 +89,7 @@ const SECCIONES = {
         ],
         texto: [
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",
-            "**Juegos**: blackjack (×2, blackjack ×2,5), tragaperras con jackpot, ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
+            "**Juegos**: blackjack (×2, blackjack ×2,5; con seguro, rendirse y 💡 consejo), tragaperras con jackpot (y tirada automática), ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
             "**Ruleta**: también a **calle** (3 números de una fila del tapete, ×12). **Piedra, papel o tijera** se puede jugar **al mejor de 3** (misma apuesta, gana quien llegue a 2 manos). Tras ganar, 🎲 **Doble o nada**: te juegas la ganancia a cara o cruz (solo una vez por victoria).",
             "🔒 **Autoexclusión**: desde el resumen del casino puedes bloquearte el casino 1 día, 1 semana o 1 mes; no se puede levantar antes de tiempo. Los admins pueden poner un tope de apuesta y un cooldown propios a cada juego.",
             "Eliges juego e importe con botones; al acabar: 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.",
@@ -108,7 +108,7 @@ const SECCIONES = {
         texto: [
             "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas. También al **🎯 marcador exacto**: si lo aciertas, ×8 lo apostado.",
             "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
-            "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve. Los duelos pueden ser **abiertos** (lo acepta el primero), **al mejor de 3**, se pueden **rendir** y, en blackjack, **doblar**; el rival puede hacer una **💬 contraoferta** de cantidad, y puedes **🚫 bloquear** a quien te reta o ver tu **🆚 cara a cara** con alguien. Te aviso por DM cuando te toca jugar y cuando un reto está a punto de caducar. Las porras pueden cerrarse solas a una hora.",
+            "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve. Los duelos pueden ser **abiertos** (lo acepta el primero), **al mejor de 3**, se pueden **rendir** y, en blackjack, **doblar**, y al acabar puedes pedir la **🔁 revancha**; el rival puede hacer una **💬 contraoferta** de cantidad, y puedes **🚫 bloquear** a quien te reta o ver tu **🆚 cara a cara** con alguien. Te aviso por DM cuando te toca jugar y cuando un reto está a punto de caducar. Las porras pueden cerrarse solas a una hora.",
             "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego (cuánto, lo que podrías cobrar y tu beneficio del mes), con tus pronósticos de la quiniela, tus 🧩 combinadas y los aciertos que llevas, y lo ya resuelto. Una apuesta a un partido que aún no ha empezado se puede ↩️ cancelar, con un 10 % de comisión.",
             "Se pagan solas cada hora cuando acaban los partidos, y te aviso por DM si ganas.",
         ],

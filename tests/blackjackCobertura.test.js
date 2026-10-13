@@ -159,10 +159,11 @@ describe("blackjack natural", () => {
         expect(ultimaBJ(u).resultado).toBe(0);
     });
 
-    test("el crupier tiene blackjack: se pierde la apuesta al repartir", async () => {
+    test("el crupier tiene blackjack: se pierde la apuesta al decidir el seguro (con un as visible se ofrece primero)", async () => {
         const u = jugador(1000);
         conBaraja([10, 7, 11, 10]);
-        const i = await empezar(u);
+        expect(titulo(await empezar(u))).toBe("🃏 Blackjack - ¿Seguro?");
+        const i = await pulsar(u, "bj_noinsure");
         expect(titulo(i)).toBe("🃏 El crupier tiene Blackjack");
         expect(descripcion(i)).toMatch(/Perdiste la apuesta/);
         expect(saldo(u)).toBe(900);
@@ -193,7 +194,8 @@ describe("blackjack natural", () => {
         const u = jugador(1000);
         conBaraja([10, 7, 11, 10]);
         cas.procesarPerdida.mockReturnValueOnce(false);
-        const i = await empezar(u);
+        await empezar(u);
+        const i = await pulsar(u, "bj_noinsure");
         expect(ultima(i).content).toMatch(/Error procesando el resultado/);
     });
 });

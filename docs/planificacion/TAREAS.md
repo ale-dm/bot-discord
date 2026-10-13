@@ -555,3 +555,10 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] 🔔 Eventos: con `/conectar` puesto, desbloquear un logro hace sonar su sonido; una segunda vez dentro del intervalo, no.
 - [ ] `/conectar sonido:` autocompleta los nombres y lo toca una vez al entrar.
 - [ ] 📊 Más usados (en `/sonidos` y en el panel admin) lista los sonidos por veces sonadas.
+
+**Fase 3: juego responsable, blackjack, tragaperras y revancha (#318, #319, #333, #337, #343, #354)**
+- [ ] `/perfil` → 💰 Economía → 🛡️ Límite de pérdidas: poner 100 por día; tras perder 100 en el casino, `/juegos` no deja apostar y lo explica; las apuestas deportivas tampoco. Bajarlo vale ya; subirlo dice que tarda 24 h.
+- [ ] Blackjack con un as visible: sale «¿Seguro?»; con seguro y blackjack del crupier no pierdes nada; sin blackjack pierdes el seguro y sigues. Se paga la mitad de la apuesta.
+- [ ] Blackjack: 🏳️ Rendirse recupera la mitad en la primera decisión y desaparece después de pedir carta; 💡 Consejo responde solo a ti.
+- [ ] Tragaperras: el desplegable 🔁 Auto x10 hace 10 tiradas y un solo resumen; ⏹️ Parar la corta; con cooldown global puesto, se corta y lo dice.
+- [ ] Duelo resuelto: 🔁 Revancha propone el mismo duelo al otro jugador y el botón desaparece del original.

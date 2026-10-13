@@ -1,18 +1,18 @@
 // /blackjack: cobra y paga, y lleva el flujo de la partida. Las reglas de cada jugada están en systems/blackjack;
-// los textos, embeds y botones, en ./blackjackVista.
+// los textos, embeds y botones, en ./blackjackVista; separar, en ./blackjackSplit, y lo común de la mesa, en ./blackjackMesa.
 const { EmbedBuilder, MessageFlags } = require("discord.js");
-const repo = require("../../repositorios/casino");
 const { registrarUsuario, descontarApuesta } = require("../../systems/casinoTransactions");
 const activeGames = require("../../systems/activeGames");
 const { hayPartidaEnCurso } = require("./partidaEnCurso");
 const bj = require("../../systems/blackjack");
+const { textoConsejo } = require("../../systems/blackjackEstrategia");
 const {
     liquidarMano,
-    cobrarNatural,
     cobrarPasada,
     cobrarAbandono,
-    liquidarManoSplit,
-    cobrarExtraBJ,
+    cobrarRendicion,
+    cobrarSeguro,
+    liquidarSeguro,
 } = require("../../systems/blackjackCobros");
 const casino = require("../../paneles/casino");
 const { createLogger } = require("../../core/logger");
@@ -22,27 +22,16 @@ const {
     cartas,
     filaFin,
     TEXTO_RESULTADO,
-    textoManoSplit,
     embedAyuda,
     filasJuego,
-    filaSplit,
     embedJugando,
-    embedSiguienteMano,
-    embedNatural,
-    embedResumenSplit,
+    embedSeguro,
+    filaSeguro,
 } = require("./blackjackVista");
+const { partidasBJ, terminarPartida, cobrarExtra, responderNatural } = require("./blackjackMesa");
+const { botonSeparar, botonSplit } = require("./blackjackSplit");
 
-const { handValue } = bj;
 const log = createLogger("Blackjack");
-
-// Partidas en curso: userId -> estado. El dinero apostado se registra además en
-// activeGames para poder devolverlo si el bot se reinicia a mitad de partida.
-const partidasBJ = {};
-
-function terminarPartida(userId) {
-    delete partidasBJ[userId];
-    activeGames.cerrar(userId, "blackjack");
-}
 
 // Una partida sin tocar durante más de 15 min ya no se puede seguir jugando (los botones
 // de Discord caducan), así que se liquida como perdida, igual que dejar la mesa en un casino.
@@ -63,21 +52,6 @@ function limpiarAbandonadas() {
 // --- Dinero ---
 const SUFIJO_TIPO = { gana: "victoria", empate: "empate", pierde: "derrota" };
 const TEXTO_HISTORIAL = { gana: "ganado", empate: "empatado", pierde: "perdido" };
-
-// Blackjack natural al repartir: se liquida y se responde en el acto.
-async function responderNatural(interaction, state, tipo) {
-    const userId = interaction.user.id;
-    const { exito, cobro } = cobrarNatural(userId, interaction.guildId, state, tipo);
-    const embed = embedNatural(tipo, state, cobro);
-    // Si el cobro falla, la partida termina igual: si no, el jugador queda bloqueado con una mano en memoria.
-    if (!exito) {
-        terminarPartida(userId);
-        await interaction.reply({ content: ERROR_RESULTADO, flags: MessageFlags.Ephemeral });
-        return;
-    }
-    await interaction.reply({ embeds: [embed], components: [filaFin(state)] });
-    terminarPartida(userId);
-}
 
 // Plantarse o doblar: el crupier ya ha jugado; se liquida y se enseña el resultado.
 async function responderFinal(interaction, state, { userVal, botVal, resultado }, { accion, titulo }) {
@@ -106,60 +80,6 @@ async function responderFinal(interaction, state, { userVal, botVal, resultado }
     terminarPartida(userId);
 }
 
-// Liquida cada mano del split por separado. Devuelve el recuento para el resumen, o null si un cobro falla
-// (en ese caso ya se ha respondido y la partida está cerrada).
-async function liquidarManosSplit(interaction, state, userId, botVal, manos) {
-    let totalGanancia = 0;
-    let resultadosTexto = "";
-    let manosGanadas = 0;
-    let manosEmpate = 0;
-
-    for (const [i, mano] of manos.entries()) {
-        const n = i + 1;
-        const r = liquidarManoSplit(userId, interaction.guildId, state, mano, n, botVal);
-        if (!r.exito) {
-            await interaction.update({
-                content: `❌ Error procesando resultado de mano ${n}. Contacta un administrador.`,
-                embeds: [],
-                components: [],
-            });
-            terminarPartida(userId);
-            return null;
-        }
-        totalGanancia += r.cobro;
-        resultadosTexto += `**Mano ${n}:** ${cartas(mano.cartas)} (**${mano.valor}**) - ${textoManoSplit(mano, botVal)}\n`;
-        if (mano.resultado === "gana") manosGanadas++;
-        else if (mano.resultado === "empate") manosEmpate++;
-    }
-    return { totalGanancia, resultadosTexto, manosGanadas, manosEmpate };
-}
-
-// Estadísticas de blackjack del jugador (para el resumen de un split).
-function estadisticasBJ(userId) {
-    return repo.estadisticasBlackjack(userId);
-}
-
-// Fin del split: juega el crupier, se liquida cada mano por separado y se enseña el resumen.
-async function evaluarSplitFinal(interaction, state, userId) {
-    const { botVal, manos } = bj.resolverSplit(state);
-    const liquidado = await liquidarManosSplit(interaction, state, userId, botVal, manos);
-    if (!liquidado) return;
-
-    const embed = embedResumenSplit(state, estadisticasBJ(userId), { botVal, ...liquidado });
-    await interaction.update({ embeds: [embed], components: [filaFin(state)] });
-    terminarPartida(userId);
-}
-
-// Cobra la apuesta extra de doblar o separar (parte de la misma jugada: sin mínimo ni cooldown).
-async function cobrarExtra(interaction, state) {
-    const resultado = cobrarExtraBJ(interaction.user.id, interaction.guildId, state.apuesta);
-    if (!resultado.exito) {
-        await interaction.reply({ content: resultado.mensaje, flags: MessageFlags.Ephemeral });
-        return false;
-    }
-    return true;
-}
-
 // Doblar: cobra lo extra, pide una carta y se planta.
 async function botonDoblar(interaction, state) {
     if (!state.puedeDoblar) {
@@ -168,30 +88,6 @@ async function botonDoblar(interaction, state) {
     }
     if (!(await cobrarExtra(interaction, state))) return;
     await responderFinal(interaction, state, bj.doblar(state), { accion: "doblar", titulo: "🃏 Blackjack - Resultado (Doblar)" });
-}
-
-// Separar: cobra lo extra y reparte la segunda mano (con dos ases se resuelve directamente).
-async function botonSeparar(interaction, state, userId) {
-    if (!state.puedeSplit) {
-        await interaction.reply({ content: "No puedes separar ahora.", flags: MessageFlags.Ephemeral });
-        return;
-    }
-    if (!(await cobrarExtra(interaction, state))) return;
-    // Con dos ases solo se reparte una carta a cada mano y se resuelve directamente.
-    if (bj.separar(state).sonAses) {
-        await evaluarSplitFinal(interaction, state, userId);
-        return;
-    }
-    const embed = new EmbedBuilder()
-        .setTitle("🃏 Blackjack - Mano 1 (Separada)")
-        .setDescription(
-            `**Mano 1:** ${cartas(state.hands[0])} (**${handValue(state.hands[0])}**)\n` +
-                `**Mano 2:** ${state.hands[1][0].display} + ?\n\n` +
-                `Carta visible del crupier: ${state.botHand[0].display}\n\n` +
-                "Juega tu primera mano.",
-        )
-        .setColor(COLOR.juego);
-    await interaction.update({ embeds: [embed], components: [filaSplit()] });
 }
 
 // Pedir carta: si se pasa, se pierde la apuesta en el acto.
@@ -213,33 +109,62 @@ async function botonPedir(interaction, state, userId) {
     terminarPartida(userId);
 }
 
-// Pedir o plantarse en una de las dos manos del split.
-async function botonSplit(interaction, state, userId, id) {
-    if (!state.split) {
-        await interaction.reply({ content: "No estás en modo split.", flags: MessageFlags.Ephemeral });
+// Seguro (#333): con un as visible, antes de mirar si el crupier tiene blackjack. Si lo tiene, paga 2 a 1 y la mano se liquida como
+// siempre; si no, se pierde y la partida sigue.
+async function botonSeguro(interaction, state, userId, acepta) {
+    if (!state.seguroPendiente) {
+        await interaction.reply({ content: "No hay ningún seguro que decidir.", flags: MessageFlags.Ephemeral });
         return;
     }
-    const pide = id === "bj_hit_split";
-    const r = pide ? bj.pedirSplit(state) : bj.plantarseSplit(state);
-    if (r.terminado) {
-        await evaluarSplitFinal(interaction, state, userId);
-    } else if (pide && !r.pasada) {
-        // Sigue en la misma mano.
-        const embed = new EmbedBuilder()
-            .setTitle(`🃏 Blackjack - Mano ${state.currentHand + 1} (Separada)`)
-            .setDescription(
-                `Tus cartas: ${cartas(state.hands[state.currentHand])} (**${r.valor}**)\n` +
-                    `Carta visible del crupier: ${state.botHand[0].display}\n\n` +
-                    "¿Qué quieres hacer?",
-            )
-            .setColor(COLOR.juego);
-        await interaction.update({ embeds: [embed], components: [filaSplit()] });
-    } else {
-        await interaction.update({
-            embeds: [embedSiguienteMano(state, pide ? "¡Se pasó!" : "Plantado")],
-            components: [filaSplit()],
-        });
+    const seguro = acepta ? bj.costeSeguro(state) : 0;
+    if (acepta) {
+        const cobro = cobrarSeguro(userId, interaction.guildId, state);
+        if (!cobro.exito) {
+            await interaction.reply({ content: cobro.mensaje, flags: MessageFlags.Ephemeral });
+            return;
+        }
     }
+    state.seguroPendiente = false;
+    const natural = bj.naturales(state);
+    let nota = "";
+    if (seguro) {
+        const { neto } = liquidarSeguro(userId, interaction.guildId, seguro, Boolean(natural));
+        nota = natural
+            ? `El crupier tiene blackjack: el seguro paga 2 a 1 (+${neto}).`
+            : `El crupier no tiene blackjack: pierdes el seguro (${neto}).`;
+    }
+    if (natural) {
+        await responderNatural(interaction, state, natural, { editar: true, nota });
+        return;
+    }
+    await interaction.update({ embeds: [embedJugando(state, undefined, nota)], components: filasJuego(state) });
+}
+
+// Rendirse (#337): solo en la primera decisión; se recupera la mitad de la apuesta y el crupier no juega.
+async function botonRendirse(interaction, state, userId) {
+    const devuelto = bj.rendirse(state);
+    if (devuelto === null) {
+        await interaction.reply({
+            content: "Ya no puedes rendirte: solo vale en la primera decisión de la mano.",
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    // Si el cobro falla, la partida termina igual: si no, el jugador queda bloqueado con una mano en memoria.
+    const cobrado = cobrarRendicion(userId, state, devuelto);
+    terminarPartida(userId);
+    if (!cobrado) {
+        await interaction.reply({ content: ERROR_RESULTADO, flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const embed = new EmbedBuilder()
+        .setTitle("🏳️ Blackjack - Te rindes")
+        .setDescription(
+            `Tus cartas: ${cartas(state.userHand)}\nCartas del crupier: ${cartas(state.botHand)}\n\n` +
+                `Recuperas la mitad de la apuesta: \`${devuelto}\` de ${state.apuesta} monedas.`,
+        )
+        .setColor(COLOR.empate);
+    await interaction.update({ embeds: [embed], components: [filaFin(state)] });
 }
 
 module.exports = {
@@ -277,6 +202,11 @@ module.exports = {
         state.userId = userId;
         partidasBJ[userId] = state;
 
+        // Con un as visible, el seguro se decide antes de mirar si el crupier tiene blackjack.
+        if (state.seguroPendiente) {
+            await interaction.reply({ embeds: [embedSeguro(state)], components: [filaSeguro(state)] });
+            return;
+        }
         const natural = bj.naturales(state);
         if (natural) {
             await responderNatural(interaction, state, natural);
@@ -304,6 +234,16 @@ module.exports = {
             await interaction.reply({ embeds: [embedAyuda()], flags: MessageFlags.Ephemeral });
             return;
         }
+        if (id === "bj_tip") {
+            await interaction.reply({ content: textoConsejo(state), flags: MessageFlags.Ephemeral });
+            return;
+        }
+        if (id === "bj_insure" || id === "bj_noinsure") return botonSeguro(interaction, state, userId, id === "bj_insure");
+        if (state.seguroPendiente) {
+            await interaction.reply({ content: "Decide primero si quieres el seguro.", flags: MessageFlags.Ephemeral });
+            return;
+        }
+        if (id === "bj_surrender") return botonRendirse(interaction, state, userId);
         if (id === "bj_double") return botonDoblar(interaction, state);
         if (id === "bj_split") return botonSeparar(interaction, state, userId);
         if (id === "bj_hit") return botonPedir(interaction, state, userId);

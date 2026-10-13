@@ -26,6 +26,7 @@ const revision = require("./retos/revision");
 const contraoferta = require("./retos/contraoferta");
 const bloqueos = require("./retos/bloqueos");
 const avisos = require("./retos/avisos");
+const revancha = require("./retos/revancha");
 
 module.exports = {
     MIN: constantes.MIN,
@@ -66,6 +67,8 @@ module.exports = {
     textoUltimaPartida: duelos.textoUltimaPartida,
     contraofertar: contraoferta.contraofertar,
     aceptarContraoferta: contraoferta.aceptarContraoferta,
+    admiteRevancha: revancha.admiteRevancha,
+    pedirRevancha: revancha.pedirRevancha,
     bloqueado: bloqueos.bloqueado,
     listarBloqueos: bloqueos.listarBloqueos,
     bloquearDesdeReto: bloqueos.bloquearDesdeReto,

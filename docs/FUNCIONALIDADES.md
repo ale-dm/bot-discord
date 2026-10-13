@@ -446,6 +446,7 @@ es único para todo el bot (no es por servidor).
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
 | 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, robos, admin |
+| 🛡️ Límite de pérdidas | Un tope **que te pones tú** de lo que pierdes (netas, casino y apuestas) por día o por semana, en hora de Madrid. Con el tope alcanzado, o si una apuesta lo pasaría, el casino y las apuestas no te dejan jugar hasta el periodo siguiente. Bajarlo vale al momento; **subirlo o quitarlo tarda 24 h**. Migración 061 |
 
 **💼 `/trabajar`**: a diferencia del diario, se puede usar cada 30 min (`TRABAJAR_COOLDOWN_SEC`) — exige estar
 activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJAR_BASE_MIN`/`MAX`) más 2 por cada
@@ -635,8 +636,8 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 
 | Juego | Cómo es | Pagos |
 |---|---|---|
-| 🃏 Blackjack | Contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
-| 🎰 Tragaperras | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
+| 🃏 Blackjack | Contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. Con un **as visible** se ofrece un **🛡️ seguro** (la mitad de la apuesta, paga 2 a 1 si el crupier tiene blackjack); en la primera decisión se puede **🏳️ rendir** (recuperas la mitad) y **💡 Consejo** te dice, solo a ti, qué haría la estrategia básica. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
+| 🎰 Tragaperras | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). Con el desplegable **🔁 Auto x10 / x25 / x50** se hacen varias tiradas seguidas con la misma apuesta (cada una respeta saldo, cupo, cooldown y topes), con ⏹️ Parar, hasta que salga el jackpot, y un resumen al final. | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
 | 🎡 Ruleta | Ruleta europea (0–36): primero el tipo de apuesta (color, par/impar, mitad, docena o número exacto, con un formulario) y después el importe. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · **Calle** (3 números de una fila del tapete: 1-2-3, 4-5-6…) ×12 · Número exacto ×36 |
 | 🔮 Adivinar | "Ride the bus": 4 rondas — color, mayor/menor, dentro/fuera, palo. Te puedes retirar desde la ronda 3. | Acumulado ×2 → ×3 → ×4 → **×20** si aciertas las 4 |
 | ✂️ Piedra, papel o tijera | Contra el Duende: importe y después jugada. | Victoria ×2 · Empate: recuperas la apuesta. **Al mejor de 3** (#457): misma apuesta, fija, cobrada una vez; gana quien llega a 2 manos o lleva más tras la tercera (empate: recuperas); una serie sin responder 15 min se cierra y se devuelve |
@@ -753,6 +754,7 @@ queda nada**: el ganador se lleva lo de todos. Entre 10 y 100.000 por persona. T
   últimos cerrados (con lo que ganaste o perdiste), cada uno con un enlace a su mensaje.
 - **Más formas de jugar** (fase 4): un duelo puede ser **🌐 abierto** (lo acepta el primero que pulse, #438), **al mejor de 3** (#436: el bote se paga una vez al final; un empate no suma y tres seguidos devuelven el reto), se puede **🏳️ rendir** (#446: el rival cobra todo) y en el blackjack **✖️2 doblar** con las dos primeras cartas (#444). El rival puede hacer una **💬 contraoferta** de cantidad (#442, una por reto; quien retó la acepta o cancela y se ajusta lo cobrado). **🚫 Bloquear** a quien te reta (#450, en un sentido; devuelve los pendientes entre los dos; se quita en ⚔️ Retos → 🚫 Bloqueos) y **🆚 Cara a cara** (#437: victorias de cada uno, beneficio neto y los últimos 5). Las porras aceptan un cierre automático («2h», «1d», #448).
 - **DM de retos** (#452, #439): cuando el otro ya ha jugado en un duelo, un DM con el enlace (uno por persona y partida); y un recordatorio al rival a mitad del plazo de un reto pendiente. Respetan `/avisos`.
+- **🔁 Revancha** (#318): un duelo resuelto entre dos personas ofrece el botón una sola vez; lo pulsa cualquiera de los dos y propone al otro el mismo duelo (juego, cantidad y serie). Hace falta efectivo en los dos; no hay revancha contra el Duende ni de un reto a un partido.
 - Las partidas se guardan en la BD (no en memoria): un reinicio del bot no pierde ningún reto.
 - También se puede retar al Duende, desde su chat: ver el apartado siguiente.
 

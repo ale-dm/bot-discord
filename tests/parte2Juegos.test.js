@@ -155,12 +155,15 @@ describe("tragaperras y ruleta (con la animación en relojes simulados)", () => 
         const u = jugador(1000);
         const i = await jugarCon(u, "casino_play_tragaperras_100");
         expect(i.deferUpdate).toHaveBeenCalled();
-        expect(idsFila(i.editReply.mock.calls.at(-1)[0])).toEqual([
+        const resultado = i.editReply.mock.calls.at(-1)[0];
+        // La fila común de siempre y, debajo, el desplegable de la tirada automática (#354).
+        expect(resultado.components[0].components.map((b) => b.data.custom_id)).toEqual([
             "casino_play_tragaperras_100",
             "casino_pick_tragaperras",
             "casino_stats_tragaperras",
             "casino_home",
         ]);
+        expect(idsFila(resultado)).toEqual(["tragaperras_auto_100"]);
     });
 
     test("ruleta: Repetir lleva también el tipo de apuesta", async () => {
