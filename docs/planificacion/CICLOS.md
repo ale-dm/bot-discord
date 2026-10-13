@@ -4,7 +4,7 @@ Se miden con `madge` (`npm run ciclos`; también lo comprueba `tests/ciclos.test
 ciclo que ya no existe también, así que la lista solo puede bajar. La lista exacta está en `ciclos-permitidos.json`.
 
 - Ciclos actuales: **7** (#474 quitó el de la quiniela)
-- `require` dentro de funciones en `src/` (recuento por indentación): **126** (32 en `core/tareas.js`).
+- `require` dentro de funciones en `src/` (recuento por indentación): **59** (eran 126; `app/tareas.js`, `herramientas/` y `perfil/dinero.js` ya no tienen).
 
 1. `paneles/juegos.js` ↔ `paneles/misJugadas.js`
 2. `systems/dinero.js` ↔ `systems/prestamos.js`
