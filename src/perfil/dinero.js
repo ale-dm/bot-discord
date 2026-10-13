@@ -6,6 +6,14 @@ const { MessageFlags } = require("discord.js");
 const dinero = require("../systems/dinero");
 const economia = require("../paneles/economia");
 const { importeElegido } = require("../paneles/importes");
+const prestamos = require("../systems/prestamos");
+const negocios = require("../systems/negocios");
+const tienda = require("../systems/tienda");
+const guildSettings = require("../systems/guildSettings");
+const panelCasino = require("../paneles/casino");
+const panelTienda = require("../paneles/tienda");
+const panelCripto = require("../paneles/cripto");
+const panelNegocios = require("../paneles/negocios");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Dinero");
@@ -18,18 +26,66 @@ async function repintar(volver, interaction) {
     const userId = interaction.user.id;
     if (volver.startsWith("casino_pick_ruleta_")) {
         const [tipo, valor] = volver.replace("casino_pick_ruleta_", "").split("_");
-        return require("../paneles/casino").buildPickMontoRuleta(userId, tipo, valor);
+        return panelCasino.buildPickMontoRuleta(userId, tipo, valor);
     }
-    if (volver.startsWith("casino_pick_")) return require("../paneles/casino").buildPickApuesta(userId, volver.replace("casino_pick_", ""));
+    if (volver.startsWith("casino_pick_")) return panelCasino.buildPickApuesta(userId, volver.replace("casino_pick_", ""));
     if (volver.startsWith("tienda_confirmar_")) {
-        const tienda = require("../systems/tienda");
         const item = tienda.itemTienda(parseInt(volver.replace("tienda_confirmar_", ""), 10));
-        const cfg = require("../systems/guildSettings").getSettings(interaction.guildId).tienda;
-        if (item) return require("../paneles/tienda").buildConfirmacion(item, tienda.saldoDe(userId), cfg, userId);
+        const cfg = guildSettings.getSettings(interaction.guildId).tienda;
+        if (item) return panelTienda.buildConfirmacion(item, tienda.saldoDe(userId), cfg, userId);
     }
-    if (volver.startsWith("cripto_")) return require("../paneles/cripto").repintar(volver, userId, interaction.guildId);
+    if (volver.startsWith("cripto_")) return panelCripto.repintar(volver, userId, interaction.guildId);
     return economiaPropia(interaction);
 }
+
+async function devolverPrestamo(interaction) {
+    const r = prestamos.devolver(interaction.user.id);
+    if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
+    log.info(`${interaction.user.tag}: ${r.mensaje.replace(/\*/g, "")}`);
+    return interaction.update(await economiaPropia(interaction, r.mensaje));
+}
+
+function abrirSacar(interaction) {
+    const volver = interaction.customId.replace(/^dinero_sacar_?/, "");
+    return interaction.showModal(
+        economia.modalCantidad(
+            `dinero_modal_sacar${volver ? `_${volver}` : ""}`,
+            "💵 Sacar del banco",
+            dinero.cuenta(interaction.user.id).banco,
+        ),
+    );
+}
+
+function movimientos(interaction) {
+    const userId = interaction.user.id;
+    const [tipo, pagina, targetId = userId] = interaction.customId.replace("dinero_mov_", "").split("_");
+    return interaction.update(economia.buildMovimientos(userId, targetId, tipo, Math.max(0, parseInt(pagina, 10) || 0)));
+}
+
+// Los botones de dinero_*, en orden: el primero cuyo customId encaja se atiende. Cada caso llama a su caso de uso (systems/dinero,
+// prestamos, negocios) o pinta su pantalla (paneles/economia, negocios); aquí no hay reglas (#476).
+const RUTAS_BOTON = [
+    ["dinero_panel", async (i) => i.update(await economiaPropia(i))],
+    // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
+    ["dinero_prestamo_devolver", devolverPrestamo],
+    ["dinero_transferir", async (i) => i.update(economia.buildElegirDestinatario(i.user.id))],
+    // 🏪 Negocios (F-EC-06d): comprar, vender y depositar dinero negro para limpiarlo.
+    ["dinero_negocios", async (i) => i.update(panelNegocios.buildNegocios(i.user.id))],
+    [
+        "dinero_negocio_depositar",
+        async (i) =>
+            i.showModal(economia.modalCantidad("dinero_modal_depositar_negocio", "🧼 Depositar dinero negro", dinero.negro(i.user.id))),
+    ],
+    [
+        "dinero_ingresar",
+        async (i) =>
+            i.showModal(economia.modalCantidad("dinero_modal_ingresar", "🏦 Ingresar en el banco", dinero.cuenta(i.user.id).efectivo)),
+    ],
+    // dinero_sacar (desde Economía) o dinero_sacar_{volver} (desde otra pantalla).
+    [(id) => id === "dinero_sacar" || id.startsWith("dinero_sacar_"), abrirSacar],
+    // dinero_mov_{tipo}_{pagina}[_{de quién}] (sin "de quién", los tuyos: mensajes de antes).
+    [(id) => id.startsWith("dinero_mov_"), movimientos],
+].map(([encaja, manejador]) => [typeof encaja === "string" ? (id) => id === encaja : encaja, manejador]);
 
 module.exports = {
     componentHandlers: [
@@ -46,48 +102,16 @@ module.exports = {
             await interaction.reply({ content: "⛔ Solo quien abrió el panel puede usar estos botones.", flags: MessageFlags.Ephemeral });
             return;
         }
-        const id = interaction.customId;
-        const userId = interaction.user.id;
-        const c = dinero.cuenta(userId);
-
-        if (id === "dinero_panel") return interaction.update(await economiaPropia(interaction));
-        // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
-        if (id === "dinero_prestamo_devolver") {
-            const r = require("../systems/prestamos").devolver(userId);
-            if (!r.ok) return interaction.reply({ content: r.mensaje, flags: MessageFlags.Ephemeral });
-            log.info(`${interaction.user.tag}: ${r.mensaje.replace(/\*/g, "")}`);
-            return interaction.update(await economiaPropia(interaction, r.mensaje));
-        }
-        if (id === "dinero_transferir") return interaction.update(economia.buildElegirDestinatario(userId));
-        // 🏪 Negocios (F-EC-06d): comprar, vender y depositar dinero negro para limpiarlo.
-        if (id === "dinero_negocios") return interaction.update(require("../paneles/negocios").buildNegocios(userId));
-        if (id === "dinero_negocio_depositar")
-            return interaction.showModal(
-                economia.modalCantidad("dinero_modal_depositar_negocio", "🧼 Depositar dinero negro", dinero.negro(userId)),
-            );
-        if (id === "dinero_ingresar")
-            return interaction.showModal(economia.modalCantidad("dinero_modal_ingresar", "🏦 Ingresar en el banco", c.efectivo));
-        // dinero_sacar (desde Economía) o dinero_sacar_{volver} (desde otra pantalla).
-        if (id === "dinero_sacar" || id.startsWith("dinero_sacar_")) {
-            const volver = id.replace(/^dinero_sacar_?/, "");
-            return interaction.showModal(
-                economia.modalCantidad(`dinero_modal_sacar${volver ? `_${volver}` : ""}`, "💵 Sacar del banco", c.banco),
-            );
-        }
-        // dinero_mov_{tipo}_{pagina}[_{de quién}] (sin "de quién", los tuyos: mensajes de antes).
-        if (id.startsWith("dinero_mov_")) {
-            const [tipo, pagina, targetId = userId] = id.replace("dinero_mov_", "").split("_");
-            return interaction.update(economia.buildMovimientos(userId, targetId, tipo, Math.max(0, parseInt(pagina, 10) || 0)));
-        }
+        const ruta = RUTAS_BOTON.find(([encaja]) => encaja(interaction.customId));
+        if (ruta) return ruta[1](interaction);
     },
 
     async handleSelect(client, interaction) {
         const userId = interaction.user.id;
         if (interaction.customId === "dinero_negocio_elegir") {
             const [accion, tipo] = interaction.values[0].split("_");
-            const negocios = require("../systems/negocios");
             const r = accion === "comprar" ? negocios.comprar(userId, interaction.guildId, tipo) : negocios.vender(userId, tipo);
-            return interaction.update(require("../paneles/negocios").buildNegocios(userId, r.mensaje));
+            return interaction.update(panelNegocios.buildNegocios(userId, r.mensaje));
         }
         // dinero_filtro_{de quién}
         if (interaction.customId.startsWith("dinero_filtro_")) {
@@ -112,9 +136,9 @@ module.exports = {
         let r;
         let volver = null;
         if (id === "dinero_modal_depositar_negocio") {
-            const r2 = require("../systems/negocios").depositar(userId, interaction.guildId, cantidad);
+            const r2 = negocios.depositar(userId, interaction.guildId, cantidad);
             if (!r2.ok) return interaction.reply({ content: r2.mensaje, flags: MessageFlags.Ephemeral });
-            const payload = require("../paneles/negocios").buildNegocios(userId, r2.mensaje);
+            const payload = panelNegocios.buildNegocios(userId, r2.mensaje);
             return interaction.isFromMessage?.()
                 ? interaction.update(payload)
                 : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
