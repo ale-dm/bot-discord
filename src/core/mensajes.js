@@ -23,13 +23,13 @@ const duendeActiveChannels = new Map(); // channelId -> timestamp del último "e
 // no volver a procesar uno ya visto recientemente.
 const recentlyProcessedMessageIds = new Map(); // messageId -> timestamp
 const MESSAGE_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
-function isDuplicateMessage(messageId) {
-    const now = Date.now();
-    if (recentlyProcessedMessageIds.size > 500) {
-        const cutoff = now - MESSAGE_DEDUPE_WINDOW_MS;
-        for (const [id, ts] of recentlyProcessedMessageIds) {
-            if (ts < cutoff) recentlyProcessedMessageIds.delete(id);
-        }
+function isDuplicateMessage(messageId, now = Date.now()) {
+    // Un Map conserva el orden de inserción y los ids llegan en orden de tiempo (nunca se reinserta uno ya visto), así
+    // que lo caducado está siempre al principio: se borra desde ahí hasta el primero vigente, sin recorrer el resto.
+    const cutoff = now - MESSAGE_DEDUPE_WINDOW_MS;
+    for (const [id, ts] of recentlyProcessedMessageIds) {
+        if (ts >= cutoff) break;
+        recentlyProcessedMessageIds.delete(id);
     }
     if (recentlyProcessedMessageIds.has(messageId)) return true;
     recentlyProcessedMessageIds.set(messageId, now);
@@ -234,4 +234,7 @@ function registrarMensajes(client) {
     });
 }
 
-module.exports = { isDuplicateMessage, isLowEffortMessage, registrarMensajes };
+/** Cuántos ids de mensaje se recuerdan ahora (los de la ventana de 5 minutos). */
+const tamanoDedupe = () => recentlyProcessedMessageIds.size;
+
+module.exports = { isDuplicateMessage, isLowEffortMessage, registrarMensajes, tamanoDedupe, MESSAGE_DEDUPE_WINDOW_MS };
