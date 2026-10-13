@@ -35,6 +35,9 @@ function lineaFinal(reto) {
     return `${reto.resultado}\n🏆 Gana ${persona(g[0])} y se lleva **${fmtNumero(premioDe(reto, g[0]))}** 🪙.`;
 }
 
+/** La frase con la que quien retó pica al rival (#440), como línea propia; vacía si no puso ninguna. */
+const frase = (reto) => (reto.provocacion ? `💬 ${persona(reto.creador)}: «${reto.provocacion}»\n\n` : "");
+
 const espera = (reto) => `⏳ Esperando a ${persona(reto.rival)} · caduca ${ts(reto.expira_en)}`;
 
 function botonesPendiente(reto) {
@@ -56,6 +59,7 @@ function mensajePartido(reto, embed) {
                   `${persona(reto.rival)} va con lo contrario: **${contrarioTexto(p, reto.eleccion)}**.\n`
                 : `${persona(reto.creador)} contra ${persona(reto.rival)}, **${fmtNumero(reto.cantidad)}** 🪙 cada uno.\n`) +
                 `El que acierte se lleva **${fmtNumero(reto.cantidad * 2)}** 🪙.\n\n` +
+                frase(reto) +
                 (reto.estado === "pendiente"
                     ? espera(reto)
                     : reto.estado === "en_juego"
@@ -108,7 +112,7 @@ function mensajeDuelo(reto, embed) {
     embed
         .setTitle(`⚔️ Duelo de ${j.emoji} ${j.nombre}`)
         .setDescription(
-            `${persona(reto.creador)} reta a ${persona(reto.rival)} por **${fmtNumero(reto.cantidad)}** 🪙 cada uno. El que gane se lleva **${fmtNumero(reto.cantidad * 2)}** 🪙.\n\n${estado}`,
+            `${persona(reto.creador)} reta a ${persona(reto.rival)} por **${fmtNumero(reto.cantidad)}** 🪙 cada uno. El que gane se lleva **${fmtNumero(reto.cantidad * 2)}** 🪙.\n\n${frase(reto)}${estado}`,
         );
     return components;
 }

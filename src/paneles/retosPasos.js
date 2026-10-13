@@ -124,6 +124,16 @@ function modalCantidad(customId, titulo, efectivo) {
                 textoEtiqueta: `Otra cantidad, cada uno (${retos.MIN}-${fmtNumero(retos.MAX)})`,
                 placeholder: `Tienes ${fmtNumero(efectivo)} en efectivo`,
             }),
+            // Opcional: sale en el mensaje público del reto (#440).
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId("provocacion")
+                    .setLabel("Una frase para picar al rival (opcional)")
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder("Te voy a dejar sin monedas")
+                    .setMaxLength(retos.MAX_PROVOCACION)
+                    .setRequired(false),
+            ),
         );
 }
 

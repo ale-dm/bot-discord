@@ -1,4 +1,4 @@
-// 🍿 Proteger la economía en la primera importación de Plex (F-PX-08): lo que se desbloquea mientras se le calcula a
+﻿// 🍿 Proteger la economía en la primera importación de Plex (F-PX-08): lo que se desbloquea mientras se le calcula a
 // alguien lo antiguo da solo un % de las monedas (50 % por defecto, se cambia en el panel). La importación de cada uno
 // dura desde su primer cálculo hasta que no queda nada antiguo por revisar (fichas e idiomas), como mucho 7 días.
 const { db, nuevoGuild, peli, verPeli, verEps, serie, bibliotecaCompleta, vincular } = require("./ayudaPlex");
@@ -257,9 +257,8 @@ test("la migración 018 añade la tabla y las columnas sin tocar lo que había",
     bd.prepare(
         "INSERT INTO achievements_progress (guildId, userId, achievementId, progress, completedAt) VALUES ('g', 'u', 'plex_pelis_1', 1, 5)",
     ).run();
-    // 018 (este test) + 019 (notas/embeddings) + 020 (impuestos) + 021 (robar) + 022 (clasificación semanal) + 023 (objetos
-    // antirrobo) + 024 (préstamos del Duende) + 025 (negocios y blanqueo) + 026 (patrimonio) + 027 (pool TTCL) + 028 (liquidar criptos) + 029 (eventos de TTCL) + 030 (liga de pronósticos) + 031 (mercados de goles y hándicap) + 032 (combinadas) + 033 (sesión de cine) + 034 (países de las películas) + 035 (recuerdos automáticos) + 036 (pase de batalla) + 037 (sonidos) + 038 (Wrapped por DM) + 039 (nombre de las décadas) + 040 (índices de consultas) + 041 (índices del resto) + 042 (índice de tienda) + 043 (resumen de apuestas), ajenas a Plex, + 044 (seguir series y quiero ver) + 045 (comisión del historial de cripto)
-    expect(runMigrations(bd)).toBe(28);
+    // Se aplican todas las pendientes (la 018 de este test y las posteriores, ajenas a Plex): se cuentan en vez de apuntarlas a mano.
+    expect(runMigrations(bd)).toBe(migraciones.filter((m) => m.version > 17).length);
     expect(bd.prepare("SELECT importado, completedAt FROM achievements_progress").get()).toEqual({ importado: 0, completedAt: 5 });
     const columnas = (t) =>
         bd
