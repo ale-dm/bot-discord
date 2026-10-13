@@ -49,6 +49,8 @@ function programarNovedadesPlex(client) {
         async () => {
             await runJob("Novedades de Plex", () => tautulliClient.checkAllGuildsForNewContent(client));
             await runJob("Avisos de pedidos de Seerr", () => require("../systems/pedidosSeerr").avisarDisponibles(client));
+            await runJob("Avisos de series seguidas", () => require("../systems/plexAvisos").avisarSeries(client));
+            await runJob("Avisos de quiero ver", () => require("../systems/plexAvisos").avisarQuieroVer(client));
             await runJob("Historial y logros de Plex", () => require("../systems/plexHistorial").sincronizarTodos(client), {
                 slowMs: 120_000,
             });
