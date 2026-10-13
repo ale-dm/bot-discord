@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 1 del plan restante: cimientos #472, #474 y #475)
+
+- **#475 herramientas del Duende**: cada herramienta de `core`, `economia`, `plex` y `seerr` recibe sus dependencias como último argumento (`REALES_*` por defecto), así que el Duende responde igual y en los tests se pasan dobles. Nuevo `tests/herramientasDuendeInyeccion.test.js`, sin base de datos.
+- **#472 y #474 verificados**: `grep -rl 'require("discord.js")' src/systems` no devuelve nada, ningún manejador de `juegos/` hace SQL y las reglas de la quiniela están en `systems/apuestas/quinielaReglas.js` con sus tests. No hizo falta código nuevo.
+
 ## 2026-10-14 (fases 4 y 5: /avisos, casino, cripto, retos, comunidad y refactors)
 
 - **🔔 /avisos** (#431): todos los DM del bot pasan por una función de envío que respeta un interruptor por tipo y 🌙 no molestar (tabla `preferencias_dm`, migración 049).

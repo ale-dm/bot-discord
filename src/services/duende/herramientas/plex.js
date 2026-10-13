@@ -158,17 +158,28 @@ const DUENDE_PLEX_TOOL_DECLARATIONS = [
     },
 ];
 
+/** Lo que usan las herramientas de este grupo (#475): cada una lo recibe como último argumento, y en los tests se pasan dobles. */
+const REALES_PLEX = {
+    tautulliClient,
+    periodoADias,
+    formatFecha,
+    formatHoras,
+    summarizeWatchHistory,
+    resolverPersonaVinculada,
+    consultarTrofeosPlex,
+};
+
 const DUENDE_PLEX_EXECUTORS = {
-    async consultar_actividad_plex(args, ctx) {
-        const r = await resolverPersonaVinculada(args?.persona, ctx);
+    async consultar_actividad_plex(args, ctx, d = REALES_PLEX) {
+        const r = await d.resolverPersonaVinculada(args?.persona, ctx);
         if (r.error) return r;
         const dias = Math.max(1, Math.min(365, Math.floor(Number(args?.dias) || 7)));
         const afterDate = new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10);
-        const rows = await tautulliClient.getHistory(ctx.guildId, { userId: r.link.tautulliUserId, afterDate, length: 200 });
+        const rows = await d.tautulliClient.getHistory(ctx.guildId, { userId: r.link.tautulliUserId, afterDate, length: 200 });
         return { persona: args.persona, dias, ...summarizeWatchHistory(rows) };
     },
-    async consultar_viendo_ahora(args, ctx) {
-        const sessions = await tautulliClient.getActivity(ctx.guildId);
+    async consultar_viendo_ahora(args, ctx, d = REALES_PLEX) {
+        const sessions = await d.tautulliClient.getActivity(ctx.guildId);
         if (!sessions.length) return { viendo_ahora: [] };
         return {
             viendo_ahora: sessions.map((s) => ({
@@ -179,34 +190,34 @@ const DUENDE_PLEX_EXECUTORS = {
             })),
         };
     },
-    async consultar_tiempo_visto(args, ctx) {
-        const r = await resolverPersonaVinculada(args?.persona, ctx);
+    async consultar_tiempo_visto(args, ctx, d = REALES_PLEX) {
+        const r = await d.resolverPersonaVinculada(args?.persona, ctx);
         if (r.error) return r;
-        const dias = periodoADias(args?.periodo);
-        const stats = await tautulliClient.getUserWatchTimeStats(ctx.guildId, r.link.tautulliUserId, `${dias}`);
+        const dias = d.periodoADias(args?.periodo);
+        const stats = await d.tautulliClient.getUserWatchTimeStats(ctx.guildId, r.link.tautulliUserId, `${dias}`);
         const entry = stats.find((s) => Number(s.query_days) === dias) || stats[0];
         return {
             persona: args.persona,
             periodo: args?.periodo || "semana",
-            horas_vistas: formatHoras(entry?.total_time),
+            horas_vistas: d.formatHoras(entry?.total_time),
             reproducciones: Number(entry?.total_plays) || 0,
         };
     },
-    async consultar_ultima_conexion(args, ctx) {
-        const r = await resolverPersonaVinculada(args?.persona, ctx);
+    async consultar_ultima_conexion(args, ctx, d = REALES_PLEX) {
+        const r = await d.resolverPersonaVinculada(args?.persona, ctx);
         if (r.error) return r;
-        const rows = await tautulliClient.getHistory(ctx.guildId, { userId: r.link.tautulliUserId, length: 1 });
+        const rows = await d.tautulliClient.getHistory(ctx.guildId, { userId: r.link.tautulliUserId, length: 1 });
         if (!rows.length) return { persona: args.persona, sin_actividad: true };
         const last = rows[0];
         return {
             persona: args.persona,
-            fecha: formatFecha(last.date || last.started),
+            fecha: d.formatFecha(last.date || last.started),
             titulo: last.grandparent_title ? `${last.grandparent_title} - ${last.title}` : last.title,
         };
     },
-    async consultar_novedades_plex(args, ctx) {
+    async consultar_novedades_plex(args, ctx, d = REALES_PLEX) {
         const cantidad = Math.max(1, Math.min(20, Math.floor(Number(args?.cantidad) || 5)));
-        const items = await tautulliClient.getRecentlyAdded(ctx.guildId, cantidad);
+        const items = await d.tautulliClient.getRecentlyAdded(ctx.guildId, cantidad);
         return {
             novedades: items.map((i) => ({
                 titulo: i.grandparent_title ? `${i.grandparent_title} - ${i.title}` : i.title,
@@ -215,42 +226,45 @@ const DUENDE_PLEX_EXECUTORS = {
             })),
         };
     },
-    async comparar_actividad_plex(args, ctx) {
-        const [r1, r2] = await Promise.all([resolverPersonaVinculada(args?.persona1, ctx), resolverPersonaVinculada(args?.persona2, ctx)]);
+    async comparar_actividad_plex(args, ctx, d = REALES_PLEX) {
+        const [r1, r2] = await Promise.all([
+            d.resolverPersonaVinculada(args?.persona1, ctx),
+            d.resolverPersonaVinculada(args?.persona2, ctx),
+        ]);
         if (r1.error) return r1;
         if (r2.error) return r2;
-        const dias = periodoADias(args?.periodo);
+        const dias = d.periodoADias(args?.periodo);
         const [s1, s2] = await Promise.all([
-            tautulliClient.getUserWatchTimeStats(ctx.guildId, r1.link.tautulliUserId, `${dias}`),
-            tautulliClient.getUserWatchTimeStats(ctx.guildId, r2.link.tautulliUserId, `${dias}`),
+            d.tautulliClient.getUserWatchTimeStats(ctx.guildId, r1.link.tautulliUserId, `${dias}`),
+            d.tautulliClient.getUserWatchTimeStats(ctx.guildId, r2.link.tautulliUserId, `${dias}`),
         ]);
         const e1 = s1.find((s) => Number(s.query_days) === dias) || s1[0];
         const e2 = s2.find((s) => Number(s.query_days) === dias) || s2[0];
         return {
             periodo: args?.periodo || "semana",
-            [args.persona1]: { horas_vistas: formatHoras(e1?.total_time), reproducciones: Number(e1?.total_plays) || 0 },
-            [args.persona2]: { horas_vistas: formatHoras(e2?.total_time), reproducciones: Number(e2?.total_plays) || 0 },
+            [args.persona1]: { horas_vistas: d.formatHoras(e1?.total_time), reproducciones: Number(e1?.total_plays) || 0 },
+            [args.persona2]: { horas_vistas: d.formatHoras(e2?.total_time), reproducciones: Number(e2?.total_plays) || 0 },
         };
     },
-    async consultar_top_visto_server(args, ctx) {
+    async consultar_top_visto_server(args, ctx, d = REALES_PLEX) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const dias = periodoADias(args?.periodo || "mes") || 30;
-        const stats = await tautulliClient.getHomeStats(ctx.guildId, dias, 5);
+        const dias = d.periodoADias(args?.periodo || "mes") || 30;
+        const stats = await d.tautulliClient.getHomeStats(ctx.guildId, dias, 5);
         const pelis = stats.find((s) => s.stat_id === "top_movies");
         const series = stats.find((s) => s.stat_id === "top_tv");
         const format = (s) =>
             (s?.rows || []).map((r) => ({
                 titulo: r.grandparent_title || r.title,
                 reproducciones: r.total_plays,
-                horas: formatHoras(r.total_duration),
+                horas: d.formatHoras(r.total_duration),
             }));
         return { periodo: args?.periodo || "mes", top_peliculas: format(pelis), top_series: format(series) };
     },
-    async buscar_en_plex(args, ctx) {
+    async buscar_en_plex(args, ctx, d = REALES_PLEX) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const titulo = String(args?.titulo || "").trim();
         if (!titulo) return { error: "Falta el título a buscar." };
-        const results = await tautulliClient.search(ctx.guildId, titulo);
+        const results = await d.tautulliClient.search(ctx.guildId, titulo);
         const items = [...(results.movie || []), ...(results.show || [])].slice(0, 5);
         if (!items.length) return { encontrado: false, titulo };
         return {
@@ -264,10 +278,10 @@ const DUENDE_PLEX_EXECUTORS = {
             })),
         };
     },
-    async consultar_ranking_plex(args, ctx) {
+    async consultar_ranking_plex(args, ctx, d = REALES_PLEX) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const dias = periodoADias(args?.periodo || "mes") || 30;
-        const data = await tautulliClient.getPlaysByTopUsers(ctx.guildId, dias);
+        const dias = d.periodoADias(args?.periodo || "mes") || 30;
+        const data = await d.tautulliClient.getPlaysByTopUsers(ctx.guildId, dias);
         const categories = data.categories || [];
         const totalsPerUser = categories.map((_, idx) =>
             (data.series || []).reduce((sum, serie) => sum + (Number(serie.data?.[idx]) || 0), 0),
@@ -278,19 +292,19 @@ const DUENDE_PLEX_EXECUTORS = {
             .slice(0, 10);
         return { periodo: args?.periodo || "mes", ranking };
     },
-    async consultar_bibliotecas_plex(args, ctx) {
+    async consultar_bibliotecas_plex(args, ctx, d = REALES_PLEX) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const libs = await tautulliClient.getLibraries(ctx.guildId);
+        const libs = await d.tautulliClient.getLibraries(ctx.guildId);
         return {
             bibliotecas: libs.map((l) => ({ nombre: l.section_name, tipo: l.section_type, items: Number(l.count) || 0 })),
         };
     },
-    async consultar_patron_visionado(args, ctx) {
+    async consultar_patron_visionado(args, ctx, d = REALES_PLEX) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const dias = periodoADias(args?.periodo || "mes") || 30;
+        const dias = d.periodoADias(args?.periodo || "mes") || 30;
         const [dow, hod] = await Promise.all([
-            tautulliClient.getPlaysByDayOfWeek(ctx.guildId, dias),
-            tautulliClient.getPlaysByHourOfDay(ctx.guildId, dias),
+            d.tautulliClient.getPlaysByDayOfWeek(ctx.guildId, dias),
+            d.tautulliClient.getPlaysByHourOfDay(ctx.guildId, dias),
         ]);
         const sumPerCategory = (data) =>
             (data.categories || []).map((_, idx) => (data.series || []).reduce((sum, serie) => sum + (Number(serie.data?.[idx]) || 0), 0));
@@ -304,7 +318,7 @@ const DUENDE_PLEX_EXECUTORS = {
             hora_mas_activa: horaMasActiva ? `${horaMasActiva}:00` : null,
         };
     },
-    consultar_trofeos_plex: consultarTrofeosPlex,
+    consultar_trofeos_plex: (args, ctx, d = REALES_PLEX) => d.consultarTrofeosPlex(args, ctx),
 };
 
 module.exports = { DUENDE_PLEX_TOOL_DECLARATIONS, DUENDE_PLEX_EXECUTORS };

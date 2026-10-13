@@ -50,18 +50,21 @@ const DUENDE_SEERR_TOOL_DECLARATIONS = [
     },
 ];
 
+/** Lo que usan las herramientas de este grupo (#475): cada una lo recibe como último argumento, y en los tests se pasan dobles. */
+const REALES_SEERR = { seerrClient, seerrCupo, resolveNameToDiscordId, resolverSeerrUsuarioPorId };
+
 const DUENDE_SEERR_EXECUTORS = {
-    async buscar_contenido_seerr(args, ctx) {
+    async buscar_contenido_seerr(args, ctx, d = REALES_SEERR) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const titulo = String(args?.titulo || "").trim();
         if (!titulo) return { error: "Falta el título a buscar." };
-        const results = await seerrClient.searchMulti(ctx.guildId, titulo);
+        const results = await d.seerrClient.searchMulti(ctx.guildId, titulo);
         if (!results.length) return { encontrado: false, titulo };
         const top = results.slice(0, 5);
-        seerrClient.cacheSearchResults(ctx.channelId, top);
+        d.seerrClient.cacheSearchResults(ctx.channelId, top);
         return { encontrado: true, resultados: top };
     },
-    async solicitar_contenido_seerr(args, ctx) {
+    async solicitar_contenido_seerr(args, ctx, d = REALES_SEERR) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const tmdbId = Number(args?.tmdbId);
         const mediaType = String(args?.mediaType || "").toLowerCase();
@@ -69,7 +72,7 @@ const DUENDE_SEERR_EXECUTORS = {
             return { error: "Faltan tmdbId/mediaType válidos." };
         }
 
-        const cached = seerrClient.getCachedSearchResult(ctx.channelId, tmdbId, mediaType);
+        const cached = d.seerrClient.getCachedSearchResult(ctx.channelId, tmdbId, mediaType);
         if (!cached) {
             return {
                 error: "Ese tmdbId no viene de una búsqueda reciente en este canal. Llama primero a buscar_contenido_seerr con el título.",
@@ -83,8 +86,8 @@ const DUENDE_SEERR_EXECUTORS = {
         // El límite diario protege siempre a quien está hablando con el bot (evita que una
         // sola persona spamee peticiones aunque las reparta "en nombre de" varios amigos).
         // Solo se comprueba aquí: el cupo se gasta cuando la petición sale de verdad (más abajo). Es el mismo que el 📥
-        // de 🎯 Para ti (systems/seerrCupo.js).
-        if (!seerrCupo.comprobar(ctx.guildId, ctx.userId).ok) {
+        // de 🎯 Para ti (systems/d.seerrCupo.js).
+        if (!d.seerrCupo.comprobar(ctx.guildId, ctx.userId).ok) {
             return { error: "Límite diario de peticiones de contenido alcanzado. Que lo pida mañana." };
         }
 
@@ -92,13 +95,13 @@ const DUENDE_SEERR_EXECUTORS = {
         let personaLabel = null;
         if (args?.persona) {
             if (!ctx.guild) return { error: "Solo disponible en servidores." };
-            const resolvedId = resolveNameToDiscordId(args.persona, ctx.guild);
+            const resolvedId = d.resolveNameToDiscordId(args.persona, ctx.guild);
             if (!resolvedId) return { error: `No identifico a "${args.persona}" entre los miembros del server.` };
             targetDiscordId = resolvedId;
             personaLabel = args.persona;
         }
 
-        const seerrUser = await resolverSeerrUsuarioPorId(targetDiscordId, ctx.guildId);
+        const seerrUser = await d.resolverSeerrUsuarioPorId(targetDiscordId, ctx.guildId);
         if (!seerrUser) {
             return {
                 error: `${personaLabel || "Esta persona"} no tiene su Discord vinculado en Seerr ni en Plex, no puedo pedir contenido en su nombre. Que vincule su cuenta con un admin.`,
@@ -106,17 +109,17 @@ const DUENDE_SEERR_EXECUTORS = {
         }
 
         try {
-            await seerrClient.createRequest(ctx.guildId, { mediaType, tmdbId, userId: seerrUser.id });
-            seerrCupo.gastar(ctx.guildId, ctx.userId);
+            await d.seerrClient.createRequest(ctx.guildId, { mediaType, tmdbId, userId: seerrUser.id });
+            d.seerrCupo.gastar(ctx.guildId, ctx.userId);
             return { pedido: true, titulo: cached.titulo, pedido_por: seerrUser.displayName };
         } catch (e) {
             return { error: `No se pudo pedir: ${e.seerrMessage || e.message}` };
         }
     },
-    async consultar_solicitudes_seerr(args, ctx) {
+    async consultar_solicitudes_seerr(args, ctx, d = REALES_SEERR) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const cantidad = Math.max(1, Math.min(15, Math.floor(Number(args?.cantidad) || 5)));
-        const requests = await seerrClient.getRequests(ctx.guildId, { take: cantidad });
+        const requests = await d.seerrClient.getRequests(ctx.guildId, { take: cantidad });
         return { solicitudes: requests };
     },
 };

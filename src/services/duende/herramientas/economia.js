@@ -52,20 +52,23 @@ const DUENDE_ECONOMIA_TOOL_DECLARATIONS = [
 
 /** Deja una propuesta del Duende para que salga con botones debajo de su respuesta (duende.js). */
 
+/** Lo que usan las herramientas de este grupo (#475): cada una lo recibe como último argumento, y en los tests se pasan dobles. */
+const REALES_ECONOMIA = { retos, prestamos };
+
 const DUENDE_ECONOMIA_EXECUTORS = {
-    retar_piedra_papel_tijera(args, ctx) {
+    retar_piedra_papel_tijera(args, ctx, d = REALES_ECONOMIA) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const cantidad = cantidadDe(args);
-        const motivo = retos.motivoNoContraDuende(ctx.userId, cantidad);
+        const motivo = d.retos.motivoNoContraDuende(ctx.userId, cantidad);
         if (motivo) return { error: sinNegritas(motivo) };
         return proponer(ctx, { tipo: "ppt", cantidad });
     },
-    apostar_partido_con_duende(args, ctx) {
+    apostar_partido_con_duende(args, ctx, d = REALES_ECONOMIA) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const cantidad = cantidadDe(args);
-        const partido = retos.buscarPartido(`${args?.partido || ""} ${args?.equipo || ""}`);
+        const partido = d.retos.buscarPartido(`${args?.partido || ""} ${args?.equipo || ""}`);
         const proximos = () =>
-            retos
+            d.retos
                 .partidosParaRetar(8)
                 .map(
                     (p) =>
@@ -74,21 +77,21 @@ const DUENDE_ECONOMIA_EXECUTORS = {
         if (!partido) {
             return { error: "No encuentro ese partido entre los próximos de ⚽ Apuestas.", proximos_partidos: proximos() };
         }
-        const eleccion = retos.eleccionPara(partido, args?.equipo);
+        const eleccion = d.retos.eleccionPara(partido, args?.equipo);
         if (!eleccion) {
             return {
                 error: `En ${partido.home_team} vs ${partido.away_team} no sé por cuál va: di uno de los dos equipos o 'empate'.`,
                 proximos_partidos: proximos(),
             };
         }
-        const motivo = retos.motivoNoContraDuende(ctx.userId, cantidad, { matchId: partido.match_id, eleccion });
+        const motivo = d.retos.motivoNoContraDuende(ctx.userId, cantidad, { matchId: partido.match_id, eleccion });
         if (motivo) return { error: sinNegritas(motivo) };
         return proponer(ctx, { tipo: "partido", cantidad, matchId: partido.match_id, eleccion });
     },
-    ofrecer_prestamo(args, ctx) {
+    ofrecer_prestamo(args, ctx, d = REALES_ECONOMIA) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         const cantidad = cantidadDe(args);
-        const motivo = prestamos.motivoNoPrestar(ctx.userId, cantidad);
+        const motivo = d.prestamos.motivoNoPrestar(ctx.userId, cantidad);
         if (motivo) return { error: sinNegritas(motivo) };
         return proponer(ctx, { tipo: "prestamo", cantidad });
     },
