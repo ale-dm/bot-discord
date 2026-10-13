@@ -40,7 +40,7 @@ for (const ruta of [
 }
 
 const { runJob } = require("../src/core/interactionLog");
-const { programarTareas } = require("../src/core/tareas");
+const { programarTareas } = require("../src/app/tareas");
 
 beforeEach(() => {
     jest.clearAllMocks();

@@ -37,7 +37,7 @@ const bienvenida = require("./systems/bienvenida");
 const { createComponentRouter } = require("./core/componentRouter");
 // Mensajes de texto y filtros: src/core/mensajes.js
 const { registrarMensajes } = require("./core/mensajes");
-const { programarTareas } = require("./core/tareas");
+const { programarTareas } = require("./app/tareas");
 
 const db = require("./core/db");
 const { ROOT, COMMANDS_DIR, JUEGOS_DIR, PERFIL_DIR, PANELES_DIR } = require("./core/paths");
