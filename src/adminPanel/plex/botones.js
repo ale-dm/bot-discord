@@ -16,6 +16,7 @@ const tautulliClient = require("../../services/tautulliClient");
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { simpleModal, modalConCampos } = require("../common");
+const { paginaDeLista, filaPaginas, paginaDeId } = require("../../paneles/menuPaginado");
 const { log, buildPlexHome, buildPlexTrofeos, buildRolesGordos, buildDiagnosticoIdiomas, buildRankingSemanal } = require("./vistas");
 
 async function accionHome(interaction, id, guildId) {
@@ -103,23 +104,29 @@ async function accionTrofeoCrear(interaction, id, guildId) {
     return true;
 }
 
-async function accionTrofeoBorrar(interaction, id, guildId) {
+const PREFIJO_TROFEO_BORRAR = "paneladmin_plex_trofeo_borrar_p_";
+
+/** El menú de borrar trofeos de admin, por páginas de 25. La primera vez se abre en privado; las páginas lo actualizan. */
+async function accionTrofeoBorrar(interaction, id, guildId, pagina = null) {
     const { admin } = plexTrofeos.resumen(guildId);
     if (!admin.length) {
         await interaction.reply({ content: "No hay trofeos de admin.", flags: MessageFlags.Ephemeral });
         return true;
     }
+    const pag = paginaDeLista(admin, pagina ?? 0);
     const menu = new StringSelectMenuBuilder()
         .setCustomId("paneladmin_plex_trofeo_borrar_select")
         .setPlaceholder("Qué trofeo borrar")
         .addOptions(
-            admin.slice(0, 25).map((t) => ({ label: t.nombre.slice(0, 100), description: String(t.condicion).slice(0, 100), value: t.id })),
+            pag.items.map((t) => ({ label: t.nombre.slice(0, 100), description: String(t.condicion).slice(0, 100), value: t.id })),
         );
-    await interaction.reply({
+    const paginas = filaPaginas(PREFIJO_TROFEO_BORRAR, pag);
+    const vista = {
         content: "¿Qué trofeo borro? Se quita a quien lo tenga (lo ya reclamado no se devuelve).",
-        components: [new ActionRowBuilder().addComponents(menu)],
-        flags: MessageFlags.Ephemeral,
-    });
+        components: [new ActionRowBuilder().addComponents(menu), ...(paginas ? [paginas] : [])],
+    };
+    if (pagina === null) await interaction.reply({ ...vista, flags: MessageFlags.Ephemeral });
+    else await interaction.update(vista);
     return true;
 }
 
@@ -153,7 +160,9 @@ async function accionAnime(interaction, id, guildId) {
         .setMaxValues(opciones.length)
         .addOptions(opciones);
     await interaction.reply({
-        content: "¿Qué bibliotecas son de anime (series y películas)? Con 🤖 Automático, las que tienen «anime» en el nombre.",
+        content:
+            "¿Qué bibliotecas son de anime (series y películas)? Con 🤖 Automático, las que tienen «anime» en el nombre." +
+            (libs.length > 24 ? `\n⚠️ Solo caben 24 de tus ${libs.length} bibliotecas en el menú; las demás no se pueden marcar desde aquí.` : ""),
         components: [new ActionRowBuilder().addComponents(menu)],
         flags: MessageFlags.Ephemeral,
     });
@@ -339,6 +348,8 @@ async function handlePlexButton(interaction) {
     const guildId = interaction.guildId;
     const accion = ACCIONES_BOTON.get(id);
     if (accion) return accion(interaction, id, guildId);
+    const pagina = paginaDeId(PREFIJO_TROFEO_BORRAR, id);
+    if (pagina !== null) return accionTrofeoBorrar(interaction, id, guildId, pagina);
     return false;
 }
 

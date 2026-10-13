@@ -6,6 +6,7 @@ const jugadas = require("../systems/apuestas/misJugadas");
 const cancelar = require("../systems/apuestas/cancelar");
 const mercados = require("../systems/apuestas/mercados");
 const { filaPestanas } = require("./pestanasJuegos");
+const { paginaDeLista, filaPaginas } = require("./menuPaginado");
 
 const EMOJI_JUEGO = { blackjack: "🃏", tragaperras: "🎰", slots: "🎰", ruleta: "🎡", adivinar: "🔮", ppt: "✂️" };
 const fecha = (iso) => new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -169,11 +170,16 @@ function camposStatsApuestas(userId) {
     return { campos, beneficio };
 }
 
-/** ↩️ Menú para cancelar una apuesta a un partido que aún no ha empezado (F-AP-05), o null si no hay ninguna. */
-function filaCancelar(userId) {
-    const lista = cancelar.cancelables(userId).slice(0, 25);
-    if (!lista.length) return null;
-    return new ActionRowBuilder().addComponents(
+/**
+ * ↩️ Menú para cancelar una apuesta a un partido que aún no ha empezado (F-AP-05), por páginas de 25: las filas que
+ * hay que añadir (el menú y, si no caben todas, ◀ / ▶), o ninguna si no hay apuestas cancelables.
+ */
+function filasCancelar(userId, pagina = 0) {
+    const pag = paginaDeLista(cancelar.cancelables(userId), pagina);
+    if (!pag.total) return [];
+    const lista = pag.items;
+    const paginas = filaPaginas(`misapuestas_cancelpag_${userId}_`, pag);
+    const menu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
             .setCustomId(`misapuestas_cancelarsel_${userId}`)
             .setPlaceholder(`↩️ Cancelar una apuesta (comisión del ${cancelar.COMISION_PCT} %)`)
@@ -185,16 +191,20 @@ function filaCancelar(userId) {
                 })),
             ),
     );
+    return paginas ? [menu, paginas] : [menu];
 }
 
-/** Mis jugadas: vista "activas" (en juego) o "historial" (resueltas). `content`: un aviso encima (p. ej. tras cancelar). */
-function buildMisJugadas(userId, vista = "activas", content = "") {
+/**
+ * Mis jugadas: vista "activas" (en juego) o "historial" (resueltas). `content`: un aviso encima (p. ej. tras cancelar).
+ * `paginaCancelar`: la página del menú de cancelar.
+ */
+function buildMisJugadas(userId, vista = "activas", content = "", paginaCancelar = 0) {
     const embed = new EmbedBuilder().setColor(0x3498db).setTimestamp();
     const deporte = vista === "historial" ? vistaResueltas(userId, embed) : vistaActivas(userId, embed);
     const components = filaVistas(userId, vista === "historial" ? "historial" : "activas", deporte);
-    const menuCancelar = vista === "historial" ? null : filaCancelar(userId);
+    const menuCancelar = vista === "historial" ? [] : filasCancelar(userId, paginaCancelar);
     // El menú, antes de las pestañas de /juegos (que siempre van en la última fila).
-    if (menuCancelar) components.splice(components.length - 1, 0, menuCancelar);
+    components.splice(components.length - 1, 0, ...menuCancelar);
     return { content, embeds: [embed], components };
 }
 
@@ -259,6 +269,13 @@ async function handleButton(client, interaction) {
         if (!(await soloSuyas(interaction, userId))) return;
         const r = cancelar.cancelar(userId, apuestaId);
         await interaction.update(buildMisJugadas(userId, "activas", r.mensaje));
+        return;
+    }
+    // misapuestas_cancelpag_{userId}_{página}: otra página del menú de cancelar.
+    if (partes[1] === "cancelpag") {
+        const [, , userId, pagina] = partes;
+        if (!/^\d+$/.test(pagina) || !(await soloSuyas(interaction, userId))) return;
+        await interaction.update(buildMisJugadas(userId, "activas", "", Number(pagina)));
         return;
     }
     const [, vista, userId] = partes;

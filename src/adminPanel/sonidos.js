@@ -15,6 +15,7 @@ const {
 } = require("discord.js");
 const sonidos = require("../systems/sonidos");
 const { createLogger } = require("../core/logger");
+const { paginaDeLista, filaPaginas } = require("../paneles/menuPaginado");
 
 const log = createLogger("PanelAdmin").child("Sonidos");
 
@@ -62,43 +63,47 @@ const filaVolver = () =>
         new ButtonBuilder().setCustomId("paneladmin_sonidos_home").setLabel("◀ Volver a sonidos").setStyle(ButtonStyle.Secondary),
     );
 
-/** Una pantalla con un menú para elegir un sonido. `customId` es el menú; quien lo usa decide qué hace al elegir. */
-function buildElegir(guildId, { titulo, descripcion, customId, placeholder, color }) {
-    const lista = sonidos.listar(guildId);
+/**
+ * Una pantalla con un menú para elegir un sonido, por páginas de 25. `modo` es borrar, probar o editar: da el customId del
+ * menú (`paneladmin_sonidos_<modo>_select`) y el de los botones de página (`paneladmin_sonidos_<modo>_p_<n>`).
+ */
+function buildElegir(guildId, modo, pagina, { titulo, descripcion, placeholder, color }) {
+    const pag = paginaDeLista(sonidos.listar(guildId), pagina);
     const embed = new EmbedBuilder().setTitle(titulo).setColor(color).setDescription(descripcion);
     const menu = new StringSelectMenuBuilder()
-        .setCustomId(customId)
+        .setCustomId(`paneladmin_sonidos_${modo}_select`)
         .setPlaceholder(placeholder)
-        .addOptions(lista.slice(0, 25).map((s) => ({ label: s.nombre.slice(0, 100), value: String(s.id) })));
-    return { content: "", embeds: [embed], components: [new ActionRowBuilder().addComponents(menu), filaVolver()] };
+        .addOptions(pag.items.map((s) => ({ label: s.nombre.slice(0, 100), value: String(s.id) })));
+    const paginas = filaPaginas(`paneladmin_sonidos_${modo}_p_`, pag);
+    return {
+        content: "",
+        embeds: [embed],
+        components: [new ActionRowBuilder().addComponents(menu), ...(paginas ? [paginas] : []), filaVolver()],
+    };
 }
 
-const buildBorrar = (guildId) =>
-    buildElegir(guildId, {
+const PANTALLAS_ELEGIR = {
+    borrar: {
         titulo: "🗑️ Borrar un sonido",
         descripcion: "Elige cuál borrar. Se quita del panel y del disco.",
-        customId: "paneladmin_sonidos_borrar_select",
         placeholder: "Qué sonido borrar",
         color: 0xe74c3c,
-    });
-
-const buildProbar = (guildId) =>
-    buildElegir(guildId, {
+    },
+    probar: {
         titulo: "▶ Probar un sonido",
         descripcion: "Elige uno y suena en tu canal de voz, sin salir de aquí. Si no estás en un canal, te lo digo.",
-        customId: "paneladmin_sonidos_probar_select",
         placeholder: "Qué sonido probar",
         color: 0x3498db,
-    });
-
-const buildEditar = (guildId) =>
-    buildElegir(guildId, {
+    },
+    editar: {
         titulo: "✏️ Editar un sonido",
         descripcion: "Elige cuál editar: puedes cambiarle el nombre o el archivo.",
-        customId: "paneladmin_sonidos_editar_select",
         placeholder: "Qué sonido editar",
         color: 0xf1c40f,
-    });
+    },
+};
+
+const buildPantallaElegir = (guildId, modo, pagina = 0) => buildElegir(guildId, modo, pagina, PANTALLAS_ELEGIR[modo]);
 
 /** Lo que se puede cambiar de un sonido: el nombre o el archivo. */
 function buildOpcionesEditar(sonido) {
@@ -173,11 +178,10 @@ async function handleSonidosButton(interaction) {
     if (!id.startsWith("paneladmin_sonidos_")) return false;
     const guildId = interaction.guildId;
     const cambio = /^paneladmin_sonidos_(renombrar|archivo)_(\d+)$/.exec(id);
+    const elegir = /^paneladmin_sonidos_(borrar|probar|editar)(?:_p_(\d+))?$/.exec(id);
     if (id === "paneladmin_sonidos_home") await interaction.update(buildSonidosHome(guildId));
     else if (id === "paneladmin_sonidos_subir") await interaction.showModal(modalSubir());
-    else if (id === "paneladmin_sonidos_borrar") await interaction.update(buildBorrar(guildId));
-    else if (id === "paneladmin_sonidos_probar") await interaction.update(buildProbar(guildId));
-    else if (id === "paneladmin_sonidos_editar") await interaction.update(buildEditar(guildId));
+    else if (elegir) await interaction.update(buildPantallaElegir(guildId, elegir[1], Number(elegir[2] || 0)));
     else if (cambio) {
         const sonido = sonidos.obtener(guildId, cambio[2]);
         if (!sonido) await interaction.update({ ...buildSonidosHome(guildId), content: "Ese sonido ya no existe." });
