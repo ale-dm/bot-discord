@@ -1,7 +1,9 @@
 // 💬 Mensajes de texto: XP por escribir, cuándo responde el Duende (si le hablan o por probabilidad) y los filtros
 // (duplicados, mensajes de bajo esfuerzo que solo reciben una reacción).
 const { createLogger } = require("./logger");
+const { performance } = require("node:perf_hooks");
 const { whoWhere, cut } = require("./interactionLog");
+const latencias = require("./latencias");
 const guildSettings = require("../systems/guildSettings");
 const xpSystem = require("../systems/xpSystem");
 const duendeCommand = require("../commands/duende/duende");
@@ -21,13 +23,13 @@ const duendeActiveChannels = new Map(); // channelId -> timestamp del último "e
 // no volver a procesar uno ya visto recientemente.
 const recentlyProcessedMessageIds = new Map(); // messageId -> timestamp
 const MESSAGE_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
-function isDuplicateMessage(messageId) {
-    const now = Date.now();
-    if (recentlyProcessedMessageIds.size > 500) {
-        const cutoff = now - MESSAGE_DEDUPE_WINDOW_MS;
-        for (const [id, ts] of recentlyProcessedMessageIds) {
-            if (ts < cutoff) recentlyProcessedMessageIds.delete(id);
-        }
+function isDuplicateMessage(messageId, now = Date.now()) {
+    // Un Map conserva el orden de inserción y los ids llegan en orden de tiempo (nunca se reinserta uno ya visto), así
+    // que lo caducado está siempre al principio: se borra desde ahí hasta el primero vigente, sin recorrer el resto.
+    const cutoff = now - MESSAGE_DEDUPE_WINDOW_MS;
+    for (const [id, ts] of recentlyProcessedMessageIds) {
+        if (ts >= cutoff) break;
+        recentlyProcessedMessageIds.delete(id);
     }
     if (recentlyProcessedMessageIds.has(messageId)) return true;
     recentlyProcessedMessageIds.set(messageId, now);
@@ -201,18 +203,22 @@ function registrarMensajes(client) {
             return;
         }
 
+        const tXp = performance.now();
         try {
             await xpSystem.handleMessageXp(message);
         } catch (e) {
             msgLog.error(`Error dando XP por mensaje · ${whoWhere(message)}`, e);
         }
+        latencias.registrar("mensaje", "xp", performance.now() - tXp);
 
         // 🧠 Recuerdos automáticos del Duende (#15): mira la conversación en segundo plano; no bloquea nada.
+        const tRecuerdos = performance.now();
         try {
             require("../systems/duende/recuerdosAuto").observar(message);
         } catch (e) {
             msgLog.error(`Error mirando la conversación para los recuerdos del Duende · ${whoWhere(message)}`, e);
         }
+        latencias.registrar("mensaje", "recuerdos", performance.now() - tRecuerdos);
 
         const userText = message.content.trim();
         const imageAttachmentsRaw = message.attachments
@@ -224,8 +230,11 @@ function registrarMensajes(client) {
         if (userText.startsWith("/")) return;
         if (!userText && imageAttachmentsRaw.length === 0) return;
 
-        await atenderComoDuende(client, message, userText, imageAttachmentsRaw);
+        await latencias.medir("mensaje", "duende", () => atenderComoDuende(client, message, userText, imageAttachmentsRaw));
     });
 }
 
-module.exports = { isDuplicateMessage, isLowEffortMessage, registrarMensajes };
+/** Cuántos ids de mensaje se recuerdan ahora (los de la ventana de 5 minutos). */
+const tamanoDedupe = () => recentlyProcessedMessageIds.size;
+
+module.exports = { isDuplicateMessage, isLowEffortMessage, registrarMensajes, tamanoDedupe, MESSAGE_DEDUPE_WINDOW_MS };

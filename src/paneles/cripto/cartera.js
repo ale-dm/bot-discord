@@ -7,9 +7,11 @@ const { pantalla, fmtMonedas } = require("./comun");
 async function pantallaCartera(userId) {
     const embed = new EmbedBuilder().setTitle("💼 Tu cartera").setColor(0x9b59b6);
     const tenencia = mercado.getUserCarteras(userId).find((r) => r.cripto === mercado.TTCL.simbolo)?.cantidad || 0;
+    const realizada = mercado.gananciaRealizadaTtcl(userId);
+    const lineaRealizada = `**Ganancia realizada:** ${realizada > 0 ? "+" : realizada < 0 ? "−" : ""}${fmtMonedas(Math.abs(realizada))} (ventas ya cobradas, con su comisión)`;
 
     if (!(tenencia > 0)) {
-        embed.setDescription("No tienes $TTCL. Cómpralo en la pestaña 🛒 Comprar.");
+        embed.setDescription(`No tienes $TTCL. Cómpralo en la pestaña 🛒 Comprar.\n${lineaRealizada}`);
         return pantalla({ embeds: [embed], actual: "cartera" });
     }
 
@@ -26,6 +28,7 @@ async function pantallaCartera(userId) {
         lineas.push(`**Coste medio:** ${mercado.formatCoins(costeMedio)} monedas por TTCL`);
         lineas.push(`**Ganancia sin vender:** ${ganancia >= 0 ? "+" : "−"}${fmtMonedas(Math.abs(ganancia))}`);
     }
+    lineas.push(lineaRealizada);
     embed.setDescription(lineas.join("\n"));
     embed.setFooter({ text: "Vender no paga impuestos; la comisión se queda en el pool." });
 

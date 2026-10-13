@@ -20,6 +20,14 @@ const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
 // El número de reto va siempre al final del customId.
 const retoDe = (customId) => Number(customId.split("_").at(-1));
 const leerCantidad = (i) => importeElegido(i.fields);
+// La frase de provocación es opcional: un formulario antiguo, sin ese campo, la deja vacía.
+const leerProvocacion = (i) => {
+    try {
+        return i.fields.getTextInputValue("provocacion");
+    } catch {
+        return "";
+    }
+};
 
 // Pasos para lanzar un reto (en el panel de /juegos).
 const PASOS_PANEL = ["retos_nuevo_", "retos_partido_select", "retos_lado_", "retos_juego_", "retos_rival_"];
@@ -224,8 +232,15 @@ module.exports = {
         const rival = partes.pop();
         const r =
             tipo === "p"
-                ? retos.crearPartido({ ...base, rival, eleccion: partes[0], matchId: partes.slice(1).join("_"), cantidad: leerCantidad(i) })
-                : retos.crearDuelo({ ...base, rival, juego: partes[0], cantidad: leerCantidad(i) });
+                ? retos.crearPartido({
+                      ...base,
+                      rival,
+                      eleccion: partes[0],
+                      matchId: partes.slice(1).join("_"),
+                      cantidad: leerCantidad(i),
+                      provocacion: leerProvocacion(i),
+                  })
+                : retos.crearDuelo({ ...base, rival, juego: partes[0], cantidad: leerCantidad(i), provocacion: leerProvocacion(i) });
         if (!r.ok) return i.reply(privado(r.mensaje));
         return publicar(i, r.reto, rival);
     },

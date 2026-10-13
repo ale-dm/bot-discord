@@ -50,6 +50,7 @@ module.exports = {
     crearDuelo: crear.crearDuelo,
     crearPorra: crear.crearPorra,
     leerOpciones: crear.leerOpciones,
+    MAX_PROVOCACION: crear.MAX_PROVOCACION,
     guardarMensaje: persistencia.guardarMensaje,
     aceptar: duelos.aceptar,
     rechazar: duelos.rechazar,

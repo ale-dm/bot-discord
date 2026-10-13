@@ -39,7 +39,22 @@ function tenenciaTtcl(userId) {
 
 // ─── COMPRAR ──────────────────────────────────────────────────────────────────
 
+/** «Podrás comprar en 2 min»: el cooldown que falta, o "" si se puede operar ya o no hay cooldown (#455). */
+function lineaCooldown(guildId, userId, tipo) {
+    const falta = mercado.cooldownRestante(guildId, userId, tipo);
+    if (!falta) return "";
+    const cuando = falta >= 60 ? `${Math.ceil(falta / 60)} min` : `${falta} s`;
+    return `⏳ Podrás ${tipo === "compra" ? "comprar" : "vender"} en ${cuando}.\n`;
+}
+
+/** La pestaña tal cual con el mercado en pausa (#453): el aviso fijo en lugar del formulario. */
+function pantallaPausa(titulo, color, actual) {
+    const embed = new EmbedBuilder().setTitle(titulo).setDescription(mercado.MENSAJE_PAUSA).setColor(color);
+    return pantalla({ embeds: [embed], actual });
+}
+
 function pantallaComprar(userId, guildId, aviso = null) {
+    if (mercado.mercadoPausado(guildId)) return pantallaPausa(`🛒 Comprar ${mercado.TTCL.emoji} $TTCL`, 0x95a5a6, "comprar");
     const { min, max, fee } = limitesCompra(guildId);
     const saldo = mercado.getUserSaldo(userId);
 
@@ -48,7 +63,8 @@ function pantallaComprar(userId, guildId, aviso = null) {
         .setDescription(
             `${avisoTexto(aviso)}**Precio actual:** ${mercado.formatCoins(mercado.getTtclPrecio())} monedas por TTCL\n` +
                 `**Tu efectivo:** ${fmtMonedas(saldo)}\n` +
-                `**Límites:** de ${fmtMonedas(min)} a ${fmtMonedas(max)} · comisión ${fee} % (se queda en el pool)\n\n` +
+                `**Límites:** de ${fmtMonedas(min)} a ${fmtMonedas(max)} · comisión ${fee} % (se queda en el pool)\n` +
+                `${lineaCooldown(guildId, userId, "compra")}\n` +
                 `Elige cuánto invertir. Verás una vista previa antes de confirmar.`,
         )
         .setColor(0x2ecc71);
@@ -123,6 +139,7 @@ function modalCompra() {
 // ─── VENDER ───────────────────────────────────────────────────────────────────
 
 function pantallaVender(userId, guildId, aviso = null) {
+    if (mercado.mercadoPausado(guildId)) return pantallaPausa(`💸 Vender ${mercado.TTCL.emoji} $TTCL`, 0x95a5a6, "vender");
     const { min, max, fee } = limitesVenta(guildId);
     const tenencia = tenenciaTtcl(userId);
     const embed = new EmbedBuilder().setTitle(`💸 Vender ${mercado.TTCL.emoji} $TTCL`).setColor(0xe74c3c);
@@ -137,7 +154,8 @@ function pantallaVender(userId, guildId, aviso = null) {
         `${avisoTexto(aviso)}**Tienes:** ${mercado.formatCryptoAmt(tenencia)} TTCL ≈ ${fmtMonedas(tenencia * precio)} (antes de comisión)\n` +
             `**Precio actual:** ${mercado.formatCoins(precio)} monedas por TTCL\n` +
             `**Límites:** de ${fmtMonedas(min)} a ${fmtMonedas(max)} por venta · comisión ${fee} % (se queda en el pool)\n` +
-            `**Impuestos:** ninguno en las ventas de cripto.\n\n` +
+            `**Impuestos:** ninguno en las ventas de cripto.\n` +
+            `${lineaCooldown(guildId, userId, "venta")}\n` +
             `Elige qué parte vender. Verás una vista previa antes de confirmar.`,
     );
 

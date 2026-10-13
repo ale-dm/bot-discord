@@ -171,4 +171,19 @@ function liquidarGiro(userId, guildId, username, apuesta) {
     return { carretes, resultado, nuevoJackpot };
 }
 
-module.exports = { SIMBOLOS, girarCarretes, calcularGanancia, obtenerJackpot, liquidarGiro };
+/**
+ * Los últimos jackpots ganados, del más reciente al más antiguo (#456). Salen de la tabla del casino: cada jackpot se
+ * guarda con tipo JACKPOT en el detalle, y `jackpot` es el bote que se llevó (la ganancia ya con el RTP).
+ * @returns {{ userId: string, fecha: string, cantidad: number }[]} vacío si nadie lo ha ganado todavía
+ */
+function ultimosJackpots(limite = 10) {
+    return db
+        .prepare(
+            `SELECT userId, fecha, COALESCE(json_extract(detalle, '$.jackpot'), apuesta + resultado) AS cantidad FROM casino
+             WHERE juego IN ('tragaperras', 'slots') AND json_extract(detalle, '$.tipo') = 'JACKPOT' ORDER BY id DESC LIMIT ?`,
+        )
+        .all(limite)
+        .map((f) => ({ userId: f.userId, fecha: f.fecha, cantidad: Number(f.cantidad) }));
+}
+
+module.exports = { SIMBOLOS, girarCarretes, calcularGanancia, obtenerJackpot, liquidarGiro, ultimosJackpots };

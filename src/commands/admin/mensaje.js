@@ -1,6 +1,7 @@
-// ✉️ /mensaje: un admin escribe un mensaje privado (DM) de parte del bot a alguien. Eliges a quién por la opción
-// «usuario» y el texto va en un formulario (campo de varias líneas); el DM lleva solo ese texto. Solo admins: un bot que
-// escribe a cualquiera se puede usar mal. Cada envío queda en la auditoría (sin el texto, solo cuántos caracteres).
+// ✉️ /mensaje: un admin escribe un mensaje de parte del bot: un DM a alguien (opción «usuario») o, con la opción «canal»,
+// publicado en ese canal del servidor. El texto va en un formulario (campo de varias líneas) y se manda tal cual. Solo
+// admins: un bot que escribe a cualquiera se puede usar mal. Las menciones del texto no notifican a nadie en el canal. Cada
+// envío queda en la auditoría (sin el texto, solo cuántos caracteres).
 const {
     SlashCommandBuilder,
     ActionRowBuilder,
@@ -8,6 +9,7 @@ const {
     TextInputBuilder,
     TextInputStyle,
     PermissionFlagsBits,
+    ChannelType,
 } = require("discord.js");
 const { isAdmin } = require("../../adminPanel/common");
 const adminAudit = require("../../systems/adminAudit");
@@ -17,38 +19,101 @@ const { efimero } = require("../../core/respuestas");
 const log = createLogger("Mensaje");
 const TEXTO_MAX = 1500; // deja sitio a la cabecera dentro de los 2000 caracteres de un DM
 
+const PREFIJO_CANAL = "mensaje_modal_canal_";
+
+function formulario(customId, titulo, placeholder) {
+    const texto = new TextInputBuilder()
+        .setCustomId("texto")
+        .setLabel("Mensaje")
+        .setStyle(TextInputStyle.Paragraph)
+        .setPlaceholder(placeholder)
+        .setMaxLength(TEXTO_MAX)
+        .setRequired(true);
+    return new ModalBuilder()
+        .setCustomId(customId)
+        .setTitle(titulo.slice(0, 45))
+        .addComponents(new ActionRowBuilder().addComponents(texto));
+}
+
+/** ¿Puede el bot escribir en ese canal? Si no, el motivo para decírselo al admin. */
+function motivoNoPuedeEscribir(client, canal) {
+    if (!canal?.isTextBased?.() || typeof canal.send !== "function") return "ese canal no admite mensajes de texto";
+    const permisos = canal.permissionsFor?.(client.user);
+    if (!permisos?.has?.(PermissionFlagsBits.ViewChannel) || !permisos.has(PermissionFlagsBits.SendMessages)) {
+        return "no tengo permiso para escribir en él";
+    }
+    return null;
+}
+
+/** Publica el texto en un canal del servidor (#433): sin menciones que notifiquen y con la auditoría sin el texto. */
+async function publicarEnCanal(client, interaction, canalId, texto) {
+    const canal = await interaction.guild?.channels?.fetch(canalId).catch(() => null);
+    if (!canal) return interaction.reply(efimero("❌ No encuentro ese canal en este servidor."));
+    const motivo = motivoNoPuedeEscribir(client, canal);
+    if (motivo) return interaction.reply(efimero(`❌ No puedo publicar en <#${canal.id}>: ${motivo}.`));
+    try {
+        await canal.send({ content: texto, allowedMentions: { parse: [] } });
+    } catch (e) {
+        log.warn(`No pude publicar en ${canalId} de parte de ${interaction.user.username}: ${e.message}`);
+        return interaction.reply(efimero(`❌ No pude publicar en <#${canal.id}>: ${e.message}`));
+    }
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "mensaje.canal",
+        details: { canal: canalId, caracteres: texto.length },
+    });
+    log.info(`${interaction.user.username} publicó un mensaje en el canal ${canalId} de ${interaction.guildId}`);
+    return interaction.reply(efimero(`✅ Mensaje publicado en <#${canal.id}>.`));
+}
+
 module.exports = {
     componentHandlers: [{ types: ["modal"], prefixes: ["mensaje_modal_"], method: "handleModal" }],
     data: new SlashCommandBuilder()
         .setName("mensaje")
-        .setDescription("✉️ Manda un mensaje privado (DM) de parte del bot a alguien (solo admins)")
+        .setDescription("✉️ Manda un mensaje de parte del bot: por DM a alguien o publicado en un canal (solo admins)")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-        .addUserOption((o) => o.setName("usuario").setDescription("A quién se le manda").setRequired(true)),
+        .addUserOption((o) => o.setName("usuario").setDescription("A quién se le manda por DM").setRequired(false))
+        .addChannelOption((o) =>
+            o
+                .setName("canal")
+                .setDescription("Canal donde se publica, en vez de mandar un DM")
+                .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+                .setRequired(false),
+        ),
 
     async run(client, interaction) {
         if (!isAdmin(interaction)) return interaction.reply(efimero("⛔ Solo los admins pueden mandar mensajes desde el bot."));
-        const destino = interaction.options.getUser("usuario", true);
-        if (destino.bot) return interaction.reply(efimero("❌ No tiene sentido mandarle un mensaje a un bot."));
+        const destino = interaction.options.getUser("usuario");
+        const canal = interaction.options.getChannel("canal");
+        if (destino && canal) return interaction.reply(efimero("❌ Elige solo uno: `usuario` (DM) o `canal` (publicarlo)."));
+        if (!destino && !canal) return interaction.reply(efimero("❌ Elige a quién mandárselo (`usuario`) o dónde publicarlo (`canal`)."));
 
-        const texto = new TextInputBuilder()
-            .setCustomId("texto")
-            .setLabel("Mensaje")
-            .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Lo que le quieres decir. Le llega tal cual, como DM del bot.")
-            .setMaxLength(TEXTO_MAX)
-            .setRequired(true);
-        const modal = new ModalBuilder()
-            .setCustomId(`mensaje_modal_${destino.id}`)
-            .setTitle(`✉️ Mensaje a ${destino.username}`.slice(0, 45))
-            .addComponents(new ActionRowBuilder().addComponents(texto));
-        return interaction.showModal(modal);
+        if (canal) {
+            const motivo = motivoNoPuedeEscribir(client, canal);
+            if (motivo) return interaction.reply(efimero(`❌ No puedo publicar en <#${canal.id}>: ${motivo}.`));
+            return interaction.showModal(
+                formulario(`${PREFIJO_CANAL}${canal.id}`, `✉️ Mensaje en #${canal.name}`, "Lo que se publica en el canal, tal cual."),
+            );
+        }
+        if (destino.bot) return interaction.reply(efimero("❌ No tiene sentido mandarle un mensaje a un bot."));
+        return interaction.showModal(
+            formulario(
+                `mensaje_modal_${destino.id}`,
+                `✉️ Mensaje a ${destino.username}`,
+                "Lo que le quieres decir. Le llega tal cual, como DM del bot.",
+            ),
+        );
     },
 
     async handleModal(client, interaction) {
         if (!isAdmin(interaction)) return interaction.reply(efimero("⛔ Solo los admins pueden mandar mensajes desde el bot."));
-        const destinoId = interaction.customId.slice("mensaje_modal_".length);
         const texto = interaction.fields.getTextInputValue("texto").trim();
         if (!texto) return interaction.reply(efimero("❌ El mensaje está vacío."));
+        if (interaction.customId.startsWith(PREFIJO_CANAL)) {
+            return publicarEnCanal(client, interaction, interaction.customId.slice(PREFIJO_CANAL.length), texto);
+        }
+        const destinoId = interaction.customId.slice("mensaje_modal_".length);
 
         const destino = await client.users.fetch(destinoId).catch(() => null);
         if (!destino) return interaction.reply(efimero("❌ No encuentro a esa persona."));

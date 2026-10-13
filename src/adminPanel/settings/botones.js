@@ -1,4 +1,5 @@
 const guildSettings = require("../../systems/guildSettings");
+const adminAudit = require("../../systems/adminAudit");
 const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
 
 // Las horas de 0 a 23 (Madrid) en un desplegable.
@@ -163,6 +164,19 @@ async function accionCriptoLimits(interaction, id, guildId) {
     return true;
 }
 
+/** Pausa o reanuda las compras y ventas de TTCL (#453) y vuelve a pintar el panel con el estado nuevo. */
+async function accionCriptoPausa(interaction, id, guildId) {
+    const pausar = !guildSettings.getSettings(guildId).cripto.pausa;
+    guildSettings.setSetting(guildId, "cripto.pausa", pausar);
+    adminAudit.logAdminAction({
+        guildId,
+        actorId: interaction.user.id,
+        action: pausar ? "settings.cripto.pausar" : "settings.cripto.reanudar",
+    });
+    await interaction.update(buildCriptoPanel(guildId));
+    return true;
+}
+
 async function accionCasinoLimits(interaction, id, guildId) {
     const c = guildSettings.getSettings(guildId).casino;
     const modal = simpleModal("paneladmin_cfg_casino_limits_modal", "Casino: Límites", [
@@ -239,6 +253,7 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_duende_espontaneo", accionDuendeEspontaneo],
     ["paneladmin_cfg_cripto_market", accionCriptoMarket],
     ["paneladmin_cfg_cripto_limits", accionCriptoLimits],
+    ["paneladmin_cfg_cripto_pausa", accionCriptoPausa],
     ["paneladmin_cfg_casino_limits", accionCasinoLimits],
     ["paneladmin_cfg_casino_rtp", accionCasinoRtp],
     ["paneladmin_cfg_tienda_edit", accionTiendaEdit],

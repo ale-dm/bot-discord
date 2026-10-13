@@ -3,7 +3,9 @@ const { Client, GatewayIntentBits, Collection, MessageFlags } = require("discord
 const path = require("path");
 require("dotenv").config();
 const { createLogger, logErrorSync, flushLogs, registerSecret } = require("./core/logger");
+const { performance } = require("node:perf_hooks");
 const { whoWhere, describeCommand, componentKind, describeComponentInput, runJob } = require("./core/interactionLog");
+const latencias = require("./core/latencias");
 
 // Cada error registrado desde aquí puede acabar en una alerta por DM a los admins (se envían al conectar).
 const alertas = require("./systems/alertas");
@@ -101,6 +103,7 @@ client.once("clientReady", async () => {
     const n = client.guilds.cache.size;
     log.info(`Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
     programarTareas(client);
+    latencias.iniciarLog();
 
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
     // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia
@@ -187,6 +190,7 @@ client.on("interactionCreate", async (interaction) => {
         const what = `${componentKind(interaction)} ${interaction.customId}`;
         if (route.acl && (await denyByAcl(route.acl, compLog, what))) return;
         const t0 = Date.now();
+        const medida = performance.now();
         try {
             await route.mod[route.method](client, interaction);
             compLog.info(`${what}${describeComponentInput(interaction)} · ${whoWhere(interaction)} · ${Date.now() - t0} ms`);
@@ -194,6 +198,7 @@ client.on("interactionCreate", async (interaction) => {
             compLog.error(`${what} falló (${route.source}.${route.method}) · ${whoWhere(interaction)} · ${Date.now() - t0} ms`, e);
             await replySafe(interaction, { content: "Hubo un error al procesar esta acción.", flags: MessageFlags.Ephemeral });
         }
+        latencias.registrar("componente", latencias.prefijoDe(interaction.customId), performance.now() - medida);
         return;
     }
 
@@ -247,6 +252,12 @@ async function shutdown(motivo, exitCode) {
         await client.destroy();
     } catch (e) {
         log.warn("Error cerrando la conexión con Discord:", e);
+    }
+    try {
+        // El historial del Duende se guarda en diferido (#486): lo pendiente se escribe antes de salir.
+        require("./systems/duende/memoria").vaciarPendiente();
+    } catch (e) {
+        log.warn("Error guardando el historial del Duende:", e);
     }
     try {
         db.close();

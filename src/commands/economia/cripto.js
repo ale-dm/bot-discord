@@ -44,6 +44,9 @@ module.exports = {
             return safeUpdate(interaction, await paneles.pestana(id.replace("cripto_tab_", ""), userId, guildId));
         }
 
+        // ── Mercado: los últimos eventos de precio
+        if (id === "cripto_eventos") return safeUpdate(interaction, paneles.pantallaEventos());
+
         // ── Mercado: rango de la gráfica (cripto_rango_DIAS)
         if (id.startsWith("cripto_rango_")) {
             return safeUpdate(interaction, await paneles.pantallaMercado(guildId, Number(id.replace("cripto_rango_", ""))));

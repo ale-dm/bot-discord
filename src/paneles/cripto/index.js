@@ -39,6 +39,7 @@ module.exports = {
     pestana,
     repintar,
     pantallaMercado: mercado.pantallaMercado,
+    pantallaEventos: mercado.pantallaEventos,
     RANGOS: mercado.RANGOS,
     pantallaComprar: operar.pantallaComprar,
     pantallaConfirmarCompra: operar.pantallaConfirmarCompra,

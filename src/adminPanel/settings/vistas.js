@@ -161,6 +161,11 @@ function buildCriptoPanel(guildId) {
         .setTitle("📈 Cripto")
         .setDescription("Configura comisiones y límites/cooldowns de compra-venta. El precio de TTCL sale del pool de liquidez.")
         .addFields(
+            {
+                name: "Mercado",
+                value: c.pausa ? "⏸️ **En pausa**: nadie puede comprar ni vender" : "▶️ Abierto",
+                inline: true,
+            },
             { name: "TTCL", value: "Pool de liquidez: reservas fijas en el código", inline: true },
             { name: "Fees", value: `Compra: **${c.fee_buy_pct}%**\nVenta: **${c.fee_sell_pct}%**`, inline: true },
             { name: "Compra", value: `Min/Max: **${c.min_buy} / ${c.max_buy}**\nCooldown: **${c.cooldown_buy_sec}s**`, inline: true },
@@ -172,6 +177,10 @@ function buildCriptoPanel(guildId) {
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_cripto_market").setLabel("📊 TTCL + fees").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_cfg_cripto_limits").setLabel("💱 Límites/cooldown").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_cfg_cripto_pausa")
+            .setLabel(c.pausa ? "▶️ Reanudar mercado" : "⏸️ Pausar mercado")
+            .setStyle(c.pausa ? ButtonStyle.Success : ButtonStyle.Danger),
     );
 
     return { embeds: [embed], components: [row, navRow()] };

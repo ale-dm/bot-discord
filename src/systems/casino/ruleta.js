@@ -1,5 +1,6 @@
 // Reglas de la ruleta europea (0-36): colores, paridad, mitades y docenas, cuánto paga cada tipo de apuesta,
 // la tirada y el cobro. juegos/casino/ruleta anima la rueda y pinta los mensajes; aquí no hay nada de Discord.
+const db = require("../../core/db");
 const { procesarGanancia, procesarPerdida, applyRtp } = require("../casinoTransactions");
 
 const ROJOS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -76,4 +77,18 @@ function liquidarTirada(userId, guildId, { apuesta, tipo, valor, numero }) {
     return { exito, gananciaNet };
 }
 
-module.exports = { WHEEL, esRojo, infoNum, calcularPago, tirarNumero, liquidarTirada };
+/**
+ * Los últimos números que han salido en la ruleta, del más reciente al más antiguo (#458). Salen de la tabla del casino
+ * (el número va en el detalle de cada tirada), así que cuentan las tiradas de todo el servidor. Vacío si no ha habido.
+ * @returns {{ n: number, color: "rojo" | "negro" | "verde" }[]}
+ */
+function ultimosNumeros(limite = 10) {
+    return db
+        .prepare(
+            "SELECT json_extract(detalle, '$.n') AS n FROM casino WHERE juego = 'ruleta' AND json_extract(detalle, '$.n') IS NOT NULL ORDER BY id DESC LIMIT ?",
+        )
+        .all(limite)
+        .map((f) => ({ n: Number(f.n), color: infoNum(Number(f.n)).colorNombre }));
+}
+
+module.exports = { WHEEL, esRojo, infoNum, calcularPago, tirarNumero, liquidarTirada, ultimosNumeros };

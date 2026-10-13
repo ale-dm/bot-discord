@@ -7,6 +7,7 @@ const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
 const alertas = require("../systems/alertas");
 const { createLogger, getLogStats, setLogLevel } = require("../core/logger");
+const latencias = require("../core/latencias");
 const { getUsage: getGeminiUsage } = require("../services/geminiClient");
 const { creditosRestantes, CREDITOS_AVISO } = require("../services/oddsApi");
 const { modalConCampos, SI_NO_NUMERICO, usuariosElegidos } = require("./common");
@@ -40,6 +41,7 @@ function filas(nivelActual) {
         ),
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("paneladmin_sis_voz").setLabel("🔊 Probar voz").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("paneladmin_sis_latencias").setLabel("⏱️ Latencias").setStyle(ButtonStyle.Secondary),
         ),
     ];
 }
@@ -178,6 +180,25 @@ function buildTtcl(guildId) {
     return { content: "", embeds: [embed], components: [fila] };
 }
 
+/** ⏱️ Latencias (#481): p50 y p95 de lo que tarda cada manejador (mensajes, botones y formularios, tareas). */
+function buildLatencias() {
+    const embed = new EmbedBuilder()
+        .setTitle("⏱️ Latencias por manejador")
+        .setDescription(
+            `Los 15 más lentos (por p95), con las últimas ${latencias.MAX_MUESTRAS} muestras de cada uno desde el arranque. ` +
+                "Todo en milisegundos. `mensaje:duende` incluye la espera a Gemini.\n```\n" +
+                `${latencias.tabla(15)}\n` +
+                "```",
+        )
+        .setColor(0x3498db)
+        .setTimestamp();
+    const fila = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_sis_latencias").setLabel("🔄 Refrescar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_sis_home").setLabel("◀ Sistema").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: "", embeds: [embed], components: [fila] };
+}
+
 function buildAlertas(guild, aviso = "") {
     const e = alertas.estado(guild?.id);
     const quien = e.adminIds.length
@@ -267,6 +288,10 @@ async function handleSistemaButton(interaction) {
     }
     if (id === "paneladmin_sis_alertas") {
         await interaction.update(buildAlertas(interaction.guild));
+        return true;
+    }
+    if (id === "paneladmin_sis_latencias") {
+        await interaction.update(buildLatencias());
         return true;
     }
     if (id === "paneladmin_sis_alertas_editar") {

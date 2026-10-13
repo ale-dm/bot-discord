@@ -29,6 +29,23 @@ function validarCantidad(cantidad) {
     return null;
 }
 
+const MAX_PROVOCACION = 100;
+
+/**
+ * La frase de provocación opcional de un reto (#440): sin frase, `{ ok: true, texto: null }`. Se limpia (espacios y
+ * saltos de línea) y se rechaza si es muy larga o lleva una mención masiva (@everyone, @here).
+ */
+function validarProvocacion(frase) {
+    const texto = String(frase ?? "")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (!texto) return { ok: true, texto: null };
+    if (texto.length > MAX_PROVOCACION) return { ok: false, mensaje: `❌ La frase puede tener como mucho ${MAX_PROVOCACION} caracteres.` };
+    if (/@(everyone|here)/i.test(texto))
+        return { ok: false, mensaje: "❌ La frase no puede mencionar a todo el mundo (@everyone o @here)." };
+    return { ok: true, texto };
+}
+
 // ─── Crear ───────────────────────────────────────────────────────────────────
 
 function insertar(campos, opcionCreador) {
@@ -38,9 +55,9 @@ function insertar(campos, opcionCreador) {
             const info = db
                 .prepare(
                     `INSERT INTO retos (tipo, estado, creador, rival, cantidad, guildId, channelId, match_id, eleccion, juego, pregunta, opciones,
-                                        creado_en, actualizado_en, expira_en)
+                                        provocacion, creado_en, actualizado_en, expira_en)
                      VALUES (@tipo, @estado, @creador, @rival, @cantidad, @guildId, @channelId, @match_id, @eleccion, @juego, @pregunta, @opciones,
-                             @ahora, @ahora, @expira_en)`,
+                             @provocacion, @ahora, @ahora, @expira_en)`,
                 )
                 .run({
                     guildId: null,
@@ -50,6 +67,7 @@ function insertar(campos, opcionCreador) {
                     juego: null,
                     pregunta: null,
                     opciones: null,
+                    provocacion: null,
                     ...campos,
                     creador: String(campos.creador),
                     rival: campos.rival ? String(campos.rival) : null,
@@ -76,9 +94,11 @@ function validarDuelo(creador, rival, cantidad) {
 }
 
 /** Apuesta 1 contra 1 a un partido: el creador va con `eleccion` (home/draw/away) y el rival con lo contrario. */
-function crearPartido({ creador, rival, matchId, eleccion, cantidad, guildId = null, channelId = null }) {
+function crearPartido({ creador, rival, matchId, eleccion, cantidad, provocacion = null, guildId = null, channelId = null }) {
     const invalido = validarDuelo(creador, rival, cantidad);
     if (invalido) return error(invalido);
+    const frase = validarProvocacion(provocacion);
+    if (!frase.ok) return error(frase.mensaje);
     if (!ELECCIONES.includes(eleccion)) return error("❌ Elige un resultado.");
     const p = partidoDe(matchId);
     if (!p) return error("❌ No encuentro ese partido.");
@@ -95,6 +115,7 @@ function crearPartido({ creador, rival, matchId, eleccion, cantidad, guildId = n
             channelId,
             match_id: matchId,
             eleccion,
+            provocacion: frase.texto,
             expira_en: expira,
         },
         "a_favor",
@@ -102,10 +123,12 @@ function crearPartido({ creador, rival, matchId, eleccion, cantidad, guildId = n
 }
 
 /** Duelo de casino (ppt, dados o blackjack) contra otra persona. */
-function crearDuelo({ creador, rival, juego, cantidad, guildId = null, channelId = null }) {
+function crearDuelo({ creador, rival, juego, cantidad, provocacion = null, guildId = null, channelId = null }) {
     const invalido = validarDuelo(creador, rival, cantidad);
     if (invalido) return error(invalido);
     if (!JUEGOS[juego]) return error("❌ Ese juego no existe.");
+    const frase = validarProvocacion(provocacion);
+    if (!frase.ok) return error(frase.mensaje);
     return insertar(
         {
             tipo: "duelo",
@@ -116,6 +139,7 @@ function crearDuelo({ creador, rival, juego, cantidad, guildId = null, channelId
             guildId,
             channelId,
             juego,
+            provocacion: frase.texto,
             expira_en: Date.now() + ESPERA_ACEPTAR_MS,
         },
         null,
@@ -225,4 +249,13 @@ function crearContraDuende({ userId, cantidad, matchId = null, eleccion = null, 
     }
 }
 
-module.exports = { crearPartido, crearDuelo, crearPorra, leerOpciones, motivoNoContraDuende, crearContraDuende };
+module.exports = {
+    MAX_PROVOCACION,
+    validarProvocacion,
+    crearPartido,
+    crearDuelo,
+    crearPorra,
+    leerOpciones,
+    motivoNoContraDuende,
+    crearContraDuende,
+};
