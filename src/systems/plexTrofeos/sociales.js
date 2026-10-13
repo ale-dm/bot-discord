@@ -8,6 +8,8 @@ const { renombrar, crear } = require("./nombres");
 
 /** Contadores fijos del catálogo (achievementsSystem, categoría plex) de los trofeos sociales. */
 const EVENTOS_SOCIALES = { compartidas: "plex_cine_compartido", sinSpoilers: "plex_sin_spoilers", primero: "plex_primero" };
+/** Contador fijo de la racha más larga de días seguidos viendo Plex (#467). */
+const EVENTO_DIAS_SEGUIDOS = "plex_dias_seguidos";
 /** "Sin spoilers": verlo en las 24 h desde que llega a Plex. "Estreno": en su primera semana en Plex. */
 const SIN_SPOILERS_S = 24 * 3600;
 const ESTRENO_S = 7 * 24 * 3600;
@@ -92,6 +94,7 @@ async function eventosDe(guildId, links, statsPorUsuario = new Map()) {
             for (const tipo of ["eps", "pelis", "series"]) eventos.push({ event: plexIdiomas.evento(tipo, modo), value: c[tipo] });
         const s = social.get(link.discordUserId);
         for (const [campo, event] of Object.entries(EVENTOS_SOCIALES)) eventos.push({ event, value: s[campo] });
+        eventos.push({ event: EVENTO_DIAS_SEGUIDOS, value: datos.diasSeguidos });
         for (const c of candidatos(datos, ctx)) {
             if (!existentes.has(c.id) && !nuevos.has(c.id)) nuevos.set(c.id, c);
             eventos.push({ event: PREFIJO + c.id, value: 1 });
@@ -131,4 +134,4 @@ async function eventosDe(guildId, links, statsPorUsuario = new Map()) {
 
 // ─── Rareza, preferencias y admin ────────────────────────────────────────────
 
-module.exports = { EVENTOS_SOCIALES, sociales, eventosDe };
+module.exports = { EVENTOS_SOCIALES, EVENTO_DIAS_SEGUIDOS, sociales, eventosDe };
