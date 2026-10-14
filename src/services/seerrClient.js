@@ -74,6 +74,10 @@ async function call(guildId, method, path, { params, data } = {}) {
     return res.data;
 }
 
+// El estado de la PETICIÓN (distinto del estado del título en Plex): 1 pendiente de aprobación, 2 aprobada, 3 rechazada.
+const PETICION_PENDIENTE = 1;
+const PETICION_RECHAZADA = 3;
+
 const STATUS_LABELS = {
     1: "sin solicitar",
     2: "pendiente de aprobación",
@@ -233,7 +237,53 @@ async function getRequestsRaw(guildId, { filter = "all", take = 100, sort = "mod
         estadoCodigo: Number(r.media?.status) || 0,
         seerrUserId: r.requestedBy?.id ?? null,
         plexUsername: r.requestedBy?.plexUsername || null,
+        estadoPeticion: Number(r.status) || 0,
     }));
+}
+
+/** Las peticiones pendientes de aprobación de una persona de Seerr, con su título (#410): { id, mediaType, tmdbId, titulo, fecha }. */
+async function getPeticionesPendientesDe(guildId, seerrUserId) {
+    const propias = (await getRequestsRaw(guildId, { filter: "pending", take: 100, sort: "added" })).filter(
+        (p) => p.estadoPeticion === PETICION_PENDIENTE && Number(p.seerrUserId) === Number(seerrUserId),
+    );
+    const titulos = await Promise.all(propias.map((p) => getMediaTitle(guildId, p.mediaType, p.tmdbId)));
+    return propias.map((p, i) => ({ id: p.id, mediaType: p.mediaType, tmdbId: p.tmdbId, titulo: titulos[i] || `(tmdb ${p.tmdbId})` }));
+}
+
+/** Borra una petición de Seerr (#410). */
+async function cancelarPeticion(guildId, requestId) {
+    await call(guildId, "delete", `/request/${Number(requestId)}`);
+    log.info(`Petición ${requestId} cancelada`);
+}
+
+/**
+ * Estrenos entre dos días «AAAA-MM-DD» (#299): lo que Seerr da en «próximamente» (películas y series), con póster y fecha, de la
+ * fecha más próxima a la más lejana. { tmdbId, mediaType, titulo, fecha, poster, estadoCodigo }.
+ */
+async function getEstrenos(guildId, desde, hasta) {
+    const peticiones = [
+        call(guildId, "get", "/discover/movies/upcoming", {
+            params: { page: 1, language: "es", primaryReleaseDateGte: desde, primaryReleaseDateLte: hasta },
+        }),
+        call(guildId, "get", "/discover/tv/upcoming", {
+            params: { page: 1, language: "es", firstAirDateGte: desde, firstAirDateLte: hasta },
+        }),
+    ];
+    const [peliculas, series] = await Promise.all(peticiones);
+    return [...(peliculas?.results || []), ...(series?.results || [])]
+        .map((r) => {
+            const tipo = r.mediaType || (r.title ? "movie" : "tv");
+            return {
+                tmdbId: r.id,
+                mediaType: tipo,
+                titulo: tipo === "movie" ? r.title : r.name,
+                fecha: (r.releaseDate || r.firstAirDate || "").slice(0, 10),
+                poster: r.posterPath ? `https://image.tmdb.org/t/p/w342${r.posterPath}` : null,
+                estadoCodigo: r.mediaInfo?.status || 1,
+            };
+        })
+        .filter((e) => e.titulo && e.fecha >= desde && e.fecha <= hasta)
+        .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.titulo.localeCompare(b.titulo));
 }
 
 async function getRequests(guildId, { filter = "all", take = 10, sort = "added" } = {}) {
@@ -263,6 +313,11 @@ module.exports = {
     createRequest,
     getRequests,
     getRequestsRaw,
+    getPeticionesPendientesDe,
+    cancelarPeticion,
+    getEstrenos,
+    PETICION_PENDIENTE,
+    PETICION_RECHAZADA,
     getMediaTitle,
     getMediaStatus,
 

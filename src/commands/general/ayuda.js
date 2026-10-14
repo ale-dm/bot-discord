@@ -16,7 +16,8 @@ const SECCIONES = {
             'Puede mirar datos reales: tu nivel, saldo, logros, precio de TTCL y, en los canales permitidos, Plex y Seerr ("¿qué ha visto Raúl esta semana?", "pídeme Dune").',
             "`/duende` — un panel con 💬 Hablar, 🧠 Recuerdos (anotar, olvidar y ver lo que sabe de ti; los admins, de cualquiera) y 🎭 Personalidad del canal.",
             "`/ia prompt [agente] [generar_imagen]` — asistentes especializados (técnico, creativo, profesor, coach…).",
-            "`/imagen descripcion [imagen1..5] [estilo]` — genera o edita imágenes.",
+            "`/imagen descripcion [imagen1..5] [estilo]` — genera o edita imágenes (con 🔁 Otra versión; el Duende también dibuja si se lo pides en el chat). `/imagenes` lista las tuyas.",
+            "`/resumen [mensajes]` — el Duende te resume lo que se ha hablado en el canal.",
             "`/bola8 pregunta` — la bola 8 mágica.",
         ],
     },
@@ -27,8 +28,8 @@ const SECCIONES = {
         texto: [
             "`/tts texto [voz]` — el bot entra en tu canal de voz y lo lee en voz alta.",
             "`/escuchar [usuario]` — el Duende escucha lo que dices en voz y te contesta hablando; sigue la conversación mientras hables.",
-            "`/sonidos` — un tablero de botones con los sonidos del servidor: pulsas uno y el bot entra en tu canal de voz y lo reproduce. Los sube un admin en `/paneladmin` → 🔊 Sonidos.",
-            "`/conectar [canal]` — el bot se queda **30 minutos** en un canal de voz, para que `/sonidos` suene al momento sin entrar y salir. Sin canal, usa el tuyo; si ya está conectado, lo desconecta.",
+            "`/sonidos` — un tablero de botones con los sonidos del servidor: pulsas uno y el bot entra en tu canal de voz y lo reproduce (si suena otro, espera su turno). Puedes buscar por nombre, filtrar por categoría, pedir uno al azar o ver los más usados. Los sube un admin en `/paneladmin` → 🔊 Sonidos.",
+            "`/conectar [canal]` — el bot se queda **30 minutos** en un canal de voz, para que `/sonidos` suene al momento sin entrar y salir. Sin canal, usa el tuyo; si ya está conectado, lo desconecta. Con `sonido` toca uno al entrar.",
         ],
     },
     progresion: {
@@ -43,15 +44,16 @@ const SECCIONES = {
         ],
         texto: [
             "Ganas XP escribiendo (una vez cada 15 s) y en voz (5 XP/min, sin mute y con alguien más en el canal). Al subir de nivel desbloqueas rangos y roles.",
-            "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro.",
+            "**Racha diaria**: cada día seguido ganando XP suma +2 % de XP (hasta +50 %). Te aviso por DM si está en peligro o si la pierdes, y se guarda tu mejor racha (🏆 Rankings → 🔥 Rachas).",
             "`/perfil [usuario] [seccion]` — todo lo tuyo (o de otra persona) en pestañas: 👤 Perfil (nivel, progreso, rango, racha y recompensas de nivel) · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. Con Plex vinculado, 👤 Perfil → 🍿 Plex: tus horas, en qué idiomas lo ves y lo que te falta poco.",
-            `**Logros**: ${CATALOG.length}, con recompensa en monedas; en 🏅 Logros se ven (también los secretos), se filtran por categoría o dificultad y se reclaman uno a uno o todos. Los de 🍿 Plex (horas vistas, películas, series, anime, maratones...) cuentan lo que ves si tienes la cuenta de Plex vinculada; además hay **trofeos** por terminar cada temporada, serie o saga, por géneros, directores y décadas, y los que crean los admins (algunos con fechas, como eventos), con lo raros que son; **por idioma**: en inglés, VOSE o castellano, y el anime doblado o en japonés con subtítulos; y **sociales**: la misma película que otro el mismo día, verlo en cuanto llega a Plex o ser el primero en ver un estreno. Cada uno tiene dificultad: 🟢 Fácil, 🟡 Normal o 🎰 Gordo del Plex (con rol al llegar a 1, 5 y 10, si los admins lo ponen). Lo que sale al importar tu historial da menos monedas. Con 🍿 Ocultar mis logros de Plex no se anuncian ni los ven los demás.`,
+            `**Logros**: ${CATALOG.length}, con recompensa en monedas; en 🏅 Logros se ven (también los secretos), se filtran por categoría o dificultad y se reclaman uno a uno o todos. Los de 🍿 Plex (horas vistas, películas, series, anime, maratones...) cuentan lo que ves si tienes la cuenta de Plex vinculada; además hay **trofeos** por terminar cada temporada, serie o saga, por géneros, directores y décadas, y los que crean los admins (algunos con fechas, como eventos), con lo raros que son; **por idioma**: en inglés, VOSE o castellano, y el anime doblado o en japonés con subtítulos; y **sociales**: la misma película que otro el mismo día, verlo en cuanto llega a Plex o ser el primero en ver un estreno. Cada uno tiene dificultad: 🟢 Fácil, 🟡 Normal o 🎰 Gordo del Plex (con rol al llegar a 1, 5 y 10, si los admins lo ponen). Lo que sale al importar tu historial da menos monedas. Con 🍿 Ocultar mis logros de Plex no se anuncian ni los ven los demás. Los domingos te aviso por DM si tienes logros sin reclamar.`,
             "`/avisos` — elige qué DM te manda el bot (racha, partidos, Wrapped, retos, cooldowns...) o apágalos todos con 🌙 no molestar. Las alertas de administración no se pueden apagar.",
+            '`/recordar nuevo cuando texto` te deja un aviso por DM a una hora ("18:30", "mañana 09:00", "en 45 min"; hasta 24 h) y `/recordar lista` los enseña y los borra.',
             "`/cumpleaños fecha dia mes` guarda tu cumpleaños (sin año) para que el bot te felicite en su canal; `ver` enseña los próximos cinco y `borrar` quita el tuyo.",
             "`/encuesta pregunta opcion1 opcion2 [..opcion5] [horas]` — una encuesta con un botón por opción y el recuento en vivo (se cierra a las 24 h, o cuando la cierra quien la creó). `/sugerencia` — envía una idea al buzón del servidor, con 👍 y 👎; un admin la acepta o la descarta y te avisa por DM.",
             "`/presentacion` — una frase sobre ti (hasta 150 caracteres) que sale en 👤 Perfil cuando otra persona abre tu perfil. Enviarla vacía la borra; también se edita con ✏️ Presentación en tu propio perfil.",
-            "**Rankings**: nivel, riqueza, casino, logros, TTCL, 🍿 Plex (logros, Gordos, políglota y horas) y ⚽ apostadores (beneficio, acierto y racha), en una pantalla con un menú.",
-            "`/pase` — el pase de batalla de la temporada (15 días): cada cosa que haces (escribir, voz, casino, cripto, apuestas, tienda, completar un logro) da XP con un tope diario, y cada nivel da monedas, que se cobran a mano en el propio `/pase`. Cada día hay 3 misiones que dan XP extra.",
+            "**Rankings**: nivel, riqueza, casino, logros, TTCL, 🍿 Plex (logros, Gordos, políglota y horas) y ⚽ apostadores (beneficio, acierto y racha), 🔥 rachas, 📅 la clasificación de esta semana, 🗓️ los ganadores de las últimas semanas y 🏦 patrimonio neto, en una pantalla con un menú. En tu 💰 Economía puedes ocultar tu dinero a los demás, y en 👤 Perfil activar un aviso del domingo si vas primero en la clasificación.",
+            "`/pase` — el pase de batalla de la temporada (15 días): cada cosa que haces (escribir, voz, casino, cripto, apuestas, tienda, completar un logro) da XP con un tope diario, y cada nivel da monedas, que se cobran a mano en el propio `/pase`. Cada día hay 3 misiones que dan XP extra (y un bonus y una racha si haces las tres seguidas), también ganar retos suma, y puedes ver tus topes del día, tu posición y las temporadas pasadas. Te aviso el último día si te quedan niveles por cobrar.",
         ],
     },
     plex: {
@@ -60,7 +62,7 @@ const SECCIONES = {
         titulo: "Plex",
         abrir: [["plex", "", "Plex", "🍿"]],
         texto: [
-            "`/plex` — todo lo de Plex en un panel: 🎬 Sesión de cine (una peli o serie a una hora, con recordatorio 10 minutos antes y botones para apuntarse), 🎯 Para ti (recomendaciones según lo que has visto, con 📥 para pedirlas a Seerr), 🎞️ Wrapped y 🏅 Mi Plex.",
+            "`/plex` — todo lo de Plex en un panel: 🎬 Sesión de cine (una peli o serie a una hora, con recordatorio 10 minutos antes y botones para apuntarse), 🎯 Para ti (recomendaciones según lo que has visto, con 📥 para pedirlas a Seerr), 🎞️ Wrapped (del mes y, en enero, del año) y 🏅 Mi Plex, 📡 Ahora (qué se ve en este momento), 🗓️ Estrenos de la semana, 🏆 Campeones del ranking semanal y 📥 Mis pedidos de Seerr (para cancelarlos). Las sesiones de cine pueden tener varias películas para votar, sugerencias para el grupo y repetirse cada semana.",
             "**Wrapped mensual**: el día 1 de cada mes te llega por DM tu resumen del mes anterior. Es privado: nadie más lo ve.",
             "Si tu cuenta de Plex no está vinculada, el panel lo indica; con la vinculación, tus horas, logros y recomendaciones salen de tu propio historial.",
         ],
@@ -75,8 +77,8 @@ const SECCIONES = {
         ],
         texto: [
             "Empiezas con **1.000 monedas** en 💵 efectivo. Se juega y se compra con el **efectivo**; el 🏦 **banco** es el sitio seguro (hay que sacar el dinero para gastarlo).",
-            "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
-            "`/tienda` — un panel con pestañas: 🛒 Catálogo (compra con los botones, filtra por categoría y rareza, o busca por nombre), 🎒 Inventario (tus objetos, con un botón para usarlos: los de rol te dan un rol, los consumibles un efecto) y 🧾 Mis compras.",
+            "`/perfil` → 💰 Economía: 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (con filtro y exportar a CSV) · 🛡️ Límite de pérdidas (un tope que te pones tú en el casino y las apuestas), más lo ganado en el casino y tu cartera cripto. En el casino, la tienda y la cripto también hay un botón 💵 Sacar del banco.",
+            "`/tienda` — un panel con pestañas: 🛒 Catálogo (compra con los botones, filtra por categoría y rareza, o busca por nombre), 🎒 Inventario (tus objetos, con un botón para usarlos: los de rol te dan un rol, los consumibles un efecto) y 🧾 Mis compras. También 🏷️ Mercado (vende y compra objetos entre jugadores), 🎁 Gestionar en el inventario (regalar, vender a la tienda), ⭐ lista de deseos con aviso por DM y 🎟️ Canjear códigos.",
         ],
     },
     casino: {
@@ -89,7 +91,7 @@ const SECCIONES = {
         ],
         texto: [
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",
-            "**Juegos**: blackjack (×2, blackjack ×2,5), tragaperras con jackpot, ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
+            "**Juegos**: blackjack (×2, blackjack ×2,5; con seguro, rendirse y 💡 consejo), tragaperras con jackpot (y tirada automática), ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
             "**Ruleta**: también a **calle** (3 números de una fila del tapete, ×12). **Piedra, papel o tijera** se puede jugar **al mejor de 3** (misma apuesta, gana quien llegue a 2 manos). Tras ganar, 🎲 **Doble o nada**: te juegas la ganancia a cara o cruz (solo una vez por victoria).",
             "🔒 **Autoexclusión**: desde el resumen del casino puedes bloquearte el casino 1 día, 1 semana o 1 mes; no se puede levantar antes de tiempo. Los admins pueden poner un tope de apuesta y un cooldown propios a cada juego.",
             "Eliges juego e importe con botones; al acabar: 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.",
@@ -107,9 +109,9 @@ const SECCIONES = {
         ],
         texto: [
             "Partidos reales de LaLiga, Premier y Champions con cuotas reales: `/juegos` → ⚽ Apuestas. También al **🎯 marcador exacto**: si lo aciertas, ×8 lo apostado.",
-            "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado).",
-            "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve. Los duelos pueden ser **abiertos** (lo acepta el primero), **al mejor de 3**, se pueden **rendir** y, en blackjack, **doblar**; el rival puede hacer una **💬 contraoferta** de cantidad, y puedes **🚫 bloquear** a quien te reta o ver tu **🆚 cara a cara** con alguien. Te aviso por DM cuando te toca jugar y cuando un reto está a punto de caducar. Las porras pueden cerrarse solas a una hora.",
-            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego (cuánto, lo que podrías cobrar y tu beneficio del mes), con tus pronósticos de la quiniela, tus 🧩 combinadas y los aciertos que llevas, y lo ya resuelto. Una apuesta a un partido que aún no ha empezado se puede ↩️ cancelar, con un 10 % de comisión.",
+            "**Quiniela** de la jornada (botón 🧾): el 90 % del bote se reparte entre quien más acierte (mínimo la mitad de aciertos; si nadie llega, se devuelve lo apostado). Puedes rellenar los favoritos con un botón, y lo que eliges se guarda como borrador. En la 🏅 Liga hay una clasificación por competición.",
+            "**⚔️ Retos** (`/juegos` → ⚔️): apuesta contra otra persona a un partido («a que gana el Betis»; el otro va con lo contrario), un duelo de piedra-papel-tijera, dados o blackjack, o una **porra** con opciones que resuelve un admin. El dinero se guarda hasta que se resuelve y el ganador se lo lleva todo; si nadie acepta en 24 h, se devuelve. Los duelos pueden ser **abiertos** (lo acepta el primero), **al mejor de 3**, se pueden **rendir** y, en blackjack, **doblar**, y al acabar puedes pedir la **🔁 revancha**; el rival puede hacer una **💬 contraoferta** de cantidad, y puedes **🚫 bloquear** a quien te reta o ver tu **🆚 cara a cara** con alguien. Te aviso por DM cuando te toca jugar y cuando un reto está a punto de caducar. Las porras pueden cerrarse solas a una hora.",
+            "**Mis jugadas** (`/juegos` → 📋): lo que tienes en juego (cuánto, lo que podrías cobrar y tu beneficio del mes), con tus pronósticos de la quiniela, tus 🧩 combinadas y los aciertos que llevas, y lo ya resuelto. Una apuesta a un partido que aún no ha empezado se puede ↩️ cancelar, con un 10 % de comisión (una combinada, sin comisión). Ahí mismo: 🔁 repetir tu última apuesta, 📤 exportarlas a CSV y tus 🔔 alertas de cuota (el botón 🔔 está en la ficha de cada partido).",
             "Se pagan solas cada hora cuando acaban los partidos, y te aviso por DM si ganas.",
         ],
     },
@@ -119,7 +121,7 @@ const SECCIONES = {
         titulo: "Cripto",
         abrir: [["cripto", "", "Cripto", "📊"]],
         texto: [
-            "`/cripto` — panel con precios, gráficos, compra, venta, cartera e historial.",
+            "`/cripto` — panel con precios, gráficos, compra, venta (por porcentaje o por monedas), cartera e historial, y 🔔 órdenes: alertas de precio por DM, stop-loss y compra recurrente de TTCL.",
             "**$TTCL**, la moneda del servidor: su precio sube cuando se compra y baja cuando se vende.",
         ],
     },
@@ -130,9 +132,9 @@ const SECCIONES = {
         soloAdmin: true,
         abrir: [["paneladmin", "", "Panel admin", "🛠️"]],
         texto: [
-            "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas, premios de la liga, límites), 🛒 Catálogo (objetos y lo que está a la venta), 🔊 Sonidos (subir y borrar), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
+            "`/paneladmin` — todo en un panel: banco, niveles y XP, configuración (Duende, cripto, casino, tienda, logros, permisos de comandos), ⚽ Apuestas (liquidar ahora, crear quinielas, premios de la liga, límites), 🛒 Catálogo (objetos y lo que está a la venta), 🔊 Sonidos (subir, editar, volumen, roles, horario y eventos), 🩺 Sistema (diagnóstico, TTCL, nivel de log), Plex, Seerr y auditoría.",
             "`/duende` → 🎭 Personalidad — los admins añaden, quitan y eligen las personalidades del canal.",
-            "`/mensaje [usuario] [canal]` — manda un DM de parte del bot a alguien (`usuario`) o publica el texto en un canal (`canal`, sin menciones que notifiquen): escribes el texto en un formulario y se manda tal cual. Solo admins; cada envío queda en la auditoría.",
+            "`/mensaje [usuario] [canal]` — manda un DM de parte del bot a alguien (`usuario`) o publica el texto en un canal (`canal`, sin menciones que notifiquen): escribes el texto en un formulario y se manda tal cual. Solo admins; cada envío queda en la auditoría. Con `cuando` (DD/MM/AAAA HH:MM, hora de Madrid) el DM sale más tarde; se cancela en /paneladmin → 🩺 Sistema → ✉️ Mensajes.",
         ],
     },
 };

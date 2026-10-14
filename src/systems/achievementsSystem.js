@@ -1,6 +1,7 @@
 const db = require("../core/db");
 const guildSettings = require("./guildSettings");
 const pase = require("./pase/pase");
+const sonidosEventos = require("./sonidos/eventos");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Logros");
@@ -235,6 +236,8 @@ async function applyEventsUnsafe(guildOrId, userId, eventos, { anunciar = true, 
     // Cada logro nuevo da XP de pase de batalla (no los que se desbloquean al importar el historial de Plex).
     const nuevos = unlocked.filter((a) => !a.importado).length;
     if (nuevos) pase.registrarSeguro(guildId, userId, "logro", nuevos);
+    // 🔔 Si el bot está en voz y el admin le ha puesto un sonido a este evento, suena (#326). No espera: el logro no depende del sonido.
+    if (nuevos) sonidosEventos.disparar(guildId, "logro");
 
     if (unlocked.length) {
         log.info(

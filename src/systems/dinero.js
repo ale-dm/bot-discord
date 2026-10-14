@@ -39,6 +39,9 @@ const TIPOS = {
     negocio: "🏪 Negocios",
     patrimonio: "🏦 Patrimonio",
     pase: "🛡️ Pase",
+    venta: "🏷️ Mercado y ventas",
+    codigo: "🎟️ Códigos",
+    sueldo: "🧾 Sueldos",
     otro: "📦 Otros",
 };
 

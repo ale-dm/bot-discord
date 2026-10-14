@@ -9,12 +9,30 @@ const SIGNO = { home: "1", draw: "X", away: "2" };
 function partidosDe(userId, { pendientes = true, limite = 10 } = {}) {
     return db
         .prepare(
-            `SELECT a.*, p.home_team, p.away_team, p.start_time, p.estado, p.resultado
+            `SELECT a.*, p.home_team, p.away_team, p.start_time, p.estado, p.resultado,
+                    p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.cuota_casa, p.cuota_fuera
              FROM apuestas_usuario a JOIN apuestas_partidos p ON a.match_id = p.match_id
              WHERE a.user_id = ? AND p.estado ${pendientes ? "= 'abierto'" : "!= 'abierto'"}
              ORDER BY p.start_time ${pendientes ? "ASC" : "DESC"} LIMIT ?`,
         )
         .all(userId, limite);
+}
+
+/** Su última apuesta a un partido (la más reciente que sigue en pie: las canceladas se borran), o null. Para repetirla (#349). */
+function ultimaApuestaAPartido(userId) {
+    return (
+        db.prepare("SELECT id, eleccion, cantidad FROM apuestas_usuario WHERE user_id = ? ORDER BY id DESC LIMIT 1").get(String(userId)) ||
+        null
+    );
+}
+
+/**
+ * La cuota que hay ahora para la elección de una apuesta a un partido (#375), con lo que guardan las filas de `partidosDe`. null
+ * si no se sabe: el marcador exacto no tiene cuota (premio fijo) o la API no la dio.
+ */
+function cuotaActual(a) {
+    if (SIGNO[a.eleccion]) return { home: a.cuota_home, draw: a.cuota_draw, away: a.cuota_away }[a.eleccion] ?? null;
+    return mercados.esMercado(a.eleccion) ? mercados.cuotaDe(a, a.eleccion) : null;
 }
 
 /**
@@ -211,7 +229,7 @@ function cartera(userId, ahora = Date.now()) {
 
 /**
  * Combinadas de alguien: las abiertas (estado 'abierta') o las ya cerradas, con cada pata y el nombre de su partido.
- * Una combinada cerrada es 'ganada', 'perdida' o 'reembolsada'.
+ * Una combinada cerrada es 'ganada', 'perdida', 'reembolsada' (un partido sin resultado) o 'cancelada' (#296).
  */
 function combinadasDe(userId, { abiertas = true, limite = 3 } = {}) {
     const filtro = abiertas ? "estado = 'abierta'" : "estado != 'abierta'";
@@ -250,6 +268,8 @@ function estadisticasCombinadas(userId) {
 
 module.exports = {
     partidosDe,
+    ultimaApuestaAPartido,
+    cuotaActual,
     detalleQuiniela,
     quinielasDe,
     quinielaDe,

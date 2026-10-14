@@ -61,6 +61,8 @@ async function accionBuscarusuario(interaction, id, guildId) {
 async function accionHistorialglobal(interaction, id, guildId) {
     let page = 0;
     if (id.startsWith("paneladmin_bank_historialglobal_page_")) page = parseInt(id.split("_").pop(), 10) || 0;
+    // 👁️ Abrir el historial global deja rastro (#402); pasar de página o refrescar, no.
+    else adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "consulta.historial_global" });
     const pageSize = 10;
     const offset = page * pageSize;
     const historial = repo.historialGlobal(pageSize, offset);
@@ -219,6 +221,12 @@ async function buscarUsuario(interaction) {
         await interaction.reply({ content: "Usuario no encontrado.", flags: MessageFlags.Ephemeral });
         return true;
     }
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "consulta.buscar_usuario",
+        details: { userId: member.id },
+    });
     const desc = textoResumenBanco(member.id);
     await interaction.reply({
         embeds: [new EmbedBuilder().setTitle(`🔎 ${member.user.tag}`).setDescription(desc).setColor(0x2980b9)],

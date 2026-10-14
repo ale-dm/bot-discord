@@ -121,13 +121,15 @@ describe("guardado de mensajes, voz y multiplicador", () => {
     test("la config de mensajes guarda base, bonus y cooldown, con mínimos", async () => {
         const i = interaccion({
             customId: "paneladmin_levels_cfg_msg_modal",
-            fields: campos({ xp_base: "0", xp_bonus: "-5", xp_cd: "30" }),
+            fields: campos({ xp_base: "0", xp_bonus: "-5", xp_cd: "30", xp_reaccion: "4", xp_reaccion_cd: "90" }),
         });
         await modal(i);
         const cfg = xp.getAllConfig(G);
         expect(Number(cfg.xp_message_base)).toBe(1);
         expect(Number(cfg.xp_message_len_bonus_max)).toBe(0);
         expect(Number(cfg.xp_message_cooldown_sec)).toBe(30);
+        expect(Number(cfg.xp_reaction_base)).toBe(4);
+        expect(Number(cfg.xp_reaction_cooldown_sec)).toBe(90);
         expect(ultimo(i.reply).content).toContain("Config mensajes actualizada");
     });
 
@@ -177,7 +179,7 @@ describe("racha diaria", () => {
         xp.setConfig(G, "streak_bonus_pct_per_day", 3);
         const i = interaccion({
             customId: "paneladmin_levels_cfg_streak_modal",
-            fields: campos({ enabled: "si", pct_per_day: "mucho", cap_pct: "10" }),
+            fields: campos({ enabled: "si", pct_per_day: "mucho", cap_pct: "10", gracia: "0" }),
         });
         await modal(i);
         expect(ultimo(i.reply).content).toBe("Valores inválidos.");
@@ -187,17 +189,17 @@ describe("racha diaria", () => {
     test("desactivarla con «no» guarda streak_enabled en 0 y lo confirma", async () => {
         const i = interaccion({
             customId: "paneladmin_levels_cfg_streak_modal",
-            fields: campos({ enabled: "no", pct_per_day: "2", cap_pct: "14" }),
+            fields: campos({ enabled: "no", pct_per_day: "2", cap_pct: "14", gracia: "1" }),
         });
         await modal(i);
         expect(xp.getAllConfig(G).streak_enabled).toBe("0");
-        expect(ultimo(i.reply).content).toBe("✅ Racha desactivada: +2%/día (máx +14%).");
+        expect(ultimo(i.reply).content).toBe("✅ Racha desactivada: +2%/día (máx +14%), 1 día de gracia al mes.");
     });
 
     test("cualquier respuesta distinta de no/n/0/false la activa", async () => {
         const i = interaccion({
             customId: "paneladmin_levels_cfg_streak_modal",
-            fields: campos({ enabled: "si", pct_per_day: "1", cap_pct: "5" }),
+            fields: campos({ enabled: "si", pct_per_day: "1", cap_pct: "5", gracia: "0" }),
         });
         await modal(i);
         expect(xp.getAllConfig(G).streak_enabled).toBe("1");

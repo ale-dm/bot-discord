@@ -19,15 +19,30 @@ const { filasImporte } = require("../../paneles/importes");
 
 const { MIN_BET_AMOUNT, MAX_BET_AMOUNT } = formulario;
 
+// La probabilidad que da cada cuota sin el margen de la casa (#370), junto a la cuota, y el margen total. Vacío si falta una cuota.
+function textosProbabilidad(partido) {
+    const p = mercados.probabilidadesSinMargen(partido);
+    if (!p) return { home: "", draw: "", away: "", margen: "" };
+    const pct = (n) => ` · ${mercados.fmtPorcentaje(n)}`;
+    return {
+        home: pct(p.home),
+        draw: pct(p.draw),
+        away: pct(p.away),
+        margen: `📊 Margen de la casa: **${mercados.fmtPorcentaje(p.margen)}**\n`,
+    };
+}
+
 // La ficha de un partido: cuotas, escudos y el texto para elegir.
 function embedPartido(partido, badgeHome, badgeAway) {
+    const prob = textosProbabilidad(partido);
     const embed = new EmbedBuilder()
         .setTitle(`⚽ ${partido.home_team} vs ${partido.away_team}`)
         .setDescription(
             `¿A qué resultado quieres apostar?\n\n` +
-                `🏠 **${partido.home_team}**: cuota \`${partido.cuota_home}\`\n` +
-                `🤝 **Empate**: cuota \`${partido.cuota_draw}\`\n` +
-                `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`\n` +
+                `🏠 **${partido.home_team}**: cuota \`${partido.cuota_home}\`${prob.home}\n` +
+                `🤝 **Empate**: cuota \`${partido.cuota_draw}\`${prob.draw}\n` +
+                `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`${prob.away}\n` +
+                prob.margen +
                 `🎯 **Marcador exacto**: premio fijo de \`×${marcadorExacto.PREMIO}\` lo apostado\n` +
                 mercados
                     .botonesDisponibles(partido)
@@ -69,7 +84,12 @@ function filasPartido(partido, match_id) {
                 .setLabel(b.etiqueta.slice(0, 80))
                 .setStyle(ButtonStyle.Secondary),
         );
-    if (botonesMercado.length) filas.push(new ActionRowBuilder().addComponents(botonesMercado));
+    // 🔔 Alerta de cuota (#345): con los mercados, en su fila; si no hay mercados, en una propia.
+    const botonAlerta = new ButtonBuilder()
+        .setCustomId(`apuesta_alerta_${match_id}`)
+        .setLabel("🔔 Alerta de cuota")
+        .setStyle(ButtonStyle.Secondary);
+    filas.push(new ActionRowBuilder().addComponents([...botonesMercado, botonAlerta]));
     // 🧩 Sumar a mi combinada: el mismo partido con la elección que se quiera (una pata por partido).
     const opciones = [
         partido.cuota_home && { value: "home", label: `🏠 ${partido.home_team} · cuota ${partido.cuota_home}` },
@@ -121,8 +141,8 @@ function modalApuesta(eleccion, match) {
     return modal;
 }
 
-// La confirmación de una apuesta cobrada.
-async function confirmarApuesta(interaction, { userId, match, eleccion, linea, cantidad, cuota }) {
+// El embed de una apuesta cobrada.
+function embedApuestaRegistrada({ userId, match, eleccion, linea, cantidad, cuota }) {
     const saldoActual = dinero.efectivo(userId);
     const resultadoTxt = marcadorExacto.marcadorDe(eleccion)
         ? `Marcador exacto ${match.home_team} ${marcadorExacto.marcadorDe(eleccion)} ${match.away_team}`
@@ -138,11 +158,15 @@ async function confirmarApuesta(interaction, { userId, match, eleccion, linea, c
                 "¡Suerte!",
         )
         .setColor(0x27ae60);
+    return embed;
+}
 
+// La confirmación de una apuesta cobrada.
+async function confirmarApuesta(interaction, apuesta) {
     await interaction.reply({
-        embeds: [embed],
-        components: [filaTrasApostar(userId, { deporte: match.deporte || "laliga" })],
+        embeds: [embedApuestaRegistrada(apuesta)],
+        components: [filaTrasApostar(apuesta.userId, { deporte: apuesta.match.deporte || "laliga" })],
     });
 }
 
-module.exports = { embedPartido, filasPartido, modalApuesta, confirmarApuesta };
+module.exports = { embedPartido, textosProbabilidad, filasPartido, modalApuesta, embedApuestaRegistrada, confirmarApuesta };

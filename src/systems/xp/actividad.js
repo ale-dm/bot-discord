@@ -12,6 +12,10 @@ const {
     registrarMensaje,
     ensureUser,
     isIgnoredChannel,
+    multiplicadorCanal,
+    tieneRolIgnorado,
+    getUltimaReaccion,
+    registrarReaccion,
 } = require("./config");
 const { addXp } = require("./progreso");
 
@@ -26,6 +30,7 @@ function hasOtherActiveMembers(voiceState) {
 
 function isVoiceXpEligible(voiceState) {
     if (!voiceState?.channelId) return false;
+    if (tieneRolIgnorado(voiceState.guild?.id, voiceState.member)) return false;
     const muted = Boolean(voiceState.selfMute || voiceState.serverMute || voiceState.mute);
     const deafened = Boolean(voiceState.selfDeaf || voiceState.serverDeaf || voiceState.deaf);
     if (muted || deafened) return false;
@@ -62,7 +67,11 @@ async function handleMessageXp(message) {
     const ultimo = getUltimoMensaje(guildId, message.author.id);
     if (ultimo && now - Number(ultimo) < cooldownSec * 1000) return;
 
-    if (isIgnoredChannel(guildId, message.channelId)) return;
+    const multiplicadorDelCanal = multiplicadorCanal(guildId, message.channelId);
+    if (isIgnoredChannel(guildId, message.channelId) || multiplicadorDelCanal === 0) return;
+
+    const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
+    if (tieneRolIgnorado(guildId, member)) return;
 
     const len = Math.min(200, effectiveMessageLength(message.content));
     const bonus = Math.floor((len / 200) * bonusMax);
@@ -70,10 +79,36 @@ async function handleMessageXp(message) {
 
     registrarMensaje(guildId, message.author.id, now);
 
-    const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
-    await addXp(message.guild, member || { id: message.author.id }, gain);
+    await addXp(message.guild, member || { id: message.author.id }, gain, { multiplicadorCanal: multiplicadorDelCanal });
     await achievements.applyEvent(message.guild, message.author.id, "message_count", 1);
     pase.registrarSeguro(guildId, message.author.id, "mensaje");
+}
+
+/**
+ * Da XP al autor de un mensaje cuando otra persona le reacciona (#358), como mucho una vez cada N segundos por autor.
+ * Solo gana el autor. No cuentan: reacciones de bots, a mensajes propios o de bots, en canales ignorados ni de quien
+ * tiene un rol sin XP. Con `xp_reaction_base` a 0 está desactivado.
+ */
+async function handleReactionXp(reaction, user) {
+    if (user.bot) return;
+    const mensaje = reaction.message.partial ? await reaction.message.fetch().catch(() => null) : reaction.message;
+    if (!mensaje?.guild || !mensaje.author || mensaje.author.bot || mensaje.author.id === user.id) return;
+    const guildId = mensaje.guild.id;
+    const base = Number(getConfig(guildId, "xp_reaction_base") || 0);
+    if (!(base > 0)) return;
+
+    const ahora = Date.now();
+    const ultima = getUltimaReaccion(guildId, mensaje.author.id);
+    const cooldownSec = Number(getConfig(guildId, "xp_reaction_cooldown_sec") || 0);
+    if (ultima && ahora - Number(ultima) < cooldownSec * 1000) return;
+
+    const multiplicadorDelCanal = multiplicadorCanal(guildId, mensaje.channelId);
+    if (isIgnoredChannel(guildId, mensaje.channelId) || multiplicadorDelCanal === 0) return;
+    const autor = mensaje.member || (await mensaje.guild.members.fetch(mensaje.author.id).catch(() => null));
+    if (tieneRolIgnorado(guildId, autor)) return;
+
+    registrarReaccion(guildId, mensaje.author.id, ahora);
+    await addXp(mensaje.guild, autor || { id: mensaje.author.id }, base, { multiplicadorCanal: multiplicadorDelCanal });
 }
 
 function handleVoiceStateUpdate(oldState, newState) {
@@ -128,7 +163,8 @@ async function voiceTick(client) {
             db.prepare(`UPDATE xp_users SET voz_inicio = NULL WHERE guildId = ? AND userId = ?`).run(row.guildId, row.userId);
             continue;
         }
-        if (isIgnoredChannel(row.guildId, member.voice.channelId)) continue;
+        const multiplicadorDelCanal = multiplicadorCanal(row.guildId, member.voice.channelId);
+        if (isIgnoredChannel(row.guildId, member.voice.channelId) || multiplicadorDelCanal === 0) continue;
         if (!isVoiceXpEligible(member.voice)) {
             db.prepare(`UPDATE xp_users SET voz_inicio = NULL WHERE guildId = ? AND userId = ?`).run(row.guildId, row.userId);
             log.debug(`Voz: XP en pausa para ${row.userId} en ${row.guildId} (${voiceIneligibleReason(member.voice)})`);
@@ -143,10 +179,10 @@ async function voiceTick(client) {
         const perMin = Number(getConfig(row.guildId, "xp_voice_per_min") || 5);
         const xpGain = Math.floor((gainedSecs / 60) * perMin);
         if (xpGain > 0) {
-            await addXp(guild, member, xpGain);
+            await addXp(guild, member, xpGain, { multiplicadorCanal: multiplicadorDelCanal });
             await achievements.applyEvent(guild, member.id, "voice_minutes", gainedSecs / 60);
         }
     }
 }
 
-module.exports = { handleMessageXp, handleVoiceStateUpdate, voiceTick };
+module.exports = { handleMessageXp, handleReactionXp, handleVoiceStateUpdate, voiceTick };

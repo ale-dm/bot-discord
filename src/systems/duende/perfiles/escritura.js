@@ -80,6 +80,23 @@ function olvidarNotas(user) {
     })();
 }
 
+/**
+ * Borra UNA nota de alguien por su posición (empezando en 0) (#405). El perfil y el resto de notas se conservan. Quien llama ya ha
+ * comprobado que es la propia persona o un admin.
+ * @returns {{ ok: true, nota: string } | { ok: false }}
+ */
+function olvidarNota(user, indice) {
+    return db.transaction(() => {
+        const fila = filaPorUsuario(user);
+        if (!fila) return { ok: false };
+        const notas = aPerfil(fila).notas;
+        if (!Number.isInteger(indice) || indice < 0 || indice >= notas.length) return { ok: false };
+        const [nota] = notas.splice(indice, 1);
+        db.prepare("UPDATE duende_perfiles SET notas = ?, actualizado_en = ? WHERE id = ?").run(JSON.stringify(notas), Date.now(), fila.id);
+        return { ok: true, nota };
+    })();
+}
+
 /** Crea o cambia el nombre y la descripción del perfil de alguien (Panel admin → Duende → Perfiles). */
 function guardarDescripcion({ discordId, username = null, nombre, descripcion }) {
     const texto = String(descripcion || "").trim() || null;
@@ -92,4 +109,4 @@ function guardarDescripcion({ discordId, username = null, nombre, descripcion })
     ).run(String(discordId), username, nombre, texto, Date.now());
 }
 
-module.exports = { actualizarPerfil, borrarNotasPorId, borrarPerfilPorId, anotar, olvidarNotas, guardarDescripcion };
+module.exports = { actualizarPerfil, borrarNotasPorId, borrarPerfilPorId, anotar, olvidarNotas, olvidarNota, guardarDescripcion };

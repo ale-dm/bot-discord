@@ -19,6 +19,7 @@ const {
 const { conectarVoz, conectarSalida, conectarGemini, saludar } = require("./liveVoz/conexion");
 const { escucharHablantes, programarLimites } = require("./liveVoz/captura");
 const { LIVE_MODEL, LIVE_VOICE } = require("./liveVoz/constantes");
+const { publicar: publicarResumen } = require("./liveVoz/resumen");
 
 async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = true, soloEscuchaA = null, tertulia = false } = {}) {
     const comprobacion = comprobarInicio(interaction, { tertulia, soloEscuchaA });
@@ -33,6 +34,8 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
     const systemInstruction = construirInstruccionesSistema(channelId, { tertulia });
 
     const sesion = crearSesion({ onTerminada, soloSiLeLlaman, soloEscuchaA, tertulia });
+    // Al terminar, un resumen en el canal de texto desde el que se pidió (#395; sin transcripciones, nada).
+    sesion.resumir = (transcripcion) => void publicarResumen(interaction.client, channelId, transcripcion);
     sesiones.set(guildId, sesion);
 
     try {

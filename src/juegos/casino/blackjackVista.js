@@ -20,8 +20,17 @@ Dobla tu apuesta, roba una carta más y luego te plantas automáticamente.
 **Separar (Split)**
 Si tus dos primeras cartas tienen el mismo valor, puedes separarlas en dos manos. Se realiza una apuesta igual para la nueva mano y se reparte una carta extra a cada una.
 
+**Seguro**
+Si el crupier enseña un as, puedes pagar un seguro (la mitad de la apuesta). Si el crupier tiene Blackjack, el seguro paga 2 a 1; si no, lo pierdes y la mano sigue.
+
+**Rendirse**
+En tu primera decisión puedes rendirte: recuperas la mitad de la apuesta y la mano termina.
+
+**Consejo**
+💡 Consejo te dice, solo a ti, qué haría la estrategia básica. No cambia la mano.
+
 **Blackjack del crupier**
-Al repartir, el crupier comprueba si tiene Blackjack; si lo tiene, la mano termina en ese momento.
+Al repartir (y tras decidir el seguro, si hay), el crupier comprueba si tiene Blackjack; si lo tiene, la mano termina en ese momento.
 
 **Partidas abandonadas**
 Si dejas una partida sin tocar más de 15 minutos, se da por perdida.
@@ -57,16 +66,48 @@ function embedAyuda() {
     return new EmbedBuilder().setTitle("ℹ️ Cómo jugar al Blackjack").setDescription(ayudaBlackjack).setColor(0x3498db);
 }
 
-function filasJuego({ puedeDoblar, puedeSplit }) {
+function filasJuego({ puedeDoblar, puedeSplit, puedeRendirse }) {
     return [
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("bj_hit").setLabel("Pedir carta").setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId("bj_stand").setLabel("Plantarse").setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId("bj_double").setLabel("Doblar").setStyle(ButtonStyle.Secondary).setDisabled(!puedeDoblar),
             new ButtonBuilder().setCustomId("bj_split").setLabel("Separar").setStyle(ButtonStyle.Secondary).setDisabled(!puedeSplit),
+            new ButtonBuilder()
+                .setCustomId("bj_surrender")
+                .setLabel("🏳️ Rendirse")
+                .setStyle(ButtonStyle.Danger)
+                .setDisabled(!puedeRendirse),
         ),
-        new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("bj_help").setLabel("Ayuda").setStyle(ButtonStyle.Secondary)),
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("bj_tip").setLabel("💡 Consejo").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("bj_help").setLabel("Ayuda").setStyle(ButtonStyle.Secondary),
+        ),
     ];
+}
+
+/** Los botones del seguro (#333): pagarlo o seguir sin él. */
+function filaSeguro(state) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId("bj_insure")
+            .setLabel(`🛡️ Seguro (${Math.floor(state.apuesta / 2)})`)
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("bj_noinsure").setLabel("Sin seguro").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("bj_help").setLabel("Ayuda").setStyle(ButtonStyle.Secondary),
+    );
+}
+
+/** El crupier enseña un as: se ofrece el seguro antes de mirar si tiene blackjack. */
+function embedSeguro(state) {
+    return new EmbedBuilder()
+        .setTitle("🃏 Blackjack - ¿Seguro?")
+        .setDescription(
+            `Tus cartas: ${cartas(state.userHand)} (**${handValue(state.userHand)}**)\n` +
+                `Carta visible del crupier: ${state.botHand[0].display}\n\n` +
+                `El crupier enseña un as. Un seguro cuesta \`${Math.floor(state.apuesta / 2)}\` monedas (la mitad de tu apuesta) y paga 2 a 1 si tiene blackjack.`,
+        )
+        .setColor(COLOR.juego);
 }
 
 function filaSplit() {
@@ -77,13 +118,13 @@ function filaSplit() {
     );
 }
 
-function embedJugando(state, valor = handValue(state.userHand)) {
+function embedJugando(state, valor = handValue(state.userHand), nota = "") {
     return new EmbedBuilder()
         .setTitle("🃏 Blackjack")
         .setDescription(
             `Tus cartas: ${cartas(state.userHand)} (**${valor}**)\n` +
                 `Carta visible del crupier: ${state.botHand[0].display}\n\n` +
-                "¿Qué quieres hacer?",
+                `${nota ? `🛡️ ${nota}\n\n` : ""}¿Qué quieres hacer?`,
         )
         .setColor(COLOR.juego);
 }
@@ -177,6 +218,8 @@ module.exports = {
     filasJuego,
     filaSplit,
     embedJugando,
+    embedSeguro,
+    filaSeguro,
     embedSiguienteMano,
     embedNatural,
     embedResumenSplit,

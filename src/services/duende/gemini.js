@@ -12,6 +12,7 @@ const {
     DUENDE_PLEX_TOOL_DECLARATIONS,
     DUENDE_SEERR_TOOL_DECLARATIONS,
     DUENDE_ECONOMIA_TOOL_DECLARATIONS,
+    DUENDE_IMAGEN_TOOL_DECLARATIONS,
     DUENDE_TOOL_EXECUTORS,
 } = require("./herramientas");
 
@@ -75,6 +76,8 @@ function configuracionBase(options) {
             ...(plexAllowed ? DUENDE_PLEX_TOOL_DECLARATIONS : []),
             ...(seerrAllowed ? DUENDE_SEERR_TOOL_DECLARATIONS : []),
             ...(conBotones ? DUENDE_ECONOMIA_TOOL_DECLARATIONS : []),
+            // Generar una imagen (#367): solo donde el chat puede adjuntarla (no por voz).
+            ...(Array.isArray(options.toolContext.imagenes) ? DUENDE_IMAGEN_TOOL_DECLARATIONS : []),
         ];
         baseConfig.tools = [{ functionDeclarations: declarations }];
     }

@@ -101,6 +101,26 @@ const XP = [
         target: 60,
         rewardCoins: 7000,
     },
+    {
+        id: "xp_dia_1000",
+        name: "Tarde intensa",
+        desc: "Gana 1000 XP en un solo día",
+        category: "xp",
+        event: "xp_dia",
+        metric: "max",
+        target: 1000,
+        rewardCoins: 600,
+    },
+    {
+        id: "xp_dia_3000",
+        name: "Día épico",
+        desc: "Gana 3000 XP en un solo día",
+        category: "xp",
+        event: "xp_dia",
+        metric: "max",
+        target: 3000,
+        rewardCoins: 2000,
+    },
 ];
 
 module.exports = { XP };

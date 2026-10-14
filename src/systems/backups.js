@@ -12,6 +12,8 @@ const fs = require("fs");
 const path = require("path");
 const { DATA_DIR } = require("../core/paths");
 const { createLogger } = require("../core/logger");
+const { momentoMadrid } = require("../core/zonaMadrid");
+const alertas = require("./alertas");
 
 const log = createLogger("Backups");
 
@@ -33,6 +35,37 @@ function listarBackups() {
         .map((f) => ({ fichero: f, ruta: path.join(BACKUP_DIR, f), bytes: fs.statSync(path.join(BACKUP_DIR, f)).size }));
 }
 
+/** ¿Existe ya la copia de hoy (fecha de Madrid)? (#417, #419) */
+function hayCopiaDeHoy() {
+    const hoy = `banco-${fechaLocal()}.db`;
+    return listarBackups().some((b) => b.fichero === hoy);
+}
+
+/** ¿Toca hacer la copia al arrancar? Pasadas las 04:30 (Madrid) y sin la de hoy; antes de esa hora la hará el cron (#419). */
+function faltaCopiaAlArrancar(ahora = Date.now()) {
+    const m = momentoMadrid(ahora);
+    return (m.hora > 4 || (m.hora === 4 && m.minuto >= 30)) && !hayCopiaDeHoy();
+}
+
+/**
+ * Abre la copia en solo lectura y le pasa `PRAGMA integrity_check` (el completo: la BD es pequeña y se hace una vez al día).
+ * @returns {string|null} null si está sana; si no, el motivo (#418)
+ */
+function problemaDeIntegridad(ruta) {
+    const Database = require("better-sqlite3");
+    let copia;
+    try {
+        copia = new Database(ruta, { readonly: true, fileMustExist: true });
+        const filas = copia.pragma("integrity_check");
+        const resultado = filas.map((f) => f.integrity_check);
+        return resultado.length === 1 && resultado[0] === "ok" ? null : resultado.slice(0, 3).join(" | ");
+    } catch (e) {
+        return e.message;
+    } finally {
+        copia?.close();
+    }
+}
+
 function rotar() {
     const todos = listarBackups();
     const sobran = todos.slice(0, Math.max(0, todos.length - BACKUP_KEEP));
@@ -47,9 +80,10 @@ function rotar() {
 }
 
 /**
- * Hace la copia del día (si ya existe, la sustituye) y borra las que sobran.
+ * Hace la copia del día (si ya existe, la sustituye) y borra las que sobran. Antes de darla por buena la comprueba (#418):
+ * si está dañada se descarta, se avisa por DM (una vez al día) y no se rota nada, así no se pierden las sanas.
  * @param {import("better-sqlite3").Database} [database] - por defecto la BD del bot
- * @returns {Promise<{ fichero: string, bytes: number, ms: number, borradas: number }>}
+ * @returns {Promise<{ fichero: string, bytes: number, ms: number, borradas: number, integra: boolean, motivo?: string }>}
  */
 async function hacerBackup(database = require("../core/db")) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -59,6 +93,11 @@ async function hacerBackup(database = require("../core/db")) {
     const t0 = Date.now();
     try {
         await database.backup(tmp);
+        const motivo = problemaDeIntegridad(tmp);
+        if (motivo) {
+            fs.unlinkSync(tmp);
+            return avisarCopiaDanada(fichero, motivo, Date.now() - t0);
+        }
         fs.renameSync(tmp, destino);
     } catch (e) {
         try {
@@ -75,7 +114,22 @@ async function hacerBackup(database = require("../core/db")) {
     log.info(
         `Copia ${fichero} hecha (${(bytes / 1024).toFixed(0)} KB, ${ms} ms)${borradas ? ` · ${borradas} antiguas borradas` : ""} · se conservan ${Math.min(BACKUP_KEEP, listarBackups().length)}`,
     );
-    return { fichero, bytes, ms, borradas };
+    return { fichero, bytes, ms, borradas, integra: true };
 }
 
-module.exports = { hacerBackup, listarBackups, BACKUP_DIR, BACKUP_KEEP };
+// Copia descartada: no es un error del código (no pasa por el logger de errores) pero sí hay que enterarse: alerta por DM
+// con la clave `backup:integridad` y como mucho una al día.
+async function avisarCopiaDanada(fichero, motivo, ms) {
+    log.warn(`La copia ${fichero} no pasó la comprobación de integridad y se ha descartado: ${motivo}`);
+    await alertas.alertar({
+        clave: `backup:integridad:${fechaLocal()}`,
+        titulo: "💾 La copia de seguridad ha fallado",
+        detalle: `La copia de hoy (${fichero}) no pasó la comprobación de integridad y se ha descartado. Las anteriores se conservan.
+
+${String(motivo).slice(0, 500)}`,
+        cooldownMs: 24 * 60 * 60 * 1000,
+    });
+    return { fichero, bytes: 0, ms, borradas: 0, integra: false, motivo };
+}
+
+module.exports = { hacerBackup, listarBackups, hayCopiaDeHoy, faltaCopiaAlArrancar, fechaLocal, BACKUP_DIR, BACKUP_KEEP };

@@ -36,6 +36,13 @@ function mesAnterior(ahora = Date.now()) {
     };
 }
 
+/** El año anterior al de `ahora` (hora de Madrid), con la misma forma que mesAnterior (#381): { mes: "2026", inicio, fin, etiqueta, anual: true }. */
+function anioAnterior(ahora = Date.now()) {
+    const { dia } = plexHistorial.momento(Math.floor(ahora / 1000));
+    const anio = Number(dia.slice(0, 4)) - 1;
+    return { mes: String(anio), inicio: `${anio}-01-01`, fin: `${anio}-12-31`, etiqueta: String(anio), anual: true };
+}
+
 /**
  * Lo que ha visto UNA persona (su cuenta de Plex) en el mes: horas, películas y episodios distintos, y sus series más vistas.
  * Solo sus datos: nada de otras personas.
@@ -66,6 +73,7 @@ function resumenPersonal(guildId, tautulliUserId, mes) {
     return {
         mes: mes.mes,
         etiqueta: mes.etiqueta,
+        anual: Boolean(mes.anual),
         horas: horas(segundos),
         peliculas: pelis.size,
         episodios: eps.size,
@@ -78,7 +86,7 @@ function resumenPersonal(guildId, tautulliUserId, mes) {
 
 /** El texto del resumen de una persona (para el DM y para el botón de /plex). */
 function mensajePersonal(r) {
-    if (r.horas <= 0) return `🎞️ **Tu Plex Wrapped · ${r.etiqueta}**\n\nEste mes no has visto nada en Plex. 😴`;
+    if (r.horas <= 0) return `🎞️ **Tu Plex Wrapped · ${r.etiqueta}**\n\n${r.anual ? "Ese año" : "Este mes"} no has visto nada en Plex. 😴`;
     const lineas = [
         `🎞️ **Tu Plex Wrapped · ${r.etiqueta}**`,
         "",
@@ -125,18 +133,24 @@ function graficoPersonal(r) {
     );
 }
 
-const yaEnviado = (guildId, tautulliUserId, mes) =>
-    Boolean(
+// El registro de lo enviado: el del mes (plex_wrapped_enviados) o el del año (#381, plex_wrapped_anual_enviados).
+const registro = (mes) =>
+    mes.anual ? { tabla: "plex_wrapped_anual_enviados", columna: "anio" } : { tabla: "plex_wrapped_enviados", columna: "mes" };
+
+const yaEnviado = (guildId, tautulliUserId, mes) => {
+    const { tabla, columna } = registro(mes);
+    return Boolean(
         db
-            .prepare("SELECT 1 FROM plex_wrapped_enviados WHERE guildId = ? AND tautulliUserId = ? AND mes = ?")
-            .get(String(guildId), String(tautulliUserId), mes),
+            .prepare(`SELECT 1 FROM ${tabla} WHERE guildId = ? AND tautulliUserId = ? AND ${columna} = ?`)
+            .get(String(guildId), String(tautulliUserId), mes.mes),
     );
+};
 
 /** Manda por DM el resumen de cada persona vinculada que ha visto algo ese mes y aún no lo tiene. Un DM fallido no para a los demás. */
 async function enviarPorDm(client, guild, mes) {
     let enviados = 0;
     for (const link of plexLinks.getLinks(guild.id)) {
-        if (yaEnviado(guild.id, link.tautulliUserId, mes.mes)) continue;
+        if (yaEnviado(guild.id, link.tautulliUserId, mes)) continue;
         const r = resumenPersonal(guild.id, link.tautulliUserId, mes);
         if (r.horas <= 0) continue;
         try {
@@ -145,7 +159,8 @@ async function enviarPorDm(client, guild, mes) {
             const buf = graficoPersonal(r);
             const files = adjuntoWrapped(buf);
             await usuario.send({ content: mensajePersonal(r), files, allowedMentions: { parse: [] } });
-            db.prepare("INSERT INTO plex_wrapped_enviados (guildId, tautulliUserId, mes, enviado_en) VALUES (?, ?, ?, ?)").run(
+            const { tabla, columna } = registro(mes);
+            db.prepare(`INSERT INTO ${tabla} (guildId, tautulliUserId, ${columna}, enviado_en) VALUES (?, ?, ?, ?)`).run(
                 String(guild.id),
                 String(link.tautulliUserId),
                 mes.mes,
@@ -170,7 +185,8 @@ function enviarSiToca(client, ahora = Date.now()) {
 async function enviar(client, ahora) {
     const { dia, hora } = plexHistorial.momento(Math.floor(ahora / 1000));
     if (!dia.endsWith("-01") || hora < HORA) return 0;
-    const mes = mesAnterior(ahora);
+    // El 1 de enero, además del mes (diciembre), el resumen del año entero (#381).
+    const periodos = dia.endsWith("-01-01") ? [mesAnterior(ahora), anioAnterior(ahora)] : [mesAnterior(ahora)];
     let enviados = 0;
     for (const guild of client.guilds.cache.values()) {
         if (!plexLinks.getLinks(guild.id).length) continue;
@@ -182,14 +198,16 @@ async function enviar(client, ahora) {
                 log.warn(`Plex Wrapped: no se pudo copiar lo último del historial de ${guild.name} (se usa lo que hay): ${e.message}`);
             }
         }
-        try {
-            enviados += await enviarPorDm(client, guild, mes);
-        } catch (e) {
-            log.warn(`No se pudo mandar el Plex Wrapped en ${guild.name}: ${e.message}`);
+        for (const periodo of periodos) {
+            try {
+                enviados += await enviarPorDm(client, guild, periodo);
+            } catch (e) {
+                log.warn(`No se pudo mandar el Plex Wrapped (${periodo.mes}) en ${guild.name}: ${e.message}`);
+            }
         }
     }
-    log.info(`Plex Wrapped ${mes.mes}: ${enviados} resúmenes enviados por DM`);
+    log.info(`Plex Wrapped ${periodos.map((p) => p.mes).join(" y ")}: ${enviados} resúmenes enviados por DM`);
     return enviados;
 }
 
-module.exports = { HORA, mesAnterior, resumenPersonal, mensajePersonal, graficoPersonal, enviarPorDm, enviarSiToca };
+module.exports = { HORA, mesAnterior, anioAnterior, resumenPersonal, mensajePersonal, graficoPersonal, enviarPorDm, enviarSiToca };

@@ -40,7 +40,13 @@ const vistaInicio = (interaction, aviso = null) => {
     if (aviso) payload.embeds[0].setDescription(`${aviso}\n\n${payload.embeds[0].data.description}`);
     return payload;
 };
-const vistaRecuerdos = (interaction, objetivo, aviso = null) => paneles.buildRecuerdos({ esAdmin: esAdmin(interaction), objetivo, aviso });
+const vistaRecuerdos = (interaction, objetivo, aviso = null) =>
+    paneles.buildRecuerdos({
+        esAdmin: esAdmin(interaction),
+        objetivo,
+        aviso,
+        puedeBorrar: objetivo.id === interaction.user.id || esAdmin(interaction),
+    });
 const vistaPersonalidad = (interaction, aviso = null) => {
     const actualId = perfiles.personalidadDeCanal(interaction.channelId);
     return paneles.buildPersonalidad({
@@ -139,6 +145,19 @@ async function botonRecuerdos(interaction, id, admin) {
     return interaction.update(vistaRecuerdos(interaction, objetivo, `🗑️ Olvidadas ${notas.length} notas sobre **${objetivo.username}**.`));
 }
 
+// 🗑️ Un menú con las notas numeradas: borra solo la elegida y la vista enseña las que quedan.
+async function borrarUnaNota(interaction, valor) {
+    const objetivoId = interaction.customId.replace("duendepanel_nota_borrar_", "");
+    if (objetivoId !== interaction.user.id && !esAdmin(interaction)) return noOtra(interaction);
+    const objetivo =
+        objetivoId === interaction.user.id ? interaction.user : await interaction.client.users.fetch(objetivoId).catch(() => null);
+    if (!objetivo) return interaction.reply({ content: "❌ No encuentro a esa persona.", flags: MessageFlags.Ephemeral });
+    const r = perfiles.olvidarNota(objetivo, Number(valor));
+    if (!r.ok) return interaction.update(vistaRecuerdos(interaction, objetivo, "Esa nota ya no estaba."));
+    log.warn(`${interaction.user.tag} (${interaction.user.id}) borró una nota sobre ${objetivo.username}: ${JSON.stringify(r.nota)}`);
+    return interaction.update(vistaRecuerdos(interaction, objetivo, `🗑️ Olvidada una nota sobre **${objetivo.username}**.`));
+}
+
 const acciones = {
     async handleButton(client, interaction) {
         const id = interaction.customId;
@@ -161,8 +180,29 @@ const acciones = {
 
     // Menús de personalidad del canal (duendepanel_canal) y de quitar una (duendepanel_quitar_select).
     async handleSelect(client, interaction) {
-        if (!esAdmin(interaction)) return noPermitido(interaction);
         const valor = interaction.values[0];
+        // 🗑️ Olvidar una sola nota (#405): la propia persona o un admin.
+        if (interaction.customId.startsWith("duendepanel_nota_borrar_")) return borrarUnaNota(interaction, valor);
+        if (!esAdmin(interaction)) return noPermitido(interaction);
+        // 🗣️ La voz de la personalidad del canal (#396).
+        if (interaction.customId === "duendepanel_voz") {
+            const actualId = perfiles.personalidadDeCanal(interaction.channelId);
+            const voz = valor === "global" ? null : valor;
+            if (!actualId || !perfiles.fijarVoz(actualId, voz)) {
+                return interaction.update(
+                    vistaPersonalidad(interaction, "❌ No se pudo cambiar la voz: elige antes una personalidad para el canal."),
+                );
+            }
+            adminAudit.logAdminAction({
+                guildId: interaction.guildId,
+                actorId: interaction.user.id,
+                action: "duende.personality.voice",
+                details: { personality: actualId, voz },
+            });
+            return interaction.update(
+                vistaPersonalidad(interaction, voz ? `🗣️ Voz de la personalidad: **${voz}**.` : "🗣️ Vuelve la voz global."),
+            );
+        }
         if (interaction.customId === "duendepanel_canal") {
             if (!perfiles.obtenerPersonalidad(valor))
                 return interaction.update(vistaPersonalidad(interaction, `❌ Personalidad '${valor}' no encontrada.`));

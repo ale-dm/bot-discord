@@ -84,8 +84,22 @@ const COLUMNAS_PARTIDO =
     "id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea";
 const partidoPorMatch = (matchId) => db.prepare(`SELECT ${COLUMNAS_PARTIDO} FROM apuestas_partidos WHERE match_id = ?`).get(matchId);
 
+/**
+ * Los próximos partidos de cualquier competición a los que se puede apostar a esa elección (con su cuota), el que antes
+ * empieza primero. Para repetir una apuesta en otro partido (#349).
+ */
+function partidosParaApostar(eleccion, limite = 100) {
+    const candidatos = db
+        .prepare(
+            `SELECT ${COLUMNAS_PARTIDO} FROM apuestas_partidos WHERE estado = 'abierto' AND start_time > ? ORDER BY start_time, id LIMIT 500`,
+        )
+        .all(directo.inicioListado());
+    return candidatos.filter((p) => directo.abiertoParaApostar(p) && cuotaDeEleccion(eleccion, p) >= 1).slice(0, limite);
+}
+
 module.exports = {
     PARTIDOS_POR_PAGINA,
+    partidosParaApostar,
     cuotaDeEleccion,
     cobrarApuesta,
     partidosDePagina,

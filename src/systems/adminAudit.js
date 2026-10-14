@@ -35,19 +35,24 @@ function logAdminAction({ guildId, actorId, action, details }) {
     }
 }
 
-function listRecent(guildId, limit = 20) {
+/**
+ * Las últimas acciones del servidor (100 como mucho). Con `familia` ("bank", "settings"...), solo las acciones que empiezan por
+ * `familia.` (#398).
+ */
+function listRecent(guildId, limit = 20, familia = null) {
     if (!guildId) return [];
+    const filtro = /^[a-z_]+$/.test(familia || "");
     const rows = db
         .prepare(
             `
         SELECT id, actorId, action, details, createdAt
         FROM admin_audit
-        WHERE guildId = ?
+        WHERE guildId = ?${filtro ? " AND action LIKE ?" : ""}
         ORDER BY id DESC
         LIMIT ?
     `,
         )
-        .all(guildId, Math.max(1, Math.min(100, Number(limit) || 20)));
+        .all(...[guildId, ...(filtro ? [`${familia}.%`] : []), Math.max(1, Math.min(100, Number(limit) || 20))]);
 
     return rows.map((row) => ({
         ...row,

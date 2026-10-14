@@ -1,6 +1,6 @@
 // Enviar la respuesta del Duende: edición segura de la respuesta, GIF, texto para Discord y respuesta por voz.
 
-const { MessageFlags } = require("discord.js");
+const { MessageFlags, AttachmentBuilder } = require("discord.js");
 const { tryVoiceReply } = require("../voz");
 const { getGifForText } = require("../../giphy");
 const { createLogger } = require("../../../core/logger");
@@ -119,6 +119,19 @@ async function enviarPropuestas(interaction, propuestas) {
     }
 }
 
+// Las imágenes que ha generado el Duende en este turno (#367), cada una en su mensaje con la misma privacidad que la respuesta.
+async function enviarImagenes(interaction, imagenes) {
+    const flags = interaction.ephemeral ? MessageFlags.Ephemeral : undefined;
+    for (const [i, img] of imagenes.entries()) {
+        const ext = (img.mimeType || "image/png").split("/")[1]?.replace("jpeg", "jpg") || "png";
+        try {
+            await interaction.followUp({ files: [new AttachmentBuilder(img.buffer, { name: `imagen_duende_${i + 1}.${ext}` })], flags });
+        } catch (e) {
+            log.warn(`No se pudo enviar la imagen del Duende: ${e.message}`);
+        }
+    }
+}
+
 // La respuesta principal no salió: se avisa con un followUp o, si tampoco, en el canal.
 async function avisarFalloEnvio(interaction) {
     const fallbackMsg = "⚠️ No he podido enviar la respuesta principal. Inténtalo de nuevo en unos segundos.";
@@ -141,7 +154,7 @@ async function avisarFalloEnvio(interaction) {
 }
 
 // Manda el texto (y el GIF y las propuestas). Por voz (/escuchar) no sale nada por aquí.
-async function enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas }) {
+async function enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas, imagenes }) {
     try {
         let sentOk = false;
         if (!interaction?.silentTextReply) {
@@ -153,6 +166,7 @@ async function enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas 
         if (!interaction?.silentTextReply && sentOk && gifUrl) await enviarGif(interaction, gifUrl);
 
         if (sentOk && propuestas?.length) await enviarPropuestas(interaction, propuestas);
+        if (sentOk && imagenes?.length) await enviarImagenes(interaction, imagenes);
 
         if (!interaction?.silentTextReply && !sentOk) await avisarFalloEnvio(interaction);
     } catch (sendErr) {

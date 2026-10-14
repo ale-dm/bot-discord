@@ -10,7 +10,13 @@ const { createLogger } = require("../core/logger");
 const log = createLogger("Patrimonio");
 
 const DIA_MS = 24 * 3600 * 1000;
-const DEFECTO = { umbral: 50000, porcentaje: 1, interes: 0.5, dias: 7, destino: "bote" };
+const DEFECTO = { umbral: 50000, porcentaje: 1, interes: 0.5, dias: 7, destino: "bote", rolesExentos: [] };
+
+// Quién tiene qué roles lo sabe Discord, no esta parte: index.js registra una función (guildId, userId) => lista de ids de rol (#397).
+let rolesDe = () => [];
+function usarResolutorDeRoles(fn) {
+    rolesDe = fn;
+}
 
 function configuracion() {
     const guardada = db.prepare("SELECT valor FROM config WHERE clave = 'patrimonio'").get()?.valor;
@@ -42,7 +48,8 @@ function guardarConfiguracion(entrada) {
     if (!Number.isInteger(dias) || dias < 1 || dias > 365)
         return { ok: false, mensaje: "Los días entre cobros tienen que estar entre 1 y 365." };
     if (!["bote", "sumidero"].includes(destino)) return { ok: false, mensaje: "El destino tiene que ser `bote` o `sumidero`." };
-    const cfg = { umbral, porcentaje, interes, dias, destino };
+    const rolesExentos = Array.isArray(entrada.rolesExentos) ? entrada.rolesExentos.map(String) : configuracion().rolesExentos;
+    const cfg = { umbral, porcentaje, interes, dias, destino, rolesExentos };
     db.prepare("INSERT INTO config (clave, valor) VALUES ('patrimonio', ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor").run(
         JSON.stringify(cfg),
     );
@@ -60,18 +67,62 @@ function valorNegocios(userId) {
     return db.prepare("SELECT COALESCE(SUM(pagado), 0) AS n FROM negocios_usuario WHERE userId = ?").get(String(userId)).n;
 }
 
+/** ¿Tiene alguno de los roles exentos del impuesto (#397)? El interés del banco lo cobra igual. */
+function esExento(userId, cfg) {
+    if (!cfg.rolesExentos?.length) return false;
+    const guildId = guildDe(userId);
+    return Boolean(guildId) && rolesDe(guildId, userId).some((r) => cfg.rolesExentos.includes(String(r)));
+}
+
+/** Lo que cobraría un ciclo ahora (sin tocar nada): { interes, impuesto }. Es el cálculo de aplicarCiclo (#347). */
+function calcularCiclo(userId, cfg) {
+    const banco = dinero.banco(userId);
+    const interes = Math.floor((banco * cfg.interes) / 100);
+    const base = banco + interes + valorNegocios(userId);
+    const exceso = base - cfg.umbral;
+    const deuda = exceso > 0 && !esExento(userId, cfg) ? Math.floor((exceso * cfg.porcentaje) / 100) : 0;
+    return { interes, impuesto: Math.min(deuda, banco + interes) };
+}
+
+/**
+ * Para 💰 Economía (#347): cuándo es el próximo cobro (ms; null si aún no se ha marcado su ciclo) y lo que cobraría si fuera ahora.
+ * @returns {{ proximo: number|null, interes: number, impuesto: number }}
+ */
+function prevision(userId) {
+    const cfg = configuracion();
+    const fila = db.prepare("SELECT ultimo_ciclo FROM patrimonio_usuario WHERE userId = ?").get(String(userId));
+    return { proximo: fila ? fila.ultimo_ciclo + cfg.dias * DIA_MS : null, ...calcularCiclo(userId, cfg) };
+}
+
+/**
+ * Para 💰 Economía (#350): lo que ha dado el interés y lo que se ha llevado el impuesto de patrimonio, desde siempre y en los últimos 30
+ * días. El impuesto de ingresos también usa el tipo `impuesto`: se distingue por la descripción. null si nunca ha habido cobros.
+ */
+function resumen(userId, ahora = Date.now()) {
+    const desde = new Date(ahora - 30 * DIA_MS).toISOString();
+    const suma = (cond, ...params) =>
+        db
+            .prepare(`SELECT COALESCE(SUM(cantidad), 0) AS n, COUNT(*) AS c FROM historial WHERE userId = ? AND ${cond}`)
+            .get(String(userId), ...params);
+    const interes = "tipo = 'patrimonio' AND descripcion = 'Interés semanal del banco'";
+    const impuesto = "tipo = 'impuesto' AND descripcion = 'Impuesto de patrimonio'";
+    const total = { interes: suma(interes), impuesto: suma(impuesto) };
+    if (!total.interes.c && !total.impuesto.c) return null;
+    const mes = { interes: suma(`${interes} AND fecha >= ?`, desde), impuesto: suma(`${impuesto} AND fecha >= ?`, desde) };
+    const parte = (t) => ({ interes: t.interes.n, impuesto: -t.impuesto.n, neto: t.interes.n + t.impuesto.n });
+    return { total: parte(total), mes: parte(mes) };
+}
+
 /** Un ciclo: interés sobre el banco y luego impuesto sobre lo que pasa del umbral. */
 function aplicarCiclo(userId, cfg) {
-    const interes = Math.floor((dinero.banco(userId) * cfg.interes) / 100);
+    const prev = calcularCiclo(userId, cfg);
+    const interes = prev.interes;
     if (interes > 0) {
         dinero.pagarBanco(userId, interes);
         dinero.apuntar(userId, "patrimonio", "Interés semanal del banco", interes);
     }
 
-    const base = dinero.banco(userId) + valorNegocios(userId);
-    const exceso = base - cfg.umbral;
-    const deuda = exceso > 0 ? Math.floor((exceso * cfg.porcentaje) / 100) : 0;
-    const cobrado = Math.min(deuda, dinero.banco(userId));
+    const cobrado = prev.impuesto;
     if (cobrado > 0 && dinero.cobrarBanco(userId, cobrado)) {
         dinero.apuntar(userId, "impuesto", "Impuesto de patrimonio", -cobrado);
         if (cfg.destino === "bote") {
@@ -110,4 +161,14 @@ function revisar(ahora = Date.now()) {
     return total;
 }
 
-module.exports = { DEFECTO, configuracion, guardarConfiguracion, aplicarCiclo, revisar };
+module.exports = {
+    DEFECTO,
+    configuracion,
+    guardarConfiguracion,
+    usarResolutorDeRoles,
+    calcularCiclo,
+    prevision,
+    resumen,
+    aplicarCiclo,
+    revisar,
+};

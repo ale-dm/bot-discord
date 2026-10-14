@@ -68,7 +68,9 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   a la IA, solo reacciona con un emoji (😂 🤣 👀 💀 😏 🔥).
 - **Imágenes**: si el mensaje trae imágenes (hasta 2), las "ve" y puede comentarlas.
 - **Canal restringido**: si el admin fija un canal para el Duende, solo responde allí.
-- **Límite diario**: 50 respuestas al día en total (`DUENDE_DAILY_LIMIT`). Al llegar, lo avisa.
+- **Límite diario**: 50 respuestas al día en total (`DUENDE_DAILY_LIMIT`) y 15 por persona (`DUENDE_DAILY_LIMIT_USER`). Al llegar al suyo, solo esa persona se queda sin respuesta. Los contadores sobreviven a los reinicios.
+- **Imágenes desde el chat**: «dibújame…» genera una imagen con el mismo cooldown y cuota diaria que `/imagen`.
+- **Notas de voz**: una nota de voz de menos de 60 s en un canal del Duende se transcribe y contesta como si fuera texto.
 - **Mensajes duplicados** (reconexiones de Discord) se ignoran para no ejecutar dos veces una acción.
 
 ### Cómo responde
@@ -97,7 +99,7 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   dirige en el canal elegido a alguien al azar de quien tenga perfil (🧠 Perfiles, con descripción o notas de
   🧠 Recuerdos de `/duende`), mencionándole, para picarle y que conteste. Solo si ese canal lleva un rato sin mensajes de
   verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00. Si no hay
-  nadie con perfil al que dirigirse, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
+  nadie con perfil al que dirigirse, no dice nada. No se dirige a quien ya recibió uno en las últimas 24 h ni a quien escribió el último mensaje del canal. Se activa o desactiva y se elige el canal ahí mismo.
 
 ### Herramientas (datos reales)
 
@@ -140,6 +142,7 @@ una manía), lo **propone** como nota de su perfil. Nada se guarda sin aprobaci�
   configurado. Tope de llamadas a Gemini por día y servidor.
 - La propuesta llega por **DM a los admins** (`alertas.admin_ids`), con ✅ **Guardar** y ❌ **Descartar**. Lo decide un
   admin, una sola vez; si lo guarda, pasa a las notas de la persona (`/duende` → 🧠 Recuerdos).
+- ✏️ **Editar** abre un formulario para corregir el texto antes de guardarlo (queda como aprobado). Una propuesta sin decidir en 7 días caduca y su DM pierde los botones.
 - `DUENDE_RECUERDOS_AUTO=0` lo apaga; `DUENDE_RECUERDOS_MAX_DIA` (40 por defecto) limita las llamadas.
 
 Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.js`.
@@ -148,10 +151,12 @@ Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.
 
 | Comando | Qué hace |
 |---|---|
-| `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario. |
+| `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario y 10 imágenes al día por persona (`IMAGE_GEN_DAILY_LIMIT`). Trae un botón 🔁 Otra versión (15 min, solo quien la pidió) y cada imagen se apunta en el historial. |
+| `/imagenes` | Tus últimas 10 imágenes generadas con `/imagen` (a un admin, las del servidor), con el enlace al mensaje. Privado |
+| `/resumen [mensajes]` | El Duende resume lo hablado en el canal (1 a 200 mensajes, 50 por defecto), con el tono de la personalidad, sin menciones ni enlaces. Privado y cuenta para tu cuota de respuestas |
 | `/tts texto* [voz]` | El bot entra en tu canal de voz y lee el texto (Gemini TTS). Voces: Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina. El idioma se detecta solo. Los textos se ponen en cola por servidor. |
 | `/escuchar [usuario]` | El bot escucha a un usuario en el canal de voz, transcribe lo que dice (Vosk, local) y le responde **por voz** como el Duende, encadenando turnos mientras la conversación siga activa. |
-| `/conversación [modo] [con] [tertulia]` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Por defecto le puede hablar **cualquiera del canal** — por turnos (uno habla y acaba, luego otro), y antes de cada turno sabe quién es quien habla —, pero con mucha gente eso se puede volver un caos: `con @persona` hace que solo escuche a esa persona, como antes. Por defecto (`modo: mención`) solo contesta si dices "Duende" al hablar; `modo: siempre` hace que conteste a todo. Dile que cuelgue, o vuelve a usar `/conversación`, para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Conoce el perfil de quien le habla y puede consultar el de cualquier otra persona (lo mismo que sabe el Duende por texto). Funcionalidad aparte de `/escuchar`, que sigue igual. **`tertulia: sí`** (#16) cambia el modo: escucha a **todo el canal a la vez**, sin turnos (las voces se mezclan en un solo flujo, y el Duende contesta al grupo, sin saber quién dice cada cosa). No se combina con `con`. Es opt-in y sin probar con voz real todavía. |
+| `/conversación [modo] [con] [tertulia]` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Por defecto le puede hablar **cualquiera del canal** — por turnos (uno habla y acaba, luego otro), y antes de cada turno sabe quién es quien habla —, pero con mucha gente eso se puede volver un caos: `con @persona` hace que solo escuche a esa persona, como antes. Por defecto (`modo: mención`) solo contesta si dices "Duende" al hablar; `modo: siempre` hace que conteste a todo. Dile que cuelgue, o vuelve a usar `/conversación`, para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Conoce el perfil de quien le habla y puede consultar el de cualquier otra persona (lo mismo que sabe el Duende por texto). Al terminar, publica en el canal de texto un resumen de lo hablado. Funcionalidad aparte de `/escuchar`, que sigue igual. **`tertulia: sí`** (#16) cambia el modo: escucha a **todo el canal a la vez**, sin turnos (las voces se mezclan en un solo flujo, y el Duende contesta al grupo, sin saber quién dice cada cosa). No se combina con `con`. Es opt-in y sin probar con voz real todavía. |
 | `/bola8 pregunta*` | Respuesta al azar de la bola 8 mágica. |
 
 ---
@@ -166,7 +171,9 @@ Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.
 | Voz | 5 XP por minuto | Sin mute ni ensordecer, y con al menos otra persona (no bot) en el canal. |
 | Multiplicadores | × multiplicador global del servidor · × ⚡ happy hour (si está en marcha) · × bonus de racha | Configurables en el panel. |
 
-- Los **canales ignorados** no dan XP (ni por texto ni por voz).
+- Los **canales ignorados** no dan XP (ni por texto ni por voz). Los **roles sin XP** tampoco (texto, reacciones y voz), y cada canal puede tener un **multiplicador** de ×0 a ×10 (×0 = ignorado).
+- **Reacciones**: quien recibe una reacción de otra persona gana 3 XP (configurable; cooldown de 60 s por autor).
+- **Tope diario**: opcional, de XP por persona y día (hora de Madrid); sin tope por defecto.
 - Cada persona puede tener un **multiplicador de coste** propio (subir de nivel le cuesta más o menos).
 - **⚡ Happy hour de XP** (F-EC-02): si un admin la activa (`/paneladmin` → ⚙️ Config Global → 🎉 Eventos), cada día
   de una hora a otra (hora de Madrid; de 20:00 a 22:00 por defecto, también puede pasar la medianoche) la XP se
@@ -210,10 +217,12 @@ por defecto volvían solos). Un servidor nuevo empieza con los rangos pero sin r
 
 ### Racha diaria
 
-- Cada día (hora de Madrid) en que ganas XP suma un día de racha; si fallas un día, vuelve a 1.
+- Cada día (hora de Madrid) en que ganas XP suma un día de racha; si fallas un día, vuelve a 1, salvo que un admin haya puesto **días de gracia al mes** (0 por defecto): faltar un solo día no la rompe si queda alguno en el mes natural.
+- Se guarda tu **mejor racha** y hay un ranking en 🏆 Rankings → 🔥 Rachas. Logros de 3, 7, 30 y 100 días.
 - Bonus de XP: +2 % por día de racha, con un máximo de +50 %.
 - A partir del segundo día, te avisa por DM de que la racha sigue.
 - ⏱️ A las 17:00 avisa por DM a quien tenga racha de 2 días o más y aún no haya ganado XP ese día.
+- 💔 A las 00:30 avisa una sola vez a quien acaba de perder una racha de 3 días o más.
 
 Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en el ranking, próxima recompensa y
 últimas subidas de nivel (antes era `/nivel`).
@@ -222,14 +231,15 @@ Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en
 
 ## 5. Logros
 
-123 logros fijos en 6 categorías que se completan solos al hacer cosas, más los [trofeos de Plex](#trofeos-de-plex)
+129 logros fijos en 7 categorías que se completan solos al hacer cosas, más los [trofeos de Plex](#trofeos-de-plex)
 que se van creando; la recompensa en monedas se reclama a mano. Los de Plex (fijos y trofeos) tienen
 [dificultad](#dificultad-de-los-logros-de-plex).
 
 | Categoría | Logros (objetivo → recompensa) |
 |---|---|
 | Social | 1 mensaje → 100 · 100 → 400 · 1.000 → 1.500 · 2.500 → 2.500 · 5.000 → 5.000 |
-| XP | Voz 60 min → 300 · 300 min → 1.200 · 1.000 min → 3.500 · XP total 1.000 → 300 · 5.000 → 1.500 · 20.000 → 5.000 · Nivel 10 → 500 · 25 → 1.500 · 40 → 3.500 · 60 → 7.000 |
+| XP | Voz 60 min → 300 · 300 min → 1.200 · 1.000 min → 3.500 · XP total 1.000 → 300 · 5.000 → 1.500 · 20.000 → 5.000 · Nivel 10 → 500 · 25 → 1.500 · 40 → 3.500 · 60 → 7.000 · XP en un solo día 1.000 → 600 · 3.000 → 2.000 |
+| Racha | 3 días seguidos → 300 · 7 → 1.000 · 30 → 5.000 · 100 → 20.000 |
 | Casino | Primera apuesta → 150 · 10.000 apostadas → 800 · 50.000 → 3.500 · 25 victorias → 1.200 · 100 → 4.500 · 5.000 netas ganadas → 2.000 · 20.000 → 7.500 · *(oculto)* 50 derrotas → 1.800 |
 | Cripto | Primera compra → 150 · 10 operaciones → 900 · 50 → 4.000 · 20.000 movidas → 1.500 · 100.000 → 7.000 · 25 ventas → 2.500 · *(ocultos)* tener 500 TTCL → 1.800 · 2.000 TTCL → 9.000 |
 | Tienda | Primera compra → 120 · 20 compras → 1.100 · 50 → 3.200 · 5.000 gastadas → 1.300 · 20.000 → 6.000 |
@@ -399,7 +409,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores · 🔥 Rachas · 📅 Esta semana · 🗓️ Semanas · 🏦 Patrimonio neto |
 
 **🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
 admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
@@ -446,6 +456,7 @@ es único para todo el bot (no es por servidor).
 | 💵 Sacar | Pasa dinero del banco al efectivo |
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
 | 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, robos, admin |
+| 🛡️ Límite de pérdidas | Un tope **que te pones tú** de lo que pierdes (netas, casino y apuestas) por día o por semana, en hora de Madrid. Con el tope alcanzado, o si una apuesta lo pasaría, el casino y las apuestas no te dejan jugar hasta el periodo siguiente. Bajarlo vale al momento; **subirlo o quitarlo tarda 24 h**. Migración 061 |
 
 **💼 `/trabajar`**: a diferencia del diario, se puede usar cada 30 min (`TRABAJAR_COOLDOWN_SEC`) — exige estar
 activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJAR_BASE_MIN`/`MAX`) más 2 por cada
@@ -502,6 +513,13 @@ Los botones de la tienda solo los puede usar quien la abrió.
 Una compra es atómica: o se cobra y se entrega el objeto, o no pasa nada. Se puede limitar con cooldown y
 cupo diario de compras.
 
+**Más cosas de la tienda**
+- 🎒 Inventario → **🎁 Gestionar**: 🎁 regalar un objeto a otra persona (sin monedas), 💰 vender una unidad a la tienda (`tienda.recompra_pct` % del precio base, 50 por defecto) o 🏷️ ponerla en el **mercado**. Los objetos de protección no se regalan ni se venden.
+- **🏷️ Mercado**: ofertas de otros jugadores a precio fijo (7 días, máx. 10 por persona), pagadas con efectivo y sin comisión.
+- **🎟️ Canjear**: códigos de monedas y/u objeto que crean los admins (usos máximos y caducidad; una vez por persona).
+- **⭐ Lista de deseos**: sigue hasta 25 objetos y recibe un DM cuando vuelven a tener stock o bajan de precio.
+- **Ofertas temporales** (descuento con inicio y fin) y **precio dinámico** (sube con las compras y baja cada hora hacia el base; apagado por defecto) los configura un admin en 🛒 Catálogo. El precio mostrado es siempre el cobrado.
+
 ### 🏛️ Impuestos (F-EC-06a)
 
 Motor de impuestos configurable por servidor, sin ningún % fijo en el código. Cada servidor tiene sus propias
@@ -523,17 +541,20 @@ Motor de impuestos configurable por servidor, sin ningún % fijo en el código. 
 ### 🏆 Clasificación semanal con premios (F-EC-03)
 
 Cada **lunes a las 10:00** (hora de Madrid) se publica en el canal de la clasificación y se paga un premio al 💵 efectivo
-(500 🪙 por defecto, tipo 🏆 Premios en Movimientos, con el impuesto de ingresos del servidor) a:
+(500 🪙 por defecto, o el premio propio de cada categoría; tipo 🏆 Premios en Movimientos, con el impuesto de ingresos del servidor) a:
 
 - 💰 **El más rico**: más efectivo + banco en ese momento (el dinero es global, como 🏆 Rankings → Riqueza).
 - 💬 **El más activo**: más XP ganada en el servidor desde la clasificación anterior (la primera, desde que se instaló).
 - ⚽ **El mejor apostador**: más beneficio en las apuestas resueltas la semana anterior, de lunes a domingo (partidos por
   el día del partido, quinielas por el día en que se cerraron), solo si ganó algo.
+- 📆 **El más constante**: más días distintos con XP en la semana anterior; en empate, más XP esa semana.
 
 Se menciona a los premiados (solo a ellos les llega el aviso), y una misma persona puede llevarse más de un premio. Si
 una categoría no tiene a nadie (nadie ha ganado XP o nadie ha ganado apostando), no se da. Se configura en `/paneladmin`
-→ ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio y quién ganaría si fuera
+→ ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio general y el de cada categoría y quién ganaría si fuera
 ahora.
+
+Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** enseña las últimas 8 y **📅 Esta semana** la carrera en curso (XP desde el último corte y cuándo se publica la próxima). Tu perfil cuenta los premios semanales que has ganado. Con el botón **🔔 Aviso del domingo** de 👤 Perfil, si vas primero en alguna categoría, el domingo a las 20:00 te llega un DM con lo que cobrarías.
 
 ---
 
@@ -549,6 +570,10 @@ defecto) y en cada ciclo se hace lo siguiente, en este orden:
 El impuesto va al **bote** del servidor donde se usó la economía por última vez, o desaparece si el destino es
 sumidero. Todo se configura en Panel admin → Config Global → 🏛️ Impuestos → 🏦 Patrimonio. El primer ciclo de cada
 persona solo marca su fecha, sin cobrar.
+
+En tu 💰 Economía ves el **próximo cobro** con una estimación (mismo cálculo que el ciclo real), un resumen de lo cobrado (interés, impuesto y neto, desde siempre y del último mes) y la evolución de tu dinero de los últimos 30 días. Un admin puede eximir del impuesto a unos **roles** (siguen cobrando el interés). **🙈 Ocultar mi economía** impide que los demás vean tu dinero y tus movimientos. 🏆 Rankings → **🏦 Patrimonio neto** suma efectivo, banco, negocios y cripto valorada.
+
+**Tramos, meta y sueldos** (Panel admin → Config Global → Impuestos): 📊 una regla de ingreso puede tener **tramos** (cada parte del ingreso paga el porcentaje de su tramo); 🎯 una **meta del bote** reparte el bote entre quien ha ganado XP en la última semana al llegar a la cifra; 💼 un **sueldo diario por rol** de Discord se paga cada día a quien lo tenga (suma de roles, con impuesto).
 
 ### 🏪 Negocios y blanqueo (F-EC-06d)
 
@@ -567,7 +592,8 @@ Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran 
 - El tope se **reinicia a las 00:00 (hora de Madrid)**. Lo que no cabe en el tope de hoy se queda como dinero negro.
 - Cada negocio paga su **ingreso diario** en efectivo una vez al día (tipo 🏪 Negocios; también paga impuesto). El primer
   pago llega el día siguiente a comprarlo.
-- **Vender** un negocio devuelve el **50 % de lo pagado** al banco.
+- **Mejorar ⬆️** un negocio (hasta el nivel 3, con el banco): nivel 2 cuesta 1× el precio y da ×1,5 de blanqueo e ingreso; nivel 3 cuesta 2× y da ×2.
+- **Vender** un negocio devuelve el **50 % de todo lo pagado** (mejoras incluidas) al banco.
 - Un cron cada 5 minutos hace el blanqueo y los ingresos diarios; no avisa por DM.
 
 
@@ -586,18 +612,22 @@ se suceden solas). Cada cosa que haces da XP de pase, con topes diarios:
 | Operación de cripto | 6 | 180 |
 | Apuesta resuelta | 12 | 180 |
 | Compra en la tienda | 8 | 80 |
+| Logro completado | 20 | 120 |
+| Reto ganado | 15 | 90 |
 
-Cada día hay **3 misiones** (rotan) que dan **70 XP** al completarse ("Envía 25 mensajes", "Pasa 10 minutos en voz", "Juega 5
-partidas de casino", "Haz 2 operaciones de cripto", "Ten 1 apuesta resuelta").
+Cada día hay **3 misiones** (de un pool de 7, rotan) que dan **70 XP** al completarse ("Envía 25 mensajes", "Pasa 10 minutos
+en voz", "Juega 5 partidas de casino", "Haz 2 operaciones de cripto", "Ten 1 apuesta resuelta", "Compra 1 objeto en la tienda",
+"Desbloquea 1 logro"). Las tres juntas dan un **🌟 día perfecto** (+100 XP, una vez al día) y los días perfectos seguidos forman una
+**🔥 racha** (+100 XP a los 3 días y +250 a los 7, una vez por racha).
 
 Hay **20 niveles**. Subir de nivel desbloquea una recompensa en **monedas** (de 80 🪙 en el nivel 1 a 2.500 🪙 en el 20, más un
-bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por nivel, en efectivo. El **🏆 Top** ordena por XP.
+bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por nivel, en efectivo. El **🏆 Top** ordena por XP y, si no estás entre los 10, enseña tu puesto y lo que te falta. **📊 Topes** muestra lo usado hoy en cada categoría y **🕰️ Historial** el resumen de las temporadas ya cerradas. El último día de la temporada, un DM avisa de los niveles sin cobrar (no se cobran solos). Un admin ajusta todo en `/paneladmin` → 🛡️ Pase: activar, topes, XP por nivel, canal de anuncios de subida de nivel y objetos que dan algunos niveles (además de las monedas).
 
 **Decisión:** el diseño ([docs/planificacion/diseno/pase-de-batalla-s1.md](planificacion/diseno/pase-de-batalla-s1.md))
 incluía roles de Discord como recompensa (expulsar, mover o silenciar en voz, renombrar a otros, subir emojis). **No se
 conceden**: los permisos de moderación no los decide un juego. Las recompensas son monedas. Cada logro completado da
-**20 XP** de pase (tope de 120 al día); los que salen al importar el historial de Plex no dan XP. Migración 036. Tests:
-`tests/pasePase.test.js` y `tests/cabosSueltos.test.js`.
+**20 XP** de pase (tope de 120 al día); los que salen al importar el historial de Plex no dan XP. Migraciones 036 y 063. Tests:
+`tests/pasePase.test.js`, `tests/paseFase5.test.js` y `tests/cabosSueltos.test.js`.
 
 ## 8. Casino
 
@@ -635,8 +665,8 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 
 | Juego | Cómo es | Pagos |
 |---|---|---|
-| 🃏 Blackjack | Contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
-| 🎰 Tragaperras | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
+| 🃏 Blackjack | Contra el crupier con 4 barajas: pedir, plantarse, doblar y separar (split, con regla especial para ases). El crupier pide hasta 17 y comprueba su blackjack al repartir. Con un **as visible** se ofrece un **🛡️ seguro** (la mitad de la apuesta, paga 2 a 1 si el crupier tiene blackjack); en la primera decisión se puede **🏳️ rendir** (recuperas la mitad) y **💡 Consejo** te dice, solo a ti, qué haría la estrategia básica. | Victoria ×2 · Blackjack natural ×2,5 · Empate: recuperas la apuesta |
+| 🎰 Tragaperras | 3 carretes con jackpot progresivo (el 10 % de cada apuesta va al bote; empieza en 10.000). Con el desplegable **🔁 Auto x10 / x25 / x50** se hacen varias tiradas seguidas con la misma apuesta (cada una respeta saldo, cupo, cooldown y topes), con ⏹️ Parar, hasta que salga el jackpot, y un resumen al final. | 3 iguales: 🍒×2 🍋×3 🍊×4 🍇×5 🔔×8 💎×15 ⭐×25 · 3×7️⃣ = JACKPOT · 2 iguales: valor/3 (mín. ×1) |
 | 🎡 Ruleta | Ruleta europea (0–36): primero el tipo de apuesta (color, par/impar, mitad, docena o número exacto, con un formulario) y después el importe. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · **Calle** (3 números de una fila del tapete: 1-2-3, 4-5-6…) ×12 · Número exacto ×36 |
 | 🔮 Adivinar | "Ride the bus": 4 rondas — color, mayor/menor, dentro/fuera, palo. Te puedes retirar desde la ronda 3. | Acumulado ×2 → ×3 → ×4 → **×20** si aciertas las 4 |
 | ✂️ Piedra, papel o tijera | Contra el Duende: importe y después jugada. | Victoria ×2 · Empate: recuperas la apuesta. **Al mejor de 3** (#457): misma apuesta, fija, cobrada una vez; gana quien llega a 2 manos o lleva más tras la tercera (empate: recuperas); una serie sin responder 15 min se cierra y se devuelve |
@@ -651,9 +681,9 @@ Usa cuotas y resultados reales de **The Odds API** para LaLiga, Premier League, 
 | Pestaña | Qué hace |
 |---|---|
 | ⚽ Apuestas | Próximos partidos de la competición elegida (botones para cambiar entre las siete competiciones; con las de torneo, solo salen cuando hay partidos en la API) con sus cuotas (1/X/2) y escudos. Eliges partido y resultado y apuestas (10–1.000), o 🎯 **Marcador exacto**: pones los goles de cada equipo y, si aciertas, cobras **×8** lo apostado (premio fijo: la API no da cuota para el marcador; se puede apostar a varios marcadores distintos del mismo partido). No se puede repetir la misma apuesta, y un partido que ya ha empezado no admite apuestas aunque se pulse un botón de un mensaje antiguo (salvo con las apuestas en directo, ver abajo). Las cuotas se reutilizan 30 min para no gastar créditos de la API. Botón 🧾 Quiniela de esa competición. |
-| 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos. Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
+| 🧾 Quiniela (desde Apuestas o Mis jugadas) | Quiniela de la jornada: pronósticos 1/X/2 para 10 partidos (**🎯 Rellenar favoritos** pone la cuota más baja en los que no has elegido; lo que eliges se guarda como **📝 borrador** y sobrevive a un reinicio hasta que apuestas o cancelas). Un admin la crea con un botón; se bloquea 15 min antes del primer partido (también se rechaza un formulario enviado después). Si ya has apostado, enseña tus pronósticos con ✅/❌ en cada partido jugado y los aciertos que llevas. |
 | 🏅 Liga (desde Apuestas) | Liga de pronósticos de la temporada: cada acierto de una quiniela cerrada suma 1 punto. Clasificación con los puntos y las quinielas jugadas, tu posición y los campeones anteriores. La temporada va de julio a junio. |
-| 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (arriba, tu cartera: 💰 lo que tienes en juego, 🏆 lo máximo que puedes cobrar de tus partidos —en cada partido, el mejor resultado posible: solo uno de 1/X/2 puede salir, pero un 🎯 marcador exacto se cobra a la vez que el resultado que implica (el 2-1 y «gana el local»); la quiniela no suma porque depende del bote— y 📅 el beneficio de lo resuelto este mes, en hora de Madrid; debajo, cada apuesta, con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. En ⏳ En juego, el menú ↩️ **Cancelar una apuesta** devuelve al efectivo lo apostado a un partido que aún no ha empezado, menos un **10 % de comisión** (mínimo 1 🪙), después de confirmarlo; la apuesta desaparece (en Movimientos quedan la apuesta y la devolución). |
+| 📋 Mis jugadas | Partidos y quinielas juntos: ⏳ En juego (arriba, tu cartera: 💰 lo que tienes en juego, 🏆 lo máximo que puedes cobrar de tus partidos —en cada partido, el mejor resultado posible: solo uno de 1/X/2 puede salir, pero un 🎯 marcador exacto se cobra a la vez que el resultado que implica (el 2-1 y «gana el local»); la quiniela no suma porque depende del bote— y 📅 el beneficio de lo resuelto este mes, en hora de Madrid; debajo, cada apuesta, con tus pronósticos de la quiniela, los aciertos que llevas y tus últimas partidas del casino) y 📋 Resueltas (ganada con su premio, perdida, reembolsada o devuelta). Después de apostar salen 📋 Mis jugadas y ⚽ Más partidos / 🧾 Ver la quiniela. En ⏳ En juego, el menú ↩️ **Cancelar una apuesta** devuelve al efectivo lo apostado a un partido que aún no ha empezado, menos un **10 % de comisión** (mínimo 1 🪙), después de confirmarlo; la apuesta desaparece (en Movimientos quedan la apuesta y la devolución). El mismo menú cancela una **🧩 combinada** (devuelta entera, sin comisión, mientras ningún partido haya empezado: queda como «cancelada») y quita una **🔔 alerta de cuota**. Cada apuesta pendiente enseña «apostado a 1.8 · ahora 2 ↑» (↓ / =) mientras el partido no ha empezado. **🔁 Repetir última** propone tu última apuesta a un partido (misma elección e importe) en el que elijas, a la cuota de ahora, y solo cobra al confirmar; **📤 CSV** te envía en privado todas tus apuestas (partidos, combinadas y quinielas). |
 | ⚔️ Retos | Apuestas contra otras personas (ver [Retos entre jugadores](#retos-entre-jugadores)). |
 | 📊 Stats | Casino (resumen y por juego), apuestas a partidos y quinielas, retos, y el beneficio total. Una quiniela devuelta cuenta como recuperada. |
 
@@ -720,6 +750,8 @@ cuotas de local y visitante más parecidas). Sale de los partidos ya guardados, 
 API; un día sin partidos no se publica nada. Se activa o quita en `/paneladmin` → ⚽ Apuestas → ⭐ (viene activado, pero
 sin canal de resultados no se publica).
 
+**🧾 Recordatorio de la quiniela**: unas horas antes de que se cierre (3 por defecto; `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio, 0 = no avisar), un DM a quien suele jugar quinielas y aún no ha enviado la de la jornada, con su borrador si lo tiene. Una vez por quiniela. **📊 Resumen semanal**: los lunes desde las 10:00, un DM con lo apostado, cobrado y el beneficio de la semana anterior y tu puesto en la 🏅 liga. **🔔 Alertas de cuota**: el botón 🔔 de la ficha de un partido te avisa por DM cuando una elección llega a la cuota que pongas (hasta 10 activas). Los tres se pueden apagar en `/avisos`.
+
 **⏰ Recordatorio**: 30 minutos antes de un partido al que has apostado te llega un DM con el partido, a qué apostaste
 y cuánto ganarías (uno solo con todos tus partidos de esa media hora, y una sola vez por apuesta). Se activa o
 desactiva y se cambian los minutos en `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio.
@@ -753,6 +785,7 @@ queda nada**: el ganador se lleva lo de todos. Entre 10 y 100.000 por persona. T
   últimos cerrados (con lo que ganaste o perdiste), cada uno con un enlace a su mensaje.
 - **Más formas de jugar** (fase 4): un duelo puede ser **🌐 abierto** (lo acepta el primero que pulse, #438), **al mejor de 3** (#436: el bote se paga una vez al final; un empate no suma y tres seguidos devuelven el reto), se puede **🏳️ rendir** (#446: el rival cobra todo) y en el blackjack **✖️2 doblar** con las dos primeras cartas (#444). El rival puede hacer una **💬 contraoferta** de cantidad (#442, una por reto; quien retó la acepta o cancela y se ajusta lo cobrado). **🚫 Bloquear** a quien te reta (#450, en un sentido; devuelve los pendientes entre los dos; se quita en ⚔️ Retos → 🚫 Bloqueos) y **🆚 Cara a cara** (#437: victorias de cada uno, beneficio neto y los últimos 5). Las porras aceptan un cierre automático («2h», «1d», #448).
 - **DM de retos** (#452, #439): cuando el otro ya ha jugado en un duelo, un DM con el enlace (uno por persona y partida); y un recordatorio al rival a mitad del plazo de un reto pendiente. Respetan `/avisos`.
+- **🔁 Revancha** (#318): un duelo resuelto entre dos personas ofrece el botón una sola vez; lo pulsa cualquiera de los dos y propone al otro el mismo duelo (juego, cantidad y serie). Hace falta efectivo en los dos; no hay revancha contra el Duende ni de un reto a un partido.
 - Las partidas se guardan en la BD (no en memoria): un reinicio del bot no pierde ningún reto.
 - También se puede retar al Duende, desde su chat: ver el apartado siguiente.
 
@@ -787,8 +820,9 @@ propuso, y la propuesta caduca a los 10 minutos. Por voz no se ofrece (no hay bo
 - **🛒 Comprar**: importes fijos (1.000 a 100.000 monedas) o una cantidad escrita. Antes de pagar sale una **vista previa**:
   lo que pagas (con la comisión), lo que recibes, el precio medio y cómo se mueve el precio. Solo al confirmar se compra.
   Si no te llega el efectivo, el botón de confirmar sale apagado y se ofrece 💵 Sacar del banco.
-- **💸 Vender**: el 25, 50 o 100 % de tu TTCL. También con vista previa (lo que recibes, la comisión y el precio) antes de
+- **💸 Vender**: el 25, 50 o 100 % de tu TTCL, o **✏️ Otra cantidad**: las monedas netas que quieres recibir (se redondea hacia abajo; si tu posición no llega, no se vende nada). También con vista previa (lo que recibes, la comisión y el precio) antes de
   confirmar.
+- **🔔 Órdenes** (📈 Mercado / 💸 Vender / 🛒 Comprar → «Mis órdenes», hasta 5 de cada tipo, revisadas cada minuto): **alertas de precio** (DM una sola vez cuando el TTCL llega al precio), **🛡️ stop-loss** (vende toda la posición una vez al bajar hasta el umbral, con la comisión de una venta normal) y **🔁 compra recurrente** (importe cada N horas, mínimo 1; sin efectivo salta el ciclo y avisa por DM). Se cancelan sin cooldown.
 - **💼 Cartera**: cuánto tienes, su valor, tu coste medio, la ganancia sin vender y un donut.
 - **🧾 Historial**: tus compras y ventas, de la más reciente a la más antigua, con páginas.
 
@@ -862,7 +896,7 @@ El día 1 de cada mes, desde las 10:00 (hora de Madrid), **cada persona con la c
 propio resumen** del mes anterior: sus horas vistas, sus películas y episodios, y sus series más vistas, con una gráfica
 de sus series. Es privado: no se publica nada en ningún canal y nadie ve los datos de otra persona. Quien no ha visto nada
 ese mes no recibe nada. Cada persona recibe cada mes una sola vez (tabla `plex_wrapped_enviados`, migración 038). Se puede
-ver el de este mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo lo ves tú). Tests: `tests/plexWrapped.test.js`.
+ver el del mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo lo ves tú). **El 1 de enero** también llega por DM el **resumen del año** (tabla `plex_wrapped_anual_enviados`, migración 068), y el botón «Ver el del año pasado» lo enseña cuando se quiera. Tests: `tests/plexWrapped.test.js`.
 
 ## 12. Administración
 
@@ -871,6 +905,8 @@ ver el de este mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo 
 `/mensaje usuario` abre un formulario con un campo de varias líneas (hasta 1.500 caracteres) y lo manda por **DM** de
 parte del bot, tal cual lo escribiste (sin cabecera). Si la persona tiene los DM cerrados, lo dice.
 Cada envío se audita (quién, a quién y cuántos caracteres; el texto no se guarda). Solo admins.
+
+Con `cuando:DD/MM/AAAA HH:MM` (hora de Madrid) el DM queda **programado**: sale a esa hora con un margen de 5 minutos, o al arrancar el bot (con un aviso de que llega tarde) si estaba apagado. Se ven y se cancelan en `/paneladmin` → 🩺 Sistema → ✉️ Mensajes (hasta 20 pendientes, máximo un año). El texto se borra al enviarse o cancelarse y nunca está en la auditoría.
 
 ### `/paneladmin` 🔒
 
@@ -881,10 +917,10 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | 🏦 Banco | Modificar saldo (efectivo, banco o dinero negro) · resetear usuario (como nuevo: 1.000 en efectivo, sin dinero negro) · borrar historial · historial global · buscar usuario |
 | ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de cualquiera de las siete competiciones · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) · ⭐ **Partido destacado** del día (publicarlo o no) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
-| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo; con la vista previa del 📊 resumen semanal) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
-| 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
-| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🕐 Tono** (más borde de madrugada y canales formales), **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏆 Semanal**: canal y premio de la [clasificación semanal](#-clasificación-semanal-con-premios-f-ec-03), y quién ganaría si fuera ahora · **🎉 Eventos**: ⚡ happy hour de XP (activa, multiplicador y horas) y 🎰 fin de semana del casino (activo y % de los premios), y si están en marcha · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
-| 🧾 Auditoría | Registro paginado de acciones de administración |
+| 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo; con la vista previa del 📊 resumen semanal) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) · 💾 **Copias**: las copias de la BD con su tamaño, si existe la de hoy y **Hacer copia ahora** (pide confirmación si va a sustituir la de hoy) · 🕒 **Tareas**: la última ejecución de cada tarea programada (cuándo, cuánto tardó, OK o error, «sin ejecutar»), lanzarla a mano con confirmación y 📄 exportar el registro · ✉️ **Mensajes**: los `/mensaje` programados, con cancelación · muestra si el 🛠️ mantenimiento está activo |
+| 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus, tope y días de gracia), tope diario de XP, XP por reacción, vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP, roles sin XP y multiplicador de XP por canal |
+| ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🕐 Tono** (más borde de madrugada y canales formales), **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🛠️ Modo mantenimiento**: con él activo, solo los admins usan comandos, botones y formularios; los demás ven el mensaje que configures (✏️), y las tareas programadas siguen · **🏆 Semanal**: canal y premio de la [clasificación semanal](#-clasificación-semanal-con-premios-f-ec-03), y quién ganaría si fuera ahora · **🎉 Eventos**: ⚡ happy hour de XP (activa, multiplicador y horas) y 🎰 fin de semana del casino (activo y % de los premios), y si están en marcha · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
+| 🧾 Auditoría | Registro paginado de acciones de administración (las últimas 100), con un menú para ver solo una familia (banco, ajustes, alertas, logs, mensajes, Duende...). Los cambios de ajustes guardan el valor anterior y el nuevo de lo que cambió; abrir el historial global, buscar un usuario o abrir una ficha de perfil del Duende deja una fila `consulta.*` (quién y el ID, no el contenido) |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, crear y borrar trofeos de admin (también con fechas), 🪙 % de la importación (y cuántos vinculados están importando), 🎰 Roles de Gordos y 🔍 Idiomas (diagnóstico) |
 | 🍿 Seerr | Canales permitidos para pedir contenido · 🔔 avisar (o no) cuando llega lo pedido |
 
@@ -903,6 +939,8 @@ El bot avisa por mensaje privado a los admins cuando pasa algo que hay que mirar
   fallo es de paso (cuota, timeout) o ninguno de respaldo funciona, solo avisa.
 
 Como mucho 10 alertas a la hora. Las de antes de conectar a Discord (errores al arrancar) se mandan al conectar.
+
+**Categorías y canal de respaldo**: en 🔔 Alertas, cuatro botones activan o apagan por separado ❌ errores, 🤖 Gemini, 📈 Odds API y 💾 copias; una categoría apagada no manda nada ni cuenta para el máximo por hora (el resumen semanal no es una categoría). Con un **canal de respaldo** (✏️ Configurar), si nadie recibe el DM porque tiene los mensajes privados cerrados, la alerta se publica ahí (sin menciones); si el canal falla, solo queda en el log.
 
 **📊 Resumen semanal** (F-AD-02): cada lunes a las 09:00 (hora de Madrid), a quien recibe las alertas, un DM con lo de
 los últimos 7 días: ❌ los errores (agrupados: el mismo error con otros números cuenta como uno, los 5 más repetidos),
@@ -938,11 +976,12 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | Cada hora, desde las 09:00 (Madrid) | 🎂 Felicitaciones de cumpleaños (una por persona y año) |
 | Cada hora | Limpia historiales de conversación del Duende sin actividad en 24 h |
 | Cada 90 minutos | Cambia el estado ("Viendo ...") del bot, de la lista `ESTADOS` |
-| 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7) |
+| 04:30 (Madrid) | Copia de seguridad de la BD en `data/backups/` (se guardan 7). Cada copia se comprueba con `PRAGMA integrity_check`: si falla se descarta, no rota las anteriores y avisa por DM. Al arrancar pasadas las 04:30 sin la copia de hoy, se hace entonces |
+| Cada 5 min | Mensajes programados con `/mensaje cuando:…` que ya han llegado a su hora |
 | 17:00 (Madrid) | Aviso de "racha en peligro" por DM |
 | Cada día, 10:00 (Madrid) | ⭐ Partido destacado del día en el canal de resultados de las apuestas (comprobado cada hora de 10 a 20 y al arrancar; una vez al día) |
 | Lunes, 09:00 (Madrid) | 📊 Resumen semanal por DM a quien recibe las alertas (comprobado cada hora de los lunes y al arrancar; una vez por semana) |
-| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal y 🏆 clasificación semanal con premios (comprobados cada hora de los lunes y al arrancar; una vez por semana) |
+| Lunes, 10:00 (Madrid) | 📣 Ranking semanal de Plex en su canal, 🏆 clasificación semanal con premios y 📊 resumen semanal de apuestas por DM (comprobados cada hora de los lunes y al arrancar; una vez por semana) |
 
 ---
 
@@ -955,6 +994,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/javier` | Contesta "Eres un mierdas." |
 | `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
+| `/recordar` | ⏰ `nuevo cuando texto` («18:30», «mañana 09:00», «en 45 min»; hoy o mañana, hasta 24 h; texto de hasta 200 caracteres) y `lista` (con botón de borrar). Hasta 10 pendientes; el DM llega a su hora y, con los DMs cerrados, se pierde |
 | `/cumpleaños` | 🎂 `fecha dia mes`, `ver` (los próximos 5) y `borrar`. El bot felicita en el canal elegido desde las 09:00 (Madrid); el 29 de febrero se celebra el 28 los años no bisiestos |
 | `/sugerencia` | 💡 Formulario → idea en el canal del buzón con su número y 👍/👎 (un voto, cambiable); hasta 3 al día por persona. Un admin la acepta o descarta (con motivo) en ⚙️ Config Global → 📣 Comunidad y el autor lo recibe por DM |
 | Bienvenida | 👋 Al entrar alguien (no bots), mensaje en el canal elegido con `{usuario}` y `{miembros}` + cómo empezar (`/perfil`, `/ayuda`). Canal y texto en 📣 Comunidad |
@@ -971,6 +1011,9 @@ mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
 - **🛑 Cancelar sesión**: solo quien la convocó o un admin.
 - **Recordatorio**: 10 minutos antes, el bot avisa en el canal y menciona a quien se haya apuntado. Una sola vez por
   sesión. Lo revisa el cron cada 5 minutos.
+- **🗳️ Votación**: si al convocar escribes varias películas separadas por `|` (hasta 5), salen botones para votarlas (se puede votar más de una y volver a pulsar quita el voto). El recordatorio nombra la más votada (en empate, la propuesta antes) y cierra la votación.
+- **🎯 Sugerir**: propone hasta 5 películas que ninguno de los apuntados con Plex vinculado ha visto, con 📥 para pedirlas.
+- **🔁 Cada semana**: con «¿Repetir cada semana?» el bot crea la sesión siguiente solo, a la misma hora de Madrid (cada una con sus apuntados y votos). «Cancelar y parar la serie» cancela la siguiente y no crea más.
 
 Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
 
@@ -978,7 +1021,7 @@ Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.te
 
 `/plex` agrupa lo de Plex en botones, como `/tienda` y `/duende`: 🎬 **Sesión de cine**, 🎯 **Para ti** (recomendaciones),
 🎞️ **Wrapped** (el resumen de tu último mes, solo para ti) y 🏅 **Mi Plex** (tus horas, trofeos y logros de Plex, la misma
-pestaña de `/perfil`). El panel te dice si tu cuenta de Plex está vinculada. Es privado: solo lo ves tú (las sesiones de
+pestaña de `/perfil`), 📡 **Ahora** (qué se está viendo, en privado), 🗓️ **Estrenos** (los de la semana según Seerr, con 📥), 🏆 **Campeones** (las últimas 10 semanas del ranking semanal y las victorias de cada uno) y 📥 **Mis pedidos** (tus peticiones pendientes de Seerr, que puedes cancelar). Si un admin rechaza una petición tuya, te avisa el bot. El panel te dice si tu cuenta de Plex está vinculada. Es privado: solo lo ves tú (las sesiones de
 cine sí se publican en el canal, para que la gente se apunte).
 
 ### 🔊 /sonidos y 🔌 /conectar
@@ -986,8 +1029,12 @@ cine sí se publican en el canal, para que la gente se apunte).
 `/sonidos` muestra un **panel público** con un botón por sonido, como el de Discord. Quien pulsa uno hace que el bot lo
 toque en un canal de voz: si el bot **ya está en un canal** (con `/conectar`), suena ahí; si no, **entra al canal de quien
 pulsa, lo toca y se sale**. Solo puede sonar **uno a la vez** por servidor, y no entra si hay una conversación de voz con el
-Duende en marcha. De 20 en 20 por página, hasta 40 sonidos por servidor. El sonido suena **entero** (hasta 4 minutos
+Duende en marcha. Si ya suena otro, el pulsado **espera en una cola** (hasta 5, con su puesto). De 20 en 20 por página (15 si hay categorías), hasta 40 sonidos por servidor. El sonido suena **entero** (hasta 4 minutos
 como tope, por si el reproductor se atasca); la confirmación «Sonando…» sale cuando empieza, no cuando acaba.
+
+Debajo de los sonidos: **🔍 Buscar** (por nombre), un menú de **categorías**, **🎲 Aleatorio** y **🏆 Más usados**. Entre dos
+sonidos de la misma persona pasan 10 segundos (los admins, no). Un sonido con 🔒 solo lo pueden usar los roles que le puso el
+admin. En el **horario de silencio** (o con los sonidos apagados) no suena nada y se avisa.
 
 `/conectar` hace que el bot **entre a un canal de voz y se quede 30 minutos**, para que `/sonidos` suene sin entrar y salir
 cada vez. Elige el canal con la opción *canal* (por defecto, el tuyo). Sin canal, si ya está conectado, se sale. Si Discord
@@ -995,11 +1042,18 @@ lo echa, se olvida. No se sale a mitad de un sonido ni de una conversación con 
 sustituye a la conexión mientras suena algo. Una sola conexión por servidor.
 
 **Los sonidos los sube y los borra un admin en `/paneladmin` → 🔊 Sonidos**: un formulario con el nombre (hasta 32 caracteres,
-único en el servidor) y el archivo (mp3, ogg o wav, hasta 1 MB). Borrar es elegirlo en un menú.
+único en el servidor) y el archivo (mp3, ogg o wav, hasta 1 MB). Borrar es elegirlo en un menú. **✏️ Editar** permite
+renombrar, cambiar el archivo, el **🔉 volumen** (25 a 200 %), la **🏷️ categoría** y los **👥 roles**. Además: **🌙 Horario**
+(silencio de HH:MM a HH:MM en hora de Madrid, y un interruptor de apagado), **🔔 Eventos** (un sonido para «logro desbloqueado»
+y otro para «apuesta ganada grande», desde 1.000 🪙, con un mínimo de minutos entre dos) y **📊 Más usados**. Los eventos solo
+suenan si el bot está en un canal por `/conectar`.
+
+`/conectar sonido:<nombre>` toca ese sonido una vez, al entrar.
 
 Reproducir necesita `ffmpeg` en el servidor (ya viene en la imagen de Docker). `SONIDOS_DIR` (opcional) cambia la carpeta
-donde se guardan; por defecto, `data/sonidos`. Migración 037: `sonidos`. Tests: `tests/sonidos.test.js`,
-`tests/presencia.test.js`, `tests/adminSonidos.test.js`.
+donde se guardan; por defecto, `data/sonidos`. Migraciones 037 (`sonidos`) y 060 (categoría, volumen, usos, `sonido_roles`,
+`sonidos_eventos`). Tests: `tests/sonidos.test.js`, `tests/presencia.test.js`, `tests/adminSonidos.test.js`,
+`tests/sonidosAvanzados.test.js`, `tests/sonidosPaneles.test.js`.
 
 ## 15. Configuración (.env)
 
@@ -1035,6 +1089,10 @@ donde se guardan; por defecto, `data/sonidos`. Migración 037: `sonidos`. Tests:
 | `DUENDE_MAX_TOKENS` / `DUENDE_MAX_TOKENS_FALLBACK` | 1024 / 512 | Longitud máxima de respuesta |
 | `DUENDE_HISTORY_LIMIT` | 20 | Mensajes de contexto por canal |
 | `DUENDE_DAILY_LIMIT` | 50 | Respuestas al día (0 = sin límite) |
+| `DUENDE_DAILY_LIMIT_USER` | 15 | Respuestas al día por persona (0 = sin límite) |
+| `IMAGE_GEN_DAILY_LIMIT` | 10 | Imágenes al día por persona (0 = sin límite) |
+| `DUENDE_RECUERDOS_CADUCA_DIAS` | 7 | Días antes de que caduque una propuesta de recuerdo |
+| `DUENDE_ESPONTANEO_ENFRIAMIENTO_H` | 24 | Horas antes de dirigir otro mensaje espontáneo a la misma persona |
 | `DUENDE_TEXT_REPLY_PROB` | 0.25 | Probabilidad de responder sin que le hablen |
 | `DUENDE_ACTIVE_TEXT_REPLY_PROB` / `DUENDE_ACTIVE_WINDOW_MS` | 1 / 180000 | Conversación activa |
 | `DUENDE_INTERVENE_PROB` | 0.5 | Probabilidad de meterse cuando hablan entre ellos |
@@ -1144,10 +1202,13 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/conversación` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/imagenes` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/resumen` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) · [Retos](#retos-entre-jugadores) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/mensaje` 🔒 | [Administración](#12-administración) |

@@ -88,7 +88,8 @@ describe("rendirse (#446)", () => {
         const otro = { customId: `retos_rendirse_${reto.id}`, user: { id: a }, update: jest.fn(), reply: jest.fn(async () => {}) };
         await botones.handleButton(null, otro);
         expect(otro.reply.mock.calls[0][0].content).toMatch(/ya ha terminado/);
-        expect(idsDe(paneles.mensajeReto(retos.obtener(reto.id)))).toEqual([]);
+        // Ya no hay rendirse: un duelo resuelto solo ofrece la revancha (#318).
+        expect(idsDe(paneles.mensajeReto(retos.obtener(reto.id)))).toEqual([`retos_revancha_${reto.id}`]);
     });
 });
 

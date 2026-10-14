@@ -21,16 +21,34 @@ const CATALOGO = {
     taco: { nombre: "Taco Ticklers", emoji: "🌮", precio: 190000, blanqueoDia: 30000, ingresoDia: 800 },
 };
 
+/** Mejoras (#387): hasta el nivel 3. `multiplicador` escala el blanqueo y el ingreso diarios del negocio; `coste` (× el precio base) es lo que cuesta subir a ese nivel. */
+const NIVELES = {
+    1: { multiplicador: 1, coste: 0 },
+    2: { multiplicador: 1.5, coste: 1 },
+    3: { multiplicador: 2, coste: 2 },
+};
+const NIVEL_MAX = 3;
+
+/** El blanqueo y el ingreso diarios de un negocio según su nivel (redondeados hacia abajo). */
+function valoresDeNivel(tipo, nivel = 1) {
+    const c = CATALOGO[tipo];
+    const m = NIVELES[nivel]?.multiplicador ?? 1;
+    return { blanqueoDia: Math.floor(c.blanqueoDia * m), ingresoDia: Math.floor(c.ingresoDia * m) };
+}
+
+/** Lo que cuesta subir un negocio de `tipo` al nivel `nivel`. */
+const costeDeMejora = (tipo, nivel) => Math.floor(CATALOGO[tipo].precio * NIVELES[nivel].coste);
+
 const diaDe = (ahora) => madridDateStr(new Date(ahora));
 
 function negociosDe(userId) {
     return db
-        .prepare("SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia FROM negocios_usuario WHERE userId = ?")
+        .prepare("SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia, nivel FROM negocios_usuario WHERE userId = ?")
         .all(String(userId));
 }
 
 function capacidadDiaria(userId) {
-    return negociosDe(userId).reduce((total, n) => total + (CATALOGO[n.tipo]?.blanqueoDia || 0), 0);
+    return negociosDe(userId).reduce((total, n) => total + (CATALOGO[n.tipo] ? valoresDeNivel(n.tipo, n.nivel).blanqueoDia : 0), 0);
 }
 
 function usadoHoy(userId, ahora = Date.now()) {
@@ -67,6 +85,37 @@ function comprar(userId, guildId, tipo, ahora = Date.now()) {
         ).run(String(userId), tipo, guildId, n.precio, ahora, diaDe(ahora));
         log.info(`${userId} compra ${tipo} por ${n.precio}`);
         return { ok: true, mensaje: `🏪 Has comprado **${n.nombre}** por **${fmtNumero(n.precio)}** 🪙 del banco.` };
+    })();
+}
+
+/** Sube un negocio al siguiente nivel (hasta el 3), pagando del banco. Lo pagado se suma a lo que devuelve la venta. */
+function mejorar(userId, tipo) {
+    const n = CATALOGO[tipo];
+    const suyo = negociosDe(userId).find((x) => x.tipo === tipo);
+    if (!n || !suyo) return { ok: false, mensaje: "❌ No tienes ese negocio." };
+    if (suyo.nivel >= NIVEL_MAX) return { ok: false, mensaje: `❌ ${n.nombre} ya está al nivel máximo (${NIVEL_MAX}).` };
+    const nivel = suyo.nivel + 1;
+    const coste = costeDeMejora(tipo, nivel);
+    return db.transaction(() => {
+        if (!dinero.cobrarBanco(userId, coste)) {
+            return {
+                ok: false,
+                mensaje: `❌ Mejorar ${n.nombre} al nivel ${nivel} cuesta **${fmtNumero(coste)}** 🪙 del banco. Ingresa antes (🏦 Ingresar).`,
+            };
+        }
+        dinero.apuntar(userId, "negocio", `Mejora: ${n.nombre} (nivel ${nivel})`, -coste);
+        db.prepare("UPDATE negocios_usuario SET nivel = ?, pagado = pagado + ? WHERE userId = ? AND tipo = ?").run(
+            nivel,
+            coste,
+            String(userId),
+            tipo,
+        );
+        const v = valoresDeNivel(tipo, nivel);
+        log.info(`${userId} mejora ${tipo} al nivel ${nivel} por ${coste}`);
+        return {
+            ok: true,
+            mensaje: `⬆️ **${n.nombre}** sube al nivel **${nivel}** por **${fmtNumero(coste)}** 🪙: blanquea ${fmtNumero(v.blanqueoDia)}/día y da +${fmtNumero(v.ingresoDia)} 🪙/día.`,
+        };
     })();
 }
 
@@ -158,7 +207,7 @@ function pagarIngresosDiarios(ahora = Date.now()) {
     let pagos = 0;
     for (const n of db
         .prepare(
-            "SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia FROM negocios_usuario WHERE ultimo_ingreso_dia IS NULL OR ultimo_ingreso_dia < ?",
+            "SELECT userId, tipo, guildId, pagado, comprado_en, ultimo_ingreso_dia, nivel FROM negocios_usuario WHERE ultimo_ingreso_dia IS NULL OR ultimo_ingreso_dia < ?",
         )
         .all(hoy)) {
         const c = CATALOGO[n.tipo];
@@ -170,7 +219,13 @@ function pagarIngresosDiarios(ahora = Date.now()) {
                 )
                 .run(hoy, n.userId, n.tipo, hoy);
             if (r.changes !== 1) return;
-            dinero.pagarConImpuesto(n.userId, n.guildId, "negocio", `Ingreso diario: ${c.nombre}`, c.ingresoDia);
+            dinero.pagarConImpuesto(
+                n.userId,
+                n.guildId,
+                "negocio",
+                `Ingreso diario: ${c.nombre}`,
+                valoresDeNivel(n.tipo, n.nivel).ingresoDia,
+            );
             pagos++;
         })();
     }
@@ -185,7 +240,7 @@ function revisar(ahora = Date.now()) {
 /** Lo que hace falta para pintar el panel de negocios de alguien. */
 function estado(userId, ahora = Date.now()) {
     return {
-        negocios: negociosDe(userId).map((n) => ({ ...n, ...CATALOGO[n.tipo] })),
+        negocios: negociosDe(userId).map((n) => ({ ...n, ...CATALOGO[n.tipo], ...valoresDeNivel(n.tipo, n.nivel) })),
         capacidad: capacidadDiaria(userId),
         usadoHoy: usadoHoy(userId, ahora),
         disponibleHoy: disponibleHoy(userId, ahora),
@@ -197,6 +252,10 @@ module.exports = {
     CATALOGO,
 
     VENTA_PCT,
+    NIVEL_MAX,
+    valoresDeNivel,
+    costeDeMejora,
+    mejorar,
     capacidadDiaria,
     disponibleHoy,
     comprar,

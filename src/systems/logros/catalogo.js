@@ -4,12 +4,13 @@
 
 const { SOCIAL } = require("./datos/social");
 const { XP } = require("./datos/xp");
+const { RACHA } = require("./datos/racha");
 const { CASINO } = require("./datos/casino");
 const { CRIPTO } = require("./datos/cripto");
 const { TIENDA } = require("./datos/tienda");
 const { PLEX } = require("./datos/plex");
 
-// El orden importa (listados y trofeos): social, xp, casino, cripto, tienda, Plex y, al final, los de idioma de Plex.
-const CATALOG = [...SOCIAL, ...XP, ...CASINO, ...CRIPTO, ...TIENDA, ...PLEX, ...require("../plexIdiomas").logrosFijos()];
+// El orden importa (listados y trofeos): social, xp, racha, casino, cripto, tienda, Plex y, al final, los de idioma de Plex.
+const CATALOG = [...SOCIAL, ...XP, ...RACHA, ...CASINO, ...CRIPTO, ...TIENDA, ...PLEX, ...require("../plexIdiomas").logrosFijos()];
 
 module.exports = { CATALOG };

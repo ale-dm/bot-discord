@@ -16,7 +16,7 @@ const { handleSettingsButton, handleSettingsModal } = require("../../adminPanel/
 const { handleApuestasButton, handleApuestasChannelSelect, handleApuestasModal } = require("../../adminPanel/apuestas");
 const { handleCatalogoButton, handleCatalogoModal } = require("../../adminPanel/catalogo");
 const { handleSistemaButton, handleSistemaSelect, handleSistemaModal } = require("../../adminPanel/sistema");
-const { handleAuditButton } = require("../../adminPanel/audit");
+const { handleAuditButton, handleAuditSelect } = require("../../adminPanel/audit");
 const {
     handlePlexButton,
     handlePlexUserSelect,
@@ -35,6 +35,7 @@ const {
 } = require("../../adminPanel/perfilesDuende");
 const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPanel/impuestos");
 const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = require("../../adminPanel/sonidos");
+const { handlePaseButton, handlePaseModal, handlePaseStringSelect, handlePaseChannelSelect } = require("../../adminPanel/pase");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
 
@@ -74,8 +75,10 @@ module.exports = {
                 "paneladmin_levels_reward_search_pick_",
                 "paneladmin_perfiles_",
                 "paneladmin_sis_",
+                "paneladmin_audit_filtro",
                 "paneladmin_plex_",
                 "paneladmin_sonidos_",
+                "paneladmin_pase_tope_sel",
                 "paneladmin_com_",
             ],
             method: "handleStringSelect",
@@ -85,18 +88,24 @@ module.exports = {
             prefixes: ["paneladmin_bank_", "paneladmin_plex_", "paneladmin_apodos_", "paneladmin_perfiles_"],
             method: "handleUserSelect",
         },
-        { types: ["roleSelect"], prefixes: ["paneladmin_levels_reward_role_", "paneladmin_plex_gordos_rol_"], method: "handleRoleSelect" },
+        {
+            types: ["roleSelect"],
+            prefixes: ["paneladmin_levels_reward_role_", "paneladmin_levels_ignored_role_select", "paneladmin_plex_gordos_rol_"],
+            method: "handleRoleSelect",
+        },
         {
             types: ["channelSelect"],
             ids: [
                 "paneladmin_levels_cfg_channel_select",
                 "paneladmin_levels_ignored_add_select",
+                "paneladmin_levels_mult_select",
                 "paneladmin_plex_novedades_channel_select",
                 "paneladmin_plex_channel_add_select",
                 "paneladmin_plex_ranking_canal_select",
                 "paneladmin_seerr_channel_add_select",
                 "paneladmin_apu_canal_select",
                 "paneladmin_semanal_canal_select",
+                "paneladmin_pase_canal_select",
             ],
             method: "handleChannelSelect",
         },
@@ -142,6 +151,7 @@ module.exports = {
             handleClasificacionButton,
             handleComunidadButton,
             handleSonidosButton,
+            handlePaseButton,
         ],
         async (client, interaction) => {
             if (interaction.customId !== "paneladmin_home") return false;
@@ -155,6 +165,7 @@ module.exports = {
         handleSettingsModal,
         handlePlexModal,
         handleSonidosModal,
+        handlePaseModal,
         handleSeerrModal,
         handleBankModal,
         handleApodosModal,
@@ -183,13 +194,16 @@ module.exports = {
         handleSeerrChannelSelect,
         handleApuestasChannelSelect,
         handleClasificacionChannelSelect,
+        handlePaseChannelSelect,
     ]),
 
     handleStringSelect: manejador("handleStringSelect", "Error al procesar selector.", [
+        handleAuditSelect,
         handlePerfilesStringSelect,
         handleSistemaSelect,
         handlePlexStringSelect,
         handleSonidosStringSelect,
+        handlePaseStringSelect,
         handleComunidadStringSelect,
         handleLevelsStringSelect,
     ]),

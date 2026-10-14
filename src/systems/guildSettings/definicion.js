@@ -1,5 +1,7 @@
 // Lista de ajustes del servidor y cómo es cada uno (datos, sin lógica).
 
+const { CATEGORIAS, XP_NIVEL_BASE, XP_NIVEL_PASO } = require("../pase/constantes");
+
 // Juegos del casino con tope de apuesta y cooldown propios (#460, #461): `casino.max_bet_<juego>` y
 // `casino.cooldown_sec_<juego>`. 0 = sin ajuste propio, vale el general (`casino.max_bet` y `casino.global_cooldown_sec`).
 const JUEGOS_CASINO = ["blackjack", "tragaperras", "ruleta", "ppt", "adivinar"];
@@ -41,6 +43,10 @@ const DEFAULT_FLAT = {
     "tienda.buy_cooldown_sec": 0,
     "tienda.daily_limit": 0,
     "tienda.notif_channel_id": "",
+    "tienda.recompra_pct": 50,
+    "tienda.subida_pct": 0,
+    "tienda.recuperacion_pct": 5,
+    "tienda.tope_pct": 100,
 
     "logros.enabled": true,
     "logros.notify_channel_id": "",
@@ -66,6 +72,7 @@ const DEFAULT_FLAT = {
     "apuestas.canal_resultados": "",
     "apuestas.recordatorio": true,
     "apuestas.recordatorio_min": 30,
+    "apuestas.recordatorio_quiniela_horas": 3,
     "apuestas.tope_diario": 0,
     "apuestas.max_partido": 0,
     "apuestas.destacado": true,
@@ -73,14 +80,27 @@ const DEFAULT_FLAT = {
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
+    "alertas.tipos": "error,gemini,odds,backup",
+    "alertas.canal": "",
+    "mantenimiento.activo": false,
+    "mantenimiento.mensaje": "🛠️ El bot está en mantenimiento. Vuelve a intentarlo en un rato.",
 
     "avisos.cumple_channel_id": "",
     "bienvenida.canal_id": "",
     "bienvenida.texto": "",
     "sugerencias.canal_id": "",
 
+    "sonidos.apagado": false,
+    "sonidos.silencio_desde": "",
+    "sonidos.silencio_hasta": "",
+    "sonidos.eventos_minutos": 5,
+
     "clasificacion.canal": "",
     "clasificacion.premio": 500,
+    "clasificacion.premio_rico": -1,
+    "clasificacion.premio_activo": -1,
+    "clasificacion.premio_apostador": -1,
+    "clasificacion.premio_constante": -1,
     "clasificacion.ultima_semana": "",
     "liga.premio_1": 5000,
     "liga.premio_2": 2500,
@@ -130,6 +150,10 @@ const KEY_TYPES = {
     "tienda.buy_cooldown_sec": "number",
     "tienda.daily_limit": "number",
     "tienda.notif_channel_id": "string",
+    "tienda.recompra_pct": "number",
+    "tienda.subida_pct": "number",
+    "tienda.recuperacion_pct": "number",
+    "tienda.tope_pct": "number",
 
     "logros.enabled": "boolean",
     "logros.notify_channel_id": "string",
@@ -155,6 +179,7 @@ const KEY_TYPES = {
     "apuestas.canal_resultados": "string",
     "apuestas.recordatorio": "boolean",
     "apuestas.recordatorio_min": "number",
+    "apuestas.recordatorio_quiniela_horas": "number",
     "apuestas.tope_diario": "number",
     "apuestas.max_partido": "number",
     "apuestas.destacado": "boolean",
@@ -162,14 +187,26 @@ const KEY_TYPES = {
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
+    "alertas.tipos": "string",
+    "alertas.canal": "string",
+    "mantenimiento.activo": "boolean",
+    "mantenimiento.mensaje": "string",
 
     "avisos.cumple_channel_id": "string",
     "bienvenida.canal_id": "string",
     "bienvenida.texto": "string",
     "sugerencias.canal_id": "string",
+    "sonidos.apagado": "boolean",
+    "sonidos.silencio_desde": "string",
+    "sonidos.silencio_hasta": "string",
+    "sonidos.eventos_minutos": "number",
 
     "clasificacion.canal": "string",
     "clasificacion.premio": "number",
+    "clasificacion.premio_rico": "number",
+    "clasificacion.premio_activo": "number",
+    "clasificacion.premio_apostador": "number",
+    "clasificacion.premio_constante": "number",
     "clasificacion.ultima_semana": "string",
     "liga.premio_1": "number",
     "liga.premio_2": "number",
@@ -187,6 +224,22 @@ for (const juego of JUEGOS_CASINO) {
     DEFAULT_FLAT[`casino.cooldown_sec_${juego}`] = 0;
     KEY_TYPES[`casino.max_bet_${juego}`] = "number";
     KEY_TYPES[`casino.cooldown_sec_${juego}`] = "number";
+}
+
+// 🛡️ Pase de batalla (#353): activar, el tope diario de cada categoría y lo que cuesta cada nivel (los valores por defecto son los de
+// systems/pase/constantes, así que sin ajustes guardados nada cambia), el canal de los anuncios de nivel (#344) y los objetos por nivel
+// (#364, un JSON {"nivel": id del objeto}).
+const AJUSTES_PASE = {
+    "pase.activo": [true, "boolean"],
+    "pase.xp_nivel_base": [XP_NIVEL_BASE, "number"],
+    "pase.xp_nivel_paso": [XP_NIVEL_PASO, "number"],
+    "pase.canal_nivel": ["", "string"],
+    "pase.objetos": ["", "string"],
+    ...Object.fromEntries(Object.entries(CATEGORIAS).map(([categoria, { tope }]) => [`pase.tope_${categoria}`, [tope, "number"]])),
+};
+for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_PASE)) {
+    DEFAULT_FLAT[clave] = valor;
+    KEY_TYPES[clave] = tipo;
 }
 
 module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };

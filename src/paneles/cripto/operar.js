@@ -77,6 +77,9 @@ function pantallaComprar(userId, guildId, aviso = null) {
     const otros = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("cripto_comprar_modal").setLabel("✏️ Otra cantidad").setStyle(ButtonStyle.Primary),
     );
+    otros.addComponents(
+        new ButtonBuilder().setCustomId("criptoord_nueva_recurrente").setLabel("🔁 Compra recurrente").setStyle(ButtonStyle.Secondary),
+    );
     if (dinero.banco(userId) > 0) otros.addComponents(botonSacar("cripto_tab_comprar"));
 
     return pantalla({ embeds: [embed], filas: [importes, otros], actual: "comprar" });
@@ -171,7 +174,13 @@ function pantallaVender(userId, guildId, aviso = null) {
                 .setStyle(p === 100 ? ButtonStyle.Danger : ButtonStyle.Primary),
         ),
     );
-    return pantalla({ embeds: [embed], filas: [porcentajes], actual: "vender" });
+    // Otra cantidad (#365), stop-loss (#341) y el listado de órdenes (#298).
+    const mas = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("criptoord_vender").setLabel("✏️ Otra cantidad").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("criptoord_nueva_stoploss").setLabel("🛡️ Stop-loss").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("criptoord_ordenes").setLabel("🔔 Mis órdenes").setStyle(ButtonStyle.Secondary),
+    );
+    return pantalla({ embeds: [embed], filas: [porcentajes, mas], actual: "vender" });
 }
 
 /** Vista previa de una venta: lo que recibes, la comisión y cómo se mueve el precio. Sin tocar nada. */

@@ -49,8 +49,8 @@ test("comprar un consumible: botones para verlo en el inventario o usarlo ya, y 
     expect(ids(usado).some((id) => id.startsWith("tienda_usar_"))).toBe(false);
 });
 
-test("las tres pestañas en todas las pantallas, y /tienda abre el catálogo con ellas", async () => {
-    const esperadas = ["tienda_volver_1", "tienda_inv_1_tab", "historial_ver_1"];
+test("las pestañas en todas las pantallas, y /tienda abre el catálogo con ellas", async () => {
+    const esperadas = ["tienda_volver_1", "tienda_inv_1_tab", "historial_ver_1", "mercado_ver_1", "mercado_canjear"];
     const inv = interaccion();
     await comando.run(null, inv);
     const payload = inv.reply.mock.calls[0][0];

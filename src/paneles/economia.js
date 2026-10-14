@@ -18,6 +18,9 @@ const dinero = require("../systems/dinero");
 const { filaPestanasPerfil } = require("./pestanasPerfil");
 const { fmtNumero } = require("../core/formato");
 const { filasImporte } = require("./importes");
+const patrimonio = require("../systems/patrimonio");
+const patrimonioDiario = require("../systems/patrimonioDiario");
+const privacidad = require("../systems/privacidadEconomia");
 
 const POR_PAGINA = 10;
 const signo = (n) => `${n > 0 ? "+" : ""}${fmtNumero(n)}`;
@@ -60,7 +63,33 @@ async function carteraDe(targetId, guildId) {
     }
 }
 
-function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo }) {
+/** Los campos de patrimonio de 💰 Economía: 🏦 lo cobrado (#350), ⏳ el próximo cobro y su estimación (#347, solo propio) y 📈 la evolución (#388). */
+function camposPatrimonio(targetId, propio) {
+    const campos = [];
+    const r = patrimonio.resumen(targetId);
+    const linea = (p) => `interés **${signo(p.interes)}** · impuesto **${signo(-p.impuesto)}** · neto **${signo(p.neto)}**`;
+    campos.push({
+        name: "🏦 Patrimonio",
+        value: r ? `Desde siempre: ${linea(r.total)}\nÚltimo mes: ${linea(r.mes)}` : "Sin cobros de patrimonio todavía",
+    });
+    if (propio) {
+        const p = patrimonio.prevision(targetId);
+        campos.push({
+            name: "⏳ Próximo cobro de patrimonio",
+            value: p.proximo
+                ? `<t:${Math.floor(p.proximo / 1000)}:R> · si fuera ahora: interés **+${fmtNumero(p.interes)}** · impuesto **-${fmtNumero(p.impuesto)}**`
+                : "El conteo empieza en el próximo chequeo horario.",
+        });
+    }
+    const e = patrimonioDiario.evolucion(targetId);
+    campos.push({
+        name: "📈 Últimos 30 días",
+        value: e ? `\`${e.barras}\`\nCambio neto (${e.dias} días): **${signo(e.neto)}** 🪙` : "Todavía sin historial",
+    });
+    return campos;
+}
+
+function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo, propio = false, targetId = null }) {
     const embed = new EmbedBuilder()
         .setTitle(`💰 Economía · ${nombre}`)
         .setDescription(
@@ -81,6 +110,7 @@ function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, pr
         )
         .setColor(0xf1c40f)
         .setTimestamp();
+    if (targetId) embed.addFields(...camposPatrimonio(targetId, propio));
     if (cartera.lineas.length) {
         const lineas = cartera.lineas.map(
             (l) => `${l.info?.emoji || "💰"} **${l.cantidad.toFixed(4)} ${l.cripto}** ≈ ${fmtNumero(Math.floor(l.valor))} 🪙`,
@@ -104,8 +134,8 @@ function embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, pr
     return embed;
 }
 
-// Las filas de botones: acciones de dinero (solo en la propia cuenta), movimientos, y el préstamo y los negocios
-// en su fila: la de acciones ya puede tener 5 botones.
+// Las filas de botones: acciones de dinero (solo en la propia cuenta), movimientos, y el préstamo, los negocios y el límite
+// de pérdidas en su fila: la de acciones ya puede tener 5 botones.
 function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
     const movimientos = new ButtonBuilder()
         .setCustomId(`dinero_mov_todo_0_${targetId}`)
@@ -146,10 +176,25 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
         ? [
               new ActionRowBuilder().addComponents(
                   new ButtonBuilder().setCustomId("dinero_negocios").setLabel("🏪 Negocios").setStyle(ButtonStyle.Secondary),
+                  new ButtonBuilder().setCustomId("dinero_limite").setLabel("🛡️ Límite de pérdidas").setStyle(ButtonStyle.Secondary),
+                  // 🙈 Ocultar mi economía a los demás (#377): el botón dice lo que hará.
+                  new ButtonBuilder()
+                      .setCustomId(`dinero_privada_${privacidad.oculta(viewerId) ? 0 : 1}`)
+                      .setLabel(privacidad.oculta(viewerId) ? "👁️ Enseñar mi economía" : "🙈 Ocultar mi economía")
+                      .setStyle(ButtonStyle.Secondary),
               ),
           ]
         : [];
     return [acciones, ...devolver, ...negocios, filaPestanasPerfil(viewerId, targetId, "eco")];
+}
+
+/** Lo que ve otra persona si la economía está oculta (#377). */
+function pantallaOculta(viewerId, targetId, nombre) {
+    const embed = new EmbedBuilder()
+        .setTitle(`💰 Economía · ${nombre}`)
+        .setDescription(`<@${targetId}> ha ocultado su economía. 🙈`)
+        .setColor(0x95a5a6);
+    return { content: "", embeds: [embed], components: [filaPestanasPerfil(viewerId, targetId, "eco")] };
 }
 
 /**
@@ -158,13 +203,14 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
  */
 async function buildEconomia({ viewerId, targetId = viewerId, nombre, guildId = null, aviso = null }) {
     const propio = viewerId === targetId;
+    if (!privacidad.puedeVer(viewerId, targetId)) return pantallaOculta(viewerId, targetId, nombre);
     const c = dinero.cuenta(targetId);
     const { ganado, perdido } = resumenCasino(targetId);
     const cartera = await carteraDe(targetId, guildId);
     const objetos = repo.objetosEnInventario(targetId);
     const prestamo = require("../systems/prestamos").abierto(targetId);
 
-    const embed = embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo });
+    const embed = embedEconomia({ nombre, aviso, c, ganado, perdido, objetos, cartera, prestamo, propio, targetId });
     const components = filasEconomia({ viewerId, targetId, propio, c, prestamo });
     return { content: "", embeds: [embed], components };
 }
@@ -207,6 +253,12 @@ function buildMovimientos(viewerId, targetId, tipo = "todo", pagina = 0) {
             .setDisabled(pagina >= paginas - 1),
         botonVolver(viewerId, targetId),
     );
+    // 📤 Exportar a CSV (#411): solo los movimientos propios, con el filtro activo.
+    if (viewerId === targetId) {
+        nav.addComponents(
+            new ButtonBuilder().setCustomId(`dinero_exportar_${tipo}`).setLabel("📤 Exportar").setStyle(ButtonStyle.Secondary),
+        );
+    }
     return { content: "", embeds: [embed], components: [new ActionRowBuilder().addComponents(selector), nav] };
 }
 

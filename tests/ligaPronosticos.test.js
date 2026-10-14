@@ -114,7 +114,9 @@ test("el panel muestra la clasificación, tu posición y los premios", () => {
     expect(campo("📊 Clasificación")).toMatch(/1\. <@luis> · \*\*4\*\* puntos/);
     expect(campo("📍 Tu posición")).toBe("2.º con **4** puntos");
     expect(campo("🏆 Temporadas anteriores")).toBe("Ninguna todavía.");
-    expect(p.components[0].components[0].data.custom_id).toBe("apuestas_pagina_laliga_1");
+    // El menú de competición (#380) y, debajo, volver a ⚽ Apuestas.
+    expect(p.components[0].components[0].data.custom_id).toBe("liga_competicion");
+    expect(p.components.at(-1).components[0].data.custom_id).toBe("apuestas_pagina_laliga_1");
 });
 
 test("el panel enseña los campeones de las temporadas anteriores", () => {

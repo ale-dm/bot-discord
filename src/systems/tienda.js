@@ -8,7 +8,22 @@ const { createLogger } = require("../core/logger");
 const log = createLogger("Tienda");
 
 const SELECT_ITEM =
-    "SELECT tienda.id as tiendaId, objeto.*, tienda.precio, tienda.stock FROM tienda JOIN objeto ON tienda.objetoId = objeto.id";
+    "SELECT tienda.id as tiendaId, objeto.*, tienda.precio, tienda.stock, tienda.precio_base, tienda.descuento, tienda.oferta_inicio, tienda.oferta_fin FROM tienda JOIN objeto ON tienda.objetoId = objeto.id";
+
+/**
+ * Un objeto de la tienda con su precio real. `precio` es lo que se muestra y se cobra: el precio actual (que sube con las
+ * compras, #412) con la oferta temporal activa aplicada (#413). `precioLista` es el actual sin oferta y `precioBase` el que
+ * puso el admin; `enOferta` dice si la oferta está en marcha. Los tres salen de aquí, así el catálogo, la confirmación, el
+ * impuesto de compra y el cobro siempre ven el mismo precio.
+ */
+function conPrecio(fila, ahora = Date.now()) {
+    if (!fila) return fila;
+    const precioLista = fila.precio;
+    const enOferta =
+        fila.descuento > 0 && (!fila.oferta_inicio || ahora >= fila.oferta_inicio) && (!fila.oferta_fin || ahora < fila.oferta_fin);
+    const precio = enOferta ? Math.max(0, Math.round((precioLista * (100 - fila.descuento)) / 100)) : precioLista;
+    return { ...fila, precio, precioLista, precioBase: fila.precio_base ?? precioLista, enOferta };
+}
 
 /** Objetos a la venta, con filtros opcionales (los de /tienda ver). */
 function itemsTienda({ busqueda, soloDisponibles, categoria, rareza } = {}) {
@@ -28,7 +43,10 @@ function itemsTienda({ busqueda, soloDisponibles, categoria, rareza } = {}) {
         params.push(rareza);
     }
     const filtro = where.length ? ` WHERE ${where.join(" AND ")}` : "";
-    return db.prepare(`${SELECT_ITEM}${filtro} ORDER BY tienda.id ASC`).all(...params);
+    return db
+        .prepare(`${SELECT_ITEM}${filtro} ORDER BY tienda.id ASC`)
+        .all(...params)
+        .map((fila) => conPrecio(fila));
 }
 
 /** Categorías y rarezas que hay en el catálogo, para los menús de filtro de /tienda. */
@@ -42,7 +60,7 @@ function valoresFiltro() {
 }
 
 function itemTienda(tiendaId) {
-    return db.prepare(`${SELECT_ITEM} WHERE tienda.id = ?`).get(tiendaId);
+    return conPrecio(db.prepare(`${SELECT_ITEM} WHERE tienda.id = ?`).get(tiendaId));
 }
 
 /** Compras de la tienda de alguien (solo las de la tienda, no el resto del historial), más recientes primero. */
@@ -108,6 +126,7 @@ function cobrarCompra(userId, guildId, item, etiqueta = userId) {
             }
             db.prepare("INSERT INTO inventario (userId, itemId, fecha) VALUES (?, ?, ?)").run(userId, item.id, new Date().toISOString());
             dinero.apuntar(userId, "tienda", `Compra en tienda: ${item.nombre}`, -item.precio);
+            subirPrecio(guildId, item);
             if (impuestoCompra) {
                 dinero.apuntar(userId, "impuesto", `Impuesto de compra: ${item.nombre}`, -impuestoCompra.impuesto);
                 if (impuestoCompra.destino === "bote") impuestos.sumarBote(guildId, impuestoCompra.impuesto);
@@ -120,4 +139,55 @@ function cobrarCompra(userId, guildId, item, etiqueta = userId) {
     }
 }
 
-module.exports = { itemsTienda, itemTienda, valoresFiltro, historialCompras, saldoDe, comprobarCompra, cobrarCompra };
+/**
+ * Precio dinámico (#412): cada compra sube el precio actual un `tienda.subida_pct` %, con un tope de `tienda.tope_pct` % por
+ * encima del precio base (el que puso el admin). Con subida 0 está apagado, y los objetos únicos quedan fuera.
+ */
+function subirPrecio(guildId, item) {
+    const cfg = guildSettings.getSettings(guildId).tienda;
+    const subida = Number(cfg.subida_pct || 0);
+    if (!(subida > 0) || item.unico) return;
+    const fila = db.prepare("SELECT precio, precio_base FROM tienda WHERE id = ?").get(item.tiendaId);
+    if (!fila) return;
+    const base = fila.precio_base ?? fila.precio;
+    const tope = Math.floor((base * (100 + Number(cfg.tope_pct ?? 100))) / 100);
+    const nuevo = Math.min(tope, Math.max(fila.precio + 1, Math.ceil((fila.precio * (100 + subida)) / 100)));
+    if (nuevo === fila.precio) return;
+    db.prepare("UPDATE tienda SET precio = ?, precio_base = ? WHERE id = ?").run(nuevo, base, item.tiendaId);
+}
+
+/**
+ * Cron (cada hora): el precio de los objetos que han subido baja hacia su base un `tienda.recuperacion_pct` % del precio
+ * base, sin pasarse de él. Usa los ajustes del primer servidor que tenga el precio dinámico encendido (la tienda es una sola).
+ * @returns {number} objetos cuyo precio ha cambiado
+ */
+function recuperarPrecios(guildIds) {
+    const cfg = guildIds.map((g) => guildSettings.getSettings(g).tienda).find((t) => Number(t.subida_pct) > 0);
+    if (!cfg) return 0;
+    const pct = Number(cfg.recuperacion_pct || 0);
+    if (!(pct > 0)) return 0;
+    let cambiados = 0;
+    for (const t of db.prepare("SELECT id, precio, precio_base FROM tienda WHERE precio_base IS NOT NULL AND precio > precio_base").all()) {
+        const nuevo = Math.max(t.precio_base, t.precio - Math.max(1, Math.ceil((t.precio_base * pct) / 100)));
+        db.prepare("UPDATE tienda SET precio = ?, precio_base = ? WHERE id = ?").run(
+            nuevo,
+            nuevo === t.precio_base ? null : t.precio_base,
+            t.id,
+        );
+        cambiados++;
+    }
+    return cambiados;
+}
+
+module.exports = {
+    conPrecio,
+    recuperarPrecios,
+    subirPrecio,
+    itemsTienda,
+    itemTienda,
+    valoresFiltro,
+    historialCompras,
+    saldoDe,
+    comprobarCompra,
+    cobrarCompra,
+};

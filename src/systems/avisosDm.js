@@ -9,14 +9,58 @@ const log = createLogger("Avisos");
 /** Los tipos de DM que se pueden apagar. `id` es lo que se guarda; el orden es el del panel de /avisos. */
 const TIPOS = [
     { id: "racha_peligro", emoji: "⏳", nombre: "Racha en peligro", detalle: "Si no has ganado XP hoy y tu racha va a romperse" },
+    { id: "racha_perdida", emoji: "💔", nombre: "Racha perdida", detalle: "Una sola vez, cuando pierdes una racha de 3 días o más" },
     { id: "racha_activa", emoji: "🔥", nombre: "Racha activa", detalle: "Cuando sumas un día más a tu racha" },
+    {
+        id: "logros_pendientes",
+        emoji: "🏅",
+        nombre: "Logros sin reclamar",
+        detalle: "Los domingos, si tienes logros completados sin reclamar",
+    },
     { id: "recordatorio_partido", emoji: "⏰", nombre: "Recordatorio de partido", detalle: "Antes de un partido al que has apostado" },
     { id: "apuesta_cobrada", emoji: "🏆", nombre: "Apuesta cobrada", detalle: "Cuando ganas o te devuelven una apuesta" },
+    {
+        id: "pase_recompensas",
+        emoji: "🛡️",
+        nombre: "Recompensas del pase",
+        detalle: "El último día de la temporada, si tienes niveles del pase sin cobrar",
+    },
+    {
+        id: "quiniela_recordatorio",
+        emoji: "🧾",
+        nombre: "Quiniela sin enviar",
+        detalle: "Unas horas antes de que se cierre una quiniela que no has enviado",
+    },
+    {
+        id: "resumen_apuestas",
+        emoji: "📊",
+        nombre: "Resumen semanal de apuestas",
+        detalle: "Tu balance de apuestas de la semana, los lunes",
+    },
+    { id: "alerta_cuota", emoji: "🔔", nombre: "Alertas de cuota", detalle: "Cuando la cuota que vigilas llega al valor que pusiste" },
     { id: "wrapped", emoji: "🎞️", nombre: "Wrapped mensual", detalle: "Tu resumen de Plex del mes, el día 1" },
     { id: "plex_series", emoji: "📺", nombre: "Series seguidas", detalle: "Episodios nuevos de las series que sigues" },
     { id: "plex_quiero_ver", emoji: "🍿", nombre: "Quiero ver", detalle: "Cuando llega a Plex algo de tu lista" },
+    {
+        id: "tienda_deseos",
+        emoji: "⭐",
+        nombre: "Lista de deseos",
+        detalle: "Cuando un objeto que sigues en la tienda vuelve a tener stock o baja de precio",
+    },
+    {
+        id: "clasificacion_domingo",
+        emoji: "🏆",
+        nombre: "Clasificación del domingo",
+        detalle: "Si lo activas en tu perfil: el domingo, si vas primero en la clasificación semanal",
+    },
     { id: "pedido_seerr", emoji: "📥", nombre: "Pedidos de Seerr", detalle: "Cuando lo que pediste ya está disponible" },
     { id: "robo", emoji: "🥷", nombre: "Robos", detalle: "Cuando alguien intenta robarte" },
+    {
+        id: "cripto_ordenes",
+        emoji: "🔔",
+        nombre: "Órdenes de TTCL",
+        detalle: "Alertas de precio, stop-loss ejecutados y compras recurrentes que se saltan",
+    },
     { id: "cripto_evento", emoji: "📈", nombre: "Eventos de TTCL", detalle: "Cuando el mercado sube o baja por un evento" },
     { id: "prestamo", emoji: "🧙", nombre: "Préstamos del Duende", detalle: "Cuando vence un préstamo" },
     { id: "retos", emoji: "⚔️", nombre: "Retos", detalle: "Te toca jugar o un reto tuyo está a punto de caducar" },
@@ -91,14 +135,23 @@ function silenciado(userId, tipo) {
 
 /** Manda un DM sin mirar preferencias. Para lo que no se puede apagar (alertas de administración). */
 async function sendDm(client, userId, payload) {
+    return (await intentarDm(client, userId, payload)) === "ok";
+}
+
+/**
+ * Como sendDm, pero distingue por qué no llegó (#423): "ok", "cerrado" (tiene los DMs cerrados, código 50007: no es un error del
+ * bot) o "error" (cualquier otro motivo).
+ * @returns {Promise<"ok" | "cerrado" | "error">}
+ */
+async function intentarDm(client, userId, payload) {
     try {
         const user = await client.users.fetch(userId);
         await user.send(payload);
-        return true;
+        return "ok";
     } catch (e) {
         // Lo normal es que tenga los DMs cerrados (código 50007): no es un error del bot.
         log.debug(`No se pudo enviar DM a ${userId}: ${e.code === 50007 ? "DMs cerrados" : e.message}`);
-        return false;
+        return e.code === 50007 ? "cerrado" : "error";
     }
 }
 
@@ -121,4 +174,17 @@ async function enviarAviso(client, userId, tipo, payload, { usuario } = {}) {
     return sendDm(client, userId, payload);
 }
 
-module.exports = { TIPOS, NO_MOLESTAR, tipoValido, activo, noMolestar, fijar, fijarNoMolestar, estado, silenciado, sendDm, enviarAviso };
+module.exports = {
+    TIPOS,
+    NO_MOLESTAR,
+    tipoValido,
+    activo,
+    noMolestar,
+    fijar,
+    fijarNoMolestar,
+    estado,
+    silenciado,
+    sendDm,
+    intentarDm,
+    enviarAviso,
+};

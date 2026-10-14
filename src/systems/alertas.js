@@ -7,7 +7,7 @@
 // conectar. Aquí nunca se registra nada como error: un fallo al avisar de un error no puede generar otra alerta.
 const { embedAlerta } = require("../discord/mensajes/alerta");
 const guildSettings = require("./guildSettings");
-const { sendDm } = require("./avisosDm");
+const { intentarDm } = require("./avisosDm");
 const { createLogger, onError } = require("../core/logger");
 
 const log = createLogger("Alertas");
@@ -16,6 +16,24 @@ const HORA = 60 * 60 * 1000;
 const COOLDOWN_POR_DEFECTO = 6 * HORA;
 const MAX_POR_HORA = 10;
 const MAX_PENDIENTES = 10;
+
+// Categorías de alerta que se pueden apagar por separado (#422); salen del principio de la clave de cada alerta («error:…»,
+// «gemini-cuota», «odds-creditos», «backup:integridad»). El resumen semanal no es una categoría: tiene su propio envío.
+const CATEGORIAS = {
+    error: "❌ Errores nuevos",
+    gemini: "🤖 Gemini (cuota o modelo roto)",
+    odds: "📈 Créditos de la Odds API",
+    backup: "💾 Copias de seguridad",
+};
+
+/** La categoría de una alerta según su clave, o null si no es de ninguna (la prueba del panel, por ejemplo). */
+function categoriaDe(clave) {
+    const base = /^[a-z]+/.exec(String(clave))?.[0];
+    return CATEGORIAS[base] ? base : null;
+}
+
+/** ¿Tiene este servidor activa esa categoría? Sin categoría (null), siempre. */
+const categoriaActiva = (cfg, categoria) => !categoria || guildSettings.parseCsvIds(cfg.tipos).includes(categoria);
 
 // Títulos más claros para los errores de algunos módulos.
 const TITULOS_POR_AMBITO = { Backups: "💾 La copia de seguridad ha fallado" };
@@ -46,33 +64,57 @@ function escucharErrores() {
     });
 }
 
-/** IDs de quienes reciben las alertas, de todos los servidores con las alertas activas. */
-function destinatarios() {
+/** IDs de quienes reciben las alertas, de todos los servidores con las alertas activas (y con esa categoría, si se indica). */
+function destinatarios(categoria = null) {
     if (!client) return [];
     const ids = new Set();
     for (const guild of client.guilds.cache.values()) {
         const cfg = guildSettings.getSettings(guild.id).alertas;
-        if (!cfg.enabled) continue;
+        if (!cfg.enabled || !categoriaActiva(cfg, categoria)) continue;
         const propios = guildSettings.parseCsvIds(cfg.admin_ids);
         for (const id of propios.length ? propios : [guild.ownerId].filter(Boolean)) ids.add(String(id));
     }
     return [...ids];
 }
 
-async function enviar({ titulo, detalle, at = Date.now() }) {
-    const ids = destinatarios();
+/** Publica la alerta en el canal de respaldo de cada servidor que lo tiene puesto (#423). Un fallo solo se registra. */
+async function publicarEnCanalDeRespaldo(embed, categoria) {
+    let publicadas = 0;
+    for (const guild of client.guilds.cache.values()) {
+        const cfg = guildSettings.getSettings(guild.id).alertas;
+        if (!cfg.enabled || !cfg.canal || !categoriaActiva(cfg, categoria)) continue;
+        try {
+            const canal = await client.channels.fetch(cfg.canal);
+            await canal.send({ embeds: [embed], allowedMentions: { parse: [] } });
+            publicadas++;
+        } catch (e) {
+            log.warn(`No se pudo publicar la alerta en el canal de respaldo ${cfg.canal} de ${guild.id}: ${e.message}`);
+        }
+    }
+    return publicadas;
+}
+
+async function enviar({ titulo, detalle, at = Date.now(), categoria = null }) {
+    const ids = destinatarios(categoria);
     if (!ids.length) {
-        log.info(`Alerta sin destinatarios (alertas desactivadas): ${titulo}`);
+        log.info(`Alerta sin destinatarios (alertas o categoría desactivadas): ${titulo}`);
         return 0;
     }
     const embed = embedAlerta(titulo, detalle, at);
     let enviadas = 0;
+    let cerrados = 0;
     for (const id of ids) {
-        if (await sendDm(client, id, { embeds: [embed] })) enviadas++;
+        const resultado = await intentarDm(client, id, { embeds: [embed] });
+        if (resultado === "ok") enviadas++;
+        else if (resultado === "cerrado") cerrados++;
     }
-    historial.unshift({ at, titulo, enviadas, destinatarios: ids.length });
+    // Si nadie la recibió por tener los DMs cerrados, va al canal de respaldo; otros errores no son motivo para publicarla.
+    const enCanal = !enviadas && cerrados ? await publicarEnCanalDeRespaldo(embed, categoria) : 0;
+    historial.unshift({ at, titulo, enviadas, destinatarios: ids.length, enCanal });
     historial.length = Math.min(historial.length, 10);
-    log.info(`Alerta "${titulo}" enviada a ${enviadas}/${ids.length} admins`);
+    log.info(
+        `Alerta "${titulo}" enviada a ${enviadas}/${ids.length} admins${enCanal ? ` y publicada en ${enCanal} canal(es) de respaldo` : ""}`,
+    );
     return enviadas;
 }
 
@@ -82,6 +124,9 @@ async function enviar({ titulo, detalle, at = Date.now() }) {
  */
 async function alertar({ clave, titulo, detalle, cooldownMs = COOLDOWN_POR_DEFECTO, forzar = false }) {
     const ahora = Date.now();
+    // Una categoría apagada en todos los servidores no envía nada ni gasta el cooldown ni el máximo por hora (#422).
+    const categoria = categoriaDe(clave);
+    if (client && categoria && !destinatarios(categoria).length) return 0;
     if (!forzar) {
         const ultima = ultimaPorClave.get(clave);
         if (ultima && ahora - ultima < cooldownMs) return 0;
@@ -93,11 +138,11 @@ async function alertar({ clave, titulo, detalle, cooldownMs = COOLDOWN_POR_DEFEC
     }
     ultimaPorClave.set(clave, ahora);
     if (!client) {
-        if (pendientes.length < MAX_PENDIENTES) pendientes.push({ titulo, detalle, at: ahora });
+        if (pendientes.length < MAX_PENDIENTES) pendientes.push({ titulo, detalle, at: ahora, categoria });
         return 0;
     }
     if (!forzar) enviadasUltimaHora.push(ahora);
-    return enviar({ titulo, detalle, at: ahora });
+    return enviar({ titulo, detalle, at: ahora, categoria });
 }
 
 /** Conectado a Discord: desde ahora se envían, y se mandan las que se guardaron al arrancar. */
@@ -110,7 +155,13 @@ async function iniciar(discordClient) {
 /** Para el panel: estado, destinatarios y últimas alertas enviadas desde el arranque. */
 function estado(guildId) {
     const cfg = guildSettings.getSettings(guildId).alertas;
-    return { activas: Boolean(cfg.enabled), adminIds: guildSettings.parseCsvIds(cfg.admin_ids), historial: [...historial] };
+    return {
+        activas: Boolean(cfg.enabled),
+        adminIds: guildSettings.parseCsvIds(cfg.admin_ids),
+        tipos: guildSettings.parseCsvIds(cfg.tipos),
+        canal: cfg.canal || null,
+        historial: [...historial],
+    };
 }
 
 /** Alerta de prueba (botón 📨 Probar del panel). */
@@ -132,4 +183,4 @@ function _reiniciar() {
     historial.length = 0;
 }
 
-module.exports = { escucharErrores, iniciar, alertar, destinatarios, estado, probar, _reiniciar, MAX_POR_HORA };
+module.exports = { CATEGORIAS, categoriaDe, escucharErrores, iniciar, alertar, destinatarios, estado, probar, _reiniciar, MAX_POR_HORA };

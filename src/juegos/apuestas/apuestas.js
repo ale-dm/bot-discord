@@ -10,8 +10,8 @@ const { partidosDePagina, partidoPorMatch } = require("../../systems/apuestas/ap
 const { embedPartido, filasPartido, modalApuesta, confirmarApuesta } = require("./partido");
 const { componentesListado } = require("./listado");
 const { importeElegido } = require("../../paneles/importes");
+const { textoRechazo } = require("./rechazo");
 
-const { MIN_BET_AMOUNT, MAX_BET_AMOUNT } = formulario;
 // --- Utilidad para obtener el escudo del equipo ---
 const cacheEscudos = new CacheLimitada({ max: 1000 }); // equipo -> url (o null si no tiene)
 async function getTeamBadge(teamName) {
@@ -41,6 +41,7 @@ module.exports = {
             acl: "juegos",
         },
         { types: ["button"], ids: ["liga_ver"], method: "handleLiga", acl: "juegos" },
+        { types: ["stringSelect"], ids: ["liga_competicion"], method: "handleLiga", acl: "juegos" },
         { types: ["modal"], prefixes: ["apuestas_modal_"], method: "handleModal", acl: "juegos" },
     ],
 
@@ -81,9 +82,12 @@ module.exports = {
     },
 
     // Handler para el select menu
-    // 🏅 Liga: la clasificación de la temporada (paneles/liga), desde el botón de ⚽ Apuestas.
+    // 🏅 Liga: la clasificación de la temporada (paneles/liga), desde el botón de ⚽ Apuestas; con el menú, la de una competición (#380).
     async handleLiga(client, interaction) {
-        return interaction.update(pantallaLiga(interaction.guildId, interaction.user.id));
+        const elegida = interaction.values?.[0];
+        return interaction.update(
+            pantallaLiga(interaction.guildId, interaction.user.id, Date.now(), elegida === "general" ? null : elegida),
+        );
     },
 
     async handleSelectMenu(client, interaction) {
@@ -175,10 +179,6 @@ function avisoError(interaction, titulo, descripcion) {
     return interaction.reply({ embeds: [errorEmbed], flags: MessageFlags.Ephemeral });
 }
 
-function sinEfectivo(interaction) {
-    return avisoError(interaction, "❌ No te llega el efectivo", "Saca dinero del banco (💵 Sacar) para hacer esta apuesta.");
-}
-
 // 🎯 Marcador exacto (F-AP-10): los goles de cada equipo; la elección se guarda como "exacto_2-1". Null si los goles no
 // son válidos (ya se ha avisado).
 async function eleccionMarcadorExacto(interaction) {
@@ -192,39 +192,20 @@ async function eleccionMarcadorExacto(interaction) {
     return eleccion;
 }
 
-// El aviso de una apuesta que no se ha cobrado (y su log, si lo tiene). Los motivos los decide systems/apuestas.
-function avisarRechazo(interaction, { motivo, match, eleccion, limite }, cantidad) {
-    switch (motivo) {
-        case "cantidad":
-            return avisoError(interaction, "❌ Error", `La cantidad debe estar entre ${MIN_BET_AMOUNT} y ${MAX_BET_AMOUNT} monedas.`);
-        case "sinEfectivo":
-            return sinEfectivo(interaction);
-        case "sinPartido":
-            return avisoError(interaction, "❌ Error", "No se encontró el partido seleccionado.");
-        case "cerrado":
-            // El formulario se puede abrir desde un mensaje antiguo: sin la comprobación se apostaba a partidos ya empezados.
-            logInfo(
-                `[Apuestas] Apuesta rechazada de ${interaction.user.tag}: ${match.home_team} vs ${match.away_team} ya empezó (${match.start_time}, ${match.estado})`,
-            );
-            return avisoError(
-                interaction,
-                "⏱️ Apuestas cerradas",
-                `**${match.home_team}** vs **${match.away_team}** ya ha empezado: no se admiten más apuestas.`,
-            );
-        case "cuota":
-            return avisoError(interaction, "❌ Error", "La cuota para este resultado no es válida.");
-        case "duplicada":
-            return avisoError(
-                interaction,
-                "❌ Ya has apostado",
-                marcadorExacto.marcadorDe(eleccion)
-                    ? "Ya tienes una apuesta a ese marcador en este partido."
-                    : "Ya tienes una apuesta activa para este partido y resultado.",
-            );
-        case "limite":
-            logInfo(`[Apuestas] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
-            return avisoError(interaction, "🚦 Límite de apuestas", limite);
+// El aviso de una apuesta que no se ha cobrado (y su log, si lo tiene). Los motivos los decide systems/apuestas y los textos, ./rechazo.
+function avisarRechazo(interaction, rechazo, cantidad) {
+    const { match, limite } = rechazo;
+    if (rechazo.motivo === "cerrado") {
+        // El formulario se puede abrir desde un mensaje antiguo: sin la comprobación se apostaba a partidos ya empezados.
+        logInfo(
+            `[Apuestas] Apuesta rechazada de ${interaction.user.tag}: ${match.home_team} vs ${match.away_team} ya empezó (${match.start_time}, ${match.estado})`,
+        );
     }
+    if (rechazo.motivo === "limite") {
+        logInfo(`[Apuestas] Apuesta de ${interaction.user.tag} (${cantidad}) rechazada por los límites: ${limite}`);
+    }
+    const { titulo, descripcion } = textoRechazo(rechazo);
+    return avisoError(interaction, titulo, descripcion);
 }
 
 // Pide a la API los partidos y cuotas del deporte. False si no hay ninguno o falla (ya se ha avisado).

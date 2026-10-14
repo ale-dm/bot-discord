@@ -1,15 +1,18 @@
-const { SlashCommandBuilder, AttachmentBuilder } = require("discord.js");
+const { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { logInfo, logError, logWarn } = require("../../core/logger");
-const { generateImageREST, IMAGE_GEN_MODEL, IMAGE_GEN_MAX_RETRIES } = require("../../services/duende/imagenGemini");
+const { IMAGE_GEN_MODEL, IMAGE_GEN_MAX_RETRIES } = require("../../services/duende/imagenGemini");
+const imagenes = require("../../systems/duende/imagenes");
+const { CacheLimitada } = require("../../core/cacheLimitada");
 require("dotenv").config();
 
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || "";
 
 const IMAGE_GEN_TIMEOUT_MS = Number(process.env.IMAGE_GEN_TIMEOUT_MS || 120_000);
 
-// Cooldown por usuario en ms
-const USER_COOLDOWN_MS = Number(process.env.IMAGE_GEN_COOLDOWN_MS || 45_000);
-const userCooldowns = new Map();
+// Las peticiones recientes, para el botón «Otra versión» (#363): la descripción, el estilo y las imágenes de referencia, 15 minutos
+// y en memoria (tras un reinicio caducan).
+const CADUCA_PETICION_MS = 15 * 60 * 1000;
+const peticiones = new CacheLimitada({ max: 50, ttlMs: CADUCA_PETICION_MS });
 
 const ALLOWED_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif", "image/heic", "image/heif"]);
 
@@ -50,21 +53,8 @@ async function descargarAdjuntos(attachments) {
     return images;
 }
 
-/** Llamada a la API de imagen con un tiempo límite; al vencer, se cancelan la petición y los reintentos pendientes. */
-async function generarImagenConTimeout(finalPrompt, images) {
-    // AbortSignal en vez de Promise.race: al vencer, se cancela la petición HTTP y
-    // los reintentos pendientes, no solo se deja de esperar la respuesta.
-    const timeoutSignal = AbortSignal.timeout(IMAGE_GEN_TIMEOUT_MS);
-    try {
-        return await generateImageREST(finalPrompt, images, timeoutSignal);
-    } catch (genErr) {
-        if (timeoutSignal.aborted) throw new Error(`Timeout tras ${IMAGE_GEN_TIMEOUT_MS / 1000}s esperando respuesta`);
-        throw genErr;
-    }
-}
-
 /** Contenido del mensaje con la imagen adjunta: cabecera con el autor, la descripción y los datos de la petición. */
-function construirRespuestaImagen(interaction, { prompt, estilo, images, result }) {
+function construirRespuestaImagen(interaction, { prompt, estilo, images, result, peticionId }) {
     const ext = EXT_FROM_MIME[result.mimeType] || result.mimeType.split("/")[1] || "png";
     const discordAttachment = new AttachmentBuilder(result.imageBuffer, { name: `imagen_generada.${ext}` });
 
@@ -77,7 +67,10 @@ function construirRespuestaImagen(interaction, { prompt, estilo, images, result 
 
     logInfo(`[Imagen] Imagen generada correctamente (${(result.imageBuffer.length / 1024).toFixed(1)} KB) para ${interaction.user.tag}`);
 
-    return { content: replyContent, files: [discordAttachment] };
+    const otra = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`imagen_otra_${peticionId}`).setLabel("🔁 Otra versión").setStyle(ButtonStyle.Secondary),
+    );
+    return { content: replyContent, files: [discordAttachment], components: [otra] };
 }
 
 /** Frase para el usuario según la causa del error; la causa se busca en el texto del error. */
@@ -103,6 +96,7 @@ function mensajeDeErrorImagen(msg) {
 }
 
 module.exports = {
+    componentHandlers: [{ types: ["button"], prefixes: ["imagen_otra_"], method: "handleButton" }],
     data: new SlashCommandBuilder()
         .setName("imagen")
         .setDescription("Genera o edita una imagen con IA.")
@@ -155,42 +149,77 @@ module.exports = {
             return interaction.editReply({ content: "❌ La API de Gemini no está configurada en el servidor." });
         }
 
-        // ── Cooldown por usuario ───────────────────────────────────────────────
+        // El cooldown y la cuota diaria por persona (#408), compartidos con el botón «Otra versión» y con el chat (#367).
         const userId = interaction.user.id;
-        const lastUsed = userCooldowns.get(userId) || 0;
-        const remaining = USER_COOLDOWN_MS - (Date.now() - lastUsed);
-        if (remaining > 0) {
-            const secs = Math.ceil(remaining / 1000);
-            return interaction.editReply({
-                content: `⏳ Espera **${secs}s** antes de generar otra imagen.`,
-            });
-        }
-        userCooldowns.set(userId, Date.now());
+        const reserva = imagenes.reservar(userId);
+        if (!reserva.ok) return interaction.editReply({ content: imagenes.mensajeDeLimite(reserva) });
 
         const errorAdjuntos = errorDeAdjuntos(attachments);
-        if (errorAdjuntos) return interaction.editReply({ content: errorAdjuntos });
-
-        // ── Construir prompt final ────────────────────────────────────────────
-        let finalPrompt = prompt;
-        if (estilo) finalPrompt += `. Estilo: ${estilo}`;
-
-        try {
-            const images = await descargarAdjuntos(attachments);
-            logInfo(`[Imagen] Solicitando imagen (Nano Banana) para ${interaction.user.tag} — "${finalPrompt.slice(0, 80)}..."`);
-            const result = await generarImagenConTimeout(finalPrompt, images);
-            await interaction.editReply(construirRespuestaImagen(interaction, { prompt, estilo, images, result }));
-        } catch (err) {
-            // Liberar cooldown para no penalizar al usuario en errores de API/timeout
-            userCooldowns.delete(userId);
-
-            const msg = err?.message || String(err);
-            logError(`[Imagen] Error generando imagen para ${interaction.user.tag}:`, err);
-
-            try {
-                await interaction.editReply({ content: mensajeDeErrorImagen(msg) });
-            } catch (e) {
-                logWarn(`[Imagen] Tampoco se pudo avisar del error: ${e.message}`);
-            }
+        if (errorAdjuntos) {
+            imagenes.liberar(userId);
+            return interaction.editReply({ content: errorAdjuntos });
         }
+
+        let images;
+        try {
+            images = await descargarAdjuntos(attachments);
+        } catch (err) {
+            return fallarGeneracion(interaction, userId, err);
+        }
+        return generarYResponder(interaction, { prompt, estilo, images });
+    },
+
+    // 🔁 Otra versión (#363): repite la petición con la misma descripción, estilo y referencias. Solo quien la pidió.
+    async handleButton(client, interaction) {
+        const id = interaction.customId.replace("imagen_otra_", "");
+        const peticion = peticiones.get(id);
+        if (!peticion) {
+            return interaction.reply({
+                content: "⌛ Esa petición ha caducado (pasan 15 minutos o se reinicia el bot). Usa `/imagen` otra vez.",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+        if (peticion.userId !== interaction.user.id) {
+            return interaction.reply({ content: "⛔ Solo quien pidió la imagen puede pedir otra versión.", flags: MessageFlags.Ephemeral });
+        }
+        const reserva = imagenes.reservar(interaction.user.id);
+        if (!reserva.ok) return interaction.reply({ content: imagenes.mensajeDeLimite(reserva), flags: MessageFlags.Ephemeral });
+        await interaction.deferReply();
+        return generarYResponder(interaction, { prompt: peticion.prompt, estilo: peticion.estilo, images: peticion.images });
     },
 };
+
+/** Un error generando: se devuelven el cooldown y el cupo (no se penaliza a la persona) y se explica la causa. */
+async function fallarGeneracion(interaction, userId, err) {
+    imagenes.liberar(userId);
+    const msg = err?.message || String(err);
+    logError(`[Imagen] Error generando imagen para ${interaction.user.tag}:`, err);
+    try {
+        await interaction.editReply({ content: mensajeDeErrorImagen(msg) });
+    } catch (e) {
+        logWarn(`[Imagen] Tampoco se pudo avisar del error: ${e.message}`);
+    }
+}
+
+/** Genera la imagen, la envía con su botón y la apunta en el historial (#357; si eso falla, la imagen ya está enviada). */
+async function generarYResponder(interaction, { prompt, estilo, images }) {
+    const userId = interaction.user.id;
+    const finalPrompt = estilo ? `${prompt}. Estilo: ${estilo}` : prompt;
+    try {
+        logInfo(`[Imagen] Solicitando imagen (Nano Banana) para ${interaction.user.tag} — "${finalPrompt.slice(0, 80)}..."`);
+        const result = await imagenes.generarConTimeout(finalPrompt, images);
+        const peticionId = interaction.id || `${userId}-${Date.now()}`;
+        peticiones.set(peticionId, { userId, prompt, estilo, images });
+        const mensaje = await interaction.editReply(construirRespuestaImagen(interaction, { prompt, estilo, images, result, peticionId }));
+        imagenes.guardar({
+            guildId: interaction.guildId,
+            userId,
+            prompt,
+            estilo,
+            url: mensaje?.url,
+            adjunto: mensaje?.attachments?.first?.()?.url,
+        });
+    } catch (err) {
+        await fallarGeneracion(interaction, userId, err);
+    }
+}

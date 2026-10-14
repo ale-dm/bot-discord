@@ -84,4 +84,28 @@ function setManySettings(guildId, entries) {
     return n;
 }
 
-module.exports = { cacheAjustes, getFlatSettings, invalidarAjustes, getSettings, logSettingChange, setSetting, setManySettings };
+/**
+ * Qué cambiaría `setManySettings(guildId, entries)`: `{ clave: { antes, despues } }` solo con lo que cambia de verdad (#407).
+ * No escribe nada. Las claves desconocidas se ignoran, igual que al guardar.
+ */
+function cambiosDeAjustes(guildId, entries) {
+    const actuales = getFlatSettings(guildId);
+    const cambios = {};
+    for (const [key, value] of Object.entries(entries || {})) {
+        if (!(key in DEFAULT_FLAT)) continue;
+        const despues = parseValue(key, value);
+        if (actuales[key] !== despues) cambios[key] = { antes: actuales[key], despues };
+    }
+    return cambios;
+}
+
+module.exports = {
+    cambiosDeAjustes,
+    cacheAjustes,
+    getFlatSettings,
+    invalidarAjustes,
+    getSettings,
+    logSettingChange,
+    setSetting,
+    setManySettings,
+};

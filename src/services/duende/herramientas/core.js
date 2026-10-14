@@ -95,10 +95,29 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
     },
 ];
 
+/** Lo que usan las herramientas de este grupo (#475): cada una lo recibe como último argumento, y en los tests se pasan dobles. */
+const REALES_CORE = {
+    xpSystem,
+    achievementsSystem,
+    resolveNameToDiscordId,
+    buildPersonProfileText,
+    perfiles,
+    getTtclPrecio,
+    dinero,
+    prestamos,
+    plexTrofeos,
+    tienda,
+    objetos,
+    misJugadas,
+    marcadorDe,
+    mercados,
+    repoCasino,
+};
+
 const DUENDE_CORE_EXECUTORS = {
-    consultar_nivel_y_racha(args, ctx) {
+    consultar_nivel_y_racha(args, ctx, d = REALES_CORE) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
-        const p = xpSystem.getProfile(ctx.guildId, ctx.userId);
+        const p = d.xpSystem.getProfile(ctx.guildId, ctx.userId);
         return {
             nivel: p.nivel,
             xp: p.xp,
@@ -109,9 +128,9 @@ const DUENDE_CORE_EXECUTORS = {
             ranking_servidor: p.rank,
         };
     },
-    consultar_saldo(args, ctx) {
-        const c = dinero.cuenta(ctx.userId);
-        const p = prestamos.abierto(ctx.userId);
+    consultar_saldo(args, ctx, d = REALES_CORE) {
+        const c = d.dinero.cuenta(ctx.userId);
+        const p = d.prestamos.abierto(ctx.userId);
         return {
             efectivo: c.efectivo,
             banco: c.banco,
@@ -127,23 +146,23 @@ const DUENDE_CORE_EXECUTORS = {
                 : {}),
         };
     },
-    precio_ttcl(args, ctx) {
-        return { precio_ttcl_en_coins: getTtclPrecio() };
+    precio_ttcl(args, ctx, d = REALES_CORE) {
+        return { precio_ttcl_en_coins: d.getTtclPrecio() };
     },
-    consultar_logros(args, ctx) {
+    consultar_logros(args, ctx, d = REALES_CORE) {
         if (!ctx.guildId) return { error: "Solo disponible en servidores." };
         // Como en su perfil: sin Plex vinculado, los de Plex que no tiene no cuentan.
-        const opciones = plexTrofeos.opcionesPerfil(ctx.guildId, ctx.userId, true);
-        const s = achievementsSystem.getSummary(ctx.guildId, ctx.userId, opciones);
+        const opciones = d.plexTrofeos.opcionesPerfil(ctx.guildId, ctx.userId, true);
+        const s = d.achievementsSystem.getSummary(ctx.guildId, ctx.userId, opciones);
         return { logros_completados: s.completed, logros_totales: s.total, porcentaje: s.completionPct };
     },
     tirar_dado(args) {
         const caras = Math.max(2, Math.min(1000, Math.floor(Number(args?.caras) || 6)));
         return { caras, resultado: 1 + Math.floor(Math.random() * caras) };
     },
-    consultar_tienda(args) {
+    consultar_tienda(args, _ctx, d = REALES_CORE) {
         const busqueda = String(args?.busqueda || "").trim() || undefined;
-        const items = tienda.itemsTienda({ busqueda });
+        const items = d.tienda.itemsTienda({ busqueda });
         return {
             a_la_venta: items.slice(0, 15).map((i) => ({
                 nombre: i.nombre,
@@ -157,33 +176,33 @@ const DUENDE_CORE_EXECUTORS = {
             total: items.length,
         };
     },
-    consultar_inventario(args, ctx) {
-        const items = objetos.inventarioDe(ctx.userId);
+    consultar_inventario(args, ctx, d = REALES_CORE) {
+        const items = d.objetos.inventarioDe(ctx.userId);
         return {
             objetos: items.slice(0, 20).map((o) => ({
                 nombre: o.nombre,
                 cantidad: o.cantidad,
                 tipo: o.tipo || null,
                 rareza: o.rareza || null,
-                se_puede_usar: objetos.esUsable(o),
+                se_puede_usar: d.objetos.esUsable(o),
             })),
             distintos: items.length,
         };
     },
-    consultar_mis_apuestas(args, ctx) {
+    consultar_mis_apuestas(args, ctx, d = REALES_CORE) {
         const eleccion = (a) =>
-            marcadorDe(a.eleccion)
-                ? `marcador exacto ${marcadorDe(a.eleccion)}`
-                : mercados.esMercado(a.eleccion)
-                  ? mercados.textoEleccion(a).toLowerCase()
+            d.marcadorDe(a.eleccion)
+                ? `marcador exacto ${d.marcadorDe(a.eleccion)}`
+                : d.mercados.esMercado(a.eleccion)
+                  ? d.mercados.textoEleccion(a).toLowerCase()
                   : a.eleccion === "home"
                     ? a.home_team
                     : a.eleccion === "away"
                       ? a.away_team
                       : "empate";
-        const stats = misJugadas.estadisticas(ctx.userId);
+        const stats = d.misJugadas.estadisticas(ctx.userId);
         return {
-            partidos_en_juego: misJugadas.partidosDe(ctx.userId, { pendientes: true, limite: 10 }).map((a) => ({
+            partidos_en_juego: d.misJugadas.partidosDe(ctx.userId, { pendientes: true, limite: 10 }).map((a) => ({
                 partido: `${a.home_team} vs ${a.away_team}`,
                 empieza: a.start_time,
                 apostado_a: eleccion(a),
@@ -191,7 +210,7 @@ const DUENDE_CORE_EXECUTORS = {
                 cuota: a.cuota,
                 ganaria: Math.round(a.cantidad * a.cuota),
             })),
-            quinielas_abiertas: misJugadas.quinielasDe(ctx.userId, { abiertas: true, limite: 3 }).map((q) => ({
+            quinielas_abiertas: d.misJugadas.quinielasDe(ctx.userId, { abiertas: true, limite: 3 }).map((q) => ({
                 jornada: q.jornada,
                 apostado: q.cantidad,
                 aciertos_hasta_ahora: q.detalle.aciertos,
@@ -202,28 +221,28 @@ const DUENDE_CORE_EXECUTORS = {
             balance_quinielas: { apostado: stats.quinielas.apostado, ganado: stats.quinielas.ganado, en_juego: stats.quinielas.enJuego },
         };
     },
-    consultar_partidas_casino(args, ctx) {
+    consultar_partidas_casino(args, ctx, d = REALES_CORE) {
         const cantidad = Math.max(1, Math.min(15, Math.floor(Number(args?.cantidad) || 5)));
-        const { ganado, perdido } = repoCasino.totalesCasino(ctx.userId);
+        const { ganado, perdido } = d.repoCasino.totalesCasino(ctx.userId);
         return {
-            ultimas_partidas: misJugadas
+            ultimas_partidas: d.misJugadas
                 .ultimasCasino(ctx.userId, cantidad)
                 .map((p) => ({ juego: p.juego, apostado: p.apuesta, resultado_neto: p.resultado })),
             total_ganado: ganado,
             total_perdido: perdido,
         };
     },
-    consultar_perfil_persona(args, ctx) {
+    consultar_perfil_persona(args, ctx, d = REALES_CORE) {
         if (!ctx.guild) return { error: "Solo disponible en servidores." };
         const nombre = String(args?.persona || "").trim();
         if (!nombre) return { error: "Falta el nombre de la persona." };
 
         const esQuienHabla = /^(yo|y[oó]\s*mism[oa]|m[ií])$/i.test(nombre);
-        const discordId = esQuienHabla ? ctx.userId : resolveNameToDiscordId(nombre, ctx.guild);
+        const discordId = esQuienHabla ? ctx.userId : d.resolveNameToDiscordId(nombre, ctx.guild);
         if (!discordId) return { encontrado: false, nota: `No identifico a "${nombre}" entre los miembros del server.` };
 
-        const perfil = perfiles.perfilPorDiscordId(discordId);
-        const info = perfil ? buildPersonProfileText(perfil) : "";
+        const perfil = d.perfiles.perfilPorDiscordId(discordId);
+        const info = perfil ? d.buildPersonProfileText(perfil) : "";
         if (!info) return { encontrado: false, nota: "No tengo ninguna nota ni descripción guardada de esa persona." };
 
         const member = ctx.guild.members.cache.get(discordId);

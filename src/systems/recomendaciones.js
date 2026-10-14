@@ -70,8 +70,36 @@ async function generar(guildId, discordId, deps = reales, { ahora = Date.now() }
     if (!link) return { ok: false, motivo: "Tu cuenta de Plex no está vinculada. Pídele a un admin que te vincule.", sugerencias: [] };
     const semillasDe = semillas(guildId, link.tautulliUserId, { ahora });
     if (!semillasDe.length) return { ok: false, motivo: "No tienes historial reciente en Plex para recomendarte nada.", sugerencias: [] };
+    return { ok: true, sugerencias: await sugerir(guildId, semillasDe, vistos(guildId, link.tautulliUserId), deps) };
+}
 
-    const yaVistos = vistos(guildId, link.tautulliUserId);
+/**
+ * Sugerencias para un grupo (la sesión de cine, #399): salen de lo más visto de los apuntados con Plex vinculado y se descarta lo
+ * que haya visto CUALQUIERA de ellos. Quien no tiene Plex vinculado se deja fuera, sin error. Sin nadie vinculado, no hay sugerencias.
+ * @returns {Promise<{ ok: boolean, motivo?: string, sugerencias: object[], personas: number }>}
+ */
+async function generarGrupo(guildId, discordIds, deps = reales, { ahora = Date.now() } = {}) {
+    const links = [...new Set(discordIds.map(String))].map((id) => plexLinks.getLinkByDiscordId(guildId, id)).filter(Boolean);
+    if (!links.length)
+        return { ok: false, motivo: "Ninguno de los apuntados tiene la cuenta de Plex vinculada.", sugerencias: [], personas: 0 };
+    const yaVistos = new Set(links.flatMap((l) => [...vistos(guildId, l.tautulliUserId)]));
+    const porTitulo = new Map();
+    for (const l of links) {
+        for (const s of semillas(guildId, l.tautulliUserId, { ahora })) {
+            const clave = `${s.tipo}|${norm(s.titulo)}`;
+            const actual = porTitulo.get(clave) || { ...s, segundos: 0 };
+            actual.segundos += s.segundos;
+            porTitulo.set(clave, actual);
+        }
+    }
+    const semillasDe = [...porTitulo.values()].sort((a, b) => b.segundos - a.segundos).slice(0, SEMILLAS * 2);
+    if (!semillasDe.length)
+        return { ok: false, motivo: "Los apuntados no tienen historial reciente en Plex.", sugerencias: [], personas: links.length };
+    return { ok: true, sugerencias: await sugerir(guildId, semillasDe, yaVistos, deps), personas: links.length };
+}
+
+/** Pide a Seerr las recomendaciones de cada semilla y se queda con las más repetidas que nadie ha visto ni están ya en Plex. */
+async function sugerir(guildId, semillasDe, yaVistos, deps) {
     const puntuados = new Map();
     for (const [orden, semilla] of semillasDe.entries()) {
         const tmdbId = await deps.buscar(guildId, semilla.titulo, semilla.tipo);
@@ -86,10 +114,9 @@ async function generar(guildId, discordId, deps = reales, { ahora = Date.now() }
             puntuados.set(clave, actual);
         }
     }
-    const sugerencias = [...puntuados.values()]
+    return [...puntuados.values()]
         .sort((a, b) => b.votos - a.votos || a.orden - b.orden || String(a.titulo).localeCompare(String(b.titulo)))
         .slice(0, SUGERENCIAS);
-    return { ok: true, sugerencias };
 }
 
 /**
@@ -115,4 +142,4 @@ async function pedir(guildId, discordId, mediaType, tmdbId) {
     }
 }
 
-module.exports = { DISPONIBLE, PARCIAL, semillas, vistos, generar, pedir, norm };
+module.exports = { DISPONIBLE, PARCIAL, semillas, vistos, generar, generarGrupo, pedir, norm };

@@ -1,5 +1,5 @@
 // Importar discord.js
-const { Client, GatewayIntentBits, Collection, MessageFlags } = require("discord.js");
+const { Client, GatewayIntentBits, Collection, MessageFlags, Partials } = require("discord.js");
 const path = require("path");
 require("dotenv").config();
 const { createLogger, logErrorSync, flushLogs, registerSecret } = require("./core/logger");
@@ -23,17 +23,31 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessageReactions,
     ],
+    // Para recibir las reacciones a mensajes que no están en caché (XP por reacciones recibidas, #358).
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
 // Los logros que se calculan sin el servidor a mano (casino, cripto) lo buscan aquí para anunciarse.
 require("./systems/achievementsSystem").setClient(client);
+// 🔔 Los sonidos ligados a eventos (#326) los toca el reproductor de sonidos en la presencia de /conectar.
+// 🛡️ Subir de nivel en el pase se anuncia en el canal que elija un admin (#344).
+require("./systems/pase/pase").alSubirDeNivel((subida) => require("./systems/pase/avisos").anunciarNivel(client, subida));
+// 🏦 El impuesto de patrimonio pregunta aquí qué roles tiene alguien para eximirle (#397).
+require("./systems/patrimonio").usarResolutorDeRoles((guildId, userId) => [
+    ...(client.guilds.cache.get(guildId)?.members.cache.get(userId)?.roles.cache.keys() ?? []),
+]);
+// 🔔 Las alertas de cuota (#345) se miran cada vez que se guardan cuotas nuevas.
+require("./services/oddsApi").alRefrescarCuotas(() => require("./systems/apuestas/alertasCuota").comprobar(client));
+require("./systems/sonidos/eventos").conectar({ sonidos: require("./systems/sonidos"), presencia: require("./systems/presencia") });
 
 const cripto = require("./systems/cripto/mercado");
 const xpSystem = require("./systems/xpSystem");
 const guildSettings = require("./systems/guildSettings");
 const activeGames = require("./systems/activeGames");
 const bienvenida = require("./systems/bienvenida");
+const mantenimiento = require("./systems/mantenimiento");
 const { createComponentRouter } = require("./core/componentRouter");
 // Mensajes de texto y filtros: src/core/mensajes.js
 const { registrarMensajes } = require("./core/mensajes");
@@ -179,6 +193,26 @@ async function replySafe(interaction, payload) {
     }
 }
 
+// Con el modo mantenimiento activo, quien no es admin recibe el mensaje y no se sigue procesando su interacción.
+async function frenarPorMantenimiento(interaction) {
+    const mensaje = mantenimiento.mensajeSiBloquea(interaction);
+    if (!mensaje) return false;
+    log.info(
+        `Mantenimiento: bloqueado ${interaction.commandName ? `/${interaction.commandName}` : interaction.customId} · ${whoWhere(interaction)}`,
+    );
+    await replySafe(interaction, { content: mensaje, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
+// Autocompletado de las opciones de un comando (/conectar sonido): lo responde el propio comando, sin ACL ni registro.
+async function responderAutocompletado(interaction) {
+    try {
+        await client.slashCommands.get(interaction.commandName)?.autocomplete?.(client, interaction);
+    } catch (e) {
+        cmdLog.warn(`Autocompletado de /${interaction.commandName} falló: ${e.message}`);
+    }
+}
+
 // Manejo de interacciones (slash commands)
 client.on("interactionCreate", async (interaction) => {
     const denyByAcl = async (commandName, logger, what) => {
@@ -189,6 +223,7 @@ client.on("interactionCreate", async (interaction) => {
         return true;
     };
 
+    if (!interaction.isAutocomplete?.() && (await frenarPorMantenimiento(interaction))) return; // modo mantenimiento
     // ─── Botones, selects y formularios ───────────────────────────────────
     const route = componentRouter.match(interaction);
     if (route) {
@@ -206,6 +241,8 @@ client.on("interactionCreate", async (interaction) => {
         latencias.registrar("componente", latencias.prefijoDe(interaction.customId), performance.now() - medida);
         return;
     }
+
+    if (interaction.isAutocomplete?.()) return responderAutocompletado(interaction);
 
     if (!interaction.isChatInputCommand()) {
         if (interaction.customId)
@@ -290,6 +327,10 @@ client
     .catch((err) => {
         log.error("Error al iniciar sesión en Discord:", err);
     });
+
+client.on("messageReactionAdd", (reaction, user) => {
+    xpSystem.handleReactionXp(reaction, user).catch((e) => createLogger("XP").error(`Error procesando una reacción de ${user?.id}:`, e));
+});
 
 client.on("voiceStateUpdate", (oldState, newState) => {
     try {

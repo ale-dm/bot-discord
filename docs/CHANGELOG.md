@@ -2,6 +2,169 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 12 del plan restante: administración)
+
+- **🧾 Filtro de la auditoría** (#398): un menú en 🧾 Auditoría elige una familia de acción (banco, ajustes, alertas, logs, mensajes, Duende, XP, Plex, consultas, copias, tareas...). El pie lo indica y ◀ ▶ y 🔄 lo conservan. Con filtro el límite sigue siendo de 100 filas.
+- **👁️ Consultas auditadas** (#402): abrir el historial global del banco, buscar un usuario o abrir una ficha de perfil del Duende deja una fila `consulta.*` con quién y el ID consultado (nunca el contenido). Pasar de página o refrescar no genera filas; mirar tu propio perfil también cuenta.
+- **📝 Ajustes con antes y después** (#407): cada formulario de Config Global (y las reglas de comandos y las alertas) guarda en la auditoría `{campo: {antes, despues}}` solo de lo que cambió; sin cambios, la fila dice «sin cambios». Los secretos siguen enmascarados. El diff se guarda para consultarlo, no se enseña en el panel.
+- **💾 Copias de seguridad en 🩺 Sistema** (#417): lista de copias con tamaño, cuántas se conservan y si existe la de hoy, y **Hacer copia ahora** (auditado como `backup.manual`). Si la de hoy ya existe, pide confirmación antes de sustituirla.
+- **🔍 Integridad de cada copia** (#418): tras copiar se pasa `PRAGMA integrity_check` completo. Una copia dañada se borra, no rota las anteriores y avisa por DM («💾 La copia de seguridad ha fallado»), una vez al día.
+- **🌅 Copia al arrancar** (#419): si el bot arranca pasadas las 04:30 (Madrid) y no existe la copia de hoy, la hace en ese momento.
+- **🕒 Tareas programadas** (#420): vista en 🩺 Sistema con la última ejecución de cada tarea (cuándo, cuánto tardó, OK o error, o «sin ejecutar»), guardada en la base de datos para que sobreviva a un reinicio, y la próxima ejecución. Solo se guarda la última.
+- **▶️ Lanzar una tarea a mano** (#421): un menú elige la tarea, pide confirmación y la ejecuta (`tarea.manual`). Una misma tarea no corre dos veces a la vez. Las que solo envían lo de cada periodo avisan de que no se repetirán si ya salieron. Entran todas las tareas de cron; las que mandan DMs lo avisan. **📄 Exportar** baja el registro en CSV.
+- **🔔 Categorías de alertas** (#422): en 🔔 Alertas, botones para activar o apagar errores, Gemini, Odds API y copias por separado. Una categoría apagada no manda nada ni cuenta para el máximo por hora. El resumen semanal no es una categoría.
+- **📢 Canal de respaldo de alertas** (#423): canal opcional; si nadie recibe el DM porque los tiene cerrados, la alerta se publica ahí (sin menciones). Otros fallos de envío no lo usan; si el canal falla, queda en el log.
+- **✉️ /mensaje programado** (#424): `/mensaje usuario cuando:DD/MM/AAAA HH:MM` (hora de Madrid) deja el DM para esa hora; sale con un margen de 5 minutos, o al arrancar con un aviso de que llega tarde. Lista y cancelación en 🩺 Sistema → ✉️ Mensajes. Se audita `mensaje.programado` y `mensaje.cancelado` sin el texto, que se borra al enviarse o cancelarse. Hasta 20 pendientes, máximo un año.
+- **🛠️ Modo mantenimiento** (#425): en ⚙️ Config Global, un interruptor y el mensaje que ven los demás. Con el modo activo solo los admins usan comandos, botones, selectores y formularios (también los de mensajes ya publicados); las tareas programadas siguen y el diagnóstico de 🩺 Sistema lo muestra.
+- Migración 070. Tests: `tests/adminFase12.test.js`.
+
+## 2026-10-14 (fase 11 del plan restante: Duende e IA)
+
+- **🖼️ Historial de imágenes** (#357): cada `/imagen` que sale bien guarda autor, descripción, estilo y enlace al mensaje y al adjunto (no la imagen), 90 días. `/imagenes` enseña tus últimas 10 (a un admin, las del servidor), en privado. Si falla el guardado, la imagen se envía igual y queda en el log.
+- **🔁 Otra versión** (#363): botón en la respuesta de `/imagen` que repite la petición con la misma descripción, estilo y referencias (se guardan 15 minutos en memoria). Solo quien la pidió, respeta cooldown y cuota, y caducada o tras un reinicio lo dice. No cambia de estilo.
+- **🎨 El Duende dibuja desde el chat** (#367): herramienta `generar_imagen` («dibújame…»). Comparte con `/imagen` el cooldown de 45 s y la cuota diaria, así que no se pueden saltar; la imagen sale como mensaje aparte tras el texto, y si falla el Duende lo dice sin afirmar que la envió. Solo en el chat de texto, no por voz; sigue el mismo canal permitido que el chat.
+- **📊 Cuota de imágenes por persona** (#408): `IMAGE_GEN_DAILY_LIMIT` (10 por defecto, 0 = sin tope), sin excepciones para admins. Se guarda en la base de datos (sobrevive a reinicios). Un fallo de la API devuelve el cupo.
+- **💬 Cuota de respuestas por persona** (#371): `DUENDE_DAILY_LIMIT_USER` (15 por defecto, 0 = sin tope) además del global de 50. Al llegar al suyo, solo esa persona se queda sin respuesta. Ambos contadores están en la base de datos. Los admins no están exentos y las reacciones con emoji no cuentan.
+- **🎙️ Notas de voz** (#376): una nota de voz (o un audio de menos de 60 s) en un canal donde responde el Duende se transcribe con el reconocedor local de `/escuchar` y el Duende contesta como si lo hubieran escrito; la transcripción no se muestra en el canal ni se guarda el audio. Si falla, no responde y queda en el log. No se transcribe en canales sin el Duende.
+- **📝 /resumen** (#382): resume en unas cinco líneas los últimos 1 a 200 mensajes del canal con el tono de su personalidad, sin menciones ni enlaces, solo para quien lo pide y contando para su cuota de respuestas; avisa si tarda más de 15 s y no responde a quien no puede ver el canal.
+- **✏️ Editar un recuerdo propuesto** (#386): nuevo botón en el DM a admins; abre un formulario con el texto y guarda el corregido (queda como aprobado). Un texto de menos de 3 caracteres se rechaza y la propuesta sigue pendiente.
+- **⌛ Recuerdos que caducan** (#390): a las 04:00, las propuestas sin decidir en 7 días (`DUENDE_RECUERDOS_CADUCA_DIAS`) pasan a `caducado` y su DM pierde los botones, en silencio. Las decididas no cambian y decidir una caducada da un mensaje claro. No va al resumen semanal.
+- **📝 Resumen de /conversación** (#395): al terminar una conversación en directo, un resumen en el canal de texto desde el que se pidió (menos de 30 s), solo si hubo transcripciones. El texto vive en memoria y se descarta. Siempre se hace (sin opción) y sin atribuir frases a nadie.
+- **🗣️ Voz por personalidad** (#396): `/duende` → 🎭 Personalidad, menú de voz (Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina o la global). Aplica a las respuestas por voz del canal; no a `/tts` ni a `/conversación`. Sin reiniciar.
+- **🙈 Mensajes espontáneos sin repetir** (#400): no se dirige a quien lleva menos de `DUENDE_ESPONTANEO_ENFRIAMIENTO_H` horas (24) desde su último mensaje espontáneo ni a quien escribió el último mensaje del canal; se guarda en la base de datos. Con todos en espera, no dice nada.
+- **🗑️ Olvidar una sola nota** (#405): en `/duende` → 🧠 Recuerdos, un menú con las notas numeradas borra solo la elegida (sin confirmación); lo ve la propia persona o un admin.
+- Migración 069. Tests: `tests/duendeFase11.test.js`.
+
+## 2026-10-14 (fase 10 del plan restante: Plex)
+
+- **🗓️ Estrenos de la semana** (#299): `/plex` → 🗓️ Estrenos. Los 5 estrenos más próximos de los siguientes 7 días según Seerr (películas y series), con póster y fecha, y 📥 para pedir lo que aún no está en Plex (mismo flujo y mismo cupo diario que las recomendaciones). Se guarda 30 minutos. Si Seerr no responde, la pantalla lo dice.
+- **🎞️ Wrapped anual** (#381): el 1 de enero, además del resumen de diciembre, cada persona vinculada que haya visto algo en el año recibe un DM con el del año (una vez por persona y año, aunque el bot se reinicie). 🎞️ Wrapped en `/plex` trae un botón «Ver el del año pasado». Se envía el 1 de enero, no a finales de diciembre.
+- **📡 Viéndose ahora** (#385): `/plex` → 📡 Ahora, respuesta privada con título, progreso y quién lo ve (como «alguien» si la cuenta no está vinculada).
+- **🏆 Campeones del ranking semanal** (#389): cada ranking semanal publicado guarda su campeón (sin duplicar si se publica dos veces; una semana sin visionado no tiene campeón). `/plex` → 🏆 Campeones: las últimas 10 semanas y las victorias de cada persona. Solo desde ahora, sin reconstruir semanas anteriores.
+- **🗳️ Votar la película** (#393): en el formulario de la sesión de cine, varias películas separadas por `|` (hasta 5) se votan con botones; se puede votar más de una y pulsar otra vez quita el voto (solo quien está apuntado). El recordatorio de 10 minutos antes nombra la más votada (en empate, la propuesta antes) y cierra la votación. Sin votos, la del organizador.
+- **🎯 Sugerencias para el grupo** (#399): botón «Sugerir» en la sesión; propone hasta 5 películas que ninguno de los apuntados con Plex vinculado ha visto, con 📥. Quien no tiene Plex vinculado queda fuera; no se recalculan solas al apuntarse alguien.
+- **🔁 Sesión semanal** (#403): «¿Repetir cada semana?» en el formulario. El cron de las sesiones (cada 5 minutos) crea la siguiente cuando empieza la anterior, con su propio mensaje, apuntados, votos y recordatorio; un índice único evita duplicarla al reiniciar. «Cancelar y parar la serie» cancela la siguiente y no crea más.
+- **❌ Pedidos rechazados** (#406): cuando un admin rechaza una petición de Seerr, se avisa a quien la pidió una sola vez, en el canal de novedades o por DM (mismo interruptor de `/avisos` que «Pedidos de Seerr»). La primera comprobación solo fija la base. Borrar una petición no avisa.
+- **📥 Mis pedidos** (#410): `/plex` → 📥 Mis pedidos lista tus peticiones pendientes de aprobación y las cancela con un menú; se comprueba contra Seerr justo antes (una ajena o ya aprobada no se toca) y si Seerr falla queda como estaba. No devuelve el cupo diario.
+- Migración 068. Tests: `tests/plexFase10.test.js`.
+
+## 2026-10-14 (fase 9 del plan restante: cripto y recordatorios)
+
+- **💸 Vender por monedas** (#365): 💸 Vender → «✏️ Otra cantidad». Escribes las monedas **netas** que quieres recibir y la vista previa enseña cuánto TTCL se vende; se redondea hacia abajo (nunca recibes más de lo pedido). Si lo pedido supera lo que vale tu posición, se avisa y no se vende nada. Mismos límites `min_sell`/`max_sell` y misma comisión.
+- **🔔 Alertas de precio** (#298): 📈 Mercado → «🔔 Alertas y órdenes» → Nueva alerta. Pones un precio y salta por DM cuando el TTCL llega hasta él (sube o baja según esté por encima o por debajo del actual); se dispara una vez y se borra. Si el DM no llega, se mantiene y queda en el log (también si has apagado «Órdenes de TTCL» en `/avisos`).
+- **🛡️ Stop-loss** (#341): 💸 Vender → «🛡️ Stop-loss». Cuando el precio baja hasta el umbral, vende **toda** la posición una sola vez con la comisión y los límites de una venta manual y avisa por DM. Sin TTCL se cancela; si algo lo impide (cooldown, límites, pausa), se reintenta cada minuto. Se cancela desde «🔔 Mis órdenes» sin cooldown.
+- **🔁 Compra recurrente** (#351): 🛒 Comprar → «🔁 Compra recurrente» (importe y cada cuántas horas, mínimo 1), con vista previa. Cada ciclo compra con las reglas de una compra manual (queda en 🧾 Historial); sin efectivo o con un límite, salta el ciclo y avisa por DM con la fecha del siguiente intento. No saca dinero del banco.
+- Hasta 5 órdenes activas de cada tipo por persona. Un cron cada minuto las revisa. DM nuevo: «Órdenes de TTCL» en `/avisos` (23 tipos).
+- **⏰ /recordar** (#320): `/recordar nuevo cuando texto` («18:30», «mañana 09:00», «en 45 min», «en 2 h»; hoy o mañana, hasta 24 h; texto de hasta 200 caracteres) y `/recordar lista` con botón de borrar. Hasta 10 pendientes. El DM llega a su hora (cron de un minuto); con los DMs cerrados se pierde y queda en el log. No se puede apagar en `/avisos`: lo pides tú.
+- Migración 067. Refactor: las consultas de TTCL de `mercado.js` pasan a `systems/cripto/consultas.js` (se re-exportan igual). Tests: `tests/criptoFase9.test.js`.
+
+## 2026-10-14 (fase 8 del plan restante: perfil, clasificación y patrimonio)
+
+- **⏳ Próximo cobro de patrimonio** (#347): en tu 💰 Economía, cuándo es y lo que cobraría si el ciclo fuera ahora (mismo cálculo que el ciclo real, sin tocar nada). Sin ciclo marcado, dice que el conteo empieza en el próximo chequeo horario. Solo en la propia.
+- **🏦 Resumen de patrimonio** (#350): interés cobrado, impuesto de patrimonio pagado y neto, desde siempre y del último mes; el impuesto de ingresos no cuenta. Sin cobros: «Sin cobros de patrimonio todavía».
+- **🏆 Premios semanales en el perfil** (#355): «Premios semanales: N (último: fecha)» en 👤 Perfil, solo si N > 0 y solo los de la clasificación. Solo el total, sin desglose.
+- **🗓️ Histórico de ganadores** (#360): cada publicación guarda el ganador de cada categoría en la misma transacción que el pago; 🏆 Rankings → 🗓️ Semanas enseña las últimas 8 (las anteriores salen vacías).
+- **📅 Esta semana** (#368): 🏆 Rankings → 📅 Esta semana, top 10 por XP desde el último corte y cuándo se publica la próxima. Sin canal de clasificación avisa de que no hay cortes.
+- **🪙 Premio por categoría** (#372): Config Global → 🏆 Semanal → 🪙 Por categoría; vacío usa el premio general (los servidores existentes no cambian). El mensaje lleva el premio de cada línea si no son iguales. Quien gana dos categorías cobra la suma.
+- **🙈 Ocultar mi economía** (#377): botón en tu 💰 Economía. Los demás no ven tu dinero ni tus movimientos (ni en 👤 Perfil ni en 💰 Economía); tú sí. 🏆 Rankings → Riqueza no cambia.
+- **📈 Últimos 30 días** (#388): cada día, a las 00:05, se guarda tu efectivo + banco (también al arrancar si faltaba); 💰 Economía enseña hasta 30 barras de texto y el cambio neto. Se guardan 35 días.
+- **📆 El más constante** (#391): categoría nueva de la clasificación semanal: más días con XP en la semana anterior y, en empate, más XP. Usa la tabla de XP diaria de la fase 6, que ahora guarda 14 días.
+- **🔔 Aviso del domingo** (#394): botón en 👤 Perfil; si está activo y vas primero en alguna categoría, el domingo a las 20:00 te llega un DM con lo que cobrarías (solo al primero; uno por semana). Por defecto desactivado; también se apaga en `/avisos`.
+- **🎭 Roles exentos del patrimonio** (#397): Impuestos → 🏦 Patrimonio → 🎭 Roles exentos. No pagan el impuesto (siguen cobrando el interés); quien pierde el rol paga en su siguiente ciclo.
+- **🏦 Patrimonio neto** (#401): 🏆 Rankings → 🏦 Patrimonio neto: efectivo + banco + negocios (lo pagado) + cripto valorada, sin dinero negro, con una sola lectura del precio y un minuto de caché. El premio «más rico» no cambia.
+- Migración 066. DM nuevo: «Clasificación del domingo» en `/avisos` (22 tipos). Tareas: «Patrimonio diario» y «Aviso del domingo de la clasificación». Tests: `tests/perfilFase8.test.js`.
+
+## 2026-10-14 (fase 7 del plan restante: economía, tienda e impuestos)
+
+- **🎁 Regalar** (#302): `/tienda` → 🎒 Inventario → 🎁 Gestionar → elegir objeto → 🎁 Regalar → persona → confirmar. Cambia de dueño sin mover monedas y queda en 📜 Movimientos de los dos (tipo 🎒 Objetos). No a un bot, a uno mismo, a quien no está en el servidor, a quien ya tiene un objeto único, ni objetos de protección (antirrobo y trampa; tampoco se pueden vender en el mercado).
+- **🏷️ Mercado entre jugadores** (#374): pestaña nueva de `/tienda`. Pones un objeto a precio fijo (máx. 10 ofertas, caduca a los 7 días); sale de tu inventario y vuelve si lo retiras o caduca (se devuelve al abrir el mercado y cada hora). El precio llega íntegro al vendedor, sin comisión ni impuesto, y solo se paga con efectivo (no con dinero negro). Movimiento 🏷️ Mercado y ventas para los dos.
+- **💰 Vender a la tienda** (#379): mismo menú Gestionar. Devuelve el `tienda.recompra_pct` % (50 por defecto, 0 = apagado) del precio base del catálogo y la unidad vuelve al stock. Si el objeto ya no está a la venta se rechaza. Los únicos se pueden vender y volver a comprar. El porcentaje es global, no por objeto.
+- **⬆️ Mejora de negocios** (#387): hasta el nivel 3 desde 🏪 Negocios, pagando del banco: nivel 2 cuesta 1× el precio base y da ×1,5 de blanqueo e ingreso; nivel 3 cuesta 2× y da ×2. No reinicia nada. La venta devuelve el 50 % de todo lo pagado, mejoras incluidas.
+- **📊 Tramos de impuesto** (#392): `/paneladmin` → Impuestos → 📊 Tramos. La parte del ingreso dentro de cada tramo paga su porcentaje (el de la regla vale desde 0); se mide sobre cada ingreso suelto, el redondeo es hacia abajo y un tramo del 0 % es válido. Una regla sin tramos da lo mismo que siempre.
+- **⭐ Lista de deseos** (#404): al confirmar una compra, ⭐ Seguir (hasta 25 objetos); «⭐ Mis deseos» los lista. DM al volver el stock o bajar el precio (también por una oferta), una vez por cambio; se apaga en `/avisos`.
+- **🎟️ Códigos canjeables** (#409): `/paneladmin` → Catálogo → 🎟️ Códigos (monedas y/u objeto, usos máximos, caducidad). Se canjean en `/tienda` → 🎟️ Canjear, una vez por persona; son globales, como el dinero. Movimiento 🎟️ Códigos.
+- **📤 Exportar movimientos** (#411): botón en 📜 Movimientos; CSV con `;`, UTF-8 con BOM, hora de Madrid y el filtro activo; privado; máx. 5.000 filas (los más recientes, con aviso). Solo los propios.
+- **💱 Precio dinámico** (#412): `tienda.subida_pct` (0 = apagado) sube el precio de cada objeto con cada compra hasta `tienda.tope_pct` % sobre el base, y cada hora baja `tienda.recuperacion_pct` % del base. Es global, no por objeto; los únicos quedan fuera. Al fijar un precio a mano, ese es el nuevo base.
+- **🏷️ Ofertas temporales** (#413): `/paneladmin` → Catálogo → 🏷️ Oferta (descuento, inicio y fin en hora de Madrid). El catálogo, la confirmación, el impuesto de compra y el cobro usan el mismo precio rebajado.
+- **🎯 Meta del bote** (#415): Impuestos → 🎯 Meta del bote (meta y recompensa por persona). Al llegar el bote, se reparte una sola vez entre quien ha ganado XP en la última semana y sigue en el servidor: la recompensa, o su parte si no da para todos. Solo se descuenta lo pagado (movimiento 🏆 Premios).
+- **🧾 Sueldo por rol** (#416): Impuestos → 💼 Sueldos por rol. Cada día (una vez por persona, con registro en la base de datos) paga la suma de los sueldos de sus roles al efectivo, con el impuesto de ingresos. Movimiento 🧾 Sueldos.
+- #414 (historial por tipo) ya estaba cubierto por #432. Migración 065. Tareas: «Mantenimiento de la tienda» y «Sueldos y meta del bote» (cada hora). Tests: `tests/economiaFase7.test.js` y `tests/tiendaExtrasUI.test.js`.
+
+## 2026-10-14 (fase 6 del plan restante: niveles, XP y logros)
+
+- **🔥 Logros de racha** (#336): categoría nueva «racha» con 3, 7, 30 y 100 días seguidos (300 · 1.000 · 5.000 · 20.000 monedas). Se completan al sumar el día; con la racha desactivada no se completa ninguno nuevo y los ya completados se conservan.
+- **⚡ Logros de XP en un día** (#383): 1.000 XP («Tarde intensa») y 3.000 XP («Día épico») en un mismo día de Madrid, con la XP final (racha y multiplicadores incluidos). La XP de cada día se guarda en `xp_diaria` y se borra lo de más de una semana. El catálogo pasa a 7 categorías.
+- **🏆 Mejor racha y ranking** (#339): se guarda la mejor racha de cada persona (parte de la actual) y `/perfil` → 🏆 Rankings → 🔥 Rachas ordena por la mejor, con la actual y el puesto de quien mira.
+- **💔 DM al perder una racha** (#342): una sola vez, al empezar el día (00:30), a quien tenía 3 días o más y ha pasado un día sin XP. El umbral es fijo. Se apaga en `/avisos` («Racha perdida»).
+- **🛟 Días de gracia** (#346): `streak_grace_per_month` (0 por defecto): faltar un solo día no rompe la racha si quedan días de gracia en el mes natural. Se aplica solo, sin activarlo. Con gracia disponible, el aviso de racha perdida llega un día más tarde.
+- **🧢 Tope diario de XP** (#352): `xp_daily_cap` (0 = sin tope). Se aplica a la ganancia final, sin mensaje de error. Los ajustes manuales de un admin ni se recortan ni cuentan.
+- **👍 XP por reacciones recibidas** (#358): el autor del mensaje gana 3 XP (configurable, 0 = apagado) cuando otra persona le reacciona, una vez cada 60 s por autor. Solo gana el autor. No cuentan reacciones propias, de bots, a bots, en canales ignorados ni de quien tiene un rol sin XP. El bot pide ahora el intent de reacciones y los parciales de mensaje.
+- **🎭 Roles sin XP** (#362): Panel admin → Niveles → 🚫 Ignorados → 🎭 Rol sin XP. No ganan XP por texto, reacciones ni voz; siguen saliendo en el ranking de niveles.
+- **✖️ Multiplicador de XP por canal** (#369): mismo panel, de ×0 a ×10 (×0 = canal ignorado; ×1 lo quita). Vale para mensajes, reacciones y voz, y se suma al global y al de la happy hour.
+- **📢 Anuncios de nivel off** (#373): `/perfil` → 👤 Perfil (el tuyo) → «Anunciar mis niveles»: con «no» no se publica nada en el canal; los roles se dan igual.
+- **🏅 Logros sin reclamar** (#378): los domingos a las 18:00, un DM a quien tiene logros completados sin reclamar (sin contar categorías desactivadas), como mucho una vez cada 7 días. Se apaga en `/avisos` («Logros sin reclamar»).
+- Migración 064. Tests: `tests/nivelesFase6.test.js`.
+
+## 2026-10-14 (fase 5 del plan restante: pase de batalla)
+
+- **📊 Topes de hoy** (#331): la vista 📊 Topes de `/pase` enseña, por categoría, la XP usada hoy y su tope («usado / tope»), con las llenas marcadas. Las vistas pasan a dos filas de botones.
+- **📍 Tu posición** (#332): en 🏆 Top, si no estás entre los 10, tu puesto real y los XP que te faltan para entrar; con 0 XP, «sin puesto todavía». Solo en el Top.
+- **🌟 Día perfecto y 🔥 racha** (#334, #335): completar las tres misiones da +100 XP una vez por día (va aparte de los topes, como las misiones); los días perfectos seguidos (calendario de Madrid, también entre temporadas) forman una racha que da +100 XP a los 3 días y +250 a los 7, una vez por racha. Se ve en Misiones y en el Resumen.
+- **🛒 Misiones de tienda y de logro** (#338): el pool pasa a 7 misiones (3 al día): «compra 1 objeto» y «desbloquea 1 logro».
+- **🕰️ Historial de temporadas** (#300): al cambiar de temporada se guarda una sola vez el resumen (participantes, top, nivel más alto, recompensas cobradas), y `/pase` → 🕰️ Historial las consulta con un menú sin tocar la actual.
+- **🛡️ Aviso de recompensas sin cobrar** (#348): el último día de la temporada, un DM a quien tenga niveles sin cobrar (cuántos, cuántas monedas y cuándo vence), una sola vez. No se cobra solo. Se apaga en `/avisos`.
+- **📣 Anuncio de nivel** (#344): canal propio del pase (`pase.canal_nivel`), distinto del de los niveles de chat; sin canal no se anuncia, y un canal que no existe solo deja un aviso en el log.
+- **⚙️ Ajustes de admin** (#353): `/paneladmin` → 🛡️ Pase: activar/desactivar, el tope de cada categoría, la XP por nivel (base y paso), el canal de anuncios y los objetos por nivel. Todo aplica al momento; sin ajustes, el pase es el de siempre. Con el pase desactivado nadie suma XP y `/pase` no enseña datos. Las monedas de cada nivel no se editan.
+- **⚔️ XP por retos ganados** (#359): +15 XP de pase por reto ganado (tope 90 al día) a quien gana; el que pierde, los retos devueltos y los del Duende no suman.
+- **🎒 Objetos por nivel** (#364): un admin pone objetos del catálogo en niveles (`nivel:objeto`); al reclamar, además de las monedas, el objeto va al inventario, una sola vez. La vista Niveles lo enseña. Por defecto no hay ninguno.
+- Migración 063. DM nuevo: «Recompensas del pase» en `/avisos`. Tests: `tests/paseFase5.test.js`.
+- **Refactor**: `systems/pase/pase.js` se parte en `constantes`, `ajustes`, `niveles`, `xp`, `misiones`, `rachas`, `historial` y `avisos`; el pase avisa de las subidas de nivel por un oyente (`alSubirDeNivel`) que registra `index.js`.
+
+## 2026-10-14 (fase 4 del plan restante: apuestas y quinielas)
+
+- **📊 Probabilidad sin margen** (#370): la ficha del partido y el destacado enseñan, junto a cada cuota del 1X2, la probabilidad sin el margen de la casa (suman 100 %) y el margen total. Sin las tres cuotas, el partido se ve como antes. Solo el 1X2 (los mercados de goles y hándicap no).
+- **↑↓ Cuota apostada frente a la actual** (#375): en ⏳ En juego, «apostado a 1.8 · ahora 2 ↑» (↓ si baja, = si igual), con las cuotas ya guardadas; con el partido empezado, solo la apostada. Solo la flecha, sin diferencia.
+- **↩️ Cancelar una combinada** (#296): mientras ningún partido haya empezado, el menú de cancelar de Mis jugadas la devuelve entera, sin comisión; queda como «cancelada» (con lo devuelto como premio, sin cambiar el beneficio) y en el historial de dinero.
+- **🔁 Repetir la última apuesta** (#349): un botón en Mis jugadas propone tu última apuesta a un partido (misma elección e importe) sobre el partido que elijas, a la cuota de ahora; solo se cobra al confirmar, con las comprobaciones de siempre (partido abierto, duplicada, topes). Solo la última.
+- **📤 Exportar a CSV** (#356): un botón en Mis jugadas envía en privado un CSV con todas tus apuestas (partidos, combinadas y quinielas, solo deportivas), con el mismo cálculo de 📊 Stats. Sin apuestas, solo la cabecera.
+- **🎯 Rellenar favoritos** (#366): un botón en el editor de la quiniela rellena los partidos sin pronóstico con la cuota más baja (la X solo si es la menor sin empatar); no toca lo ya elegido ni lo bloqueado.
+- **📝 Borrador de la quiniela** (#384): los pronósticos a medias se guardan en la base de datos (uno por persona y quiniela) y se recuperan tras un reinicio, incluso con un botón de un editor viejo; el editor avisa de que los ha recuperado. Se borra al apostar, al cancelar y al cerrarse la quiniela.
+- **🏅 Liga por competición** (#380): un menú en 🏅 Liga elige una competición (solo informativa); la general y los premios de fin de temporada no cambian.
+- **🧾 Recordatorio de la quiniela** (#340): un DM unas horas antes del cierre (`apuestas.recordatorio_quiniela_horas`, 3 por defecto, 0 = no avisar; en ⏰ Recordatorio del panel) a quien suele jugar quinielas (ha apostado en otra, o tiene un borrador de esta) y no la ha enviado; una vez por quiniela y persona, y nunca después del bloqueo.
+- **📊 Resumen semanal de apuestas** (#361): los lunes desde las 10:00, un DM a quien tuvo apuestas resueltas la semana anterior (apostado, cobrado, beneficio y puesto en la liga); una vez por persona y semana. Usa `ranking.beneficioEntre`, que ahora devuelve también lo apostado y lo cobrado.
+- **🔔 Alertas de cuota** (#345): el botón 🔔 de la ficha del partido crea un aviso por DM cuando una elección llega a un valor (arriba o abajo); se comprueba tras cada refresco de cuotas (también las de directo), hasta 10 activas por persona, se ven y se cancelan en Mis jugadas y se borran al dispararse o al empezar el partido.
+- Los tres DM nuevos se pueden apagar en `/avisos` (quiniela sin enviar, resumen semanal, alertas de cuota). Migración 062.
+- **Refactor**: `lunesDe`, `sumarDias`, `diaSemana` y `semanaAnterior` pasan a `core/zonaMadrid.js` (estaban repetidos en la clasificación semanal y el ranking de Plex); el aviso de apuesta rechazada pasa a `juegos/apuestas/rechazo.js`; las pantallas de cancelar de Mis jugadas, a `paneles/misJugadasCancelar.js`.
+- Tests: `apuestasCuotasCombinadas`, `apuestasRepetirExportar`, `quinielaSugerirBorrador` y `apuestasResumenAlertas`.
+
+## 2026-10-14 (fase 3 del plan restante: juego responsable, blackjack, tragaperras y revancha)
+
+- **🛡️ Límite de pérdidas personal** (#319): en `/perfil` → 💰 Economía → 🛡️ Límite de pérdidas, cada persona se pone un tope por día o por semana (hora de Madrid). Son pérdidas netas del casino y las apuestas (historial: lo perdido menos lo ganado; una apuesta sin resolver cuenta como perdida hasta que se cobra). Con el tope alcanzado, o si una apuesta lo pasaría, el casino (`descontarApuesta`) y las apuestas, combinadas y quiniela (`apuestas/limites.comprobar`) no la aceptan. Bajarlo vale al momento; subirlo, pasar a un periodo más holgado o quitarlo tarda 24 h. Migración 061 (`limite_perdidas`).
+- **🛡️ Seguro en blackjack** (#333): con un as visible se ofrece antes de mirar si el crupier tiene blackjack (la mitad de la apuesta, paga 2 a 1). No se ofrece si el jugador tiene blackjack ni sin efectivo para pagarlo. Va al historial de movimientos, no a las partidas del casino: no cuenta como partida ni para los logros de ganar o perder.
+- **🏳️ Rendirse en blackjack** (#337): en la primera decisión, recupera la mitad de la apuesta (redondeo hacia abajo); queda en las partidas como «rendido».
+- **💡 Consejo en blackjack** (#343): `systems/blackjackEstrategia.js` con la tabla básica (4 barajas, el crupier se planta en 17); responde en privado y no toca la partida.
+- **🔁 Tirada automática en la tragaperras** (#354): un desplegable «Auto x10 / x25 / x50» con la misma apuesta; cada tirada se cobra como una normal (saldo, cupo, cooldown, autoexclusión, topes y límite de pérdidas), una edición cada tres tiradas, ⏹️ Parar, y se corta al salir el jackpot. Un solo resumen al final.
+- **🔁 Revancha** (#318): un duelo resuelto entre dos personas ofrece 🔁 Revancha una sola vez, con el mismo juego, cantidad y serie; hace falta efectivo en los dos. No hay revancha contra el Duende ni de un reto a un partido (el partido ya ha acabado: se elige otro desde ⚔️ Retos).
+- **Refactor**: `juegos/casino/blackjack.js` se parte en `blackjackMesa.js` (partidas, cobro extra, natural) y `blackjackSplit.js`; `systems/limitePerdidas.js` es una pieza nueva sin dependencias de Discord.
+- Tests: `blackjackSeguroRendirseConsejo`, `tragaperrasAuto`, `limitePerdidas` y `retosRevancha`.
+
+## 2026-10-14 (fase 2 del plan restante: sonidos)
+
+- **🔍 Buscar y categorías** (#323, #325): `/sonidos` filtra por nombre (sin distinguir mayúsculas) y por categoría con un menú; el filtro viaja en el `customId` de la paginación. Con categorías salen 15 sonidos por página (20 sin ellas). La categoría la pone el admin al editar un sonido (migración 060).
+- **🎲 Aleatorio y ⏱️ cooldown** (#324): un sonido al azar de los que puede usar quien pulsa, y 10 s entre dos sonidos de una misma persona (los admins no tienen cooldown).
+- **🏆 Más usados** (#297): cada reproducción suma uno (también el probar del admin y los eventos); el ranking sale en `/sonidos` y en `/paneladmin` → 🔊 Sonidos → 📊.
+- **📋 Cola** (#327): con un sonido sonando, el pulsado espera su turno (hasta 5) y avisa «en cola, puesto N»; `/conectar` no corta entre dos sonidos.
+- **🔉 Volumen, 👥 roles y 🌙 silencio** (#328, #329, #330): volumen de 25 a 200 % por sonido, roles que pueden usarlo (con 🔒 en el panel y aviso a quien no lo tiene) y un horario de silencio en hora de Madrid, que puede cruzar la medianoche, con interruptor de apagado. Ajustes `sonidos.*` y migración 060.
+- **🔔 Eventos** (#326): el admin pone un sonido a «logro desbloqueado» y a «apuesta ganada grande» (desde 1.000 🪙); suena si el bot está en voz por `/conectar`, no más de una vez cada N minutos (5 por defecto). Se conecta al arrancar (`systems/sonidos/eventos.conectar`) para no crear ciclos de dependencias.
+- **🔌 Sonido de entrada** (#301): `/conectar sonido:<…>` (con autocompletado) lo toca una vez al entrar; si no existe o no se puede tocar, la conexión sigue y queda en el log. Primer comando con autocompletado: `index.js` llama a `autocomplete()` del comando.
+- **Corrección**: si `createAudioResource` fallaba, quedaba un temporizador de 4 minutos sin cancelar.
+- Tests: `tests/sonidosAvanzados.test.js` (reglas) y `tests/sonidosPaneles.test.js` (paneles, comandos y admin).
+
+## 2026-10-14 (fase 1 del plan restante: cimientos #472, #474 y #475)
+
+- **#475 herramientas del Duende**: cada herramienta de `core`, `economia`, `plex` y `seerr` recibe sus dependencias como último argumento (`REALES_*` por defecto), así que el Duende responde igual y en los tests se pasan dobles. Nuevo `tests/herramientasDuendeInyeccion.test.js`, sin base de datos.
+- **#472 y #474 verificados**: `grep -rl 'require("discord.js")' src/systems` no devuelve nada, ningún manejador de `juegos/` hace SQL y las reglas de la quiniela están en `systems/apuestas/quinielaReglas.js` con sus tests. No hizo falta código nuevo.
+
 ## 2026-10-14 (fases 4 y 5: /avisos, casino, cripto, retos, comunidad y refactors)
 
 - **🔔 /avisos** (#431): todos los DM del bot pasan por una función de envío que respeta un interruptor por tipo y 🌙 no molestar (tabla `preferencias_dm`, migración 049).

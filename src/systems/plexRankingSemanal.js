@@ -13,6 +13,7 @@ const plexHistorial = require("./plexHistorial");
 const tautulli = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
 
+const campeones = require("./plexCampeones");
 const log = createLogger("Plex");
 
 const HORA = 10;
@@ -20,18 +21,7 @@ const PUESTOS = 5;
 const MEDALLAS = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-const DIA_MS = 86400 * 1000;
-const aFecha = (dia) => new Date(`${dia}T00:00:00Z`);
-const sumarDias = (dia, n) => new Date(aFecha(dia).getTime() + n * DIA_MS).toISOString().slice(0, 10);
-/** 1 = lunes … 7 = domingo. */
-const diaSemana = (dia) => aFecha(dia).getUTCDay() || 7;
-
-/** La semana anterior completa (lunes y domingo, AAAA-MM-DD, en hora de Madrid) respecto a `ahora` (ms). */
-function semanaAnterior(ahora = Date.now()) {
-    const { dia } = plexHistorial.momento(Math.floor(ahora / 1000));
-    const lunesActual = sumarDias(dia, 1 - diaSemana(dia));
-    return { lunes: sumarDias(lunesActual, -7), domingo: sumarDias(lunesActual, -1) };
-}
+const { aFecha, sumarDias, diaSemana, semanaAnterior } = require("../core/zonaMadrid");
 
 /**
  * Quién ha visto más Plex esa semana, de más a menos (solo los vinculados que han visto algo): tiempo visto sin pausas
@@ -126,6 +116,7 @@ async function publicar(guild, { semana = semanaAnterior() } = {}) {
     const lista = ranking(guild.id, semana);
     await channel.send(mensaje(lista, semana));
     guildSettings.setSetting(guild.id, "plex.ranking_ultima_semana", semana.lunes);
+    campeones.guardar(guild.id, semana.lunes, lista[0]); // #389: el campeón de la semana (sin él si nadie vio nada)
     log.info(
         `Ranking semanal de Plex (${semana.lunes}) publicado en #${channel.name} de ${guild.name || guild.id}: ` +
             (lista.length ? lista.map((u) => `${u.plexUsername} ${duracion(u.segundos)}`).join(", ") : "nadie vio nada"),

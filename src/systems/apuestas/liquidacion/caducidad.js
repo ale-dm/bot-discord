@@ -4,6 +4,7 @@ const db = require("../../../core/db");
 const dinero = require("../../dinero");
 const retos = require("../../retos");
 const combinadas = require("../combinadas");
+const borradores = require("../borradorQuiniela");
 const { logInfo, logWarn } = require("../../../core/logger");
 const { DIAS_RESULTADOS } = require("../../../services/oddsApi");
 
@@ -93,6 +94,7 @@ function caducarQuiniela(q, ahoraIso, reembolsar) {
         db.prepare("UPDATE quiniela_apuestas SET pagado = 1, premio = 0 WHERE id = ?").run(ap.id);
     }
     db.prepare("UPDATE quinielas SET estado = 'caducada', cerrada_en = ? WHERE id = ?").run(ahoraIso, q.id);
+    borradores.borrarDeQuiniela(q.id);
 }
 
 /** Aciertos necesarios para cobrar una quiniela: la mitad de los partidos, redondeando hacia arriba. */

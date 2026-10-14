@@ -2,11 +2,13 @@
 // movimientos. No es un comando (antes era /banco): el router registra sus botones igual (src/perfil).
 // Atiende también "💵 Sacar del banco" desde el casino, la tienda y la cripto (dinero_sacar_{volver}): después
 // de sacar, la pantalla de la que venías se vuelve a pintar con el efectivo nuevo.
-const { MessageFlags } = require("discord.js");
+const { MessageFlags, AttachmentBuilder } = require("discord.js");
+const { csvDeMovimientos, TOPE_FILAS } = require("../systems/movimientosCsv");
 const dinero = require("../systems/dinero");
 const economia = require("../paneles/economia");
 const { importeElegido } = require("../paneles/importes");
 const prestamos = require("../systems/prestamos");
+const privacidad = require("../systems/privacidadEconomia");
 const negocios = require("../systems/negocios");
 const tienda = require("../systems/tienda");
 const guildSettings = require("../systems/guildSettings");
@@ -14,6 +16,8 @@ const panelCasino = require("../paneles/casino");
 const panelTienda = require("../paneles/tienda");
 const panelCripto = require("../paneles/cripto");
 const panelNegocios = require("../paneles/negocios");
+const panelLimite = require("../paneles/limitePerdidas");
+const limitePerdidas = require("../systems/limitePerdidas");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Dinero");
@@ -59,7 +63,53 @@ function abrirSacar(interaction) {
 function movimientos(interaction) {
     const userId = interaction.user.id;
     const [tipo, pagina, targetId = userId] = interaction.customId.replace("dinero_mov_", "").split("_");
+    // Los movimientos de quien ha ocultado su economía no se enseñan a los demás (#377).
+    if (!privacidad.puedeVer(userId, targetId)) {
+        return interaction.reply({ content: "🙈 Esa persona ha ocultado su economía.", flags: MessageFlags.Ephemeral });
+    }
     return interaction.update(economia.buildMovimientos(userId, targetId, tipo, Math.max(0, parseInt(pagina, 10) || 0)));
+}
+
+// 🙈 Ocultar (1) o enseñar (0) tu economía a los demás (#377).
+function ocultarEconomia(interaction) {
+    privacidad.fijar(interaction.user.id, interaction.customId === "dinero_privada_1");
+    return interaction.update(economiaPropia(interaction));
+}
+
+// 📤 Exporta tus movimientos (con el filtro activo) a un CSV que solo ves tú (#411).
+function exportarMovimientos(interaction) {
+    const tipo = interaction.customId.replace("dinero_exportar_", "");
+    const { csv, filas, truncado } = csvDeMovimientos(interaction.user.id, tipo === "todo" ? null : tipo);
+    const aviso = truncado ? ` Solo se exportan los ${TOPE_FILAS.toLocaleString("es")} más recientes.` : "";
+    return interaction.reply({
+        content: `📤 ${filas.toLocaleString("es")} movimientos.${aviso}`,
+        files: [new AttachmentBuilder(Buffer.from(csv, "utf8"), { name: "movimientos.csv" })],
+        flags: MessageFlags.Ephemeral,
+    });
+}
+
+// 🛡️ Límite de pérdidas (#319): quitarlo no es inmediato, así que se avisa de cuándo (la pantalla enseña lo pendiente).
+function quitarLimite(interaction) {
+    const r = limitePerdidas.quitar(interaction.user.id);
+    return interaction.update(
+        panelLimite.buildLimite(interaction.user.id, r.ok ? "⏳ El límite se quitará dentro de 24 horas." : `❌ ${r.motivo}`),
+    );
+}
+
+// El formulario del límite: se guarda y se repinta la pantalla con lo que ha pasado.
+async function guardarLimite(interaction) {
+    const userId = interaction.user.id;
+    const limite = interaction.fields
+        .getTextInputValue("limite")
+        .trim()
+        .replace(/[\s.,]/g, "");
+    const periodo = interaction.fields.getRadioGroup("periodo");
+    const r = limitePerdidas.fijar(userId, limite, periodo);
+    const aviso = r.ok ? panelLimite.avisoDeFijar(r, Number(limite), periodo) : `❌ ${r.motivo}`;
+    if (r.ok)
+        log.info(`${interaction.user.tag} puso su límite de pérdidas: ${limite} por ${periodo}${r.inmediato ? "" : " (pendiente 24 h)"}`);
+    const payload = panelLimite.buildLimite(userId, aviso);
+    return interaction.isFromMessage?.() ? interaction.update(payload) : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
 }
 
 // Los botones de dinero_*, en orden: el primero cuyo customId encaja se atiende. Cada caso llama a su caso de uso (systems/dinero,
@@ -69,6 +119,10 @@ const RUTAS_BOTON = [
     // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
     ["dinero_prestamo_devolver", devolverPrestamo],
     ["dinero_transferir", async (i) => i.update(economia.buildElegirDestinatario(i.user.id))],
+    // 🛡️ Límite de pérdidas personal (#319).
+    ["dinero_limite", async (i) => i.update(panelLimite.buildLimite(i.user.id))],
+    ["dinero_limite_editar", async (i) => i.showModal(panelLimite.modalLimite(i.user.id))],
+    ["dinero_limite_quitar", quitarLimite],
     // 🏪 Negocios (F-EC-06d): comprar, vender y depositar dinero negro para limpiarlo.
     ["dinero_negocios", async (i) => i.update(panelNegocios.buildNegocios(i.user.id))],
     [
@@ -85,6 +139,8 @@ const RUTAS_BOTON = [
     [(id) => id === "dinero_sacar" || id.startsWith("dinero_sacar_"), abrirSacar],
     // dinero_mov_{tipo}_{pagina}[_{de quién}] (sin "de quién", los tuyos: mensajes de antes).
     [(id) => id.startsWith("dinero_mov_"), movimientos],
+    [(id) => id.startsWith("dinero_exportar_"), exportarMovimientos],
+    [(id) => id === "dinero_privada_0" || id === "dinero_privada_1", ocultarEconomia],
 ].map(([encaja, manejador]) => [typeof encaja === "string" ? (id) => id === encaja : encaja, manejador]);
 
 module.exports = {
@@ -110,12 +166,20 @@ module.exports = {
         const userId = interaction.user.id;
         if (interaction.customId === "dinero_negocio_elegir") {
             const [accion, tipo] = interaction.values[0].split("_");
-            const r = accion === "comprar" ? negocios.comprar(userId, interaction.guildId, tipo) : negocios.vender(userId, tipo);
+            const r =
+                accion === "comprar"
+                    ? negocios.comprar(userId, interaction.guildId, tipo)
+                    : accion === "mejorar"
+                      ? negocios.mejorar(userId, tipo)
+                      : negocios.vender(userId, tipo);
             return interaction.update(panelNegocios.buildNegocios(userId, r.mensaje));
         }
         // dinero_filtro_{de quién}
         if (interaction.customId.startsWith("dinero_filtro_")) {
             const targetId = interaction.customId.replace("dinero_filtro_", "") || userId;
+            if (!privacidad.puedeVer(userId, targetId)) {
+                return interaction.reply({ content: "🙈 Esa persona ha ocultado su economía.", flags: MessageFlags.Ephemeral });
+            }
             return interaction.update(economia.buildMovimientos(userId, targetId, interaction.values[0], 0));
         }
         if (interaction.customId === "dinero_transferir_a") {
@@ -132,6 +196,7 @@ module.exports = {
     async handleModal(client, interaction) {
         const userId = interaction.user.id;
         const id = interaction.customId;
+        if (id === "dinero_modal_limite") return guardarLimite(interaction);
         const cantidad = importeElegido(interaction.fields);
         let r;
         let volver = null;

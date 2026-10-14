@@ -256,7 +256,11 @@ async function handlePerfilesStringSelect(interaction) {
     if (interaction.customId !== `${P}pick`) return false;
     const p = perfiles.perfilPorId(interaction.values[0]);
     if (!p) await noExiste(interaction);
-    else await interaction.update(buildFicha(p, interaction.guildId));
+    else {
+        // 👁️ Abrir una ficha deja rastro (#402): quién y qué perfil, no su contenido.
+        auditar(interaction, "consulta.perfil", { perfilId: p.id, discordId: p.discordId });
+        await interaction.update(buildFicha(p, interaction.guildId));
+    }
     return true;
 }
 
@@ -267,6 +271,7 @@ async function handlePerfilesUserSelect(interaction) {
     const nombre = apodos.nombreDe(interaction.guildId, user.id) || user.globalName || user.username;
     const p = perfiles.asegurarPerfil(user, nombre);
     if (!yaTenia) auditar(interaction, "duende.perfil.create", { perfilId: p.id, discordId: user.id, nombre });
+    else auditar(interaction, "consulta.perfil", { perfilId: p.id, discordId: user.id });
     await interaction.update(
         buildFicha(p, interaction.guildId, yaTenia ? null : `🆕 Perfil creado para <@${user.id}>. Pulsa **Editar todo** para rellenarlo.`),
     );

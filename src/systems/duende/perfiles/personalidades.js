@@ -13,11 +13,14 @@ const PERSONALIDADES_INICIALES = [
 
 // ─── Personalidades ──────────────────────────────────────────────────────────
 
-const aPersonalidad = (r) => r && { id: r.id, title: r.titulo, systemInstructions: r.instrucciones };
+/** Las voces de síntesis que se pueden asignar a una personalidad (#396). */
+const VOCES = ["Puck", "Kore", "Charon", "Fenrir", "Algenib", "Sulafat", "Despina"];
+
+const aPersonalidad = (r) => r && { id: r.id, title: r.titulo, systemInstructions: r.instrucciones, voz: r.voz || null };
 
 function listarPersonalidades() {
     return db
-        .prepare("SELECT id, titulo, instrucciones, actualizado_en FROM duende_personalidades ORDER BY rowid")
+        .prepare("SELECT id, titulo, instrucciones, voz, actualizado_en FROM duende_personalidades ORDER BY rowid")
         .all()
         .map(aPersonalidad);
 }
@@ -25,8 +28,9 @@ function listarPersonalidades() {
 function obtenerPersonalidad(id) {
     if (!id) return null;
     return (
-        aPersonalidad(db.prepare("SELECT id, titulo, instrucciones, actualizado_en FROM duende_personalidades WHERE id = ?").get(id)) ||
-        null
+        aPersonalidad(
+            db.prepare("SELECT id, titulo, instrucciones, voz, actualizado_en FROM duende_personalidades WHERE id = ?").get(id),
+        ) || null
     );
 }
 
@@ -38,6 +42,18 @@ function guardarPersonalidad({ id, title, systemInstructions }) {
          ON CONFLICT(id) DO UPDATE SET titulo = excluded.titulo, instrucciones = excluded.instrucciones, actualizado_en = excluded.actualizado_en`,
     ).run(id, title, systemInstructions, Date.now());
     return existia;
+}
+
+/** Asigna una voz a una personalidad (null = la global). Solo vale una de las siete. @returns {boolean} true si se ha cambiado */
+function fijarVoz(id, voz) {
+    if (voz !== null && !VOCES.includes(voz)) return false;
+    return db.prepare("UPDATE duende_personalidades SET voz = ? WHERE id = ?").run(voz, id).changes > 0;
+}
+
+/** La voz con la que habla el Duende en un canal: la de su personalidad si tiene, o null (la global). */
+function vozDeCanal(channelId) {
+    const id = personalidadDeCanal(channelId);
+    return (id && obtenerPersonalidad(id)?.voz) || null;
 }
 
 /** @returns {boolean} true si existía */
@@ -59,6 +75,9 @@ function asignarPersonalidadCanal(channelId, personalidadId) {
 }
 
 module.exports = {
+    VOCES,
+    fijarVoz,
+    vozDeCanal,
     instruccionDefault,
     PERSONALIDADES_INICIALES,
     listarPersonalidades,

@@ -117,7 +117,7 @@ describe("los comandos", () => {
             guildId: G,
             user: { id: "ana" },
             member: { voice: { channel: enVoz } },
-            options: { getChannel: () => canal },
+            options: { getChannel: () => canal, getString: () => null },
             reply: jest.fn(async () => {}),
             deferReply: jest.fn(async () => {}),
             editReply: jest.fn(async () => {}),
@@ -228,7 +228,14 @@ describe("probar, renombrar y cambiar el archivo desde el panel (#321, #322)", (
         ).sonido;
         const i = interaccion("paneladmin_sonidos_editar_select", { values: [String(s.id)] });
         await admin.handleSonidosStringSelect(i);
-        const ids = i.update.mock.calls[0][0].components[0].components.map((b) => b.data.custom_id);
-        expect(ids).toEqual([`paneladmin_sonidos_renombrar_${s.id}`, `paneladmin_sonidos_archivo_${s.id}`, "paneladmin_sonidos_editar"]);
+        const filas = i.update.mock.calls[0][0].components.map((f) => f.components.map((b) => b.data.custom_id));
+        expect(filas[0]).toEqual([`paneladmin_sonidos_renombrar_${s.id}`, `paneladmin_sonidos_archivo_${s.id}`]);
+        // Los ajustes del sonido (#328, #325, #329) y volver a elegir otro.
+        expect(filas[1]).toEqual([
+            `paneladmin_sonidos_volumen_${s.id}`,
+            `paneladmin_sonidos_categoria_${s.id}`,
+            `paneladmin_sonidos_roles_${s.id}`,
+            "paneladmin_sonidos_editar",
+        ]);
     });
 });

@@ -2,6 +2,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const { DEPORTES } = require("../../services/oddsApi");
 const marcadorExacto = require("../../systems/apuestas/marcador");
+const mercados = require("../../systems/apuestas/mercados");
 
 function mensajeDestacado(partido) {
     const unix = Math.floor(Date.parse(partido.start_time) / 1000);
@@ -9,14 +10,18 @@ function mensajeDestacado(partido) {
     const apuestas = partido.apuestas
         ? `\n\n🔥 Ya hay **${partido.apuestas}** ${partido.apuestas === 1 ? "apuesta" : "apuestas"} a este partido`
         : "";
+    // La probabilidad sin margen de cada resultado y el margen de la casa (#370), si el partido tiene las tres cuotas.
+    const p = mercados.probabilidadesSinMargen(partido);
+    const pct = (n) => (p ? ` · ${mercados.fmtPorcentaje(n)}` : "");
     const embed = new EmbedBuilder()
         .setTitle("⭐ Partido destacado del día")
         .setDescription(
             `${comp.emoji} **${partido.home_team}** vs **${partido.away_team}** · ${comp.name}\n` +
                 `🕘 <t:${unix}:t> (<t:${unix}:R>)\n\n` +
-                `🏠 **${partido.home_team}**: cuota \`${partido.cuota_home}\`\n` +
-                `🤝 **Empate**: cuota \`${partido.cuota_draw}\`\n` +
-                `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`` +
+                `🏠 **${partido.home_team}**: cuota \`${partido.cuota_home}\`${pct(p?.home)}\n` +
+                `🤝 **Empate**: cuota \`${partido.cuota_draw}\`${pct(p?.draw)}\n` +
+                `🚩 **${partido.away_team}**: cuota \`${partido.cuota_away}\`${pct(p?.away)}` +
+                (p ? `\n📊 Margen de la casa: **${mercados.fmtPorcentaje(p.margen)}**` : "") +
                 apuestas,
         )
         .setFooter({ text: "Pulsa un resultado para apostar · Más partidos en /juegos → ⚽ Apuestas" })

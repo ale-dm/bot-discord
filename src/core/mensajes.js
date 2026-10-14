@@ -7,6 +7,7 @@ const latencias = require("./latencias");
 const guildSettings = require("../systems/guildSettings");
 const xpSystem = require("../systems/xpSystem");
 const duendeCommand = require("../commands/duende/duende");
+const notaDeVoz = require("../services/notaDeVoz");
 
 const msgLog = createLogger("Mensajes");
 
@@ -161,9 +162,33 @@ function interaccionDeMensaje(message, { effectiveText, imageAttachments, estado
     };
 }
 
+/** ¿Es un canal donde el Duende puede responder? (si el servidor le ha asignado uno, solo ese). */
+function canalDelDuende(message) {
+    if (!message.guildId) return true;
+    const asignado = guildSettings.getSettings(message.guildId).duende.allowed_channel_id;
+    return !asignado || message.channelId === asignado;
+}
+
+/**
+ * Las notas de voz del mensaje pasadas a texto (#376), unidas al texto que traiga. Solo en canales donde el Duende responde. Si no
+ * se puede transcribir, devuelve null y no se responde (el error ya queda en el log).
+ */
+async function textoConNotasDeVoz(message, userText, notasDeVoz, transcribir = notaDeVoz.transcribirNota) {
+    if (!notasDeVoz.length) return userText;
+    if (!canalDelDuende(message)) return null;
+    const transcripcion = await transcribir(notasDeVoz[0]);
+    if (!transcripcion) {
+        msgLog.warn(`Nota de voz sin transcripción: el Duende no responde · ${whoWhere(message)}`);
+        return null;
+    }
+    return [userText, transcripcion].filter(Boolean).join(" ");
+}
+
 /** Un mensaje de texto que puede ser para el Duende: decide si responde, y cómo. */
-async function atenderComoDuende(client, message, userText, imageAttachmentsRaw) {
+async function atenderComoDuende(client, message, textoEscrito, imageAttachmentsRaw, notasDeVoz = []) {
     try {
+        const userText = await textoConNotasDeVoz(message, textoEscrito, notasDeVoz);
+        if (userText === null) return;
         if (!debeContestar(client, message, userText)) return;
         if (isLowEffortMessage(userText)) return reaccionarBajoEsfuerzo(message);
 
@@ -225,16 +250,28 @@ function registrarMensajes(client) {
             ? [...message.attachments.values()].filter((a) => (a.contentType || "").startsWith("image/"))
             : [];
 
-        // Evitar procesar mensajes que sean comandos (slash o que empiecen por /).
-        // Un mensaje vacío solo se descarta si tampoco trae una imagen adjunta.
-        if (userText.startsWith("/")) return;
-        if (!userText && imageAttachmentsRaw.length === 0) return;
+        // Las notas de voz y los audios cortos (#376): se transcriben y el Duende contesta al texto.
+        const notasDeVoz = message.attachments
+            ? [...message.attachments.values()].filter((a) => notaDeVoz.esAudio(a) && notaDeVoz.cabe(a))
+            : [];
 
-        await latencias.medir("mensaje", "duende", () => atenderComoDuende(client, message, userText, imageAttachmentsRaw));
+        // Evitar procesar mensajes que sean comandos (slash o que empiecen por /).
+        // Un mensaje vacío solo se descarta si tampoco trae una imagen adjunta ni una nota de voz.
+        if (userText.startsWith("/")) return;
+        if (!userText && imageAttachmentsRaw.length === 0 && notasDeVoz.length === 0) return;
+
+        await latencias.medir("mensaje", "duende", () => atenderComoDuende(client, message, userText, imageAttachmentsRaw, notasDeVoz));
     });
 }
 
 /** Cuántos ids de mensaje se recuerdan ahora (los de la ventana de 5 minutos). */
 const tamanoDedupe = () => recentlyProcessedMessageIds.size;
 
-module.exports = { isDuplicateMessage, isLowEffortMessage, registrarMensajes, tamanoDedupe, MESSAGE_DEDUPE_WINDOW_MS };
+module.exports = {
+    isDuplicateMessage,
+    isLowEffortMessage,
+    registrarMensajes,
+    textoConNotasDeVoz,
+    tamanoDedupe,
+    MESSAGE_DEDUPE_WINDOW_MS,
+};

@@ -1,15 +1,62 @@
-const { EmbedBuilder, MessageFlags } = require("discord.js");
+const { EmbedBuilder, MessageFlags, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const { registrarUsuario, descontarApuesta, obtenerSaldo } = require("../../systems/casinoTransactions");
-const { SIMBOLOS, calcularGanancia, obtenerJackpot, liquidarGiro } = require("../../systems/casino/tragaperras");
+const { SIMBOLOS, TIRADAS_AUTO, calcularGanancia, obtenerJackpot, liquidarGiro, jugarSerie } = require("../../systems/casino/tragaperras");
 const { logWarn } = require("../../core/logger");
 const casino = require("../../paneles/casino");
 
 // Estados de las partidas (para animación)
 const partidasActivas = new Map();
+// Series automáticas en marcha (#354): userId -> { parar }. El botón ⏹️ Parar pone `parar` y la serie lo mira antes de cada tirada.
+const seriesAuto = new Map();
 
 // Al acabar (y, desactivada, mientras gira): 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.
 function crearBotonesResultado(apuesta, disabled = false, userId = null) {
     return casino.filaFinJuego("tragaperras", apuesta, { desactivada: disabled, userId });
+}
+
+// 🔁 El desplegable de la serie automática: las mismas tiradas con la apuesta del resultado.
+function crearSelectorAuto(apuesta, disabled = false) {
+    return new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId(`tragaperras_auto_${apuesta}`)
+            .setPlaceholder(`🔁 Tirada automática (${apuesta} monedas por tirada)`)
+            .setDisabled(disabled)
+            .addOptions(
+                TIRADAS_AUTO.map((n) => ({ label: `🔁 Auto x${n}`, value: String(n), description: `${n} tiradas seguidas de ${apuesta}` })),
+            ),
+    );
+}
+
+const filaParar = () =>
+    new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("tragaperras_parar").setLabel("⏹️ Parar").setStyle(ButtonStyle.Danger),
+    );
+
+const signo = (n) => `${n >= 0 ? "+" : "-"}${Math.abs(n).toLocaleString("es")}`;
+
+// Cómo acabó la serie, en una línea.
+function textoFinSerie(r) {
+    if (r.jackpot) return "🏆 ¡JACKPOT! La serie se detuvo y el premio ya está en tu efectivo.";
+    if (r.parada) return "⏹️ Parada a petición.";
+    if (r.motivo) return `⚠️ La serie se cortó: ${r.motivo}`;
+    return "✅ Serie completa.";
+}
+
+/** El resumen de una serie automática (en curso o terminada): tiradas, lo apostado y ganado, y el neto. */
+function crearEmbedSerie(r, usuario, saldo, enCurso) {
+    const neto = r.ganado - r.apostado;
+    return new EmbedBuilder()
+        .setTitle(enCurso ? "🎰 Tirada automática en marcha…" : "🎰 Tirada automática - Resumen")
+        .setColor(enCurso ? 0xf39c12 : neto >= 0 ? 0x2ecc71 : 0xe74c3c)
+        .setAuthor({ name: `Jugador: ${usuario}` })
+        .setDescription(
+            `🔁 **Tiradas:** ${r.hechas} de ${r.tiradas} (${r.apuesta.toLocaleString("es")} monedas cada una)\n` +
+                `💵 **Apostado:** ${r.apostado.toLocaleString("es")} monedas\n` +
+                `💰 **Ganado:** ${r.ganado.toLocaleString("es")} monedas\n` +
+                `${neto >= 0 ? "✅" : "❌"} **Neto:** ${signo(neto)} monedas\n` +
+                `🎯 **Con premio:** ${r.aciertos} · **Mejor ganancia:** ${r.mejor.toLocaleString("es")}\n` +
+                (enCurso ? "" : `\n${textoFinSerie(r)}\n💰 **Saldo:** ${saldo.toLocaleString("es")} monedas`),
+        );
 }
 
 /**
@@ -145,7 +192,7 @@ function crearEmbedAyuda() {
 }
 
 module.exports = {
-    componentHandlers: [{ types: ["button"], prefixes: ["tragaperras_"], method: "handleButton", acl: "juegos" }],
+    componentHandlers: [{ types: ["button", "stringSelect"], prefixes: ["tragaperras_"], method: "handleButton", acl: "juegos" }],
 
     async run(client, interaction) {
         const apuesta = interaction.options.getInteger("apuesta");
@@ -204,27 +251,59 @@ module.exports = {
         }
     },
 
+    // 🔁 Serie automática (#354): varias tiradas seguidas con la misma apuesta, con un solo resumen al final.
+    async jugarAuto(interaction, apuesta, tiradas, userId, username) {
+        partidasActivas.set(userId, Date.now());
+        const control = { parar: false };
+        seriesAuto.set(userId, control);
+        const editar = (embed, components) =>
+            interaction
+                .editReply({ embeds: [embed], components })
+                .catch((e) => logWarn("[TRAGAPERRAS] No se pudo editar la serie:", e.message));
+        try {
+            registrarUsuario(userId, username, interaction.user.tag);
+            const resumen = await jugarSerie(
+                { userId, guildId: interaction.guildId, username, apuesta, tiradas },
+                {
+                    debeParar: () => control.parar,
+                    // Una edición cada tres tiradas: Discord limita las ediciones de un mismo mensaje.
+                    alProgreso: (r) => (r.hechas % 3 === 0 ? editar(crearEmbedSerie(r, username, 0, true), [filaParar()]) : null),
+                },
+            );
+            if (resumen.hechas === 0) {
+                const motivo = resumen.motivo || "No se ha hecho ninguna tirada.";
+                await interaction.followUp({ content: motivo, flags: MessageFlags.Ephemeral });
+                return;
+            }
+            const saldo = obtenerSaldo(userId);
+            await editar(crearEmbedSerie(resumen, username, saldo, false), [
+                crearBotonesResultado(apuesta, false, userId),
+                crearSelectorAuto(apuesta),
+            ]);
+        } finally {
+            seriesAuto.delete(userId);
+            partidasActivas.delete(userId);
+        }
+    },
+
     async handleButton(client, interaction) {
         const userId = interaction.user.id;
         const username = interaction.user.username;
+        const id = interaction.customId;
 
-        if (interaction.customId.startsWith("tragaperras_repetir_")) {
-            const apuesta = parseInt(interaction.customId.replace("tragaperras_repetir_", ""));
-            if (partidasActivas.has(userId)) {
-                await interaction.reply({
-                    content: "⏳ Ya estás girando una tragaperras. Espera un momento.",
-                    flags: MessageFlags.Ephemeral,
-                });
-                return;
-            }
+        if (id === "tragaperras_parar") {
+            const serie = seriesAuto.get(userId);
+            if (serie) serie.parar = true;
             await interaction.deferUpdate();
-            await this.jugar(interaction, apuesta, userId, username, true);
             return;
         }
 
-        // Botones de jugar con cantidad específica
-        if (interaction.customId.startsWith("tragaperras_jugar_")) {
-            const apuesta = parseInt(interaction.customId.replace("tragaperras_jugar_", ""));
+        // 🔁 Repetir y 🎲 jugar con una cantidad, o una serie automática: se gira de uno en uno por persona.
+        const girar = /^tragaperras_(repetir|jugar|auto)_(\d+)$/.exec(id);
+        if (girar) {
+            const apuesta = parseInt(girar[2]);
+            const tiradas = girar[1] === "auto" ? parseInt(interaction.values?.[0]) : 1;
+            if (girar[1] === "auto" && (!TIRADAS_AUTO.includes(tiradas) || !(apuesta > 0))) return;
             if (partidasActivas.has(userId)) {
                 await interaction.reply({
                     content: "⏳ Ya estás girando una tragaperras. Espera un momento.",
@@ -233,19 +312,19 @@ module.exports = {
                 return;
             }
             await interaction.deferUpdate();
-            await this.jugar(interaction, apuesta, userId, username, true);
+            if (girar[1] === "auto") await this.jugarAuto(interaction, apuesta, tiradas, userId, username);
+            else await this.jugar(interaction, apuesta, userId, username, true);
             return;
         }
 
         // Botón de ayuda
-        if (interaction.customId === "tragaperras_ayuda") {
-            const embedAyuda = crearEmbedAyuda();
-            await interaction.reply({ embeds: [embedAyuda], flags: MessageFlags.Ephemeral });
+        if (id === "tragaperras_ayuda") {
+            await interaction.reply({ embeds: [crearEmbedAyuda()], flags: MessageFlags.Ephemeral });
             return;
         }
 
         // Botón de estadísticas de mensajes antiguos: las del casino, solo de la tragaperras.
-        if (interaction.customId === "tragaperras_stats") {
+        if (id === "tragaperras_stats") {
             await interaction.reply({ ...casino.buildStats(userId, username, "tragaperras"), flags: MessageFlags.Ephemeral });
             return;
         }
@@ -288,7 +367,7 @@ async function mostrarResultado(interaction, { carretes, resultado, apuesta, nue
     const row = crearBotonesResultado(apuesta, false, interaction.user?.id);
 
     try {
-        await interaction.editReply({ embeds: [embedResultado], components: [row] });
+        await interaction.editReply({ embeds: [embedResultado], components: [row, crearSelectorAuto(apuesta)] });
     } catch (error) {
         logWarn("[TRAGAPERRAS] Resultado ya liquidado; falló mostrarlo con botones, se reintenta sin ellos:", error.message);
         await interaction.editReply({ embeds: [embedResultado], components: [] });
