@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 5 del plan restante: pase de batalla)
+
+- **📊 Topes de hoy** (#331): la vista 📊 Topes de `/pase` enseña, por categoría, la XP usada hoy y su tope («usado / tope»), con las llenas marcadas. Las vistas pasan a dos filas de botones.
+- **📍 Tu posición** (#332): en 🏆 Top, si no estás entre los 10, tu puesto real y los XP que te faltan para entrar; con 0 XP, «sin puesto todavía». Solo en el Top.
+- **🌟 Día perfecto y 🔥 racha** (#334, #335): completar las tres misiones da +100 XP una vez por día (va aparte de los topes, como las misiones); los días perfectos seguidos (calendario de Madrid, también entre temporadas) forman una racha que da +100 XP a los 3 días y +250 a los 7, una vez por racha. Se ve en Misiones y en el Resumen.
+- **🛒 Misiones de tienda y de logro** (#338): el pool pasa a 7 misiones (3 al día): «compra 1 objeto» y «desbloquea 1 logro».
+- **🕰️ Historial de temporadas** (#300): al cambiar de temporada se guarda una sola vez el resumen (participantes, top, nivel más alto, recompensas cobradas), y `/pase` → 🕰️ Historial las consulta con un menú sin tocar la actual.
+- **🛡️ Aviso de recompensas sin cobrar** (#348): el último día de la temporada, un DM a quien tenga niveles sin cobrar (cuántos, cuántas monedas y cuándo vence), una sola vez. No se cobra solo. Se apaga en `/avisos`.
+- **📣 Anuncio de nivel** (#344): canal propio del pase (`pase.canal_nivel`), distinto del de los niveles de chat; sin canal no se anuncia, y un canal que no existe solo deja un aviso en el log.
+- **⚙️ Ajustes de admin** (#353): `/paneladmin` → 🛡️ Pase: activar/desactivar, el tope de cada categoría, la XP por nivel (base y paso), el canal de anuncios y los objetos por nivel. Todo aplica al momento; sin ajustes, el pase es el de siempre. Con el pase desactivado nadie suma XP y `/pase` no enseña datos. Las monedas de cada nivel no se editan.
+- **⚔️ XP por retos ganados** (#359): +15 XP de pase por reto ganado (tope 90 al día) a quien gana; el que pierde, los retos devueltos y los del Duende no suman.
+- **🎒 Objetos por nivel** (#364): un admin pone objetos del catálogo en niveles (`nivel:objeto`); al reclamar, además de las monedas, el objeto va al inventario, una sola vez. La vista Niveles lo enseña. Por defecto no hay ninguno.
+- Migración 063. DM nuevo: «Recompensas del pase» en `/avisos`. Tests: `tests/paseFase5.test.js`.
+- **Refactor**: `systems/pase/pase.js` se parte en `constantes`, `ajustes`, `niveles`, `xp`, `misiones`, `rachas`, `historial` y `avisos`; el pase avisa de las subidas de nivel por un oyente (`alSubirDeNivel`) que registra `index.js`.
+
 ## 2026-10-14 (fase 4 del plan restante: apuestas y quinielas)
 
 - **📊 Probabilidad sin margen** (#370): la ficha del partido y el destacado enseñan, junto a cada cuota del 1X2, la probabilidad sin el margen de la casa (suman 100 %) y el margen total. Sin las tres cuotas, el partido se ve como antes. Solo el 1X2 (los mercados de goles y hándicap no).

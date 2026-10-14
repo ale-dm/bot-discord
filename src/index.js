@@ -29,6 +29,8 @@ const client = new Client({
 // Los logros que se calculan sin el servidor a mano (casino, cripto) lo buscan aquí para anunciarse.
 require("./systems/achievementsSystem").setClient(client);
 // 🔔 Los sonidos ligados a eventos (#326) los toca el reproductor de sonidos en la presencia de /conectar.
+// 🛡️ Subir de nivel en el pase se anuncia en el canal que elija un admin (#344).
+require("./systems/pase/pase").alSubirDeNivel((subida) => require("./systems/pase/avisos").anunciarNivel(client, subida));
 // 🔔 Las alertas de cuota (#345) se miran cada vez que se guardan cuotas nuevas.
 require("./services/oddsApi").alRefrescarCuotas(() => require("./systems/apuestas/alertasCuota").comprobar(client));
 require("./systems/sonidos/eventos").conectar({ sonidos: require("./systems/sonidos"), presencia: require("./systems/presencia") });

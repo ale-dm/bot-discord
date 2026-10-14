@@ -18,6 +18,8 @@ const plexHistorial = require("../systems/plexHistorial");
 const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
 const resumenApuestas = require("../systems/apuestas/resumenSemanal");
+const paseHistorial = require("../systems/pase/historial");
+const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
 const plexWrapped = require("../systems/plexWrapped");
 const cine = require("../systems/cine");
@@ -104,6 +106,17 @@ function programarClasificacionSemanal(client) {
         noOverlap: true,
     });
     runJob("Resumen semanal de apuestas (arranque)", () => resumenApuestas.enviarSiToca(client));
+}
+
+function programarPase(client) {
+    // 🛡️ Pase de batalla: cada hora, guarda el resumen de las temporadas ya cerradas (#300) y, en el último día de la temporada, avisa por DM
+    // de los niveles sin cobrar (#348). Los dos van una sola vez.
+    const tarea = () => {
+        paseHistorial.cerrarPasadas();
+        return paseAvisos.avisarSinCobrar(client);
+    };
+    cron.schedule("30 * * * *", () => runJob("Pase de batalla", tarea), { timezone: "Europe/Madrid", noOverlap: true });
+    runJob("Pase de batalla (arranque)", tarea);
 }
 
 function programarCuotasEnDirecto(client) {
@@ -269,6 +282,7 @@ function programarTareas(client) {
     programarResumenAdmin(client);
     programarEspontaneos(client);
     programarApuestas(client);
+    programarPase(client);
     programarRetosYEconomia(client);
     programarComunidad(client);
     programarLiquidacionApuestas(client);

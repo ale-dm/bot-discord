@@ -587,18 +587,22 @@ se suceden solas). Cada cosa que haces da XP de pase, con topes diarios:
 | Operación de cripto | 6 | 180 |
 | Apuesta resuelta | 12 | 180 |
 | Compra en la tienda | 8 | 80 |
+| Logro completado | 20 | 120 |
+| Reto ganado | 15 | 90 |
 
-Cada día hay **3 misiones** (rotan) que dan **70 XP** al completarse ("Envía 25 mensajes", "Pasa 10 minutos en voz", "Juega 5
-partidas de casino", "Haz 2 operaciones de cripto", "Ten 1 apuesta resuelta").
+Cada día hay **3 misiones** (de un pool de 7, rotan) que dan **70 XP** al completarse ("Envía 25 mensajes", "Pasa 10 minutos
+en voz", "Juega 5 partidas de casino", "Haz 2 operaciones de cripto", "Ten 1 apuesta resuelta", "Compra 1 objeto en la tienda",
+"Desbloquea 1 logro"). Las tres juntas dan un **🌟 día perfecto** (+100 XP, una vez al día) y los días perfectos seguidos forman una
+**🔥 racha** (+100 XP a los 3 días y +250 a los 7, una vez por racha).
 
 Hay **20 niveles**. Subir de nivel desbloquea una recompensa en **monedas** (de 80 🪙 en el nivel 1 a 2.500 🪙 en el 20, más un
-bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por nivel, en efectivo. El **🏆 Top** ordena por XP.
+bonus final de 2.000 🪙). Se cobra con **🎁 Reclamar**, una sola vez por nivel, en efectivo. El **🏆 Top** ordena por XP y, si no estás entre los 10, enseña tu puesto y lo que te falta. **📊 Topes** muestra lo usado hoy en cada categoría y **🕰️ Historial** el resumen de las temporadas ya cerradas. El último día de la temporada, un DM avisa de los niveles sin cobrar (no se cobran solos). Un admin ajusta todo en `/paneladmin` → 🛡️ Pase: activar, topes, XP por nivel, canal de anuncios de subida de nivel y objetos que dan algunos niveles (además de las monedas).
 
 **Decisión:** el diseño ([docs/planificacion/diseno/pase-de-batalla-s1.md](planificacion/diseno/pase-de-batalla-s1.md))
 incluía roles de Discord como recompensa (expulsar, mover o silenciar en voz, renombrar a otros, subir emojis). **No se
 conceden**: los permisos de moderación no los decide un juego. Las recompensas son monedas. Cada logro completado da
-**20 XP** de pase (tope de 120 al día); los que salen al importar el historial de Plex no dan XP. Migración 036. Tests:
-`tests/pasePase.test.js` y `tests/cabosSueltos.test.js`.
+**20 XP** de pase (tope de 120 al día); los que salen al importar el historial de Plex no dan XP. Migraciones 036 y 063. Tests:
+`tests/pasePase.test.js`, `tests/paseFase5.test.js` y `tests/cabosSueltos.test.js`.
 
 ## 8. Casino
 

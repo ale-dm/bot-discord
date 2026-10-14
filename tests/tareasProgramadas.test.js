@@ -19,6 +19,8 @@ for (const ruta of [
     "../src/systems/plexRankingSemanal",
     "../src/systems/clasificacionSemanal",
     "../src/systems/apuestas/resumenSemanal",
+    "../src/systems/pase/historial",
+    "../src/systems/pase/avisos",
     "../src/services/oddsApi",
     "../src/systems/plexWrapped",
     "../src/systems/cine",
@@ -60,8 +62,8 @@ test("al ejecutarse, cada tarea hace su trabajo sin errores", async () => {
 
 const horarios = () => cron.schedule.mock.calls.map(([expr, , opts]) => ({ expr, timezone: opts?.timezone }));
 
-test("se programan 23 tareas de cron, una por cada trabajo del bot", () => {
-    expect(cron.schedule).toHaveBeenCalledTimes(23);
+test("se programan 24 tareas de cron, una por cada trabajo del bot", () => {
+    expect(cron.schedule).toHaveBeenCalledTimes(24);
 });
 
 test("las tareas que dependen de la hora de Madrid llevan esa zona", () => {

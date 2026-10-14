@@ -13,6 +13,12 @@ const TIPOS = [
     { id: "recordatorio_partido", emoji: "⏰", nombre: "Recordatorio de partido", detalle: "Antes de un partido al que has apostado" },
     { id: "apuesta_cobrada", emoji: "🏆", nombre: "Apuesta cobrada", detalle: "Cuando ganas o te devuelven una apuesta" },
     {
+        id: "pase_recompensas",
+        emoji: "🛡️",
+        nombre: "Recompensas del pase",
+        detalle: "El último día de la temporada, si tienes niveles del pase sin cobrar",
+    },
+    {
         id: "quiniela_recordatorio",
         emoji: "🧾",
         nombre: "Quiniela sin enviar",

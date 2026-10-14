@@ -4,8 +4,15 @@ const pase = require("../../systems/pase/pase");
 const { pantallaPase } = require("../../paneles/pase");
 const { efimero } = require("../../discord/respuestas");
 
+/** El texto de lo que reclama alguien: las monedas, los niveles y los objetos (#364). */
+function avisoDeReclamar(r) {
+    if (!r.ok) return "Nada que reclamar todavía.";
+    const objetos = r.objetos ? ` y 🎒 ${r.objetos.map((o) => o.nombre).join(", ")}` : "";
+    return `🎁 Cobrado **${r.monedas.toLocaleString("es")}** 🪙${objetos} (niveles ${r.niveles.join(", ")}).`;
+}
+
 module.exports = {
-    componentHandlers: [{ types: ["button"], prefixes: ["pase_"], method: "handleButton", acl: "pase" }],
+    componentHandlers: [{ types: ["button", "stringSelect"], prefixes: ["pase_"], method: "handleButton", acl: "pase" }],
     data: new SlashCommandBuilder()
         .setName("pase")
         .setDescription("🛡️ Tu pase de batalla de la temporada: niveles, misiones y recompensas"),
@@ -20,12 +27,13 @@ module.exports = {
         const userId = interaction.user.id;
         if (id === "pase_reclamar") {
             const r = pase.reclamar(guildId, userId);
-            const aviso = r.ok
-                ? `🎁 Cobrado **${r.monedas.toLocaleString("es")}** 🪙 (niveles ${r.niveles.join(", ")}).`
-                : "Nada que reclamar todavía.";
-            return interaction.update(pantallaPase(guildId, userId, "resumen", { aviso }));
+            return interaction.update(pantallaPase(guildId, userId, "resumen", { aviso: avisoDeReclamar(r) }));
         }
-        const vista = /^pase_vista_(resumen|niveles|misiones|top)$/.exec(id)?.[1];
+        // 🕰️ La temporada pasada que se elige en el menú del historial.
+        if (id === "pase_historial_sel") {
+            return interaction.update(pantallaPase(guildId, userId, "historial", { temporada: interaction.values[0] }));
+        }
+        const vista = /^pase_vista_(resumen|niveles|misiones|top|topes|historial)$/.exec(id)?.[1];
         if (vista) return interaction.update(pantallaPase(guildId, userId, vista));
     },
 };

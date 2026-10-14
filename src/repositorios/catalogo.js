@@ -31,7 +31,11 @@ const quitarDeVenta = (objetoId) => db.prepare("DELETE FROM tienda WHERE objetoI
 const objetoPorId = (id) =>
     db.prepare("SELECT id, nombre, descripcion, imagen, tipo, unico, categoria, rareza, rolId, efecto FROM objeto WHERE id = ?").get(id);
 
+/** Un objeto por su nombre exacto (sin distinguir mayúsculas), o undefined. Para los objetos por nivel del pase (#364). */
+const objetoPorNombre = (nombre) => db.prepare("SELECT id, nombre FROM objeto WHERE nombre = ? COLLATE NOCASE").get(nombre);
+
 module.exports = {
+    objetoPorNombre,
     listarObjetosConVenta,
     crearObjeto,
     editarCampoObjeto,

@@ -1,5 +1,7 @@
 // Lista de ajustes del servidor y cómo es cada uno (datos, sin lógica).
 
+const { CATEGORIAS, XP_NIVEL_BASE, XP_NIVEL_PASO } = require("../pase/constantes");
+
 // Juegos del casino con tope de apuesta y cooldown propios (#460, #461): `casino.max_bet_<juego>` y
 // `casino.cooldown_sec_<juego>`. 0 = sin ajuste propio, vale el general (`casino.max_bet` y `casino.global_cooldown_sec`).
 const JUEGOS_CASINO = ["blackjack", "tragaperras", "ruleta", "ppt", "adivinar"];
@@ -198,6 +200,22 @@ for (const juego of JUEGOS_CASINO) {
     DEFAULT_FLAT[`casino.cooldown_sec_${juego}`] = 0;
     KEY_TYPES[`casino.max_bet_${juego}`] = "number";
     KEY_TYPES[`casino.cooldown_sec_${juego}`] = "number";
+}
+
+// 🛡️ Pase de batalla (#353): activar, el tope diario de cada categoría y lo que cuesta cada nivel (los valores por defecto son los de
+// systems/pase/constantes, así que sin ajustes guardados nada cambia), el canal de los anuncios de nivel (#344) y los objetos por nivel
+// (#364, un JSON {"nivel": id del objeto}).
+const AJUSTES_PASE = {
+    "pase.activo": [true, "boolean"],
+    "pase.xp_nivel_base": [XP_NIVEL_BASE, "number"],
+    "pase.xp_nivel_paso": [XP_NIVEL_PASO, "number"],
+    "pase.canal_nivel": ["", "string"],
+    "pase.objetos": ["", "string"],
+    ...Object.fromEntries(Object.entries(CATEGORIAS).map(([categoria, { tope }]) => [`pase.tope_${categoria}`, [tope, "number"]])),
+};
+for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_PASE)) {
+    DEFAULT_FLAT[clave] = valor;
+    KEY_TYPES[clave] = tipo;
 }
 
 module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };

@@ -1,6 +1,7 @@
 // Lectura de valores: convertir lo guardado al tipo de cada ajuste y pasarlo a la forma anidada.
 
 const { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO } = require("./definicion");
+const { CATEGORIAS } = require("../pase/constantes");
 
 function parseValue(key, value) {
     const type = KEY_TYPES[key] || "string";
@@ -105,8 +106,21 @@ function nodoPlexYLogros(flat) {
     };
 }
 
+/** Los ajustes del pase de batalla (#353): activo, el tope de cada categoría, lo que cuesta cada nivel, el canal de anuncios y los objetos por nivel. */
+function nodoPase(flat) {
+    return {
+        activo: flat["pase.activo"],
+        topes: Object.fromEntries(Object.keys(CATEGORIAS).map((c) => [c, flat[`pase.tope_${c}`]])),
+        xp_nivel_base: flat["pase.xp_nivel_base"],
+        xp_nivel_paso: flat["pase.xp_nivel_paso"],
+        canal_nivel: flat["pase.canal_nivel"],
+        objetos: flat["pase.objetos"],
+    };
+}
+
 function nodoOtros(flat) {
     return {
+        pase: nodoPase(flat),
         apuestas: {
             canal_resultados: flat["apuestas.canal_resultados"],
             recordatorio: flat["apuestas.recordatorio"],

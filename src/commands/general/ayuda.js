@@ -51,7 +51,7 @@ const SECCIONES = {
             "`/encuesta pregunta opcion1 opcion2 [..opcion5] [horas]` — una encuesta con un botón por opción y el recuento en vivo (se cierra a las 24 h, o cuando la cierra quien la creó). `/sugerencia` — envía una idea al buzón del servidor, con 👍 y 👎; un admin la acepta o la descarta y te avisa por DM.",
             "`/presentacion` — una frase sobre ti (hasta 150 caracteres) que sale en 👤 Perfil cuando otra persona abre tu perfil. Enviarla vacía la borra; también se edita con ✏️ Presentación en tu propio perfil.",
             "**Rankings**: nivel, riqueza, casino, logros, TTCL, 🍿 Plex (logros, Gordos, políglota y horas) y ⚽ apostadores (beneficio, acierto y racha), en una pantalla con un menú.",
-            "`/pase` — el pase de batalla de la temporada (15 días): cada cosa que haces (escribir, voz, casino, cripto, apuestas, tienda, completar un logro) da XP con un tope diario, y cada nivel da monedas, que se cobran a mano en el propio `/pase`. Cada día hay 3 misiones que dan XP extra.",
+            "`/pase` — el pase de batalla de la temporada (15 días): cada cosa que haces (escribir, voz, casino, cripto, apuestas, tienda, completar un logro) da XP con un tope diario, y cada nivel da monedas, que se cobran a mano en el propio `/pase`. Cada día hay 3 misiones que dan XP extra (y un bonus y una racha si haces las tres seguidas), también ganar retos suma, y puedes ver tus topes del día, tu posición y las temporadas pasadas. Te aviso el último día si te quedan niveles por cobrar.",
         ],
     },
     plex: {

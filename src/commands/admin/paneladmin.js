@@ -35,6 +35,7 @@ const {
 } = require("../../adminPanel/perfilesDuende");
 const { handleImpuestosButton, handleImpuestosModal } = require("../../adminPanel/impuestos");
 const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = require("../../adminPanel/sonidos");
+const { handlePaseButton, handlePaseModal, handlePaseStringSelect, handlePaseChannelSelect } = require("../../adminPanel/pase");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
 
@@ -76,6 +77,7 @@ module.exports = {
                 "paneladmin_sis_",
                 "paneladmin_plex_",
                 "paneladmin_sonidos_",
+                "paneladmin_pase_tope_sel",
                 "paneladmin_com_",
             ],
             method: "handleStringSelect",
@@ -97,6 +99,7 @@ module.exports = {
                 "paneladmin_seerr_channel_add_select",
                 "paneladmin_apu_canal_select",
                 "paneladmin_semanal_canal_select",
+                "paneladmin_pase_canal_select",
             ],
             method: "handleChannelSelect",
         },
@@ -142,6 +145,7 @@ module.exports = {
             handleClasificacionButton,
             handleComunidadButton,
             handleSonidosButton,
+            handlePaseButton,
         ],
         async (client, interaction) => {
             if (interaction.customId !== "paneladmin_home") return false;
@@ -155,6 +159,7 @@ module.exports = {
         handleSettingsModal,
         handlePlexModal,
         handleSonidosModal,
+        handlePaseModal,
         handleSeerrModal,
         handleBankModal,
         handleApodosModal,
@@ -183,6 +188,7 @@ module.exports = {
         handleSeerrChannelSelect,
         handleApuestasChannelSelect,
         handleClasificacionChannelSelect,
+        handlePaseChannelSelect,
     ]),
 
     handleStringSelect: manejador("handleStringSelect", "Error al procesar selector.", [
@@ -190,6 +196,7 @@ module.exports = {
         handleSistemaSelect,
         handlePlexStringSelect,
         handleSonidosStringSelect,
+        handlePaseStringSelect,
         handleComunidadStringSelect,
         handleLevelsStringSelect,
     ]),

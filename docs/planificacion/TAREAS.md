@@ -571,3 +571,9 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] 🏅 Liga: el menú de competición cambia la clasificación; la general sigue igual.
 - [ ] `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio: con horas > 0, quien suele jugar y no ha enviado la quiniela recibe el DM antes del cierre (una sola vez).
 - [ ] Lunes tras las 10:00: DM del resumen semanal de apuestas, una sola vez por semana. 🔔 en la ficha de un partido: crear una alerta y comprobar que llega el DM al cruzar la cuota.
+
+**Fase 5: pase de batalla (#300, #331, #332, #334, #335, #338, #344, #348, #353, #359, #364)**
+- [ ] `/pase` → 📊 Topes: lo usado hoy por categoría; 🏆 Top: tu puesto y lo que falta si no estás entre los 10; 🕰️ Historial tras cambiar de temporada.
+- [ ] Completar las tres misiones del día: +100 XP una vez; tres días seguidos: +100 XP más (racha). Las misiones de tienda y de logro aparecen algún día.
+- [ ] `/paneladmin` → 🛡️ Pase: cambiar un tope y comprobar que el siguiente mensaje ya lo respeta; elegir canal de anuncios y subir de nivel; poner un objeto en un nivel y reclamarlo; desactivar el pase.
+- [ ] Último día de la temporada: DM con las recompensas sin cobrar (una sola vez). Ganar un reto: +15 XP de pase.
