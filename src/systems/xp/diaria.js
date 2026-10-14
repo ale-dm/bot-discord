@@ -1,9 +1,9 @@
 // La XP final (con multiplicadores y racha) que cada persona ha ganado cada día, en hora de Madrid: lo que mira el tope
-// diario (#352) y los logros de XP en un solo día (#383). Solo hace falta el día actual; se guarda una semana de margen.
+// diario (#352) y los logros de XP en un solo día (#383). Se guardan dos semanas: hace falta la semana anterior entera para la clasificación semanal (#391).
 const db = require("../../core/db");
 const { sumarDias } = require("../../core/zonaMadrid");
 
-const DIAS_CONSERVADOS = 7;
+const DIAS_CONSERVADOS = 14;
 
 /** La XP que lleva ganada alguien en un día («AAAA-MM-DD»). */
 function xpDeHoy(guildId, userId, dia) {
@@ -19,7 +19,7 @@ function sumar(guildId, userId, dia, xp) {
     return xpDeHoy(guildId, userId, dia);
 }
 
-/** Borra los días de hace más de una semana. */
+/** Borra los días de hace más de dos semanas. */
 function limpiar(hoy) {
     return db.prepare("DELETE FROM xp_diaria WHERE dia < ?").run(sumarDias(hoy, -DIAS_CONSERVADOS)).changes;
 }

@@ -151,6 +151,10 @@ function nodoOtros(flat) {
         clasificacion: {
             canal: flat["clasificacion.canal"],
             premio: flat["clasificacion.premio"],
+            premio_rico: flat["clasificacion.premio_rico"],
+            premio_activo: flat["clasificacion.premio_activo"],
+            premio_apostador: flat["clasificacion.premio_apostador"],
+            premio_constante: flat["clasificacion.premio_constante"],
             ultima_semana: flat["clasificacion.ultima_semana"],
         },
         liga: {

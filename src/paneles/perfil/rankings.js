@@ -9,6 +9,7 @@ const { duracion } = require("../../systems/plexRankingSemanal");
 const { filaPestanasPerfil } = require("../pestanasPerfil");
 const { MEDALLAS } = require("./basicos");
 const { buildTopEmbed } = require("./embeds");
+const semana = require("./rankingsSemana");
 
 const RANKINGS = {
     nivel: "📈 Nivel",
@@ -19,6 +20,9 @@ const RANKINGS = {
     plex: "🍿 Plex",
     apuestas: "⚽ Apostadores",
     rachas: "🔥 Rachas",
+    semana: "📅 Esta semana",
+    semanas: "🗓️ Semanas",
+    patrimonio: "🏦 Patrimonio neto",
 };
 
 /** ⚽ Apostadores (F-AP-03): beneficio en apuestas, % de acierto en partidos y mejor racha de partidos ganados seguidos. */
@@ -108,6 +112,9 @@ function embedRankingFijo(guild, tipo, viewerId) {
     if (tipo === "plex") return embedRankingPlex(guild.id);
     if (tipo === "apuestas") return embedRankingApuestas();
     if (tipo === "rachas") return embedRankingRachas(guild.id, viewerId);
+    if (tipo === "semana") return semana.embedEstaSemana(guild.id);
+    if (tipo === "semanas") return semana.embedSemanas(guild.id);
+    if (tipo === "patrimonio") return semana.embedPatrimonioNeto();
     return null;
 }
 

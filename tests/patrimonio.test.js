@@ -72,7 +72,7 @@ describe("ciclo (aplicarCiclo)", () => {
     });
 
     test("con destino sumidero, el impuesto desaparece y el bote no cambia", () => {
-        patrimonio.guardarConfiguracion({ ...patrimonio.DEFECTO, destino: "sumidero" });
+        patrimonio.guardarConfiguracion({ ...patrimonio.DEFECTO, destino: "sumidero", rolesExentos: [] });
         const u = nuevo(100000);
         patrimonio.aplicarCiclo(u, patrimonio.configuracion());
         expect(impuestos.boteTotal(G)).toBe(0);
@@ -125,7 +125,14 @@ describe("configuración", () => {
     test("guarda una configuración válida y la devuelve", () => {
         const r = patrimonio.guardarConfiguracion({ umbral: "80000", porcentaje: "2", interes: "1", dias: "14", destino: "Sumidero" });
         expect(r.ok).toBe(true);
-        expect(patrimonio.configuracion()).toEqual({ umbral: 80000, porcentaje: 2, interes: 1, dias: 14, destino: "sumidero" });
+        expect(patrimonio.configuracion()).toEqual({
+            umbral: 80000,
+            porcentaje: 2,
+            interes: 1,
+            dias: 14,
+            destino: "sumidero",
+            rolesExentos: [],
+        });
     });
 
     test("rechaza valores fuera de rango", () => {

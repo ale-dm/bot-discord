@@ -93,6 +93,10 @@ const DEFAULT_FLAT = {
 
     "clasificacion.canal": "",
     "clasificacion.premio": 500,
+    "clasificacion.premio_rico": -1,
+    "clasificacion.premio_activo": -1,
+    "clasificacion.premio_apostador": -1,
+    "clasificacion.premio_constante": -1,
     "clasificacion.ultima_semana": "",
     "liga.premio_1": 5000,
     "liga.premio_2": 2500,
@@ -191,6 +195,10 @@ const KEY_TYPES = {
 
     "clasificacion.canal": "string",
     "clasificacion.premio": "number",
+    "clasificacion.premio_rico": "number",
+    "clasificacion.premio_activo": "number",
+    "clasificacion.premio_apostador": "number",
+    "clasificacion.premio_constante": "number",
     "clasificacion.ultima_semana": "string",
     "liga.premio_1": "number",
     "liga.premio_2": "number",

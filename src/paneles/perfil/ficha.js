@@ -3,6 +3,9 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const dinero = require("../../systems/dinero");
 const xp = require("../../systems/xpSystem");
+const privacidad = require("../../systems/privacidadEconomia");
+const premiosSemanales = require("../../systems/clasificacion/historial");
+const avisoDomingo = require("../../systems/clasificacion/avisoDomingo");
 const plexLinks = require("../../systems/plexLinks");
 const plexTrofeos = require("../../systems/plexTrofeos");
 const plexIdiomas = require("../../systems/plexIdiomas");
@@ -15,12 +18,24 @@ const { buildProfileEmbed, buildRewardsEmbed } = require("./embeds");
 async function buildPerfil(guild, ownerId, targetId) {
     const propio = ownerId === targetId;
     const embed = await buildProfileEmbed(guild, targetId, plexTrofeos.opcionesPerfil(guild.id, targetId, propio));
-    const c = dinero.cuenta(targetId);
-    embed.addFields({
-        name: "💰 Dinero",
-        value: `💵 ${c.efectivo.toLocaleString("es")} · 🏦 ${c.banco.toLocaleString("es")}`,
-        inline: true,
-    });
+    // 🙈 Quien oculta su economía (#377) no enseña su dinero a los demás.
+    if (privacidad.puedeVer(ownerId, targetId)) {
+        const c = dinero.cuenta(targetId);
+        embed.addFields({
+            name: "💰 Dinero",
+            value: `💵 ${c.efectivo.toLocaleString("es")} · 🏦 ${c.banco.toLocaleString("es")}`,
+            inline: true,
+        });
+    }
+    // 🏆 Los premios de la clasificación semanal que ha ganado (#355).
+    const premios = premiosSemanales.premiosDe(targetId);
+    if (premios.total > 0) {
+        embed.addFields({
+            name: "🏆 Premios semanales",
+            value: `**${premios.total}** (último: <t:${Math.floor(new Date(premios.ultimo).getTime() / 1000)}:D>)`,
+            inline: true,
+        });
+    }
     // 💬 La presentación que cada uno escribe con /presentacion (#430).
     const presentacion = presentaciones.obtener(targetId);
     if (presentacion) embed.addFields({ name: "💬 Presentación", value: presentaciones.escapar(presentacion), inline: false });
@@ -42,6 +57,13 @@ async function buildPerfil(guild, ownerId, targetId) {
             new ButtonBuilder().setCustomId(`presentacion_editar_${ownerId}`).setLabel("✏️ Presentación").setStyle(ButtonStyle.Secondary),
         );
         // 📢 No anunciar mis subidas de nivel en el canal (#373): el botón muestra el estado y lo cambia.
+        const avisame = avisoDomingo.activo(guild.id, ownerId);
+        extra.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`perfil_domingo_${ownerId}_${targetId}_${avisame ? 0 : 1}`)
+                .setLabel(avisame ? "🔔 Aviso del domingo: sí" : "🔔 Aviso del domingo: no")
+                .setStyle(ButtonStyle.Secondary),
+        );
         const sinAnuncios = xp.anunciosOff(guild.id, ownerId);
         extra.addComponents(
             new ButtonBuilder()

@@ -595,3 +595,9 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] 📜 Movimientos → 📤 Exportar: abrir el CSV en Excel y ver las tildes y las columnas.
 - [ ] 🏪 Negocios: mejorar un negocio, ver el nuevo blanqueo/ingreso y vender (50 % de todo lo pagado).
 - [ ] Impuestos: 📊 un tramo en una regla de ingreso; 🎯 una meta pequeña del bote; 💼 sueldo a un rol y comprobar el pago (una sola vez al día).
+
+**Fase 8: perfil, clasificación y patrimonio (#347, #350, #355, #360, #368, #372, #377, #388, #391, #394, #397, #401)**
+- [ ] 💰 Economía: «Próximo cobro de patrimonio» con su estimación, resumen 🏦 Patrimonio y barras de los últimos 30 días (al día siguiente de arrancar con la migración ya hay una fila). 🙈 Ocultar mi economía y mirarlo con otra cuenta (perfil, economía y movimientos).
+- [ ] Clasificación: 🏆 Rankings → 📅 Esta semana (con y sin canal configurado) y 🗓️ Semanas tras la primera publicación; el lunes, premios distintos por categoría (🪙 Por categoría) y la nueva categoría 📆 El más constante.
+- [ ] 👤 Perfil: «Premios semanales» tras ganar uno y 🔔 Aviso del domingo (activarlo con otra cuenta que vaya primera y comprobar el DM el domingo a las 20:00).
+- [ ] Impuestos → 🏦 Patrimonio → 🎭 Roles exentos con un rol de prueba; 🏆 Rankings → 🏦 Patrimonio neto (comprobar que cuenta cripto y negocios).

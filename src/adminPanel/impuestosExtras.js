@@ -5,8 +5,9 @@ const tramos = require("../systems/impuestos/tramos");
 const meta = require("../systems/impuestos/meta");
 const impuestos = require("../systems/impuestos");
 const sueldos = require("../systems/sueldos");
+const patrimonio = require("../systems/patrimonio");
 const adminAudit = require("../systems/adminAudit");
-const { simpleModal, modalConCampos, rolElegido } = require("./common");
+const { simpleModal, modalConCampos, rolElegido, rolesElegidos } = require("./common");
 const { fmtNumero } = require("../core/formato");
 
 const privado = (content) => ({ content, flags: MessageFlags.Ephemeral });
@@ -50,6 +51,17 @@ function buildSueldos(guildId, aviso = "") {
 }
 
 const FORMULARIOS = {
+    paneladmin_impuestos_exentos: () =>
+        modalConCampos("paneladmin_impuestos_exentos_modal", "Roles exentos del patrimonio", [
+            {
+                id: "roles",
+                label: "Roles exentos (ninguno = quitar todos)",
+                tipo: "rol",
+                multiple: true,
+                valores: patrimonio.configuracion().rolesExentos,
+                required: false,
+            },
+        ]),
     paneladmin_impuestos_tramo: () =>
         simpleModal("paneladmin_impuestos_tramo_modal", "Tramo de una regla", [
             { id: "regla", label: "ID de la regla de ingreso" },
@@ -118,8 +130,22 @@ async function guardarSueldo(interaction) {
         : interaction.reply(privado(r.mensaje));
 }
 
+/** Guarda los roles exentos del impuesto de patrimonio (#397): siguen cobrando el interés. */
+async function guardarExentos(interaction) {
+    const rolesExentos = rolesElegidos(interaction.fields, "roles");
+    const r = patrimonio.guardarConfiguracion({ ...patrimonio.configuracion(), rolesExentos });
+    if (!r.ok) return interaction.reply(privado(`❌ ${r.mensaje}`));
+    auditar(interaction, "impuestos.patrimonio.exentos", { rolesExentos });
+    return interaction.reply(
+        privado(
+            rolesExentos.length ? `✅ Exentos del impuesto: ${rolesExentos.map((x) => `<@&${x}>`).join(" ")}.` : "✅ Ningún rol exento.",
+        ),
+    );
+}
+
 async function modal(interaction) {
     const id = interaction.customId;
+    if (id === "paneladmin_impuestos_exentos_modal") return (await guardarExentos(interaction), true);
     if (id === "paneladmin_impuestos_tramo_modal") return (await guardarTramo(interaction), true);
     if (id === "paneladmin_impuestos_meta_modal") return (await guardarMeta(interaction), true);
     if (id === "paneladmin_impuestos_sueldo_modal") return (await guardarSueldo(interaction), true);

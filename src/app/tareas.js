@@ -19,6 +19,9 @@ const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
 const resumenApuestas = require("../systems/apuestas/resumenSemanal");
 const recordatorioLogros = require("../systems/logros/recordatorio");
+const patrimonioDiario = require("../systems/patrimonioDiario");
+const avisoDomingo = require("../systems/clasificacion/avisoDomingo");
+const { embedDomingo } = require("../discord/mensajes/clasificacionDomingo");
 const tienda = require("../systems/tienda");
 const mercado = require("../systems/mercado");
 const sueldos = require("../systems/sueldos");
@@ -244,6 +247,22 @@ function programarRetosYEconomia(client) {
     // 💼 Cada hora: el sueldo diario por rol (una vez por día y persona, con registro en la base de datos, #416) y la meta
     // comunitaria del bote (#415).
     cron.schedule("20 * * * *", () => runJob("Sueldos y meta del bote", () => economiaComunitaria(client)), { noOverlap: true });
+    // 📈 Al empezar el día, el efectivo + banco de cada persona para la gráfica de 💰 Economía (#388); al arrancar guarda el de hoy
+    // si el bot estaba apagado a esa hora.
+    runJob("Patrimonio diario (arranque)", () => patrimonioDiario.guardarHoy());
+    cron.schedule("5 0 * * *", () => runJob("Patrimonio diario", () => patrimonioDiario.guardarHoy()), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    // 🏆 El domingo a las 20:00, a quien lo haya pedido y vaya primero en la clasificación de la semana (#394).
+    cron.schedule(
+        "0 20 * * 0",
+        () => runJob("Aviso del domingo de la clasificación", () => avisoDomingo.avisarLideres(client, embedDomingo)),
+        {
+            timezone: "Europe/Madrid",
+            noOverlap: true,
+        },
+    );
     // 🏦 Patrimonio: cada persona tiene su ciclo semanal (interés del banco e impuesto sobre lo que pasa del umbral).
     cron.schedule("0 * * * *", () => runJob("Patrimonio", () => patrimonio.revisar()), {
         noOverlap: true,

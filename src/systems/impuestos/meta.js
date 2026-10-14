@@ -5,6 +5,8 @@
 const db = require("../../core/db");
 const dinero = require("../dinero");
 const { boteTotal } = require("../impuestos");
+const { madridDateStr } = require("../xp/rachas");
+const { sumarDias } = require("../../core/zonaMadrid");
 
 const SEMANA_DIAS = 7;
 
@@ -33,10 +35,11 @@ function quitar(guildId) {
 }
 
 /** Quienes han participado: han ganado XP en los últimos días con registro (xp_diaria guarda una semana). */
-function participantes(guildId, esMiembro = () => true) {
+function participantes(guildId, esMiembro = () => true, ahora = Date.now()) {
+    const desde = sumarDias(madridDateStr(new Date(ahora)), -(SEMANA_DIAS - 1));
     return db
-        .prepare("SELECT DISTINCT userId FROM xp_diaria WHERE guildId = ? AND xp > 0")
-        .all(guildId)
+        .prepare("SELECT DISTINCT userId FROM xp_diaria WHERE guildId = ? AND xp > 0 AND dia >= ?")
+        .all(guildId, desde)
         .map((r) => r.userId)
         .filter(esMiembro);
 }
@@ -48,7 +51,7 @@ function participantes(guildId, esMiembro = () => true) {
 function comprobar(guildId, esMiembro = () => true, ahora = Date.now()) {
     const m = obtener(guildId);
     if (!m || m.cumplida_en || boteTotal(guildId) < m.meta) return null;
-    const gente = participantes(guildId, esMiembro);
+    const gente = participantes(guildId, esMiembro, ahora);
     if (!gente.length) return null;
     const porPersona = Math.min(m.recompensa, Math.floor(m.meta / gente.length));
     if (porPersona < 1) return null;

@@ -47,6 +47,12 @@ const TIPOS = [
         nombre: "Lista de deseos",
         detalle: "Cuando un objeto que sigues en la tienda vuelve a tener stock o baja de precio",
     },
+    {
+        id: "clasificacion_domingo",
+        emoji: "🏆",
+        nombre: "Clasificación del domingo",
+        detalle: "Si lo activas en tu perfil: el domingo, si vas primero en la clasificación semanal",
+    },
     { id: "pedido_seerr", emoji: "📥", nombre: "Pedidos de Seerr", detalle: "Cuando lo que pediste ya está disponible" },
     { id: "robo", emoji: "🥷", nombre: "Robos", detalle: "Cuando alguien intenta robarte" },
     { id: "cripto_evento", emoji: "📈", nombre: "Eventos de TTCL", detalle: "Cuando el mercado sube o baja por un evento" },

@@ -404,7 +404,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores · 🔥 Rachas |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores · 🔥 Rachas · 📅 Esta semana · 🗓️ Semanas · 🏦 Patrimonio neto |
 
 **🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
 admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
@@ -536,17 +536,20 @@ Motor de impuestos configurable por servidor, sin ningún % fijo en el código. 
 ### 🏆 Clasificación semanal con premios (F-EC-03)
 
 Cada **lunes a las 10:00** (hora de Madrid) se publica en el canal de la clasificación y se paga un premio al 💵 efectivo
-(500 🪙 por defecto, tipo 🏆 Premios en Movimientos, con el impuesto de ingresos del servidor) a:
+(500 🪙 por defecto, o el premio propio de cada categoría; tipo 🏆 Premios en Movimientos, con el impuesto de ingresos del servidor) a:
 
 - 💰 **El más rico**: más efectivo + banco en ese momento (el dinero es global, como 🏆 Rankings → Riqueza).
 - 💬 **El más activo**: más XP ganada en el servidor desde la clasificación anterior (la primera, desde que se instaló).
 - ⚽ **El mejor apostador**: más beneficio en las apuestas resueltas la semana anterior, de lunes a domingo (partidos por
   el día del partido, quinielas por el día en que se cerraron), solo si ganó algo.
+- 📆 **El más constante**: más días distintos con XP en la semana anterior; en empate, más XP esa semana.
 
 Se menciona a los premiados (solo a ellos les llega el aviso), y una misma persona puede llevarse más de un premio. Si
 una categoría no tiene a nadie (nadie ha ganado XP o nadie ha ganado apostando), no se da. Se configura en `/paneladmin`
-→ ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio y quién ganaría si fuera
+→ ⚙️ Config Global → 🏆 Semanal: el canal (sin canal, ni se publica ni se paga nada), el premio general y el de cada categoría y quién ganaría si fuera
 ahora.
+
+Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** enseña las últimas 8 y **📅 Esta semana** la carrera en curso (XP desde el último corte y cuándo se publica la próxima). Tu perfil cuenta los premios semanales que has ganado. Con el botón **🔔 Aviso del domingo** de 👤 Perfil, si vas primero en alguna categoría, el domingo a las 20:00 te llega un DM con lo que cobrarías.
 
 ---
 
@@ -562,6 +565,8 @@ defecto) y en cada ciclo se hace lo siguiente, en este orden:
 El impuesto va al **bote** del servidor donde se usó la economía por última vez, o desaparece si el destino es
 sumidero. Todo se configura en Panel admin → Config Global → 🏛️ Impuestos → 🏦 Patrimonio. El primer ciclo de cada
 persona solo marca su fecha, sin cobrar.
+
+En tu 💰 Economía ves el **próximo cobro** con una estimación (mismo cálculo que el ciclo real), un resumen de lo cobrado (interés, impuesto y neto, desde siempre y del último mes) y la evolución de tu dinero de los últimos 30 días. Un admin puede eximir del impuesto a unos **roles** (siguen cobrando el interés). **🙈 Ocultar mi economía** impide que los demás vean tu dinero y tus movimientos. 🏆 Rankings → **🏦 Patrimonio neto** suma efectivo, banco, negocios y cripto valorada.
 
 **Tramos, meta y sueldos** (Panel admin → Config Global → Impuestos): 📊 una regla de ingreso puede tener **tramos** (cada parte del ingreso paga el porcentaje de su tramo); 🎯 una **meta del bote** reparte el bote entre quien ha ganado XP en la última semana al llegar a la cifra; 💼 un **sueldo diario por rol** de Discord se paga cada día a quien lo tenga (suma de roles, con impuesto).
 

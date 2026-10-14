@@ -75,6 +75,12 @@ async function preferencia(interaction, accion, parts, userId, targetId) {
         });
         return true;
     }
+    // perfil_domingo_{o}_{t}_{1|0}: activar (1) o quitar (0) el aviso del domingo si vas primero en la clasificación semanal.
+    if (accion === "domingo") {
+        require("../../systems/clasificacion/avisoDomingo").fijar(interaction.guildId, userId, parts[4] === "1");
+        await interaction.update(await pantalla(interaction, "perfil", userId, targetId));
+        return true;
+    }
     // perfil_anuncios_{o}_{t}_{1|0}: dejar de anunciar (1) o volver a anunciar (0) tus subidas de nivel en el canal.
     if (accion === "anuncios") {
         xp.setAnunciosOff(interaction.guildId, userId, parts[4] === "1");

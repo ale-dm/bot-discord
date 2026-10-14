@@ -20,24 +20,26 @@ function buildClasificacionHome(guildId, aviso = "") {
     const semana = clasificacion.semanaAnterior();
     const g = clasificacion.ganadores(guildId, semana);
     const quien = (x, detalle) => (x ? `<@${x.userId}> (${detalle(x)})` : "nadie");
+    const premios = clasificacion.CATEGORIAS.map((c) => `${c.emoji} ${fmtNumero(clasificacion.premioDe(cfg, c.id))}`).join(" · ");
     const embed = new EmbedBuilder()
         .setTitle("🏆 Clasificación semanal")
         .setDescription(
             (aviso ? `${aviso}\n\n` : "") +
                 "Cada lunes a las 10:00 (hora de Madrid) se publica en su canal y se paga el premio al efectivo de: 💰 el más rico " +
-                "(efectivo + banco), 💬 el más activo (más XP ganada desde la anterior) y ⚽ el mejor apostador (más beneficio en lo " +
-                "resuelto la semana anterior, si ganó algo).",
+                "(efectivo + banco), 💬 el más activo (más XP ganada desde la anterior), ⚽ el mejor apostador (más beneficio en lo " +
+                "resuelto la semana anterior, si ganó algo) y 📆 el más constante (más días con XP en la semana).",
         )
         .addFields(
             { name: "📢 Canal", value: cfg.canal ? `<#${cfg.canal}>` : "Ninguno: no se publica ni se paga nada", inline: true },
-            { name: "🪙 Premio", value: `**${fmtNumero(cfg.premio)}** 🪙 por categoría`, inline: true },
+            { name: "🪙 Premios", value: `General **${fmtNumero(cfg.premio)}** 🪙\n${premios}`, inline: true },
             { name: "📅 Última", value: cfg.ultima_semana ? `semana del ${cfg.ultima_semana}` : "todavía ninguna", inline: true },
             {
                 name: "👀 Si fuera ahora",
                 value:
                     `💰 ${quien(g.rico, (x) => `${fmtNumero(x.total)} 🪙`)}\n` +
                     `💬 ${quien(g.activo, (x) => `+${fmtNumero(x.xp)} XP`)}\n` +
-                    `⚽ ${quien(g.apostador, (x) => `+${fmtNumero(x.beneficio)} 🪙`)}`,
+                    `⚽ ${quien(g.apostador, (x) => `+${fmtNumero(x.beneficio)} 🪙`)}\n` +
+                    `📆 ${quien(g.constante, (x) => `${x.dias} días`)}`,
             },
         )
         .setColor(0xf1c40f)
@@ -49,7 +51,8 @@ function buildClasificacionHome(guildId, aviso = "") {
             .setLabel("🔕 Quitar canal")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(!cfg.canal),
-        new ButtonBuilder().setCustomId("paneladmin_semanal_premio").setLabel("🪙 Premio").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_semanal_premio").setLabel("🪙 Premio general").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_semanal_premios").setLabel("🪙 Por categoría").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_cfg_home").setLabel("⚙️ Config Global").setStyle(ButtonStyle.Secondary),
     );
     return { content: "", embeds: [embed], components: [fila] };
@@ -93,7 +96,51 @@ async function handleClasificacionButton(interaction) {
         );
         return true;
     }
+    if (id === "paneladmin_semanal_premios") {
+        const cfg = guildSettings.getSettings(interaction.guildId).clasificacion;
+        await interaction.showModal(
+            simpleModal(
+                "paneladmin_semanal_premios_modal",
+                "Premio de cada categoría",
+                clasificacion.CATEGORIAS.map((c) => ({
+                    id: c.id,
+                    label: `${c.nombre} (vacío = el general)`.slice(0, 45),
+                    value: Number(cfg[`premio_${c.id}`]) >= 0 ? String(cfg[`premio_${c.id}`]) : "",
+                    required: false,
+                })),
+            ),
+        );
+        return true;
+    }
     return false;
+}
+
+/** Guarda el premio de cada categoría (#372): vacío = usa el general (-1); si no, un entero de 0 a 1.000.000. */
+async function guardarPremios(interaction) {
+    const valores = {};
+    for (const c of clasificacion.CATEGORIAS) {
+        const texto = interaction.fields.getTextInputValue(c.id).trim();
+        const n = texto === "" ? -1 : Number(texto);
+        if (!Number.isInteger(n) || n < -1 || n > 1_000_000 || (texto !== "" && n < 0)) {
+            await interaction.reply({
+                content: `❌ ${c.nombre}: un número entero de 0 a 1.000.000, o vacío para usar el premio general.`,
+                flags: MessageFlags.Ephemeral,
+            });
+            return true;
+        }
+        valores[`clasificacion.premio_${c.id}`] = n;
+    }
+    guildSettings.setManySettings(interaction.guildId, valores);
+    adminAudit.logAdminAction({
+        guildId: interaction.guildId,
+        actorId: interaction.user.id,
+        action: "clasificacion.premios",
+        details: valores,
+    });
+    const payload = buildClasificacionHome(interaction.guildId, "✅ Premios por categoría actualizados.");
+    if (interaction.isFromMessage?.()) await interaction.update(payload);
+    else await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+    return true;
 }
 
 async function handleClasificacionChannelSelect(interaction) {
@@ -114,6 +161,7 @@ async function handleClasificacionChannelSelect(interaction) {
 }
 
 async function handleClasificacionModal(interaction) {
+    if (interaction.customId === "paneladmin_semanal_premios_modal") return guardarPremios(interaction);
     if (interaction.customId !== "paneladmin_semanal_premio_modal") return false;
     const premio = Number(interaction.fields.getTextInputValue("premio").trim());
     if (!Number.isInteger(premio) || premio < 0 || premio > 1_000_000) {

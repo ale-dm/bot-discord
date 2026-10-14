@@ -32,6 +32,8 @@ for (const ruta of [
     "../src/juegos/retos/retos",
     "../src/juegos/retos/duende",
     "../src/systems/negocios",
+    "../src/systems/patrimonioDiario",
+    "../src/systems/clasificacion/avisoDomingo",
     "../src/systems/mercado",
     "../src/systems/sueldos",
     "../src/systems/impuestos/meta",
@@ -65,8 +67,8 @@ test("al ejecutarse, cada tarea hace su trabajo sin errores", async () => {
 
 const horarios = () => cron.schedule.mock.calls.map(([expr, , opts]) => ({ expr, timezone: opts?.timezone }));
 
-test("se programan 28 tareas de cron, una por cada trabajo del bot", () => {
-    expect(cron.schedule).toHaveBeenCalledTimes(28);
+test("se programan 30 tareas de cron, una por cada trabajo del bot", () => {
+    expect(cron.schedule).toHaveBeenCalledTimes(30);
 });
 
 test("las tareas que dependen de la hora de Madrid llevan esa zona", () => {

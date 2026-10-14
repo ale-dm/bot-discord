@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 8 del plan restante: perfil, clasificación y patrimonio)
+
+- **⏳ Próximo cobro de patrimonio** (#347): en tu 💰 Economía, cuándo es y lo que cobraría si el ciclo fuera ahora (mismo cálculo que el ciclo real, sin tocar nada). Sin ciclo marcado, dice que el conteo empieza en el próximo chequeo horario. Solo en la propia.
+- **🏦 Resumen de patrimonio** (#350): interés cobrado, impuesto de patrimonio pagado y neto, desde siempre y del último mes; el impuesto de ingresos no cuenta. Sin cobros: «Sin cobros de patrimonio todavía».
+- **🏆 Premios semanales en el perfil** (#355): «Premios semanales: N (último: fecha)» en 👤 Perfil, solo si N > 0 y solo los de la clasificación. Solo el total, sin desglose.
+- **🗓️ Histórico de ganadores** (#360): cada publicación guarda el ganador de cada categoría en la misma transacción que el pago; 🏆 Rankings → 🗓️ Semanas enseña las últimas 8 (las anteriores salen vacías).
+- **📅 Esta semana** (#368): 🏆 Rankings → 📅 Esta semana, top 10 por XP desde el último corte y cuándo se publica la próxima. Sin canal de clasificación avisa de que no hay cortes.
+- **🪙 Premio por categoría** (#372): Config Global → 🏆 Semanal → 🪙 Por categoría; vacío usa el premio general (los servidores existentes no cambian). El mensaje lleva el premio de cada línea si no son iguales. Quien gana dos categorías cobra la suma.
+- **🙈 Ocultar mi economía** (#377): botón en tu 💰 Economía. Los demás no ven tu dinero ni tus movimientos (ni en 👤 Perfil ni en 💰 Economía); tú sí. 🏆 Rankings → Riqueza no cambia.
+- **📈 Últimos 30 días** (#388): cada día, a las 00:05, se guarda tu efectivo + banco (también al arrancar si faltaba); 💰 Economía enseña hasta 30 barras de texto y el cambio neto. Se guardan 35 días.
+- **📆 El más constante** (#391): categoría nueva de la clasificación semanal: más días con XP en la semana anterior y, en empate, más XP. Usa la tabla de XP diaria de la fase 6, que ahora guarda 14 días.
+- **🔔 Aviso del domingo** (#394): botón en 👤 Perfil; si está activo y vas primero en alguna categoría, el domingo a las 20:00 te llega un DM con lo que cobrarías (solo al primero; uno por semana). Por defecto desactivado; también se apaga en `/avisos`.
+- **🎭 Roles exentos del patrimonio** (#397): Impuestos → 🏦 Patrimonio → 🎭 Roles exentos. No pagan el impuesto (siguen cobrando el interés); quien pierde el rol paga en su siguiente ciclo.
+- **🏦 Patrimonio neto** (#401): 🏆 Rankings → 🏦 Patrimonio neto: efectivo + banco + negocios (lo pagado) + cripto valorada, sin dinero negro, con una sola lectura del precio y un minuto de caché. El premio «más rico» no cambia.
+- Migración 066. DM nuevo: «Clasificación del domingo» en `/avisos` (22 tipos). Tareas: «Patrimonio diario» y «Aviso del domingo de la clasificación». Tests: `tests/perfilFase8.test.js`.
+
 ## 2026-10-14 (fase 7 del plan restante: economía, tienda e impuestos)
 
 - **🎁 Regalar** (#302): `/tienda` → 🎒 Inventario → 🎁 Gestionar → elegir objeto → 🎁 Regalar → persona → confirmar. Cambia de dueño sin mover monedas y queda en 📜 Movimientos de los dos (tipo 🎒 Objetos). No a un bot, a uno mismo, a quien no está en el servidor, a quien ya tiene un objeto único, ni objetos de protección (antirrobo y trampa; tampoco se pueden vender en el mercado).

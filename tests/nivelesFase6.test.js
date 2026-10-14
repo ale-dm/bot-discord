@@ -93,10 +93,10 @@ describe("logros de racha (#336) y de XP en un día (#383)", () => {
     });
 
     test("la XP diaria de hace más de una semana se borra", () => {
-        diaria.sumar("g", "u", "2026-10-01", 5);
+        diaria.sumar("g", "u", "2026-09-20", 5);
         diaria.sumar("g", "u", "2026-10-09", 5);
         diaria.limpiar("2026-10-10");
-        expect(diaria.xpDeHoy("g", "u", "2026-10-01")).toBe(0);
+        expect(diaria.xpDeHoy("g", "u", "2026-09-20")).toBe(0);
         expect(diaria.xpDeHoy("g", "u", "2026-10-09")).toBe(5);
     });
 });

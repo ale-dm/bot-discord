@@ -8,6 +8,7 @@ const dinero = require("../systems/dinero");
 const economia = require("../paneles/economia");
 const { importeElegido } = require("../paneles/importes");
 const prestamos = require("../systems/prestamos");
+const privacidad = require("../systems/privacidadEconomia");
 const negocios = require("../systems/negocios");
 const tienda = require("../systems/tienda");
 const guildSettings = require("../systems/guildSettings");
@@ -62,7 +63,17 @@ function abrirSacar(interaction) {
 function movimientos(interaction) {
     const userId = interaction.user.id;
     const [tipo, pagina, targetId = userId] = interaction.customId.replace("dinero_mov_", "").split("_");
+    // Los movimientos de quien ha ocultado su economía no se enseñan a los demás (#377).
+    if (!privacidad.puedeVer(userId, targetId)) {
+        return interaction.reply({ content: "🙈 Esa persona ha ocultado su economía.", flags: MessageFlags.Ephemeral });
+    }
     return interaction.update(economia.buildMovimientos(userId, targetId, tipo, Math.max(0, parseInt(pagina, 10) || 0)));
+}
+
+// 🙈 Ocultar (1) o enseñar (0) tu economía a los demás (#377).
+function ocultarEconomia(interaction) {
+    privacidad.fijar(interaction.user.id, interaction.customId === "dinero_privada_1");
+    return interaction.update(economiaPropia(interaction));
 }
 
 // 📤 Exporta tus movimientos (con el filtro activo) a un CSV que solo ves tú (#411).
@@ -129,6 +140,7 @@ const RUTAS_BOTON = [
     // dinero_mov_{tipo}_{pagina}[_{de quién}] (sin "de quién", los tuyos: mensajes de antes).
     [(id) => id.startsWith("dinero_mov_"), movimientos],
     [(id) => id.startsWith("dinero_exportar_"), exportarMovimientos],
+    [(id) => id === "dinero_privada_0" || id === "dinero_privada_1", ocultarEconomia],
 ].map(([encaja, manejador]) => [typeof encaja === "string" ? (id) => id === encaja : encaja, manejador]);
 
 module.exports = {
@@ -165,6 +177,9 @@ module.exports = {
         // dinero_filtro_{de quién}
         if (interaction.customId.startsWith("dinero_filtro_")) {
             const targetId = interaction.customId.replace("dinero_filtro_", "") || userId;
+            if (!privacidad.puedeVer(userId, targetId)) {
+                return interaction.reply({ content: "🙈 Esa persona ha ocultado su economía.", flags: MessageFlags.Ephemeral });
+            }
             return interaction.update(economia.buildMovimientos(userId, targetId, interaction.values[0], 0));
         }
         if (interaction.customId === "dinero_transferir_a") {

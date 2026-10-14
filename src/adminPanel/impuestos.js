@@ -83,10 +83,15 @@ function buildPatrimonio() {
             { name: "Interés", value: c.interes + " % sobre el banco", inline: true },
             { name: "Cada", value: c.dias + " días", inline: true },
             { name: "Destino", value: c.destino === "bote" ? "→ bote" : "→ desaparece", inline: true },
+            {
+                name: "🎭 Roles exentos del impuesto",
+                value: c.rolesExentos.length ? c.rolesExentos.map((r) => `<@&${r}>`).join(" ") : "Ninguno (siguen cobrando el interés)",
+            },
         )
         .setColor(0x16a085);
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_impuestos_patrimonio_edit").setLabel("✏️ Editar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_exentos").setLabel("🎭 Roles exentos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("◀ Impuestos").setStyle(ButtonStyle.Secondary),
     );
     return { embeds: [embed], components: [row] };
