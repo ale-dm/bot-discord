@@ -47,6 +47,7 @@ const SECCIONES = {
             "`/perfil [usuario] [seccion]` — todo lo tuyo (o de otra persona) en pestañas: 👤 Perfil (nivel, progreso, rango, racha y recompensas de nivel) · 💰 Economía · 🎲 Juegos · 🏅 Logros · 🏆 Rankings. Con Plex vinculado, 👤 Perfil → 🍿 Plex: tus horas, en qué idiomas lo ves y lo que te falta poco.",
             `**Logros**: ${CATALOG.length}, con recompensa en monedas; en 🏅 Logros se ven (también los secretos), se filtran por categoría o dificultad y se reclaman uno a uno o todos. Los de 🍿 Plex (horas vistas, películas, series, anime, maratones...) cuentan lo que ves si tienes la cuenta de Plex vinculada; además hay **trofeos** por terminar cada temporada, serie o saga, por géneros, directores y décadas, y los que crean los admins (algunos con fechas, como eventos), con lo raros que son; **por idioma**: en inglés, VOSE o castellano, y el anime doblado o en japonés con subtítulos; y **sociales**: la misma película que otro el mismo día, verlo en cuanto llega a Plex o ser el primero en ver un estreno. Cada uno tiene dificultad: 🟢 Fácil, 🟡 Normal o 🎰 Gordo del Plex (con rol al llegar a 1, 5 y 10, si los admins lo ponen). Lo que sale al importar tu historial da menos monedas. Con 🍿 Ocultar mis logros de Plex no se anuncian ni los ven los demás. Los domingos te aviso por DM si tienes logros sin reclamar.`,
             "`/avisos` — elige qué DM te manda el bot (racha, partidos, Wrapped, retos, cooldowns...) o apágalos todos con 🌙 no molestar. Las alertas de administración no se pueden apagar.",
+            '`/recordar nuevo cuando texto` te deja un aviso por DM a una hora ("18:30", "mañana 09:00", "en 45 min"; hasta 24 h) y `/recordar lista` los enseña y los borra.',
             "`/cumpleaños fecha dia mes` guarda tu cumpleaños (sin año) para que el bot te felicite en su canal; `ver` enseña los próximos cinco y `borrar` quita el tuyo.",
             "`/encuesta pregunta opcion1 opcion2 [..opcion5] [horas]` — una encuesta con un botón por opción y el recuento en vivo (se cierra a las 24 h, o cuando la cierra quien la creó). `/sugerencia` — envía una idea al buzón del servidor, con 👍 y 👎; un admin la acepta o la descarta y te avisa por DM.",
             "`/presentacion` — una frase sobre ti (hasta 150 caracteres) que sale en 👤 Perfil cuando otra persona abre tu perfil. Enviarla vacía la borra; también se edita con ✏️ Presentación en tu propio perfil.",
@@ -119,7 +120,7 @@ const SECCIONES = {
         titulo: "Cripto",
         abrir: [["cripto", "", "Cripto", "📊"]],
         texto: [
-            "`/cripto` — panel con precios, gráficos, compra, venta, cartera e historial.",
+            "`/cripto` — panel con precios, gráficos, compra, venta (por porcentaje o por monedas), cartera e historial, y 🔔 órdenes: alertas de precio por DM, stop-loss y compra recurrente de TTCL.",
             "**$TTCL**, la moneda del servidor: su precio sube cuando se compra y baja cuando se vende.",
         ],
     },

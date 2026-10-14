@@ -10,6 +10,7 @@ const { CacheLimitada } = require("../../core/cacheLimitada");
 const { gananciaRealizadaTtcl } = require("./ganancias");
 const valoracion = require("./valoracion");
 const { impactoDe, mensajeImpacto } = require("./impacto");
+const consultas = require("./consultas");
 
 // ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
 
@@ -268,15 +269,25 @@ async function ejecutarCompra(guildId, userId, sym, monedasInvertidas) {
     return r;
 }
 
-async function ejecutarVenta(guildId, userId, sym, pct) {
+/** `opciones.ttcl`: vender esa cantidad exacta de TTCL en vez de un porcentaje (la venta por monedas, #365). */
+async function ejecutarVenta(guildId, userId, sym, pct, opciones = {}) {
     if (sym !== "TTCL") return { ok: false, msg: "Esa cripto ya no se opera." };
     if (mercadoPausado(guildId)) return { ok: false, msg: MENSAJE_PAUSA };
     const cfg = guildSettings.getSettings(guildId).cripto;
     const row = db.prepare("SELECT cantidad FROM cripto_carteras WHERE userId = ? AND cripto = 'TTCL'").get(userId);
     if (!row || row.cantidad <= 0) return { ok: false, msg: "No tienes esa cripto en cartera." };
 
-    pct = Math.min(100, Math.max(1, Number(pct) || 0));
-    const cantAVender = row.cantidad * (pct / 100);
+    let cantAVender;
+    if (opciones.ttcl !== undefined) {
+        cantAVender = Number(opciones.ttcl);
+        if (!(cantAVender > 0) || cantAVender > row.cantidad + 1e-9)
+            return { ok: false, msg: "Esa cantidad supera lo que tienes en cartera." };
+        cantAVender = Math.min(cantAVender, row.cantidad);
+        pct = (cantAVender / row.cantidad) * 100;
+    } else {
+        pct = Math.min(100, Math.max(1, Number(pct) || 0));
+        cantAVender = row.cantidad * (pct / 100);
+    }
 
     // Tope de impacto (#454): antes del cooldown, para que una operación rechazada no cuente como hecha.
     const impactoVenta = impactoDe(guildId, cotizarVenta(cantAVender, Number(cfg.fee_sell_pct || 0)));
@@ -331,37 +342,8 @@ function cotizarVenta(ttcl, feePct) {
     return { ttcl, brutas, fee, neto, precioAntes, precioMedio: brutas / ttcl, precioDespues };
 }
 
-/** Movimientos de TTCL de alguien, más recientes primero, paginados. */
-function historialTtcl(userId, limite, offset) {
-    return db
-        .prepare(
-            "SELECT tipo, cantidad, precio, monedas, comision, timestamp FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' ORDER BY timestamp DESC, id DESC LIMIT ? OFFSET ?",
-        )
-        .all(String(userId), limite, offset);
-}
-
-function totalHistorialTtcl(userId) {
-    return db.prepare("SELECT COUNT(*) AS n FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL'").get(String(userId)).n;
-}
-
-/** Coste medio por TTCL de las compras de alguien (lo pagado entre lo comprado). 0 si nunca ha comprado. */
-function costeMedioTtcl(userId) {
-    const r = db
-        .prepare(
-            "SELECT COALESCE(SUM(cantidad), 0) AS unidades, COALESCE(SUM(monedas), 0) AS pagado FROM cripto_historial WHERE userId = ? AND cripto = 'TTCL' AND tipo = 'compra'",
-        )
-        .get(String(userId));
-    return r.unidades > 0 ? r.pagado / r.unidades : 0;
-}
-
-/** Quien más TTCL tiene en cartera. */
-function topTenedoresTtcl(limite = 5) {
-    return db
-        .prepare("SELECT userId, cantidad FROM cripto_carteras WHERE cripto = 'TTCL' AND cantidad > 0 ORDER BY cantidad DESC LIMIT ?")
-        .all(limite);
-}
-
 module.exports = {
+    ...consultas,
     TTCL,
     ALL_CRYPTOS,
 
@@ -370,11 +352,7 @@ module.exports = {
     getTtclPrecio,
     cotizarCompra,
     cotizarVenta,
-    historialTtcl,
-    totalHistorialTtcl,
-    costeMedioTtcl,
     gananciaRealizadaTtcl,
-    topTenedoresTtcl,
     MENSAJE_PAUSA,
     mercadoPausado,
     cooldownRestante,

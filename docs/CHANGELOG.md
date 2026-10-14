@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 9 del plan restante: cripto y recordatorios)
+
+- **💸 Vender por monedas** (#365): 💸 Vender → «✏️ Otra cantidad». Escribes las monedas **netas** que quieres recibir y la vista previa enseña cuánto TTCL se vende; se redondea hacia abajo (nunca recibes más de lo pedido). Si lo pedido supera lo que vale tu posición, se avisa y no se vende nada. Mismos límites `min_sell`/`max_sell` y misma comisión.
+- **🔔 Alertas de precio** (#298): 📈 Mercado → «🔔 Alertas y órdenes» → Nueva alerta. Pones un precio y salta por DM cuando el TTCL llega hasta él (sube o baja según esté por encima o por debajo del actual); se dispara una vez y se borra. Si el DM no llega, se mantiene y queda en el log (también si has apagado «Órdenes de TTCL» en `/avisos`).
+- **🛡️ Stop-loss** (#341): 💸 Vender → «🛡️ Stop-loss». Cuando el precio baja hasta el umbral, vende **toda** la posición una sola vez con la comisión y los límites de una venta manual y avisa por DM. Sin TTCL se cancela; si algo lo impide (cooldown, límites, pausa), se reintenta cada minuto. Se cancela desde «🔔 Mis órdenes» sin cooldown.
+- **🔁 Compra recurrente** (#351): 🛒 Comprar → «🔁 Compra recurrente» (importe y cada cuántas horas, mínimo 1), con vista previa. Cada ciclo compra con las reglas de una compra manual (queda en 🧾 Historial); sin efectivo o con un límite, salta el ciclo y avisa por DM con la fecha del siguiente intento. No saca dinero del banco.
+- Hasta 5 órdenes activas de cada tipo por persona. Un cron cada minuto las revisa. DM nuevo: «Órdenes de TTCL» en `/avisos` (23 tipos).
+- **⏰ /recordar** (#320): `/recordar nuevo cuando texto` («18:30», «mañana 09:00», «en 45 min», «en 2 h»; hoy o mañana, hasta 24 h; texto de hasta 200 caracteres) y `/recordar lista` con botón de borrar. Hasta 10 pendientes. El DM llega a su hora (cron de un minuto); con los DMs cerrados se pierde y queda en el log. No se puede apagar en `/avisos`: lo pides tú.
+- Migración 067. Refactor: las consultas de TTCL de `mercado.js` pasan a `systems/cripto/consultas.js` (se re-exportan igual). Tests: `tests/criptoFase9.test.js`.
+
 ## 2026-10-14 (fase 8 del plan restante: perfil, clasificación y patrimonio)
 
 - **⏳ Próximo cobro de patrimonio** (#347): en tu 💰 Economía, cuándo es y lo que cobraría si el ciclo fuera ahora (mismo cálculo que el ciclo real, sin tocar nada). Sin ciclo marcado, dice que el conteo empieza en el próximo chequeo horario. Solo en la propia.

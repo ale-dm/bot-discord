@@ -19,6 +19,10 @@ const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
 const resumenApuestas = require("../systems/apuestas/resumenSemanal");
 const recordatorioLogros = require("../systems/logros/recordatorio");
+const ordenesCripto = require("../systems/cripto/ordenes");
+const mensajesOrdenes = require("../discord/mensajes/criptoOrdenes");
+const { enviarAviso } = require("../systems/avisosDm");
+const recordarPersonal = require("../systems/recordarPersonal");
 const patrimonioDiario = require("../systems/patrimonioDiario");
 const avisoDomingo = require("../systems/clasificacion/avisoDomingo");
 const { embedDomingo } = require("../discord/mensajes/clasificacionDomingo");
@@ -216,6 +220,18 @@ async function economiaComunitaria(client) {
     }
 }
 
+function programarOrdenesCripto(client) {
+    // 🔔 Cada minuto: alertas de precio, stop-loss y compras recurrentes de TTCL (#298, #341, #351).
+    cron.schedule(
+        "* * * * *",
+        () =>
+            runJob("Órdenes de TTCL", () =>
+                ordenesCripto.revisar((userId, payload) => enviarAviso(client, userId, "cripto_ordenes", payload), mensajesOrdenes),
+            ),
+        { noOverlap: true },
+    );
+}
+
 function programarRetosYEconomia(client) {
     // ⚔️ Retos colgados: sin aceptar a tiempo, duelos abandonados y porras sin resolver (se devuelven o se resuelven).
     cron.schedule("*/5 * * * *", () => runJob("Retos caducados", () => retos.revisarRetos(client)), {
@@ -270,6 +286,10 @@ function programarRetosYEconomia(client) {
 }
 
 function programarComunidad(client) {
+    // ⏰ Recordatorios personales (/recordar): cada minuto manda por DM los que ya tocan (#320).
+    cron.schedule("* * * * *", () => runJob("Recordatorios personales", () => recordarPersonal.enviarVencidos(client)), {
+        noOverlap: true,
+    });
     // 📊 Encuestas: cada minuto cierra las que han acabado su tiempo y repinta su mensaje con el resultado final.
     cron.schedule("* * * * *", () => runJob("Encuestas vencidas", () => encuesta.cerrarVencidas(client)), {
         noOverlap: true,
@@ -342,6 +362,7 @@ function programarTareas(client) {
     programarEspontaneos(client);
     programarApuestas(client);
     programarPase(client);
+    programarOrdenesCripto(client);
     programarRetosYEconomia(client);
     programarComunidad(client);
     programarLiquidacionApuestas(client);

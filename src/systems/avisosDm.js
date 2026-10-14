@@ -55,6 +55,12 @@ const TIPOS = [
     },
     { id: "pedido_seerr", emoji: "📥", nombre: "Pedidos de Seerr", detalle: "Cuando lo que pediste ya está disponible" },
     { id: "robo", emoji: "🥷", nombre: "Robos", detalle: "Cuando alguien intenta robarte" },
+    {
+        id: "cripto_ordenes",
+        emoji: "🔔",
+        nombre: "Órdenes de TTCL",
+        detalle: "Alertas de precio, stop-loss ejecutados y compras recurrentes que se saltan",
+    },
     { id: "cripto_evento", emoji: "📈", nombre: "Eventos de TTCL", detalle: "Cuando el mercado sube o baja por un evento" },
     { id: "prestamo", emoji: "🧙", nombre: "Préstamos del Duende", detalle: "Cuando vence un préstamo" },
     { id: "retos", emoji: "⚔️", nombre: "Retos", detalle: "Te toca jugar o un reto tuyo está a punto de caducar" },

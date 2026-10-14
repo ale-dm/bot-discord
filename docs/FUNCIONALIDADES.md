@@ -815,8 +815,9 @@ propuso, y la propuesta caduca a los 10 minutos. Por voz no se ofrece (no hay bo
 - **🛒 Comprar**: importes fijos (1.000 a 100.000 monedas) o una cantidad escrita. Antes de pagar sale una **vista previa**:
   lo que pagas (con la comisión), lo que recibes, el precio medio y cómo se mueve el precio. Solo al confirmar se compra.
   Si no te llega el efectivo, el botón de confirmar sale apagado y se ofrece 💵 Sacar del banco.
-- **💸 Vender**: el 25, 50 o 100 % de tu TTCL. También con vista previa (lo que recibes, la comisión y el precio) antes de
+- **💸 Vender**: el 25, 50 o 100 % de tu TTCL, o **✏️ Otra cantidad**: las monedas netas que quieres recibir (se redondea hacia abajo; si tu posición no llega, no se vende nada). También con vista previa (lo que recibes, la comisión y el precio) antes de
   confirmar.
+- **🔔 Órdenes** (📈 Mercado / 💸 Vender / 🛒 Comprar → «Mis órdenes», hasta 5 de cada tipo, revisadas cada minuto): **alertas de precio** (DM una sola vez cuando el TTCL llega al precio), **🛡️ stop-loss** (vende toda la posición una vez al bajar hasta el umbral, con la comisión de una venta normal) y **🔁 compra recurrente** (importe cada N horas, mínimo 1; sin efectivo salta el ciclo y avisa por DM). Se cancelan sin cooldown.
 - **💼 Cartera**: cuánto tienes, su valor, tu coste medio, la ganancia sin vender y un donut.
 - **🧾 Historial**: tus compras y ventas, de la más reciente a la más antigua, con páginas.
 
@@ -983,6 +984,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/javier` | Contesta "Eres un mierdas." |
 | `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
+| `/recordar` | ⏰ `nuevo cuando texto` («18:30», «mañana 09:00», «en 45 min»; hoy o mañana, hasta 24 h; texto de hasta 200 caracteres) y `lista` (con botón de borrar). Hasta 10 pendientes; el DM llega a su hora y, con los DMs cerrados, se pierde |
 | `/cumpleaños` | 🎂 `fecha dia mes`, `ver` (los próximos 5) y `borrar`. El bot felicita en el canal elegido desde las 09:00 (Madrid); el 29 de febrero se celebra el 28 los años no bisiestos |
 | `/sugerencia` | 💡 Formulario → idea en el canal del buzón con su número y 👍/👎 (un voto, cambiable); hasta 3 al día por persona. Un admin la acepta o descarta (con motivo) en ⚙️ Config Global → 📣 Comunidad y el autor lo recibe por DM |
 | Bienvenida | 👋 Al entrar alguien (no bots), mensaje en el canal elegido con `{usuario}` y `{miembros}` + cómo empezar (`/perfil`, `/ayuda`). Canal y texto en 📣 Comunidad |
@@ -1183,6 +1185,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/conversación` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/cripto` | [Cripto](#10-criptomonedas) |
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |

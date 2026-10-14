@@ -601,3 +601,9 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] Clasificación: 🏆 Rankings → 📅 Esta semana (con y sin canal configurado) y 🗓️ Semanas tras la primera publicación; el lunes, premios distintos por categoría (🪙 Por categoría) y la nueva categoría 📆 El más constante.
 - [ ] 👤 Perfil: «Premios semanales» tras ganar uno y 🔔 Aviso del domingo (activarlo con otra cuenta que vaya primera y comprobar el DM el domingo a las 20:00).
 - [ ] Impuestos → 🏦 Patrimonio → 🎭 Roles exentos con un rol de prueba; 🏆 Rankings → 🏦 Patrimonio neto (comprobar que cuenta cripto y negocios).
+
+**Fase 9: cripto y recordatorios (#298, #341, #351, #365, #320)**
+- [ ] `/cripto` → 💸 Vender → ✏️ Otra cantidad: pedir unas monedas y comprobar que recibes eso (o un poco menos); pedir más de lo que vale tu cartera y ver que no vende.
+- [ ] 📈 Mercado → 🔔 Alertas y órdenes: una alerta por encima y otra por debajo; mover el precio con compras/ventas y comprobar el DM (una sola vez). Un stop-loss justo por debajo y vender de otra cuenta para bajarlo.
+- [ ] 🛒 Comprar → 🔁 Compra recurrente (cada 1 h): ver la compra en 🧾 Historial; vaciar el efectivo y ver el DM de ciclo saltado.
+- [ ] `/recordar nuevo` («en 2 min») y `/recordar lista`: llega el DM; con los DMs cerrados no pasa nada.
