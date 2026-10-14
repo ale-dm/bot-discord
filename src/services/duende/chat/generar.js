@@ -1,23 +1,27 @@
 // Generar la respuesta del Duende: el límite diario de respuestas, el recorte del texto y la llamada a Gemini.
 
-const { DUENDE_MAX_TOKENS, DUENDE_MAX_TOKENS_FALLBACK, DUENDE_DAILY_LIMIT } = require("../../../systems/duende/config");
+const {
+    DUENDE_MAX_TOKENS,
+    DUENDE_MAX_TOKENS_FALLBACK,
+    DUENDE_DAILY_LIMIT,
+    DUENDE_DAILY_LIMIT_USER,
+} = require("../../../systems/duende/config");
+const cuotas = require("../../../systems/duende/cuotas");
 const { generarConGemini, isGeminiProhibitedContentError } = require("../gemini");
 const { createLogger } = require("../../../core/logger");
 
 const log = createLogger("Duende");
 
-// Contador diario de respuestas
-let dailyReplyCount = 0;
-let dailyReplyDate = new Date().toDateString();
-function checkAndIncrementDailyLimit() {
-    const today = new Date().toDateString();
-    if (today !== dailyReplyDate) {
-        dailyReplyDate = today;
-        dailyReplyCount = 0;
-    }
-    if (DUENDE_DAILY_LIMIT > 0 && dailyReplyCount >= DUENDE_DAILY_LIMIT) return false;
-    dailyReplyCount++;
-    return true;
+/**
+ * Gasta una respuesta del tope global y otra del de la persona (#371); los contadores están en la base de datos y sobreviven a un
+ * reinicio. Si alguno está lleno no gasta nada. @returns {{ ok: true } | { ok: false, motivo: "global" | "usuario" }}
+ */
+function checkAndIncrementDailyLimit(userId = "anon") {
+    const r = cuotas.consumir([
+        ["chat:global", DUENDE_DAILY_LIMIT],
+        [`chat:${userId}`, DUENDE_DAILY_LIMIT_USER],
+    ]);
+    return r.ok ? { ok: true } : { ok: false, motivo: r.indice === 0 ? "global" : "usuario" };
 }
 
 function truncateText(value, maxLength) {

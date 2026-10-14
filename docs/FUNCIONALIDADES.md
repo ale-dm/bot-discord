@@ -68,7 +68,9 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   a la IA, solo reacciona con un emoji (😂 🤣 👀 💀 😏 🔥).
 - **Imágenes**: si el mensaje trae imágenes (hasta 2), las "ve" y puede comentarlas.
 - **Canal restringido**: si el admin fija un canal para el Duende, solo responde allí.
-- **Límite diario**: 50 respuestas al día en total (`DUENDE_DAILY_LIMIT`). Al llegar, lo avisa.
+- **Límite diario**: 50 respuestas al día en total (`DUENDE_DAILY_LIMIT`) y 15 por persona (`DUENDE_DAILY_LIMIT_USER`). Al llegar al suyo, solo esa persona se queda sin respuesta. Los contadores sobreviven a los reinicios.
+- **Imágenes desde el chat**: «dibújame…» genera una imagen con el mismo cooldown y cuota diaria que `/imagen`.
+- **Notas de voz**: una nota de voz de menos de 60 s en un canal del Duende se transcribe y contesta como si fuera texto.
 - **Mensajes duplicados** (reconexiones de Discord) se ignoran para no ejecutar dos veces una acción.
 
 ### Cómo responde
@@ -97,7 +99,7 @@ El Duende lee todos los mensajes de texto (no los que empiezan por `/`) y decide
   dirige en el canal elegido a alguien al azar de quien tenga perfil (🧠 Perfiles, con descripción o notas de
   🧠 Recuerdos de `/duende`), mencionándole, para picarle y que conteste. Solo si ese canal lleva un rato sin mensajes de
   verdad (no interrumpe una conversación activa) y con una probabilidad baja cada hora, de 11:00 a 23:00. Si no hay
-  nadie con perfil al que dirigirse, no dice nada. Se activa o desactiva y se elige el canal ahí mismo.
+  nadie con perfil al que dirigirse, no dice nada. No se dirige a quien ya recibió uno en las últimas 24 h ni a quien escribió el último mensaje del canal. Se activa o desactiva y se elige el canal ahí mismo.
 
 ### Herramientas (datos reales)
 
@@ -140,6 +142,7 @@ una manía), lo **propone** como nota de su perfil. Nada se guarda sin aprobaci�
   configurado. Tope de llamadas a Gemini por día y servidor.
 - La propuesta llega por **DM a los admins** (`alertas.admin_ids`), con ✅ **Guardar** y ❌ **Descartar**. Lo decide un
   admin, una sola vez; si lo guarda, pasa a las notas de la persona (`/duende` → 🧠 Recuerdos).
+- ✏️ **Editar** abre un formulario para corregir el texto antes de guardarlo (queda como aprobado). Una propuesta sin decidir en 7 días caduca y su DM pierde los botones.
 - `DUENDE_RECUERDOS_AUTO=0` lo apaga; `DUENDE_RECUERDOS_MAX_DIA` (40 por defecto) limita las llamadas.
 
 Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.js`.
@@ -148,10 +151,12 @@ Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.
 
 | Comando | Qué hace |
 |---|---|
-| `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario. |
+| `/imagen descripcion* [imagen1..5] [estilo]` | Genera una imagen con IA (Gemini), o edita/combina hasta 5 imágenes adjuntas. Estilos: realista, óleo, lápiz, anime, pixel art, cyberpunk, fantasía épica, caricatura. Reintenta si la API está saturada; timeout de 2 min; cooldown de 45 s por usuario y 10 imágenes al día por persona (`IMAGE_GEN_DAILY_LIMIT`). Trae un botón 🔁 Otra versión (15 min, solo quien la pidió) y cada imagen se apunta en el historial. |
+| `/imagenes` | Tus últimas 10 imágenes generadas con `/imagen` (a un admin, las del servidor), con el enlace al mensaje. Privado |
+| `/resumen [mensajes]` | El Duende resume lo hablado en el canal (1 a 200 mensajes, 50 por defecto), con el tono de la personalidad, sin menciones ni enlaces. Privado y cuenta para tu cuota de respuestas |
 | `/tts texto* [voz]` | El bot entra en tu canal de voz y lee el texto (Gemini TTS). Voces: Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina. El idioma se detecta solo. Los textos se ponen en cola por servidor. |
 | `/escuchar [usuario]` | El bot escucha a un usuario en el canal de voz, transcribe lo que dice (Vosk, local) y le responde **por voz** como el Duende, encadenando turnos mientras la conversación siga activa. |
-| `/conversación [modo] [con] [tertulia]` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Por defecto le puede hablar **cualquiera del canal** — por turnos (uno habla y acaba, luego otro), y antes de cada turno sabe quién es quien habla —, pero con mucha gente eso se puede volver un caos: `con @persona` hace que solo escuche a esa persona, como antes. Por defecto (`modo: mención`) solo contesta si dices "Duende" al hablar; `modo: siempre` hace que conteste a todo. Dile que cuelgue, o vuelve a usar `/conversación`, para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Conoce el perfil de quien le habla y puede consultar el de cualquier otra persona (lo mismo que sabe el Duende por texto). Funcionalidad aparte de `/escuchar`, que sigue igual. **`tertulia: sí`** (#16) cambia el modo: escucha a **todo el canal a la vez**, sin turnos (las voces se mezclan en un solo flujo, y el Duende contesta al grupo, sin saber quién dice cada cosa). No se combina con `con`. Es opt-in y sin probar con voz real todavía. |
+| `/conversación [modo] [con] [tertulia]` | Conversación de voz **en directo** con el Duende (Gemini Live API): audio bidireccional real, sin esperar a que termines de hablar. Por defecto le puede hablar **cualquiera del canal** — por turnos (uno habla y acaba, luego otro), y antes de cada turno sabe quién es quien habla —, pero con mucha gente eso se puede volver un caos: `con @persona` hace que solo escuche a esa persona, como antes. Por defecto (`modo: mención`) solo contesta si dices "Duende" al hablar; `modo: siempre` hace que conteste a todo. Dile que cuelgue, o vuelve a usar `/conversación`, para terminarla; se corta sola tras unos minutos sin que nadie hable o a los 30 min de duración. Conoce el perfil de quien le habla y puede consultar el de cualquier otra persona (lo mismo que sabe el Duende por texto). Al terminar, publica en el canal de texto un resumen de lo hablado. Funcionalidad aparte de `/escuchar`, que sigue igual. **`tertulia: sí`** (#16) cambia el modo: escucha a **todo el canal a la vez**, sin turnos (las voces se mezclan en un solo flujo, y el Duende contesta al grupo, sin saber quién dice cada cosa). No se combina con `con`. Es opt-in y sin probar con voz real todavía. |
 | `/bola8 pregunta*` | Respuesta al azar de la bola 8 mágica. |
 
 ---
@@ -1079,6 +1084,10 @@ donde se guardan; por defecto, `data/sonidos`. Migraciones 037 (`sonidos`) y 060
 | `DUENDE_MAX_TOKENS` / `DUENDE_MAX_TOKENS_FALLBACK` | 1024 / 512 | Longitud máxima de respuesta |
 | `DUENDE_HISTORY_LIMIT` | 20 | Mensajes de contexto por canal |
 | `DUENDE_DAILY_LIMIT` | 50 | Respuestas al día (0 = sin límite) |
+| `DUENDE_DAILY_LIMIT_USER` | 15 | Respuestas al día por persona (0 = sin límite) |
+| `IMAGE_GEN_DAILY_LIMIT` | 10 | Imágenes al día por persona (0 = sin límite) |
+| `DUENDE_RECUERDOS_CADUCA_DIAS` | 7 | Días antes de que caduque una propuesta de recuerdo |
+| `DUENDE_ESPONTANEO_ENFRIAMIENTO_H` | 24 | Horas antes de dirigir otro mensaje espontáneo a la misma persona |
 | `DUENDE_TEXT_REPLY_PROB` | 0.25 | Probabilidad de responder sin que le hablen |
 | `DUENDE_ACTIVE_TEXT_REPLY_PROB` / `DUENDE_ACTIVE_WINDOW_MS` | 1 / 180000 | Conversación activa |
 | `DUENDE_INTERVENE_PROB` | 0.5 | Probabilidad de meterse cuando hablan entre ellos |
@@ -1193,6 +1202,8 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
 | `/escuchar` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/imagen` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/imagenes` | [IA y multimedia](#3-ia-y-multimedia) |
+| `/resumen` | [IA y multimedia](#3-ia-y-multimedia) |
 | `/juegos` | [Casino](#8-casino) · [Apuestas](#9-apuestas-deportivas-y-quinielas) · [Retos](#retos-entre-jugadores) |
 | `/javier` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/mensaje` 🔒 | [Administración](#12-administración) |

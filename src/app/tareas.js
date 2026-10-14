@@ -35,6 +35,7 @@ const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
 const plexWrapped = require("../systems/plexWrapped");
 const cine = require("../systems/cine");
+const recuerdosAuto = require("../systems/duende/recuerdosAuto");
 const cineSeries = require("../systems/cine/series");
 const { pantallaSesion } = require("../paneles/cine");
 const liga = require("../systems/apuestas/liga");
@@ -164,6 +165,11 @@ async function cineRecordatorios(client) {
 }
 
 function programarWrapped(client) {
+    // 🧠 Cada día a las 04:00: las propuestas de recuerdo del Duende sin decidir en 7 días caducan y pierden sus botones (#390).
+    cron.schedule("0 4 * * *", () => runJob("Recuerdos del Duende caducados", () => recuerdosAuto.caducarPendientes(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
     // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
     cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => plexWrapped.enviarSiToca(client)), {
         timezone: "Europe/Madrid",

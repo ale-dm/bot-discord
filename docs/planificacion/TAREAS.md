@@ -613,3 +613,10 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] 🎬 Sesión de cine con varias películas (`Dune | Alien`), votar con dos cuentas, 🎯 Sugerir, y ver que el recordatorio nombra la ganadora. Repetir cada semana: comprobar que al empezar la sesión aparece la siguiente.
 - [ ] 📥 Mis pedidos: pedir algo, cancelarlo desde `/plex`; rechazar una petición en Seerr y ver el aviso (en el canal de novedades o por DM).
 - [ ] 🎞️ Wrapped → «Ver el del año pasado»; el 1 de enero llegan dos DM (mes y año).
+
+**Fase 11: Duende e IA (#357, #363, #367, #371, #376, #382, #386, #390, #395, #396, #400, #405, #408)**
+- [ ] `/imagen` y 🔁 Otra versión (con otra cuenta no deja); `/imagenes`; pedirle al Duende «dibújame un gato» en el chat y comprobar el cooldown compartido y la cuota (`IMAGE_GEN_DAILY_LIMIT` bajo).
+- [ ] Gastar el tope de respuestas por persona (`DUENDE_DAILY_LIMIT_USER` bajo): el resto sigue; reiniciar el bot y ver que el contador se mantiene.
+- [ ] Mandar una nota de voz de Discord en el canal del Duende (el reconocedor local de `/escuchar` tiene que estar arrancado); `/resumen` con 30 mensajes.
+- [ ] Recuerdo propuesto por DM: ✏️ Editar (texto corto y texto bueno); con `DUENDE_RECUERDOS_CADUCA_DIAS=0` ver cómo caduca y pierde los botones a las 04:00.
+- [ ] `/conversación` hablando un rato y terminando: resumen en el canal. `/duende` → Personalidad → voz, y una respuesta por voz; 🧠 Recuerdos → olvidar una nota.

@@ -4,6 +4,7 @@
 const { pararConversacion } = require("./sesion");
 const { responderLlamadasHerramientas } = require("./declaraciones");
 const { PALABRA_LLAMADA } = require("./constantes");
+const { acumular } = require("./resumen");
 const { createLogger } = require("../../../core/logger");
 
 const log = createLogger("Duende").child("VozEnVivo");
@@ -64,11 +65,13 @@ function reenviarAudioSalida(data, sesion) {
 function procesarTranscripciones(message, sesion) {
     if (message.serverContent?.outputTranscription?.text) {
         log.debug(`Duende (voz en directo): ${message.serverContent.outputTranscription.text}`);
+        acumular(sesion, "duende", message.serverContent.outputTranscription.text);
     }
     if (message.serverContent?.inputTranscription?.text) {
         const texto = message.serverContent.inputTranscription.text;
         log.debug(`Usuario (voz en directo): ${texto}`);
         sesion.turnoTranscripcion += texto;
+        acumular(sesion, "usuario", texto);
         // En cuanto se oye la palabra de llamada en este turno, se deja pasar la
         // respuesta — no hace falta esperar a que acabe de hablar para decidirlo.
         if (sesion.soloSiLeLlaman && PALABRA_LLAMADA.test(sesion.turnoTranscripcion)) {

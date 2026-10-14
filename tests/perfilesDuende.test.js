@@ -25,7 +25,7 @@ test("importa los JSON antiguos una sola vez y los renombra", () => {
 
     perfiles.importarJsonSiExiste();
 
-    expect(perfiles.obtenerPersonalidad("borde")).toEqual({ id: "borde", title: "Borde", systemInstructions: "Sé borde." });
+    expect(perfiles.obtenerPersonalidad("borde")).toEqual({ id: "borde", title: "Borde", systemInstructions: "Sé borde.", voz: null });
     expect(perfiles.personalidadDeCanal("canal1")).toBe("borde");
     expect(perfiles.listarPerfiles()).toMatchObject([{ discordId: null, username: "raul_02", name: "Raúl", notas: ["juega al pádel"] }]);
     expect(fs.existsSync(path.join(DATA_DIR, "duende-personalities.json.importado"))).toBe(true);

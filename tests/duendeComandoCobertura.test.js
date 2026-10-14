@@ -36,6 +36,7 @@ describe("definición del comando", () => {
         const rutas = duende.componentHandlers.map((h) => [h.types[0], h.prefixes[0], h.method]);
         expect(rutas).toEqual([
             ["button", "recuerdo_auto_", "handleRecuerdoAuto"],
+            ["modal", "recuerdo_auto_modal_", "handleRecuerdoAutoModal"],
             ["button", "duendepanel_", "handleButton"],
             ["stringSelect", "duendepanel_", "handleSelect"],
             ["userSelect", "duendepanel_", "handleUserSelect"],

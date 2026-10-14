@@ -52,9 +52,13 @@ function pararConversacion(guildId, motivo) {
     const sesion = sesiones.get(guildId);
     if (!sesion) return false;
     sesiones.delete(guildId);
+    // Las transcripciones solo viven aquí: se sueltan de la sesión antes de limpiarla y solo sirven para el resumen (#395).
+    const transcripcion = sesion.transcripcion;
+    sesion.transcripcion = null;
     limpiarSesion(sesion);
     log.info(`Conversación en directo terminada en el servidor ${guildId}${motivo ? ` (${motivo})` : ""}`);
     sesion.onTerminada?.(motivo);
+    sesion.resumir?.(transcripcion);
     return true;
 }
 

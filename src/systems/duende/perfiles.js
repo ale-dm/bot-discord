@@ -15,6 +15,9 @@ const importacion = require("./perfiles/importacion");
 module.exports = {
     MAX_NOTAS: lectura.MAX_NOTAS,
     MAX_PERFIL_PROMPT: lectura.MAX_PERFIL_PROMPT,
+    VOCES: personalidades.VOCES,
+    fijarVoz: personalidades.fijarVoz,
+    vozDeCanal: personalidades.vozDeCanal,
     instruccionDefault: personalidades.instruccionDefault,
     listarPersonalidades: personalidades.listarPersonalidades,
     obtenerPersonalidad: personalidades.obtenerPersonalidad,
@@ -32,6 +35,7 @@ module.exports = {
     borrarPerfilPorId: escritura.borrarPerfilPorId,
     anotar: escritura.anotar,
     olvidarNotas: escritura.olvidarNotas,
+    olvidarNota: escritura.olvidarNota,
     notasRelevantes: notas.notasRelevantes,
     guardarDescripcion: escritura.guardarDescripcion,
 

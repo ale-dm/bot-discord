@@ -16,6 +16,7 @@ const RONDA = 10;
 const MIN_CARACTERES = 60;
 const MAX_LLAMADAS_DIA = Number(process.env.DUENDE_RECUERDOS_MAX_DIA || 40);
 const MAX_TEXTO = 200;
+const DIAS_CADUCA = Number(process.env.DUENDE_RECUERDOS_CADUCA_DIAS || 7);
 
 // Quien escribe menos de RONDA mensajes largos y se va dejaría su entrada para siempre: cada entrada guarda cuándo fue su
 // último mensaje, las que llevan más de CADUCA_MS sin actividad se borran de vez en cuando, y hay un tope de entradas
@@ -91,7 +92,13 @@ async function avisarAdmins(client, propuesta) {
     for (const adminId of adminsDe(propuesta.guildId)) {
         try {
             const usuario = await client.users.fetch(adminId);
-            await usuario.send({ embeds: [embed], components: [fila], allowedMentions: { parse: [] } });
+            const dm = await usuario.send({ embeds: [embed], components: [fila], allowedMentions: { parse: [] } });
+            // Se apunta el mensaje para quitarle los botones si la propuesta caduca (#390).
+            if (dm?.id) {
+                db.prepare(
+                    "INSERT OR REPLACE INTO duende_recuerdos_dms (propuesta_id, userId, canalId, mensajeId) VALUES (?, ?, ?, ?)",
+                ).run(propuesta.id, String(adminId), String(dm.channelId ?? ""), String(dm.id));
+            }
         } catch (e) {
             log.debug(`No se pudo avisar a ${adminId} del recuerdo propuesto: ${e.message}`);
         }
@@ -127,22 +134,64 @@ function observar(message, deps = {}) {
 }
 
 /**
- * ✅ / ❌ de un admin. Solo admins del servidor, y solo una vez por propuesta.
+ * ✅ / ❌ de un admin. Solo admins del servidor, y solo una vez por propuesta. Con `textoEditado` (✏️, #386) se guarda ese texto en
+ * lugar del propuesto (y cuenta como aprobada); si es demasiado corto, se rechaza y la propuesta sigue pendiente.
  * @returns {{ ok: boolean, mensaje: string }}
  */
-function resolver(id, adminId, aprobar) {
+function resolver(id, adminId, aprobar, textoEditado = null) {
     const p = db
         .prepare("SELECT id, guildId, userId, nombre, texto, estado, creada_en, resuelta_por FROM duende_recuerdos_propuestos WHERE id = ?")
         .get(Number(id));
     if (!p) return { ok: false, mensaje: "Esa propuesta ya no existe." };
     if (!adminsDe(p.guildId).includes(String(adminId))) return { ok: false, mensaje: "Solo los admins del servidor pueden decidir esto." };
+    if (p.estado === "caducado") return { ok: false, mensaje: "Esta propuesta caducó sin que nadie la decidiera." };
     if (p.estado !== "pendiente") return { ok: false, mensaje: `Ya está ${p.estado === "aprobado" ? "guardado" : "descartado"}.` };
+    let texto = p.texto;
+    if (textoEditado !== null) {
+        texto = String(textoEditado).trim().slice(0, MAX_TEXTO);
+        if (texto.length < 3) return { ok: false, mensaje: "El texto tiene que tener al menos 3 caracteres." };
+    }
     const cambiados = db
         .prepare("UPDATE duende_recuerdos_propuestos SET estado = ?, resuelta_por = ? WHERE id = ? AND estado = 'pendiente'")
         .run(aprobar ? "aprobado" : "descartado", String(adminId), p.id).changes;
     if (cambiados === 0) return { ok: false, mensaje: "Otra persona acaba de decidirlo." };
-    if (aprobar) perfiles.anotar({ id: p.userId, username: p.nombre }, p.texto, p.nombre);
+    if (aprobar) perfiles.anotar({ id: p.userId, username: p.nombre }, texto, p.nombre);
     return { ok: true, mensaje: aprobar ? `🧠 Guardado en el perfil de ${p.nombre}.` : "❌ Descartado." };
+}
+
+/** Si ese admin puede decidir sobre esa propuesta (para abrirle el formulario de edición). */
+function puedeDecidir(id, adminId) {
+    const p = db.prepare("SELECT guildId, texto, estado FROM duende_recuerdos_propuestos WHERE id = ?").get(Number(id));
+    if (!p) return { ok: false, mensaje: "Esa propuesta ya no existe." };
+    if (!adminsDe(p.guildId).includes(String(adminId))) return { ok: false, mensaje: "Solo los admins del servidor pueden decidir esto." };
+    if (p.estado === "caducado") return { ok: false, mensaje: "Esta propuesta caducó sin que nadie la decidiera." };
+    if (p.estado !== "pendiente") return { ok: false, mensaje: `Ya está ${p.estado === "aprobado" ? "guardado" : "descartado"}.` };
+    return { ok: true, texto: p.texto };
+}
+
+/**
+ * Caduca las propuestas pendientes de más de DIAS_CADUCA días (#390): pasan a `caducado` y se les quitan los botones a sus DMs. No se
+ * avisa a nadie; las ya decididas no cambian. @returns {Promise<number>} propuestas caducadas
+ */
+async function caducarPendientes(client, ahora = Date.now()) {
+    const limite = ahora - DIAS_CADUCA * 86400000;
+    const caducadas = db.prepare("SELECT id FROM duende_recuerdos_propuestos WHERE estado = 'pendiente' AND creada_en < ?").all(limite);
+    for (const { id } of caducadas) {
+        const r = db.prepare("UPDATE duende_recuerdos_propuestos SET estado = 'caducado' WHERE id = ? AND estado = 'pendiente'").run(id);
+        if (r.changes !== 1) continue;
+        for (const dm of db.prepare("SELECT userId, mensajeId FROM duende_recuerdos_dms WHERE propuesta_id = ?").all(id)) {
+            try {
+                const canal = await (await client.users.fetch(dm.userId)).createDM();
+                const mensaje = await canal.messages.fetch(dm.mensajeId);
+                await mensaje.edit({ content: "⌛ Esta propuesta caducó sin decidirse.", components: [] });
+            } catch (e) {
+                log.debug(`No se pudieron quitar los botones del DM de la propuesta ${id}: ${e.message}`);
+            }
+        }
+        db.prepare("DELETE FROM duende_recuerdos_dms WHERE propuesta_id = ?").run(id);
+    }
+    if (caducadas.length) log.info(`${caducadas.length} propuestas de recuerdo caducadas (más de ${DIAS_CADUCA} días sin decidir)`);
+    return caducadas.length;
 }
 
 /**
@@ -178,6 +227,9 @@ module.exports = {
     analizar,
     leerRecuerdo,
     resolver,
+    puedeDecidir,
+    caducarPendientes,
+    DIAS_CADUCA,
     limpiar,
     tamanoBuffers,
     reiniciar,

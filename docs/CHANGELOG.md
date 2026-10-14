@@ -2,6 +2,23 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 11 del plan restante: Duende e IA)
+
+- **🖼️ Historial de imágenes** (#357): cada `/imagen` que sale bien guarda autor, descripción, estilo y enlace al mensaje y al adjunto (no la imagen), 90 días. `/imagenes` enseña tus últimas 10 (a un admin, las del servidor), en privado. Si falla el guardado, la imagen se envía igual y queda en el log.
+- **🔁 Otra versión** (#363): botón en la respuesta de `/imagen` que repite la petición con la misma descripción, estilo y referencias (se guardan 15 minutos en memoria). Solo quien la pidió, respeta cooldown y cuota, y caducada o tras un reinicio lo dice. No cambia de estilo.
+- **🎨 El Duende dibuja desde el chat** (#367): herramienta `generar_imagen` («dibújame…»). Comparte con `/imagen` el cooldown de 45 s y la cuota diaria, así que no se pueden saltar; la imagen sale como mensaje aparte tras el texto, y si falla el Duende lo dice sin afirmar que la envió. Solo en el chat de texto, no por voz; sigue el mismo canal permitido que el chat.
+- **📊 Cuota de imágenes por persona** (#408): `IMAGE_GEN_DAILY_LIMIT` (10 por defecto, 0 = sin tope), sin excepciones para admins. Se guarda en la base de datos (sobrevive a reinicios). Un fallo de la API devuelve el cupo.
+- **💬 Cuota de respuestas por persona** (#371): `DUENDE_DAILY_LIMIT_USER` (15 por defecto, 0 = sin tope) además del global de 50. Al llegar al suyo, solo esa persona se queda sin respuesta. Ambos contadores están en la base de datos. Los admins no están exentos y las reacciones con emoji no cuentan.
+- **🎙️ Notas de voz** (#376): una nota de voz (o un audio de menos de 60 s) en un canal donde responde el Duende se transcribe con el reconocedor local de `/escuchar` y el Duende contesta como si lo hubieran escrito; la transcripción no se muestra en el canal ni se guarda el audio. Si falla, no responde y queda en el log. No se transcribe en canales sin el Duende.
+- **📝 /resumen** (#382): resume en unas cinco líneas los últimos 1 a 200 mensajes del canal con el tono de su personalidad, sin menciones ni enlaces, solo para quien lo pide y contando para su cuota de respuestas; avisa si tarda más de 15 s y no responde a quien no puede ver el canal.
+- **✏️ Editar un recuerdo propuesto** (#386): nuevo botón en el DM a admins; abre un formulario con el texto y guarda el corregido (queda como aprobado). Un texto de menos de 3 caracteres se rechaza y la propuesta sigue pendiente.
+- **⌛ Recuerdos que caducan** (#390): a las 04:00, las propuestas sin decidir en 7 días (`DUENDE_RECUERDOS_CADUCA_DIAS`) pasan a `caducado` y su DM pierde los botones, en silencio. Las decididas no cambian y decidir una caducada da un mensaje claro. No va al resumen semanal.
+- **📝 Resumen de /conversación** (#395): al terminar una conversación en directo, un resumen en el canal de texto desde el que se pidió (menos de 30 s), solo si hubo transcripciones. El texto vive en memoria y se descarta. Siempre se hace (sin opción) y sin atribuir frases a nadie.
+- **🗣️ Voz por personalidad** (#396): `/duende` → 🎭 Personalidad, menú de voz (Puck, Kore, Charon, Fenrir, Algenib, Sulafat, Despina o la global). Aplica a las respuestas por voz del canal; no a `/tts` ni a `/conversación`. Sin reiniciar.
+- **🙈 Mensajes espontáneos sin repetir** (#400): no se dirige a quien lleva menos de `DUENDE_ESPONTANEO_ENFRIAMIENTO_H` horas (24) desde su último mensaje espontáneo ni a quien escribió el último mensaje del canal; se guarda en la base de datos. Con todos en espera, no dice nada.
+- **🗑️ Olvidar una sola nota** (#405): en `/duende` → 🧠 Recuerdos, un menú con las notas numeradas borra solo la elegida (sin confirmación); lo ve la propia persona o un admin.
+- Migración 069. Tests: `tests/duendeFase11.test.js`.
+
 ## 2026-10-14 (fase 10 del plan restante: Plex)
 
 - **🗓️ Estrenos de la semana** (#299): `/plex` → 🗓️ Estrenos. Los 5 estrenos más próximos de los siguientes 7 días según Seerr (películas y series), con póster y fecha, y 📥 para pedir lo que aún no está en Plex (mismo flujo y mismo cupo diario que las recomendaciones). Se guarda 30 minutos. Si Seerr no responde, la pantalla lo dice.
