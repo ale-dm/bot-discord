@@ -35,6 +35,8 @@ const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
 const plexWrapped = require("../systems/plexWrapped");
 const cine = require("../systems/cine");
+const cineSeries = require("../systems/cine/series");
+const { pantallaSesion } = require("../paneles/cine");
 const liga = require("../systems/apuestas/liga");
 const resumenAdmin = require("../systems/resumenAdmin");
 const espontaneo = require("../systems/duende/espontaneo");
@@ -102,6 +104,7 @@ function programarNovedadesPlex(client) {
         async () => {
             await runJob("Novedades de Plex", () => tautulliClient.checkAllGuildsForNewContent(client));
             await runJob("Avisos de pedidos de Seerr", () => pedidosSeerr.avisarDisponibles(client));
+            await runJob("Avisos de pedidos rechazados de Seerr", () => pedidosSeerr.avisarRechazados(client));
             await runJob("Avisos de series seguidas", () => plexAvisos.avisarSeries(client));
             await runJob("Avisos de quiero ver", () => plexAvisos.avisarQuieroVer(client));
             await runJob("Historial y logros de Plex", () => plexHistorial.sincronizarTodos(client), {
@@ -154,6 +157,12 @@ function programarCuotasEnDirecto(client) {
     });
 }
 
+/** Cada 5 minutos: las sesiones semanales que toca crear (#403) y el recordatorio de las que empiezan en 10 minutos. */
+async function cineRecordatorios(client) {
+    await cineSeries.crearSiguientes(client, cine, pantallaSesion);
+    return cine.enviarRecordatorios(client);
+}
+
 function programarWrapped(client) {
     // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
     cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => plexWrapped.enviarSiToca(client)), {
@@ -165,7 +174,7 @@ function programarWrapped(client) {
 
 function programarCine(client) {
     // 🎬 Sesiones de cine: el recordatorio de 10 minutos antes, cada 5 minutos.
-    cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => cine.enviarRecordatorios(client)), {
+    cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => cineRecordatorios(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });

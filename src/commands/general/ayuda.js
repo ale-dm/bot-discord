@@ -61,7 +61,7 @@ const SECCIONES = {
         titulo: "Plex",
         abrir: [["plex", "", "Plex", "🍿"]],
         texto: [
-            "`/plex` — todo lo de Plex en un panel: 🎬 Sesión de cine (una peli o serie a una hora, con recordatorio 10 minutos antes y botones para apuntarse), 🎯 Para ti (recomendaciones según lo que has visto, con 📥 para pedirlas a Seerr), 🎞️ Wrapped y 🏅 Mi Plex.",
+            "`/plex` — todo lo de Plex en un panel: 🎬 Sesión de cine (una peli o serie a una hora, con recordatorio 10 minutos antes y botones para apuntarse), 🎯 Para ti (recomendaciones según lo que has visto, con 📥 para pedirlas a Seerr), 🎞️ Wrapped (del mes y, en enero, del año) y 🏅 Mi Plex, 📡 Ahora (qué se ve en este momento), 🗓️ Estrenos de la semana, 🏆 Campeones del ranking semanal y 📥 Mis pedidos de Seerr (para cancelarlos). Las sesiones de cine pueden tener varias películas para votar, sugerencias para el grupo y repetirse cada semana.",
             "**Wrapped mensual**: el día 1 de cada mes te llega por DM tu resumen del mes anterior. Es privado: nadie más lo ve.",
             "Si tu cuenta de Plex no está vinculada, el panel lo indica; con la vinculación, tus horas, logros y recomendaciones salen de tu propio historial.",
         ],

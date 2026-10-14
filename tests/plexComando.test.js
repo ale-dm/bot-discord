@@ -13,9 +13,9 @@ beforeEach(() => {
     db.prepare("DELETE FROM cine_sesiones").run();
 });
 
-test("el panel tiene los cuatro botones de Plex", () => {
+test("el panel tiene los cinco botones de la primera fila de Plex", () => {
     const ids = pantallaPlex(G, "nadie").components[0].components.map((b) => b.data.custom_id);
-    expect(ids).toEqual(["plex_cine", "plex_para_ti", "plex_wrapped", "plex_perfil"]);
+    expect(ids).toEqual(["plex_cine", "plex_para_ti", "plex_wrapped", "plex_perfil", "plexx_ahora"]);
 });
 
 test("avisa si la cuenta de Plex no está vinculada, y dice cuál lo está", () => {
@@ -38,7 +38,11 @@ test("el formulario crea la sesión de cine y responde con su mensaje público",
         guildId: G,
         channelId: "canal-cine",
         user: { id: "ana" },
-        fields: { getTextInputValue: () => "Dune", getStringSelectValues: (id) => ({ hora: ["23"], minuto: ["30"] })[id] },
+        fields: {
+            getTextInputValue: () => "Dune",
+            getStringSelectValues: (id) => ({ hora: ["23"], minuto: ["30"] })[id],
+            getRadioGroup: () => "no",
+        },
         reply,
         fetchReply,
     };

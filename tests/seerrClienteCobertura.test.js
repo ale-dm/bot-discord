@@ -289,11 +289,15 @@ describe("peticiones", () => {
     test("getRequestsRaw devuelve los campos sin buscar títulos", async () => {
         conRespuestas({
             "get /request": respuesta(200, {
-                results: [{ id: 5, type: "movie", media: { tmdbId: 8, status: "3" }, requestedBy: { id: 9, plexUsername: "dani" } }],
+                results: [
+                    { id: 5, type: "movie", media: { tmdbId: 8, status: "3" }, status: 3, requestedBy: { id: 9, plexUsername: "dani" } },
+                ],
             }),
         });
         const lista = await seerr.getRequestsRaw(G, { filter: "pending" });
-        expect(lista).toEqual([{ id: 5, mediaType: "movie", tmdbId: 8, estadoCodigo: 3, seerrUserId: 9, plexUsername: "dani" }]);
+        expect(lista).toEqual([
+            { id: 5, mediaType: "movie", tmdbId: 8, estadoCodigo: 3, seerrUserId: 9, plexUsername: "dani", estadoPeticion: 3 },
+        ]);
         expect(peticion).toHaveBeenCalledTimes(1);
     });
 

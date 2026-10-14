@@ -83,7 +83,7 @@ test("el mensaje lista a quien se ha apuntado y tiene los tres botones", () => {
     const p = pantallaSesion(id);
     expect(p.embeds[0].data.description).toMatch(/Apuntados \(2\)/);
     const ids = p.components[0].components.map((b) => b.data.custom_id);
-    expect(ids).toEqual([`cine_apuntarse_${id}`, `cine_salirse_${id}`, `cine_cancelar_${id}`]);
+    expect(ids).toEqual([`cine_apuntarse_${id}`, `cine_salirse_${id}`, `cine_sugerir_${id}`, `cine_cancelar_${id}`]);
 });
 
 test("una sesión cancelada no tiene botones", () => {

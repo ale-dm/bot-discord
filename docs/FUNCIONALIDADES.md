@@ -891,7 +891,7 @@ El día 1 de cada mes, desde las 10:00 (hora de Madrid), **cada persona con la c
 propio resumen** del mes anterior: sus horas vistas, sus películas y episodios, y sus series más vistas, con una gráfica
 de sus series. Es privado: no se publica nada en ningún canal y nadie ve los datos de otra persona. Quien no ha visto nada
 ese mes no recibe nada. Cada persona recibe cada mes una sola vez (tabla `plex_wrapped_enviados`, migración 038). Se puede
-ver el de este mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo lo ves tú). Tests: `tests/plexWrapped.test.js`.
+ver el del mes pasado cuando se quiera con 🎞️ Wrapped en `/plex` (solo lo ves tú). **El 1 de enero** también llega por DM el **resumen del año** (tabla `plex_wrapped_anual_enviados`, migración 068), y el botón «Ver el del año pasado» lo enseña cuando se quiera. Tests: `tests/plexWrapped.test.js`.
 
 ## 12. Administración
 
@@ -1001,6 +1001,9 @@ mañana). El mensaje lista quién se ha apuntado, con la hora en la de cada uno:
 - **🛑 Cancelar sesión**: solo quien la convocó o un admin.
 - **Recordatorio**: 10 minutos antes, el bot avisa en el canal y menciona a quien se haya apuntado. Una sola vez por
   sesión. Lo revisa el cron cada 5 minutos.
+- **🗳️ Votación**: si al convocar escribes varias películas separadas por `|` (hasta 5), salen botones para votarlas (se puede votar más de una y volver a pulsar quita el voto). El recordatorio nombra la más votada (en empate, la propuesta antes) y cierra la votación.
+- **🎯 Sugerir**: propone hasta 5 películas que ninguno de los apuntados con Plex vinculado ha visto, con 📥 para pedirlas.
+- **🔁 Cada semana**: con «¿Repetir cada semana?» el bot crea la sesión siguiente solo, a la misma hora de Madrid (cada una con sus apuntados y votos). «Cancelar y parar la serie» cancela la siguiente y no crea más.
 
 Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.test.js`.
 
@@ -1008,7 +1011,7 @@ Migración 033: `cine_sesiones` y `cine_asistentes`. Tests: `tests/sesionCine.te
 
 `/plex` agrupa lo de Plex en botones, como `/tienda` y `/duende`: 🎬 **Sesión de cine**, 🎯 **Para ti** (recomendaciones),
 🎞️ **Wrapped** (el resumen de tu último mes, solo para ti) y 🏅 **Mi Plex** (tus horas, trofeos y logros de Plex, la misma
-pestaña de `/perfil`). El panel te dice si tu cuenta de Plex está vinculada. Es privado: solo lo ves tú (las sesiones de
+pestaña de `/perfil`), 📡 **Ahora** (qué se está viendo, en privado), 🗓️ **Estrenos** (los de la semana según Seerr, con 📥), 🏆 **Campeones** (las últimas 10 semanas del ranking semanal y las victorias de cada uno) y 📥 **Mis pedidos** (tus peticiones pendientes de Seerr, que puedes cancelar). Si un admin rechaza una petición tuya, te avisa el bot. El panel te dice si tu cuenta de Plex está vinculada. Es privado: solo lo ves tú (las sesiones de
 cine sí se publican en el canal, para que la gente se apunte).
 
 ### 🔊 /sonidos y 🔌 /conectar

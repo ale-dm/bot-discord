@@ -13,6 +13,7 @@ const plexHistorial = require("./plexHistorial");
 const tautulli = require("../services/tautulliClient");
 const { createLogger } = require("../core/logger");
 
+const campeones = require("./plexCampeones");
 const log = createLogger("Plex");
 
 const HORA = 10;
@@ -115,6 +116,7 @@ async function publicar(guild, { semana = semanaAnterior() } = {}) {
     const lista = ranking(guild.id, semana);
     await channel.send(mensaje(lista, semana));
     guildSettings.setSetting(guild.id, "plex.ranking_ultima_semana", semana.lunes);
+    campeones.guardar(guild.id, semana.lunes, lista[0]); // #389: el campeón de la semana (sin él si nadie vio nada)
     log.info(
         `Ranking semanal de Plex (${semana.lunes}) publicado en #${channel.name} de ${guild.name || guild.id}: ` +
             (lista.length ? lista.map((u) => `${u.plexUsername} ${duracion(u.segundos)}`).join(", ") : "nadie vio nada"),

@@ -607,3 +607,9 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] 📈 Mercado → 🔔 Alertas y órdenes: una alerta por encima y otra por debajo; mover el precio con compras/ventas y comprobar el DM (una sola vez). Un stop-loss justo por debajo y vender de otra cuenta para bajarlo.
 - [ ] 🛒 Comprar → 🔁 Compra recurrente (cada 1 h): ver la compra en 🧾 Historial; vaciar el efectivo y ver el DM de ciclo saltado.
 - [ ] `/recordar nuevo` («en 2 min») y `/recordar lista`: llega el DM; con los DMs cerrados no pasa nada.
+
+**Fase 10: Plex (#299, #381, #385, #389, #393, #399, #403, #406, #410)**
+- [ ] `/plex` → 🗓️ Estrenos (con el Seerr real: comprobar que `discover/…/upcoming` responde en tu versión) y pedir uno con 📥; 📡 Ahora con y sin nadie viendo algo; 🏆 Campeones tras la próxima publicación del ranking.
+- [ ] 🎬 Sesión de cine con varias películas (`Dune | Alien`), votar con dos cuentas, 🎯 Sugerir, y ver que el recordatorio nombra la ganadora. Repetir cada semana: comprobar que al empezar la sesión aparece la siguiente.
+- [ ] 📥 Mis pedidos: pedir algo, cancelarlo desde `/plex`; rechazar una petición en Seerr y ver el aviso (en el canal de novedades o por DM).
+- [ ] 🎞️ Wrapped → «Ver el del año pasado»; el 1 de enero llegan dos DM (mes y año).

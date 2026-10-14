@@ -2,6 +2,19 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 10 del plan restante: Plex)
+
+- **🗓️ Estrenos de la semana** (#299): `/plex` → 🗓️ Estrenos. Los 5 estrenos más próximos de los siguientes 7 días según Seerr (películas y series), con póster y fecha, y 📥 para pedir lo que aún no está en Plex (mismo flujo y mismo cupo diario que las recomendaciones). Se guarda 30 minutos. Si Seerr no responde, la pantalla lo dice.
+- **🎞️ Wrapped anual** (#381): el 1 de enero, además del resumen de diciembre, cada persona vinculada que haya visto algo en el año recibe un DM con el del año (una vez por persona y año, aunque el bot se reinicie). 🎞️ Wrapped en `/plex` trae un botón «Ver el del año pasado». Se envía el 1 de enero, no a finales de diciembre.
+- **📡 Viéndose ahora** (#385): `/plex` → 📡 Ahora, respuesta privada con título, progreso y quién lo ve (como «alguien» si la cuenta no está vinculada).
+- **🏆 Campeones del ranking semanal** (#389): cada ranking semanal publicado guarda su campeón (sin duplicar si se publica dos veces; una semana sin visionado no tiene campeón). `/plex` → 🏆 Campeones: las últimas 10 semanas y las victorias de cada persona. Solo desde ahora, sin reconstruir semanas anteriores.
+- **🗳️ Votar la película** (#393): en el formulario de la sesión de cine, varias películas separadas por `|` (hasta 5) se votan con botones; se puede votar más de una y pulsar otra vez quita el voto (solo quien está apuntado). El recordatorio de 10 minutos antes nombra la más votada (en empate, la propuesta antes) y cierra la votación. Sin votos, la del organizador.
+- **🎯 Sugerencias para el grupo** (#399): botón «Sugerir» en la sesión; propone hasta 5 películas que ninguno de los apuntados con Plex vinculado ha visto, con 📥. Quien no tiene Plex vinculado queda fuera; no se recalculan solas al apuntarse alguien.
+- **🔁 Sesión semanal** (#403): «¿Repetir cada semana?» en el formulario. El cron de las sesiones (cada 5 minutos) crea la siguiente cuando empieza la anterior, con su propio mensaje, apuntados, votos y recordatorio; un índice único evita duplicarla al reiniciar. «Cancelar y parar la serie» cancela la siguiente y no crea más.
+- **❌ Pedidos rechazados** (#406): cuando un admin rechaza una petición de Seerr, se avisa a quien la pidió una sola vez, en el canal de novedades o por DM (mismo interruptor de `/avisos` que «Pedidos de Seerr»). La primera comprobación solo fija la base. Borrar una petición no avisa.
+- **📥 Mis pedidos** (#410): `/plex` → 📥 Mis pedidos lista tus peticiones pendientes de aprobación y las cancela con un menú; se comprueba contra Seerr justo antes (una ajena o ya aprobada no se toca) y si Seerr falla queda como estaba. No devuelve el cupo diario.
+- Migración 068. Tests: `tests/plexFase10.test.js`.
+
 ## 2026-10-14 (fase 9 del plan restante: cripto y recordatorios)
 
 - **💸 Vender por monedas** (#365): 💸 Vender → «✏️ Otra cantidad». Escribes las monedas **netas** que quieres recibir y la vista previa enseña cuánto TTCL se vende; se redondea hacia abajo (nunca recibes más de lo pedido). Si lo pedido supera lo que vale tu posición, se avisa y no se vende nada. Mismos límites `min_sell`/`max_sell` y misma comisión.
