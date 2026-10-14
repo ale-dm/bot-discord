@@ -1,5 +1,6 @@
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
+const { guardarAuditado } = require("./guardar");
 const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
 
 // Las horas de 0 a 23 (Madrid) en un desplegable.
@@ -46,6 +47,31 @@ async function accionEventosCasino(interaction, id, guildId) {
 
 async function accionHome(interaction, id, guildId) {
     await interaction.update(buildConfigHome(guildId));
+    return true;
+}
+
+/** 🛠️ Enciende o apaga el modo mantenimiento (#425) y vuelve a pintar Config Global. */
+async function accionMantenimiento(interaction, id, guildId) {
+    const activar = !guildSettings.getSettings(guildId).mantenimiento.activo;
+    guardarAuditado(guildId, interaction.user.id, activar ? "mantenimiento.activar" : "mantenimiento.desactivar", {
+        "mantenimiento.activo": activar,
+    });
+    await interaction.update(buildConfigHome(guildId));
+    return true;
+}
+
+async function accionMantenimientoMensaje(interaction, id, guildId) {
+    await interaction.showModal(
+        simpleModal("paneladmin_cfg_mantenimiento_modal", "Mensaje de mantenimiento", [
+            {
+                id: "mensaje",
+                label: "Lo que ven los demás mientras dura",
+                value: guildSettings.getSettings(guildId).mantenimiento.mensaje,
+                paragraph: true,
+                maxLength: 300,
+            },
+        ]),
+    );
     return true;
 }
 
@@ -282,6 +308,8 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_eventos_xp", accionEventosXp],
     ["paneladmin_cfg_eventos_casino", accionEventosCasino],
     ["paneladmin_cfg_home", accionHome],
+    ["paneladmin_cfg_mantenimiento", accionMantenimiento],
+    ["paneladmin_cfg_mantenimiento_msg", accionMantenimientoMensaje],
     ["paneladmin_cfg_duende", accionDuende],
     ["paneladmin_cfg_cripto", accionCripto],
     ["paneladmin_cfg_casino", accionCasino],

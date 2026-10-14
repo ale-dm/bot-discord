@@ -46,6 +46,9 @@ function camposModulos(cfg, acl) {
 // Campos de Config Global de la clasificación, los eventos y los impuestos.
 function camposAvanzados(cfg, guildId) {
     return [
+        ...(cfg.mantenimiento.activo
+            ? [{ name: "🛠️ Mantenimiento", value: "**ACTIVO**: solo los admins pueden usar el bot", inline: false }]
+            : []),
         {
             name: "🏆 Clasificación semanal",
             value: cfg.clasificacion.canal
@@ -69,7 +72,8 @@ function camposAvanzados(cfg, guildId) {
     ];
 }
 
-function filasConfigHome() {
+function filasConfigHome(guildId) {
+    const mant = guildSettings.getSettings(guildId).mantenimiento;
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_duende").setLabel("🤖 Duende").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_cfg_cripto").setLabel("📈 Cripto").setStyle(ButtonStyle.Primary),
@@ -84,7 +88,18 @@ function filasConfigHome() {
         new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_com_home").setLabel("📣 Comunidad").setStyle(ButtonStyle.Success),
     );
-    return [row1, row2];
+    // 🛠️ Modo mantenimiento (#425): el interruptor y el mensaje que ven los demás.
+    const row3 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId("paneladmin_cfg_mantenimiento")
+            .setLabel(mant.activo ? "✅ Terminar mantenimiento" : "🛠️ Modo mantenimiento")
+            .setStyle(mant.activo ? ButtonStyle.Success : ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId("paneladmin_cfg_mantenimiento_msg")
+            .setLabel("✏️ Mensaje de mantenimiento")
+            .setStyle(ButtonStyle.Secondary),
+    );
+    return [row1, row2, row3];
 }
 
 function buildConfigHome(guildId) {
@@ -99,7 +114,7 @@ function buildConfigHome(guildId) {
         .setColor(0x1abc9c)
         .setTimestamp();
 
-    return { embeds: [embed], components: [...filasConfigHome(), navRow()] };
+    return { embeds: [embed], components: [...filasConfigHome(guildId), navRow()] };
 }
 
 const hora = (h) => `${String(h).padStart(2, "0")}:00`;

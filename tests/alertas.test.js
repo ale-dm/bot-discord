@@ -148,6 +148,7 @@ describe("/paneladmin → 🩺 Sistema → 🔔 Alertas", () => {
                 fields: {
                     getTextInputValue: (k) => campos[k] ?? "",
                     getRadioGroup: (k) => campos[k] ?? "",
+                    getSelectedChannels: () => new Map(),
                     getSelectedUsers: (k) =>
                         new Map(
                             (campos[k] ?? "")

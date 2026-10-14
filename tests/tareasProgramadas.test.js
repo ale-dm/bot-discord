@@ -43,6 +43,7 @@ for (const ruta of [
     "../src/systems/cripto/eventos",
     "../src/systems/patrimonio",
     "../src/systems/backups",
+    "../src/systems/mensajesProgramados",
     "../src/commands/general/encuesta",
     "../src/systems/avisosCooldown",
     "../src/systems/cumpleanos",
@@ -70,8 +71,8 @@ test("al ejecutarse, cada tarea hace su trabajo sin errores", async () => {
 
 const horarios = () => cron.schedule.mock.calls.map(([expr, , opts]) => ({ expr, timezone: opts?.timezone }));
 
-test("se programan 33 tareas de cron, una por cada trabajo del bot", () => {
-    expect(cron.schedule).toHaveBeenCalledTimes(33);
+test("se programan 34 tareas de cron, una por cada trabajo del bot", () => {
+    expect(cron.schedule).toHaveBeenCalledTimes(34);
 });
 
 test("las tareas que dependen de la hora de Madrid llevan esa zona", () => {
@@ -107,6 +108,8 @@ test("las tareas que se lanzan al arrancar están, con su nombre", () => {
         "Partido destacado del día (arranque)",
         "Avisos de cooldown (arranque)",
         "Felicitaciones de cumpleaños (arranque)",
+        "Backup de la BD (arranque)",
+        "Mensajes programados (arranque)",
     ]) {
         expect(nombres).toContain(nombre);
     }

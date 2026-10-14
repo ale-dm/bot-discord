@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 12 del plan restante: administración)
+
+- **🧾 Filtro de la auditoría** (#398): un menú en 🧾 Auditoría elige una familia de acción (banco, ajustes, alertas, logs, mensajes, Duende, XP, Plex, consultas, copias, tareas...). El pie lo indica y ◀ ▶ y 🔄 lo conservan. Con filtro el límite sigue siendo de 100 filas.
+- **👁️ Consultas auditadas** (#402): abrir el historial global del banco, buscar un usuario o abrir una ficha de perfil del Duende deja una fila `consulta.*` con quién y el ID consultado (nunca el contenido). Pasar de página o refrescar no genera filas; mirar tu propio perfil también cuenta.
+- **📝 Ajustes con antes y después** (#407): cada formulario de Config Global (y las reglas de comandos y las alertas) guarda en la auditoría `{campo: {antes, despues}}` solo de lo que cambió; sin cambios, la fila dice «sin cambios». Los secretos siguen enmascarados. El diff se guarda para consultarlo, no se enseña en el panel.
+- **💾 Copias de seguridad en 🩺 Sistema** (#417): lista de copias con tamaño, cuántas se conservan y si existe la de hoy, y **Hacer copia ahora** (auditado como `backup.manual`). Si la de hoy ya existe, pide confirmación antes de sustituirla.
+- **🔍 Integridad de cada copia** (#418): tras copiar se pasa `PRAGMA integrity_check` completo. Una copia dañada se borra, no rota las anteriores y avisa por DM («💾 La copia de seguridad ha fallado»), una vez al día.
+- **🌅 Copia al arrancar** (#419): si el bot arranca pasadas las 04:30 (Madrid) y no existe la copia de hoy, la hace en ese momento.
+- **🕒 Tareas programadas** (#420): vista en 🩺 Sistema con la última ejecución de cada tarea (cuándo, cuánto tardó, OK o error, o «sin ejecutar»), guardada en la base de datos para que sobreviva a un reinicio, y la próxima ejecución. Solo se guarda la última.
+- **▶️ Lanzar una tarea a mano** (#421): un menú elige la tarea, pide confirmación y la ejecuta (`tarea.manual`). Una misma tarea no corre dos veces a la vez. Las que solo envían lo de cada periodo avisan de que no se repetirán si ya salieron. Entran todas las tareas de cron; las que mandan DMs lo avisan. **📄 Exportar** baja el registro en CSV.
+- **🔔 Categorías de alertas** (#422): en 🔔 Alertas, botones para activar o apagar errores, Gemini, Odds API y copias por separado. Una categoría apagada no manda nada ni cuenta para el máximo por hora. El resumen semanal no es una categoría.
+- **📢 Canal de respaldo de alertas** (#423): canal opcional; si nadie recibe el DM porque los tiene cerrados, la alerta se publica ahí (sin menciones). Otros fallos de envío no lo usan; si el canal falla, queda en el log.
+- **✉️ /mensaje programado** (#424): `/mensaje usuario cuando:DD/MM/AAAA HH:MM` (hora de Madrid) deja el DM para esa hora; sale con un margen de 5 minutos, o al arrancar con un aviso de que llega tarde. Lista y cancelación en 🩺 Sistema → ✉️ Mensajes. Se audita `mensaje.programado` y `mensaje.cancelado` sin el texto, que se borra al enviarse o cancelarse. Hasta 20 pendientes, máximo un año.
+- **🛠️ Modo mantenimiento** (#425): en ⚙️ Config Global, un interruptor y el mensaje que ven los demás. Con el modo activo solo los admins usan comandos, botones, selectores y formularios (también los de mensajes ya publicados); las tareas programadas siguen y el diagnóstico de 🩺 Sistema lo muestra.
+- Migración 070. Tests: `tests/adminFase12.test.js`.
+
 ## 2026-10-14 (fase 11 del plan restante: Duende e IA)
 
 - **🖼️ Historial de imágenes** (#357): cada `/imagen` que sale bien guarda autor, descripción, estilo y enlace al mensaje y al adjunto (no la imagen), 90 días. `/imagenes` enseña tus últimas 10 (a un admin, las del servidor), en privado. Si falla el guardado, la imagen se envía igual y queda en el log.

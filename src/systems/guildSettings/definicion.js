@@ -80,6 +80,10 @@ const DEFAULT_FLAT = {
 
     "alertas.enabled": true,
     "alertas.admin_ids": "",
+    "alertas.tipos": "error,gemini,odds,backup",
+    "alertas.canal": "",
+    "mantenimiento.activo": false,
+    "mantenimiento.mensaje": "🛠️ El bot está en mantenimiento. Vuelve a intentarlo en un rato.",
 
     "avisos.cumple_channel_id": "",
     "bienvenida.canal_id": "",
@@ -183,6 +187,10 @@ const KEY_TYPES = {
 
     "alertas.enabled": "boolean",
     "alertas.admin_ids": "string",
+    "alertas.tipos": "string",
+    "alertas.canal": "string",
+    "mantenimiento.activo": "boolean",
+    "mantenimiento.mensaje": "string",
 
     "avisos.cumple_channel_id": "string",
     "bienvenida.canal_id": "string",

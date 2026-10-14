@@ -135,14 +135,23 @@ function silenciado(userId, tipo) {
 
 /** Manda un DM sin mirar preferencias. Para lo que no se puede apagar (alertas de administración). */
 async function sendDm(client, userId, payload) {
+    return (await intentarDm(client, userId, payload)) === "ok";
+}
+
+/**
+ * Como sendDm, pero distingue por qué no llegó (#423): "ok", "cerrado" (tiene los DMs cerrados, código 50007: no es un error del
+ * bot) o "error" (cualquier otro motivo).
+ * @returns {Promise<"ok" | "cerrado" | "error">}
+ */
+async function intentarDm(client, userId, payload) {
     try {
         const user = await client.users.fetch(userId);
         await user.send(payload);
-        return true;
+        return "ok";
     } catch (e) {
         // Lo normal es que tenga los DMs cerrados (código 50007): no es un error del bot.
         log.debug(`No se pudo enviar DM a ${userId}: ${e.code === 50007 ? "DMs cerrados" : e.message}`);
-        return false;
+        return e.code === 50007 ? "cerrado" : "error";
     }
 }
 
@@ -165,4 +174,17 @@ async function enviarAviso(client, userId, tipo, payload, { usuario } = {}) {
     return sendDm(client, userId, payload);
 }
 
-module.exports = { TIPOS, NO_MOLESTAR, tipoValido, activo, noMolestar, fijar, fijarNoMolestar, estado, silenciado, sendDm, enviarAviso };
+module.exports = {
+    TIPOS,
+    NO_MOLESTAR,
+    tipoValido,
+    activo,
+    noMolestar,
+    fijar,
+    fijarNoMolestar,
+    estado,
+    silenciado,
+    sendDm,
+    intentarDm,
+    enviarAviso,
+};

@@ -1,8 +1,8 @@
 // Ajustes de cada servidor: la definición de cada ajuste, cómo se leen y escriben (con caché), los permisos de
 // comandos y los límites de uso. Las piezas están en systems/guildSettings/; este fichero reexporta lo que usa el resto.
 
-const { invalidarAjustes, getSettings, setSetting, setManySettings } = require("./guildSettings/acceso");
-const { parseCsvIds, setCommandAcl, listCommandAcl, isCommandAllowed } = require("./guildSettings/acl");
+const { invalidarAjustes, getSettings, setSetting, setManySettings, cambiosDeAjustes } = require("./guildSettings/acceso");
+const { parseCsvIds, getCommandAcl, setCommandAcl, listCommandAcl, isCommandAllowed } = require("./guildSettings/acl");
 const { checkAndConsumeLimit } = require("./guildSettings/limites");
 
 module.exports = {
@@ -12,7 +12,9 @@ module.exports = {
     invalidarAjustes,
     setSetting,
     setManySettings,
+    cambiosDeAjustes,
 
+    getCommandAcl,
     setCommandAcl,
     listCommandAcl,
     isCommandAllowed,

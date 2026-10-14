@@ -620,3 +620,13 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] Mandar una nota de voz de Discord en el canal del Duende (el reconocedor local de `/escuchar` tiene que estar arrancado); `/resumen` con 30 mensajes.
 - [ ] Recuerdo propuesto por DM: ✏️ Editar (texto corto y texto bueno); con `DUENDE_RECUERDOS_CADUCA_DIAS=0` ver cómo caduca y pierde los botones a las 04:00.
 - [ ] `/conversación` hablando un rato y terminando: resumen en el canal. `/duende` → Personalidad → voz, y una respuesta por voz; 🧠 Recuerdos → olvidar una nota.
+
+**Fase 12: administración (#398, #402, #407, #417-#425)**
+- [ ] 🧾 Auditoría: elegir una familia en el menú, pasar de página y refrescar (el filtro se mantiene); «Todas las acciones» lo quita.
+- [ ] Abrir el historial global del banco, buscar un usuario y abrir una ficha de 🧠 Perfiles: tres filas `consulta.*` en la auditoría; pasar de página no añade filas.
+- [ ] Cambiar un formulario de Config Global (RTP, tienda, una regla de comandos) y ver en la auditoría el antes y el después; reenviarlo igual → «sin cambios».
+- [ ] 🩺 Sistema → 💾 Copias: ver la lista, hacer copia ahora (con la de hoy existente pide confirmación) y comprobar `backup.manual`; arrancar el bot pasadas las 04:30 sin la copia de hoy → la crea.
+- [ ] 🩺 Sistema → 🕒 Tareas: ver «sin ejecutar»/última ejecución, reiniciar y comprobar que se conserva; lanzar una tarea a mano, comprobar `tarea.manual` y 📄 Exportar.
+- [ ] 🔔 Alertas: apagar una categoría y probar; poner un canal de respaldo, cerrar los DMs al bot y provocar una alerta.
+- [ ] `/mensaje usuario cuando:` con una hora a 10 minutos: llega con margen de 5 min; cancelar otro desde ✉️ Mensajes; apagar el bot pasada la hora y arrancarlo → llega con el aviso.
+- [ ] ⚙️ Config Global → 🛠️ Modo mantenimiento: con otra cuenta no admin, comandos y botones dan el mensaje; con admin todo sigue; apagarlo.

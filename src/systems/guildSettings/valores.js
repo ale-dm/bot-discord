@@ -138,7 +138,10 @@ function nodoOtros(flat) {
         alertas: {
             enabled: flat["alertas.enabled"],
             admin_ids: flat["alertas.admin_ids"],
+            tipos: flat["alertas.tipos"],
+            canal: flat["alertas.canal"],
         },
+        mantenimiento: { activo: flat["mantenimiento.activo"], mensaje: flat["mantenimiento.mensaje"] },
         avisos: { cumple_channel_id: flat["avisos.cumple_channel_id"] },
         bienvenida: { canal_id: flat["bienvenida.canal_id"], texto: flat["bienvenida.texto"] },
         sugerencias: { canal_id: flat["sugerencias.canal_id"] },

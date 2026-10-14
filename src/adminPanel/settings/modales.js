@@ -8,17 +8,17 @@ function horaElegida(fields, id) {
 }
 const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
+const { guardarAuditado } = require("./guardar");
 const { buildDuendePanel, buildEventosPanel } = require("./vistas");
 
 async function modalDuende(interaction, id, guildId) {
     const modeloAntes = guildSettings.getSettings(guildId).duende.model;
     const modelo = interaction.fields.getTextInputValue("model").trim();
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.duende.update", {
         "duende.model": modelo,
         "duende.temperature": interaction.fields.getTextInputValue("temperature").trim(),
         "duende.history_limit": interaction.fields.getTextInputValue("history").trim(),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.duende.update" });
     if (modelo === modeloAntes) {
         await interaction.reply({ content: "✅ Configuración de Duende actualizada.", flags: MessageFlags.Ephemeral });
         return true;
@@ -37,28 +37,16 @@ async function modalDuende(interaction, id, guildId) {
 
 async function modalDuendeChannel(interaction, id, guildId) {
     const channelId = canalElegido(interaction.fields, "channel");
-    guildSettings.setSetting(guildId, "duende.allowed_channel_id", channelId);
-    adminAudit.logAdminAction({
-        guildId,
-        actorId: interaction.user.id,
-        action: "settings.duende.channel",
-        details: { channelId: channelId || null },
-    });
+    guardarAuditado(guildId, interaction.user.id, "settings.duende.channel", { "duende.allowed_channel_id": channelId });
     await interaction.reply({ content: "✅ Canal permitido de Duende actualizado.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalDuendeEspontaneo(interaction, id, guildId) {
     const channelId = canalElegido(interaction.fields, "channel");
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.duende.espontaneo", {
         "duende.espontaneo_enabled": interaction.fields.getRadioGroup("enabled"),
         "duende.espontaneo_channel_id": channelId,
-    });
-    adminAudit.logAdminAction({
-        guildId,
-        actorId: interaction.user.id,
-        action: "settings.duende.espontaneo",
-        details: { channelId: channelId || null },
     });
     await interaction.reply({ content: "✅ Mensajes espontáneos del Duende actualizados.", flags: MessageFlags.Ephemeral });
     return true;
@@ -89,46 +77,42 @@ async function modalDuendeTono(interaction, id, guildId) {
         "duende.madrugada_hasta": hasta,
         "duende.canales_formales": formales.join(","),
     };
-    guildSettings.setManySettings(guildId, valores);
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.duende.tono", details: valores });
+    guardarAuditado(guildId, interaction.user.id, "settings.duende.tono", valores);
     if (interaction.isFromMessage?.()) await interaction.update(buildDuendePanel(guildId));
     else await interaction.reply({ content: "✅ Tono del Duende actualizado.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalCriptoMarket(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.cripto.market", {
         "cripto.fee_buy_pct": interaction.fields.getTextInputValue("feeBuy").trim(),
         "cripto.fee_sell_pct": interaction.fields.getTextInputValue("feeSell").trim(),
         "cripto.max_impacto_pct": interaction.fields.getTextInputValue("impacto").trim() || "0",
         "cripto.eventos_canal": canalElegido(interaction.fields, "canal"),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.cripto.market" });
     await interaction.reply({ content: "✅ Configuración de mercado cripto actualizada.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalCriptoLimits(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.cripto.limits", {
         "cripto.min_buy": interaction.fields.getTextInputValue("minBuy").trim(),
         "cripto.max_buy": interaction.fields.getTextInputValue("maxBuy").trim(),
         "cripto.cooldown_buy_sec": interaction.fields.getTextInputValue("buyCd").trim(),
         "cripto.min_sell": interaction.fields.getTextInputValue("minSell").trim(),
         "cripto.max_sell": interaction.fields.getTextInputValue("maxSell").trim(),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.cripto.limits" });
     await interaction.reply({ content: "✅ Límites de compra/venta cripto actualizados.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalCasinoLimits(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.casino.limits", {
         "casino.min_bet": interaction.fields.getTextInputValue("min").trim(),
         "casino.max_bet": interaction.fields.getTextInputValue("max").trim(),
         "casino.global_cooldown_sec": interaction.fields.getTextInputValue("cooldown").trim(),
         "casino.daily_limit": interaction.fields.getTextInputValue("daily").trim(),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.limits" });
     await interaction.reply({ content: "✅ Límites de casino actualizados.", flags: MessageFlags.Ephemeral });
     return true;
 }
@@ -145,41 +129,47 @@ function valoresPorJuego(interaction, prefijo) {
 }
 
 async function modalCasinoTopes(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, valoresPorJuego(interaction, "max_bet"));
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.topes" });
+    guardarAuditado(guildId, interaction.user.id, "settings.casino.topes", valoresPorJuego(interaction, "max_bet"));
     await interaction.reply({ content: "✅ Topes de apuesta por juego actualizados.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalCasinoEsperas(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, valoresPorJuego(interaction, "cooldown_sec"));
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.esperas" });
+    guardarAuditado(guildId, interaction.user.id, "settings.casino.esperas", valoresPorJuego(interaction, "cooldown_sec"));
     await interaction.reply({ content: "✅ Cooldown por juego actualizado.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalCasinoRtp(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.casino.rtp", {
         "casino.rtp_blackjack": interaction.fields.getTextInputValue("bj").trim(),
         "casino.rtp_tragaperras": interaction.fields.getTextInputValue("slots").trim(),
         "casino.rtp_ruleta": interaction.fields.getTextInputValue("ruleta").trim(),
         "casino.rtp_adivinar": interaction.fields.getTextInputValue("adivinar").trim(),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.casino.rtp" });
     await interaction.reply({ content: "✅ RTP de casino actualizado.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalTienda(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.tienda.update", {
         "tienda.enabled": interaction.fields.getRadioGroup("enabled"),
         "tienda.buy_cooldown_sec": interaction.fields.getTextInputValue("buyCd").trim(),
         "tienda.daily_limit": interaction.fields.getTextInputValue("daily").trim(),
         "tienda.notif_channel_id": canalElegido(interaction.fields, "channel"),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.tienda.update" });
     await interaction.reply({ content: "✅ Configuración de tienda actualizada.", flags: MessageFlags.Ephemeral });
     return true;
+}
+
+// La regla de un comando antes y después, solo con lo que cambió (#407).
+function diffAcl(antes, despues) {
+    const cambios = {};
+    for (const campo of Object.keys(despues)) {
+        if (JSON.stringify(antes[campo]) !== JSON.stringify(despues[campo]))
+            cambios[campo] = { antes: antes[campo], despues: despues[campo] };
+    }
+    return Object.keys(cambios).length ? { cambios } : { sinCambios: true };
 }
 
 async function modalAcl(interaction, id, guildId) {
@@ -191,25 +181,31 @@ async function modalAcl(interaction, id, guildId) {
         return true;
     }
 
-    guildSettings.setCommandAcl(guildId, command, {
+    const antes = guildSettings.getCommandAcl(guildId, command);
+    const despues = {
         enabled: enabledRaw === "1" || enabledRaw === "true" || enabledRaw === "si",
         allowedChannels: canalesElegidos(interaction.fields, "channels"),
         allowedRoles: rolesElegidos(interaction.fields, "roles"),
+    };
+    guildSettings.setCommandAcl(guildId, command, despues);
+    adminAudit.logAdminAction({
+        guildId,
+        actorId: interaction.user.id,
+        action: "settings.acl.update",
+        details: { command, ...diffAcl(antes, despues) },
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.acl.update", details: { command } });
 
     await interaction.reply({ content: `✅ ACL actualizada para /${command}.`, flags: MessageFlags.Ephemeral });
     return true;
 }
 
 async function modalLogros(interaction, id, guildId) {
-    guildSettings.setManySettings(guildId, {
+    guardarAuditado(guildId, interaction.user.id, "settings.logros.update", {
         "logros.enabled": interaction.fields.getRadioGroup("enabled"),
         "logros.reward_multiplier": interaction.fields.getTextInputValue("mult").trim(),
         "logros.notify_channel_id": canalElegido(interaction.fields, "channel"),
         "logros.disabled_categories": interaction.fields.getTextInputValue("disabled").trim().toLowerCase(),
     });
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.logros.update" });
     await interaction.reply({ content: "✅ Configuración de logros actualizada.", flags: MessageFlags.Ephemeral });
     return true;
 }
@@ -249,14 +245,25 @@ async function modalEventosXp(interaction, id, guildId) {
         }
         valores = { "eventos.casino_activo": interaction.fields.getRadioGroup("activo"), "eventos.casino_pct": pct };
     }
-    guildSettings.setManySettings(guildId, valores);
-    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "settings.eventos.update", details: valores });
+    guardarAuditado(guildId, interaction.user.id, "settings.eventos.update", valores);
     if (interaction.isFromMessage?.()) await interaction.update(buildEventosPanel(guildId));
     else await interaction.reply({ content: "✅ Eventos actualizados.", flags: MessageFlags.Ephemeral });
     return true;
 }
 
+async function modalMantenimientoMensaje(interaction, id, guildId) {
+    const mensaje = interaction.fields.getTextInputValue("mensaje").trim();
+    if (!mensaje) {
+        await interaction.reply({ content: "❌ El mensaje no puede estar vacío.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    guardarAuditado(guildId, interaction.user.id, "mantenimiento.mensaje", { "mantenimiento.mensaje": mensaje });
+    await interaction.reply({ content: "✅ Mensaje de mantenimiento actualizado.", flags: MessageFlags.Ephemeral });
+    return true;
+}
+
 const ACCIONES_MODAL = new Map([
+    ["paneladmin_cfg_mantenimiento_modal", modalMantenimientoMensaje],
     ["paneladmin_cfg_duende_modal", modalDuende],
     ["paneladmin_cfg_duende_channel_modal", modalDuendeChannel],
     ["paneladmin_cfg_duende_espontaneo_modal", modalDuendeEspontaneo],

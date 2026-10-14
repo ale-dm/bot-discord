@@ -16,7 +16,7 @@ const { handleSettingsButton, handleSettingsModal } = require("../../adminPanel/
 const { handleApuestasButton, handleApuestasChannelSelect, handleApuestasModal } = require("../../adminPanel/apuestas");
 const { handleCatalogoButton, handleCatalogoModal } = require("../../adminPanel/catalogo");
 const { handleSistemaButton, handleSistemaSelect, handleSistemaModal } = require("../../adminPanel/sistema");
-const { handleAuditButton } = require("../../adminPanel/audit");
+const { handleAuditButton, handleAuditSelect } = require("../../adminPanel/audit");
 const {
     handlePlexButton,
     handlePlexUserSelect,
@@ -75,6 +75,7 @@ module.exports = {
                 "paneladmin_levels_reward_search_pick_",
                 "paneladmin_perfiles_",
                 "paneladmin_sis_",
+                "paneladmin_audit_filtro",
                 "paneladmin_plex_",
                 "paneladmin_sonidos_",
                 "paneladmin_pase_tope_sel",
@@ -197,6 +198,7 @@ module.exports = {
     ]),
 
     handleStringSelect: manejador("handleStringSelect", "Error al procesar selector.", [
+        handleAuditSelect,
         handlePerfilesStringSelect,
         handleSistemaSelect,
         handlePlexStringSelect,

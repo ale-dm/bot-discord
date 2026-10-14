@@ -47,6 +47,7 @@ const xpSystem = require("./systems/xpSystem");
 const guildSettings = require("./systems/guildSettings");
 const activeGames = require("./systems/activeGames");
 const bienvenida = require("./systems/bienvenida");
+const mantenimiento = require("./systems/mantenimiento");
 const { createComponentRouter } = require("./core/componentRouter");
 // Mensajes de texto y filtros: src/core/mensajes.js
 const { registrarMensajes } = require("./core/mensajes");
@@ -192,6 +193,17 @@ async function replySafe(interaction, payload) {
     }
 }
 
+// Con el modo mantenimiento activo, quien no es admin recibe el mensaje y no se sigue procesando su interacción.
+async function frenarPorMantenimiento(interaction) {
+    const mensaje = mantenimiento.mensajeSiBloquea(interaction);
+    if (!mensaje) return false;
+    log.info(
+        `Mantenimiento: bloqueado ${interaction.commandName ? `/${interaction.commandName}` : interaction.customId} · ${whoWhere(interaction)}`,
+    );
+    await replySafe(interaction, { content: mensaje, flags: MessageFlags.Ephemeral });
+    return true;
+}
+
 // Autocompletado de las opciones de un comando (/conectar sonido): lo responde el propio comando, sin ACL ni registro.
 async function responderAutocompletado(interaction) {
     try {
@@ -211,6 +223,7 @@ client.on("interactionCreate", async (interaction) => {
         return true;
     };
 
+    if (!interaction.isAutocomplete?.() && (await frenarPorMantenimiento(interaction))) return; // modo mantenimiento
     // ─── Botones, selects y formularios ───────────────────────────────────
     const route = componentRouter.match(interaction);
     if (route) {

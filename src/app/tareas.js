@@ -1,6 +1,6 @@
 // ⏰ Tareas programadas del bot: avisos diarios y semanales, Plex, apuestas, cripto, negocios y copias de seguridad.
 // Cada una va envuelta en runJob (registra errores y evita solapamientos). Se programan al arrancar (clientReady).
-const cron = require("node-cron");
+const { cron } = require("../core/tareasRegistro");
 const { ActivityType } = require("discord.js");
 const { createLogger } = require("../core/logger");
 const alertas = require("../systems/alertas");
@@ -52,6 +52,7 @@ const encuesta = require("../commands/general/encuesta");
 const avisosCooldown = require("../systems/avisosCooldown");
 const cumpleanos = require("../systems/cumpleanos");
 const backups = require("../systems/backups");
+const mensajesProgramados = require("../systems/mensajesProgramados");
 
 const log = createLogger("Bot");
 const Estado = process.env.ESTADOS ? process.env.ESTADOS.split(",") : ["Jugando"];
@@ -347,12 +348,20 @@ function programarLiquidacionApuestas(client) {
     );
 }
 
-function programarMantenimiento() {
+function programarMantenimiento(client) {
     // Copia de seguridad diaria de la BD (data/backups, se conservan las últimas 7).
     cron.schedule("30 4 * * *", () => runJob("Backup de la BD", () => backups.hacerBackup()), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+    // Si el bot estaba caído a las 04:30, la copia de hoy se hace al arrancar (#419).
+    runJob("Backup de la BD (arranque)", () => (backups.faltaCopiaAlArrancar() ? backups.hacerBackup() : undefined));
+    // Mensajes de /mensaje programados para una hora (#424): cada 5 minutos y al arrancar, por si el bot estaba apagado.
+    cron.schedule("*/5 * * * *", () => runJob("Mensajes programados", () => mensajesProgramados.enviarVencidos(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Mensajes programados (arranque)", () => mensajesProgramados.enviarVencidos(client));
     // Partidas de casino abandonadas (>15 min sin tocar): se liquidan como perdidas.
     setInterval(
         () =>
@@ -381,7 +390,7 @@ function programarTareas(client) {
     programarRetosYEconomia(client);
     programarComunidad(client);
     programarLiquidacionApuestas(client);
-    programarMantenimiento();
+    programarMantenimiento(client);
 }
 
 module.exports = { programarTareas };
