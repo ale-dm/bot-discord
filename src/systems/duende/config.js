@@ -6,6 +6,8 @@ const DUENDE_MAX_TOKENS = Number(process.env.DUENDE_MAX_TOKENS || 1024);
 const DUENDE_MAX_TOKENS_FALLBACK = Number(process.env.DUENDE_MAX_TOKENS_FALLBACK || 512);
 const DUENDE_HISTORY_LIMIT = Number(process.env.DUENDE_HISTORY_LIMIT || 20);
 const DUENDE_DAILY_LIMIT = Number(process.env.DUENDE_DAILY_LIMIT || 50);
+// El tope de respuestas por persona y día (#371); 0 lo desactiva.
+const DUENDE_DAILY_LIMIT_USER = Number(process.env.DUENDE_DAILY_LIMIT_USER ?? 15);
 const DUENDE_PROMPT_MSG_MAX_CHARS = Number(process.env.DUENDE_PROMPT_MSG_MAX_CHARS || 280);
 const DUENDE_LOG_FULL_PROMPT = String(process.env.DUENDE_LOG_FULL_PROMPT || "0") === "1";
 
@@ -17,6 +19,7 @@ module.exports = {
     DUENDE_MAX_TOKENS_FALLBACK,
     DUENDE_HISTORY_LIMIT,
     DUENDE_DAILY_LIMIT,
+    DUENDE_DAILY_LIMIT_USER,
     DUENDE_PROMPT_MSG_MAX_CHARS,
     DUENDE_LOG_FULL_PROMPT,
 };

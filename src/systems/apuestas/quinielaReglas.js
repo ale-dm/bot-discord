@@ -43,4 +43,44 @@ function avisoDeApuesta({ userId, guildId, quinielaId, partidos, pronosticos, pr
     return null;
 }
 
-module.exports = { MAX_BET_AMOUNT, MIN_BET_AMOUNT, SIN_EFECTIVO, pronosticosValidos, cierreDeLaJornada, avisoDeApuesta };
+/**
+ * El favorito de un partido según las cuotas (#366): «1», «X» o «2» con la cuota más baja. El empate solo cuando su cuota es la
+ * menor sin empatar con otra; en un empate de cuotas entre local y visitante, gana el local. null si el partido no tiene ninguna cuota.
+ */
+function favorito({ cuota_home: local, cuota_draw: empate, cuota_away: visitante }) {
+    const validas = [
+        ["1", Number(local)],
+        ["2", Number(visitante)],
+        ["X", Number(empate)],
+    ].filter(([, c]) => Number.isFinite(c) && c > 0);
+    if (!validas.length) return null;
+    return validas.reduce((mejor, actual) => (actual[1] < mejor[1] ? actual : mejor))[0];
+}
+
+/**
+ * Rellena con el favorito los partidos sin pronóstico (#366). No toca los que ya tienen pronóstico ni los que ya están bloqueados
+ * por tiempo. `partidos`: los de la quiniela con sus cuotas (cuota_home, cuota_draw, cuota_away) y su hora de inicio.
+ * @returns {{ pronosticos: (string|null)[], rellenados: number }}
+ */
+function sugerirPronosticos(partidos, pronosticos) {
+    let rellenados = 0;
+    const nuevos = pronosticos.map((pronostico, i) => {
+        const partido = partidos[i];
+        if (pronostico || !partido || estaBloqueadoPorTiempo(partido.start_time)) return pronostico;
+        const sugerido = favorito(partido);
+        if (sugerido) rellenados++;
+        return sugerido ?? pronostico;
+    });
+    return { pronosticos: nuevos, rellenados };
+}
+
+module.exports = {
+    MAX_BET_AMOUNT,
+    MIN_BET_AMOUNT,
+    SIN_EFECTIVO,
+    pronosticosValidos,
+    cierreDeLaJornada,
+    avisoDeApuesta,
+    favorito,
+    sugerirPronosticos,
+};

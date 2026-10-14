@@ -3,6 +3,8 @@
 // /tienda (añadir, editar, eliminar). La configuración de la tienda (activa, límites, canal) está en Config Global.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const repo = require("../repositorios/catalogo");
+const tienda = require("../systems/tienda");
+const extras = require("./catalogoExtras");
 const adminAudit = require("../systems/adminAudit");
 const { simpleModal, modalConCampos, opcionElegida } = require("./common");
 const { efectoProteccion } = require("../systems/robar");
@@ -48,6 +50,11 @@ function buildCatalogo(pagina = 1, aviso = "") {
         new ButtonBuilder().setCustomId("paneladmin_cat_vender").setLabel("🏷️ A la venta").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_cat_quitar").setLabel("❌ Quitar de la venta").setStyle(ButtonStyle.Secondary),
     );
+    const acciones2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_cat_oferta").setLabel("🏷️ Oferta temporal").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_cat_precios").setLabel("💱 Precios y recompra").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_cat_codigos").setLabel("🎟️ Códigos").setStyle(ButtonStyle.Secondary),
+    );
     const nav = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`paneladmin_cat_pag_${pagina - 1}`)
@@ -61,7 +68,7 @@ function buildCatalogo(pagina = 1, aviso = "") {
             .setDisabled(pagina >= paginas),
         new ButtonBuilder().setCustomId("paneladmin_home").setLabel("◀ Panel principal").setStyle(ButtonStyle.Secondary),
     );
-    return { content: "", embeds: [embed], components: [acciones, nav] };
+    return { content: "", embeds: [embed], components: [acciones, acciones2, nav] };
 }
 
 const MODALES = {
@@ -114,7 +121,7 @@ async function handleCatalogoButton(interaction) {
         await interaction.showModal(MODALES[id]());
         return true;
     }
-    return false;
+    return extras.boton(interaction);
 }
 
 // Lee un campo del formulario; si el modal no lo tiene, devuelve cadena vacía.
@@ -217,12 +224,18 @@ function aplicar(interaction) {
 
 async function handleCatalogoModal(interaction) {
     if (!interaction.customId.startsWith("paneladmin_cat_")) return false;
+    if (await extras.modal(interaction)) return true;
+    // Lo que cambia un objeto a la venta (precio, stock): se mira antes y después para avisar a quien lo sigue (#404).
+    const venta =
+        interaction.customId === "paneladmin_cat_vender_modal" ? repo.ventaDeObjeto(parseInt(leerCampo(interaction, "id"), 10)) : null;
+    const antes = venta ? tienda.itemTienda(venta.id) : null;
     const r = aplicar(interaction);
     if (!r) return false;
     if (r.error) {
         await interaction.reply(privado(`❌ ${r.error}`));
         return true;
     }
+    if (antes) await extras.avisarSeguidores(interaction.client, antes, tienda.itemTienda(antes.tiendaId));
     if (interaction.isFromMessage?.()) await interaction.update(buildCatalogo(1, r.aviso));
     else await interaction.reply(privado(r.aviso));
     return true;

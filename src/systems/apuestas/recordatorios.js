@@ -1,10 +1,13 @@
-// Recordatorio por DM antes de un partido al que se ha apostado (cron cada 5 min en index.js). Cada apuesta se
-// recuerda una sola vez (apuestas_usuario.recordado); quien tenga varias en partidos que empiezan pronto recibe
-// un único mensaje con todas. Se configura en /paneladmin → ⚽ Apuestas (apuestas.recordatorio y _min).
+// Recordatorios por DM de las apuestas (cron cada 5 min en app/tareas.js). Se configuran en /paneladmin → ⚽ Apuestas:
+// - Antes de un partido al que se ha apostado (apuestas.recordatorio y _min): cada apuesta se recuerda una sola vez
+//   (apuestas_usuario.recordado); quien tenga varias en partidos que empiezan pronto recibe un único mensaje con todas.
+// - Una quiniela sin enviar (#340, apuestas.recordatorio_quiniela_horas): unas horas antes de que se cierre, a quien suele jugarlas
+//   (ha apostado en alguna otra, o tiene un borrador de esta) y aún no ha enviado la de la jornada. Una vez por quiniela y persona.
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
 const { enviarAviso } = require("../avisosDm");
 const { DEPORTES } = require("../../services/oddsApi");
+const { QUINIELA_LOCK_MINUTES } = require("./quinielas");
 const { marcadorDe } = require("./marcador");
 const mercados = require("./mercados");
 const { createLogger } = require("../../core/logger");
@@ -57,8 +60,8 @@ function mensaje(apuestas, minutos) {
     return `⏰ **En menos de ${minutos} minutos empieza${apuestas.length > 1 ? "n" : ""}:**\n${lineas.join("\n")}\n\nSíguelo en /juegos → 📋 Mis jugadas.`;
 }
 
-/** Manda los recordatorios pendientes. @returns {Promise<number>} DMs enviados */
-async function enviarRecordatorios(client, { ahora = Date.now() } = {}) {
+/** Manda los recordatorios de partidos pendientes. @returns {Promise<number>} DMs enviados */
+async function enviarRecordatoriosPartidos(client, ahora) {
     const cfg = configuracion(client);
     if (!cfg) return 0;
     const apuestas = pendientesDeRecordar(cfg.minutos, ahora);
@@ -78,4 +81,84 @@ async function enviarRecordatorios(client, { ahora = Date.now() } = {}) {
     return enviados;
 }
 
-module.exports = { enviarRecordatorios };
+// Las horas antes del cierre de la quiniela a las que se avisa (#340): las del primer servidor con el recordatorio activado. 0 = no se avisa.
+function horasQuiniela(client) {
+    for (const guild of client.guilds.cache.values()) {
+        const cfg = guildSettings.getSettings(guild.id).apuestas;
+        if (cfg.recordatorio) return Math.max(0, Math.min(72, Number(cfg.recordatorio_quiniela_horas) || 0));
+    }
+    return 0;
+}
+
+/**
+ * Las quinielas abiertas que se cierran dentro de las próximas `horas` (el cierre es QUINIELA_LOCK_MINUTES antes del primer partido) y
+ * todavía no se han cerrado: nunca se avisa de una ya cerrada. Con el momento del cierre (ms).
+ */
+function quinielasPorCerrar(horas, ahora = Date.now()) {
+    return db
+        .prepare(
+            `SELECT q.id, q.jornada, q.deporte, MIN(qp.start_time) AS primer FROM quinielas q
+             JOIN quiniela_partidos qp ON qp.quiniela_id = q.id WHERE q.estado = 'abierta' GROUP BY q.id`,
+        )
+        .all()
+        .map((q) => ({ ...q, cierre: Date.parse(q.primer) - QUINIELA_LOCK_MINUTES * 60 * 1000 }))
+        .filter((q) => q.cierre > ahora && q.cierre - ahora <= horas * 3600 * 1000);
+}
+
+/** Quién debe recibir el aviso de una quiniela: quien juega quinielas (ha apostado en otra, o tiene un borrador de esta) y no ha enviado esta ni se le ha avisado ya. */
+function aAvisarDeQuiniela(quinielaId) {
+    return db
+        .prepare(
+            `SELECT userId FROM (
+                 SELECT user_id AS userId FROM quiniela_apuestas WHERE quiniela_id != @q
+                 UNION SELECT userId FROM quiniela_borrador WHERE quinielaId = @q
+             )
+             WHERE userId NOT IN (SELECT user_id FROM quiniela_apuestas WHERE quiniela_id = @q)
+               AND userId NOT IN (SELECT userId FROM quiniela_recordadas WHERE quinielaId = @q)`,
+        )
+        .all({ q: quinielaId })
+        .map((f) => f.userId);
+}
+
+function mensajeQuiniela(q, borrador) {
+    const unix = Math.floor(q.cierre / 1000);
+    const deporte = DEPORTES[q.deporte] || DEPORTES.laliga;
+    return (
+        `🧾 **Te falta enviar la quiniela ${q.jornada}** (${deporte.name}): se cierra <t:${unix}:R> (<t:${unix}:t>).\n` +
+        (borrador ? `📝 Tienes un borrador a medias: ${borrador.hechos} de ${borrador.total} pronósticos.\n` : "") +
+        "Envíala en /juegos → ⚽ Apuestas → 🧾 Quiniela."
+    );
+}
+
+/** El borrador de una persona en una quiniela: cuántos pronósticos lleva (o null). */
+function resumenBorrador(userId, quinielaId) {
+    const fila = db
+        .prepare("SELECT pronosticos FROM quiniela_borrador WHERE userId = ? AND quinielaId = ?")
+        .get(String(userId), quinielaId);
+    return fila ? { hechos: [...fila.pronosticos].filter((c) => c !== "-").length, total: fila.pronosticos.length } : null;
+}
+
+/** Avisa de las quinielas por cerrar a quien no las ha enviado. @returns {Promise<number>} DMs enviados */
+async function enviarRecordatoriosQuiniela(client, ahora) {
+    const horas = horasQuiniela(client);
+    if (!horas) return 0;
+    const marcar = db.prepare("INSERT OR IGNORE INTO quiniela_recordadas (quinielaId, userId, enviado_en) VALUES (?, ?, ?)");
+    let enviados = 0;
+    for (const q of quinielasPorCerrar(horas, ahora)) {
+        for (const userId of aAvisarDeQuiniela(q.id)) {
+            // Se marca antes de enviar: unos DM cerrados no se reintentan cada 5 minutos.
+            if (marcar.run(q.id, userId, ahora).changes !== 1) continue;
+            if (await enviarAviso(client, userId, "quiniela_recordatorio", { content: mensajeQuiniela(q, resumenBorrador(userId, q.id)) }))
+                enviados++;
+        }
+    }
+    if (enviados) log.info(`Recordatorio de quiniela: ${enviados} DMs`);
+    return enviados;
+}
+
+/** Manda los recordatorios pendientes: de partidos y de quinielas sin enviar. @returns {Promise<number>} DMs enviados */
+async function enviarRecordatorios(client, { ahora = Date.now() } = {}) {
+    return (await enviarRecordatoriosPartidos(client, ahora)) + (await enviarRecordatoriosQuiniela(client, ahora));
+}
+
+module.exports = { quinielasPorCerrar, aAvisarDeQuiniela, enviarRecordatorios };

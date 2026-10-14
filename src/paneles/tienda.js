@@ -6,6 +6,7 @@ const { botonSacar } = require("./economia");
 const dinero = require("../systems/dinero");
 const objetos = require("../systems/objetos");
 const tienda = require("../systems/tienda");
+const deseos = require("../systems/tiendaDeseos");
 
 const ITEMS_POR_PAGINA = 4; // una fila con un botón de compra por objeto
 const HISTORIAL_POR_PAGINA = 5;
@@ -27,6 +28,8 @@ function filaPestanasTienda(actual) {
         boton("catalogo", "tienda_volver_1", "🛒 Catálogo"),
         boton("inventario", "tienda_inv_1_tab", "🎒 Inventario"),
         boton("compras", "historial_ver_1", "🧾 Mis compras"),
+        boton("mercado", "mercado_ver_1", "🏷️ Mercado"),
+        new ButtonBuilder().setCustomId("mercado_canjear").setLabel("🎟️ Canjear").setStyle(ButtonStyle.Secondary),
     );
 }
 
@@ -101,9 +104,16 @@ function emojiPorTipo(tipo) {
     }
 }
 
+/** El precio de un objeto: con oferta, el de lista tachado y el rebajado; si ha subido por la demanda, el base. */
+function textoPrecio(item) {
+    if (item.enOferta) return `~~${item.precioLista}~~ ${item.precio} 🪙 (🏷️ -${item.descuento} %)`;
+    if (item.precioLista > item.precioBase) return `${item.precio} 🪙 (base ${item.precioBase})`;
+    return `${item.precio} 🪙`;
+}
+
 /** El campo del embed de un objeto del catálogo: nombre con precio y stock y, debajo, tipo, rareza y avisos. */
 function campoObjetoCatalogo(item, isAdmin) {
-    let name = `${emojiPorTipo(item.tipo)} ${isAdmin ? `[#${item.tiendaId}] ` : ""}${item.nombre} — ${item.precio} 🪙`;
+    let name = `${emojiPorTipo(item.tipo)} ${isAdmin ? `[#${item.tiendaId}] ` : ""}${item.nombre} — ${textoPrecio(item)}`;
     if (item.unico) name = "🟢 " + name;
     if (item.stock !== null) name += ` (Stock: ${item.stock})`;
     let value = item.descripcion ? item.descripcion.slice(0, 300) : "Sin descripción";
@@ -112,6 +122,7 @@ function campoObjetoCatalogo(item, isAdmin) {
     if (item.stock !== null && item.stock > 0 && item.stock <= 3) value += "  \n⚠️ ¡Últimas unidades!";
     if (item.stock !== null && item.stock === 0) value += "  \n❌ Agotado";
     if (item.rolId || (item.tipo || "").toLowerCase() === "rol") value += "\n🎭 Asigna rol automáticamente al comprar";
+    if (item.enOferta && item.oferta_fin) value += `\n⏳ Oferta hasta <t:${Math.floor(item.oferta_fin / 1000)}:f>`;
     return { name: name.slice(0, 256), value: value.slice(0, 1024), inline: false };
 }
 
@@ -174,6 +185,7 @@ function buildTiendaPage(items, pagina, isAdmin, filtros = {}) {
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pagina >= totalPaginas),
         ...botonesBuscar("catalogo", filtros),
+        new ButtonBuilder().setCustomId("mercado_deseos").setLabel("⭐ Mis deseos").setStyle(ButtonStyle.Secondary),
     );
     filas.push(navRow, ...filasFiltros("catalogo", filtros), filaPestanasTienda("catalogo"));
 
@@ -185,7 +197,7 @@ function buildConfirmacion(item, saldo, tiendaCfg, userId = null) {
         .setTitle("¿Confirmar compra?")
         .setDescription(
             `**${item.nombre}**\n${item.descripcion}\n\n` +
-                `💰 Precio: **${item.precio} monedas**\n` +
+                `💰 Precio: **${textoPrecio(item)}**\n` +
                 `${item.stock !== null ? `Stock disponible: ${item.stock}\n` : ""}` +
                 `Tu efectivo: **${saldo} monedas**${saldo < item.precio ? " (no te llega: saca del banco)" : ""}\n\n` +
                 `Política: cooldown **${Number(tiendaCfg.buy_cooldown_sec || 0)}s** · límite diario **${Number(tiendaCfg.daily_limit || 0) || "∞"}**`,
@@ -193,9 +205,14 @@ function buildConfirmacion(item, saldo, tiendaCfg, userId = null) {
         .setColor(0xf39c12);
     if (item.imagen) embed.setThumbnail(item.imagen);
 
+    const sigue = userId ? deseos.sigue(userId, item.tiendaId) : false;
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`tienda_comprar_${item.tiendaId}`).setLabel("✅ Confirmar compra").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("tienda_cancelar").setLabel("Cancelar").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+            .setCustomId(`mercado_deseo_${item.tiendaId}`)
+            .setLabel(sigue ? "⭐ Siguiendo (quitar)" : "⭐ Seguir")
+            .setStyle(ButtonStyle.Secondary),
     );
     // Si no te llega el efectivo pero tienes en el banco, sacarlo sin salir de aquí.
     if (saldo < item.precio && userId && dinero.banco(userId) > 0) row.addComponents(botonSacar(`tienda_confirmar_${item.tiendaId}`));
@@ -332,6 +349,7 @@ function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(pagina >= totalPaginas),
             ...botonesBuscar("inventario", filtros),
+            new ButtonBuilder().setCustomId("mercado_gestionar").setLabel("🎁 Gestionar").setStyle(ButtonStyle.Primary),
         ),
         ...filasFiltros("inventario", filtros),
         filaPestanasTienda("inventario"),
@@ -341,6 +359,7 @@ function buildInventario(userId, pagina = 1, aviso = null, filtros = {}) {
 
 module.exports = {
     SIN_FILTRO,
+    filaPestanasTienda,
     buildTiendaPage,
     buildConfirmacion,
     buildCompraRealizada,

@@ -20,6 +20,7 @@ function barraLogro(progress, target) {
 const CATEGORIAS = {
     social: "💬 Social",
     xp: "✨ XP y voz",
+    racha: "🔥 Racha",
     casino: "🎰 Casino",
     cripto: "📈 Cripto",
     tienda: "🛒 Tienda",

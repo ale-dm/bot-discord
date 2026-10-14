@@ -1,7 +1,7 @@
 // Hablar con el Duende: del mensaje al prompt, a Gemini y a la respuesta (texto, GIF o voz).
 
 const guildSettings = require("../../../systems/guildSettings");
-const { GEMINI_MODEL, DUENDE_DAILY_LIMIT, DUENDE_LOG_FULL_PROMPT } = require("../../../systems/duende/config");
+const { GEMINI_MODEL, DUENDE_DAILY_LIMIT, DUENDE_DAILY_LIMIT_USER, DUENDE_LOG_FULL_PROMPT } = require("../../../systems/duende/config");
 const { conversationHistory, guardarDiferido } = require("../../../systems/duende/memoria");
 const { mentionizeKnownNames } = require("../../../systems/duende/personas");
 const { buildPromptFromParts } = require("../gemini");
@@ -74,7 +74,7 @@ function contextoDeHerramientas(interaction, channelId) {
         channelId,
         // 🧙 Lo que el Duende proponga (un reto, una apuesta, un préstamo: F-DU-03) sale después con botones.
         // Por voz (/escuchar) no hay dónde pulsarlos: ahí no se ofrecen esas herramientas.
-        ...(interaction?.silentTextReply ? {} : { propuestas: [] }),
+        ...(interaction?.silentTextReply ? {} : { propuestas: [], imagenes: [] }),
     };
 }
 
@@ -91,7 +91,7 @@ async function entregarRespuesta(client, interaction, { text, userInput, channel
     guardarDiferido();
 
     const sendText = recortarParaDiscord(textoChat);
-    await enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas: toolContext.propuestas });
+    await enviarRespuestaTexto(interaction, { sendText, gifUrl, propuestas: toolContext.propuestas, imagenes: toolContext.imagenes });
     await responderPorVoz(client, interaction, textoVoz, sendText);
 }
 
@@ -108,10 +108,19 @@ async function puedeResponder(interaction, { channelId, userName, userInput, all
         `Mensaje recibido de ${userName} (${channelId})${interaction.id ? ` [msg ${interaction.id}]` : ""}: ${userInput ? userInput.length : 0} chars`,
     );
 
-    // Comprueba límite diario
-    if (!checkAndIncrementDailyLimit()) {
-        log.warn(`Límite diario alcanzado (${DUENDE_DAILY_LIMIT} respuestas). Mensaje ignorado.`);
-        await safeEditReply(interaction, `He alcanzado mi límite de respuestas por hoy (${DUENDE_DAILY_LIMIT}). ¡Hasta mañana!`);
+    // Límites diarios: el de cada persona (#371) y el global. Al llegar al suyo, solo esa persona se queda sin respuesta.
+    const limite = checkAndIncrementDailyLimit(interaction.user.id);
+    if (!limite.ok) {
+        const personal = limite.motivo === "usuario";
+        log.warn(
+            `Límite diario alcanzado (${personal ? `de ${userName}: ${DUENDE_DAILY_LIMIT_USER}` : `global: ${DUENDE_DAILY_LIMIT}`}). Mensaje ignorado.`,
+        );
+        await safeEditReply(
+            interaction,
+            personal
+                ? `Ya has gastado tus ${DUENDE_DAILY_LIMIT_USER} respuestas de hoy conmigo. ¡Mañana más!`
+                : `He alcanzado mi límite de respuestas por hoy (${DUENDE_DAILY_LIMIT}). ¡Hasta mañana!`,
+        );
         return false;
     }
     return true;

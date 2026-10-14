@@ -10,12 +10,14 @@ const plex = require("./herramientas/plex");
 const seerr = require("./herramientas/seerr");
 const core = require("./herramientas/core");
 const economia = require("./herramientas/economia");
+const imagen = require("./herramientas/imagen");
 
 const DUENDE_TOOL_EXECUTORS = {
     ...plex.DUENDE_PLEX_EXECUTORS,
     ...seerr.DUENDE_SEERR_EXECUTORS,
     ...core.DUENDE_CORE_EXECUTORS,
     ...economia.DUENDE_ECONOMIA_EXECUTORS,
+    ...imagen.DUENDE_IMAGEN_EXECUTORS,
 };
 
 module.exports = {
@@ -23,5 +25,6 @@ module.exports = {
     DUENDE_PLEX_TOOL_DECLARATIONS,
     DUENDE_SEERR_TOOL_DECLARATIONS,
     DUENDE_ECONOMIA_TOOL_DECLARATIONS,
+    DUENDE_IMAGEN_TOOL_DECLARATIONS: imagen.DUENDE_IMAGEN_TOOL_DECLARATIONS,
     DUENDE_TOOL_EXECUTORS,
 };

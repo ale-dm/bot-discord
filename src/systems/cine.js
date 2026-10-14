@@ -4,6 +4,8 @@
 const db = require("../core/db");
 const { createLogger } = require("../core/logger");
 
+const votos = require("./cine/votos");
+
 const log = createLogger("Cine");
 const ZONA = "Europe/Madrid";
 const AVISO_MIN = 10;
@@ -51,19 +53,36 @@ function proximaHora(texto, ahora = Date.now()) {
     return null;
 }
 
-/** Crea la sesión y apunta al organizador. */
-function crear({ guildId, canalId, organizador, peli, inicio }) {
-    const { lastInsertRowid } = db
-        .prepare("INSERT INTO cine_sesiones (guildId, canalId, organizador, peli, inicio, creada_en) VALUES (?, ?, ?, ?, ?, ?)")
-        .run(String(guildId), String(canalId), String(organizador), peli, new Date(inicio).toISOString(), new Date().toISOString());
-    apuntar(lastInsertRowid, organizador);
-    return lastInsertRowid;
+/**
+ * Crea la sesión y apunta al organizador. `peli` puede traer varias películas separadas por «|» (se votan, #393): la sesión
+ * se queda con la primera. `serieId` la enlaza a una serie semanal (#403). Devuelve el id, o null si esa ocurrencia de la serie ya existía.
+ */
+function crear({ guildId, canalId, organizador, peli, inicio, serieId = null }) {
+    const opciones = votos.parsearOpciones(peli);
+    const principal = opciones[0] || String(peli).trim();
+    const r = db
+        .prepare(
+            "INSERT OR IGNORE INTO cine_sesiones (guildId, canalId, organizador, peli, inicio, creada_en, serie_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+            String(guildId),
+            String(canalId),
+            String(organizador),
+            principal,
+            new Date(inicio).toISOString(),
+            new Date().toISOString(),
+            serieId,
+        );
+    if (!r.changes) return null;
+    votos.guardarOpciones(r.lastInsertRowid, opciones);
+    apuntar(r.lastInsertRowid, organizador);
+    return r.lastInsertRowid;
 }
 
 const sesion = (id) =>
     db
         .prepare(
-            "SELECT id, guildId, canalId, mensajeId, organizador, peli, inicio, recordatorio, cancelada, creada_en FROM cine_sesiones WHERE id = ?",
+            "SELECT id, guildId, canalId, mensajeId, organizador, peli, inicio, recordatorio, cancelada, creada_en, serie_id FROM cine_sesiones WHERE id = ?",
         )
         .get(Number(id)) || null;
 const asistentes = (id) =>
@@ -88,7 +107,9 @@ function cancelar(id, userId, esAdmin = false) {
     if (String(s.organizador) !== String(userId) && !esAdmin)
         return { ok: false, mensaje: "Solo quien la convocó o un admin puede cancelarla." };
     db.prepare("UPDATE cine_sesiones SET cancelada = 1 WHERE id = ?").run(Number(id));
-    return { ok: true };
+    // Una sesión de una serie semanal: cancelarla para la serie (#403). Las anteriores se quedan como estaban.
+    if (s.serie_id) require("./cine/series").parar(s.serie_id);
+    return { ok: true, serieParada: Boolean(s.serie_id) };
 }
 
 /** Sesiones que empiezan dentro de los próximos AVISO_MIN minutos y aún no tienen su recordatorio. */
@@ -109,8 +130,9 @@ async function enviarRecordatorios(client, ahora = Date.now()) {
             const canal = await client.channels.fetch(s.canalId);
             const personas = asistentes(s.id);
             const unix = Math.floor(new Date(s.inicio).getTime() / 1000);
+            const ganadora = votos.ganadora(s.id); // la votación se cierra aquí (#393)
             await canal.send({
-                content: `🎬 Dentro de ${AVISO_MIN} minutos: **${s.peli}** (<t:${unix}:t>). ${personas.map((u) => `<@${u}>`).join(" ")}`,
+                content: `🎬 Dentro de ${AVISO_MIN} minutos: **${ganadora ? ganadora.titulo : s.peli}** (<t:${unix}:t>). ${personas.map((u) => `<@${u}>`).join(" ")}`,
                 allowedMentions: { users: personas },
             });
             db.prepare("UPDATE cine_sesiones SET recordatorio = 1 WHERE id = ?").run(s.id);

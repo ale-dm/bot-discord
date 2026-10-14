@@ -3,6 +3,7 @@ const db = require("../../core/db");
 const dinero = require("../dinero");
 const { createLogger } = require("../../core/logger");
 const { DUENDE } = require("./constantes");
+const pase = require("../pase/pase");
 const { descripcion } = require("./comun");
 const { obtener } = require("./persistencia");
 
@@ -97,7 +98,19 @@ function ganar(retoId, ganadores, resultado) {
     const bote = reto.participantes.reduce((s, p) => s + p.cantidad, 0);
     const parte = Math.floor(bote / ganadores.length);
     const premios = Object.fromEntries(ganadores.map((id, n) => [String(id), parte + (n === 0 ? bote - parte * ganadores.length : 0)]));
-    return cerrar(retoId, premios, "resuelto", resultado);
+    const cierre = cerrar(retoId, premios, "resuelto", resultado);
+    if (cierre) darXpDePase(cierre.reto, ganadores);
+    return cierre;
+}
+
+/** Ganar un reto entre personas da XP de pase (#359) a quien gana; el perdedor no, ni los retos devueltos ni los del Duende. */
+function darXpDePase(reto, ganadores) {
+    if (reto.creador === DUENDE || reto.rival === DUENDE) return;
+    for (const id of ganadores) {
+        if (String(id) === DUENDE) continue;
+        if (reto.guildId) pase.registrarSeguro(reto.guildId, id, "reto");
+        else pase.registrarEnTodos(id, "reto");
+    }
 }
 
 module.exports = { unir, cobrarExtra, cerrar, devolver, ganar };

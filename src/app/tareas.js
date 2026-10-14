@@ -1,6 +1,6 @@
 // ⏰ Tareas programadas del bot: avisos diarios y semanales, Plex, apuestas, cripto, negocios y copias de seguridad.
 // Cada una va envuelta en runJob (registra errores y evita solapamientos). Se programan al arrancar (clientReady).
-const cron = require("node-cron");
+const { cron } = require("../core/tareasRegistro");
 const { ActivityType } = require("discord.js");
 const { createLogger } = require("../core/logger");
 const alertas = require("../systems/alertas");
@@ -17,9 +17,27 @@ const plexAvisos = require("../systems/plexAvisos");
 const plexHistorial = require("../systems/plexHistorial");
 const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
+const resumenApuestas = require("../systems/apuestas/resumenSemanal");
+const recordatorioLogros = require("../systems/logros/recordatorio");
+const ordenesCripto = require("../systems/cripto/ordenes");
+const mensajesOrdenes = require("../discord/mensajes/criptoOrdenes");
+const { enviarAviso } = require("../systems/avisosDm");
+const recordarPersonal = require("../systems/recordarPersonal");
+const patrimonioDiario = require("../systems/patrimonioDiario");
+const avisoDomingo = require("../systems/clasificacion/avisoDomingo");
+const { embedDomingo } = require("../discord/mensajes/clasificacionDomingo");
+const tienda = require("../systems/tienda");
+const mercado = require("../systems/mercado");
+const sueldos = require("../systems/sueldos");
+const metaBote = require("../systems/impuestos/meta");
+const paseHistorial = require("../systems/pase/historial");
+const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
 const plexWrapped = require("../systems/plexWrapped");
 const cine = require("../systems/cine");
+const recuerdosAuto = require("../systems/duende/recuerdosAuto");
+const cineSeries = require("../systems/cine/series");
+const { pantallaSesion } = require("../paneles/cine");
 const liga = require("../systems/apuestas/liga");
 const resumenAdmin = require("../systems/resumenAdmin");
 const espontaneo = require("../systems/duende/espontaneo");
@@ -34,6 +52,7 @@ const encuesta = require("../commands/general/encuesta");
 const avisosCooldown = require("../systems/avisosCooldown");
 const cumpleanos = require("../systems/cumpleanos");
 const backups = require("../systems/backups");
+const mensajesProgramados = require("../systems/mensajesProgramados");
 
 const log = createLogger("Bot");
 const Estado = process.env.ESTADOS ? process.env.ESTADOS.split(",") : ["Jugando"];
@@ -63,6 +82,20 @@ function programarBasicas(client) {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+    // 💔 Al empezar el día, a quien acaba de perder una racha larga (#342); de paso borra la XP diaria vieja.
+    cron.schedule("30 0 * * *", () => runJob("Aviso de racha perdida", () => xpSystem.runStreakLostJob(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    // 🏅 Los domingos por la tarde, a quien tiene logros sin reclamar (#378).
+    cron.schedule(
+        "0 18 * * 0",
+        () => runJob("Recordatorio de logros sin reclamar", () => recordatorioLogros.runLogrosPendientesJob(client)),
+        {
+            timezone: "Europe/Madrid",
+            noOverlap: true,
+        },
+    );
 }
 
 function programarNovedadesPlex(client) {
@@ -73,6 +106,7 @@ function programarNovedadesPlex(client) {
         async () => {
             await runJob("Novedades de Plex", () => tautulliClient.checkAllGuildsForNewContent(client));
             await runJob("Avisos de pedidos de Seerr", () => pedidosSeerr.avisarDisponibles(client));
+            await runJob("Avisos de pedidos rechazados de Seerr", () => pedidosSeerr.avisarRechazados(client));
             await runJob("Avisos de series seguidas", () => plexAvisos.avisarSeries(client));
             await runJob("Avisos de quiero ver", () => plexAvisos.avisarQuieroVer(client));
             await runJob("Historial y logros de Plex", () => plexHistorial.sincronizarTodos(client), {
@@ -97,6 +131,23 @@ function programarClasificacionSemanal(client) {
         noOverlap: true,
     });
     runJob("Clasificación semanal (arranque)", () => clasificacionSemanal.publicarSiToca(client));
+    // 📊 Resumen semanal de apuestas por DM (#361): los lunes desde las 10:00, a quien tuvo apuestas resueltas la semana anterior.
+    cron.schedule("0 * * * 1", () => runJob("Resumen semanal de apuestas", () => resumenApuestas.enviarSiToca(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Resumen semanal de apuestas (arranque)", () => resumenApuestas.enviarSiToca(client));
+}
+
+function programarPase(client) {
+    // 🛡️ Pase de batalla: cada hora, guarda el resumen de las temporadas ya cerradas (#300) y, en el último día de la temporada, avisa por DM
+    // de los niveles sin cobrar (#348). Los dos van una sola vez.
+    const tarea = () => {
+        paseHistorial.cerrarPasadas();
+        return paseAvisos.avisarSinCobrar(client);
+    };
+    cron.schedule("30 * * * *", () => runJob("Pase de batalla", tarea), { timezone: "Europe/Madrid", noOverlap: true });
+    runJob("Pase de batalla (arranque)", tarea);
 }
 
 function programarCuotasEnDirecto(client) {
@@ -108,7 +159,18 @@ function programarCuotasEnDirecto(client) {
     });
 }
 
+/** Cada 5 minutos: las sesiones semanales que toca crear (#403) y el recordatorio de las que empiezan en 10 minutos. */
+async function cineRecordatorios(client) {
+    await cineSeries.crearSiguientes(client, cine, pantallaSesion);
+    return cine.enviarRecordatorios(client);
+}
+
 function programarWrapped(client) {
+    // 🧠 Cada día a las 04:00: las propuestas de recuerdo del Duende sin decidir en 7 días caducan y pierden sus botones (#390).
+    cron.schedule("0 4 * * *", () => runJob("Recuerdos del Duende caducados", () => recuerdosAuto.caducarPendientes(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
     // 🎞️ Plex Wrapped: el día 1 de cada mes, desde las 10:00 (Madrid), el resumen del mes anterior (cada hora, y al arrancar).
     cron.schedule("0 * * * *", () => runJob("Plex Wrapped", () => plexWrapped.enviarSiToca(client)), {
         timezone: "Europe/Madrid",
@@ -119,7 +181,7 @@ function programarWrapped(client) {
 
 function programarCine(client) {
     // 🎬 Sesiones de cine: el recordatorio de 10 minutos antes, cada 5 minutos.
-    cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => cine.enviarRecordatorios(client)), {
+    cron.schedule("*/5 * * * *", () => runJob("Recordatorios de cine", () => cineRecordatorios(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
@@ -167,6 +229,25 @@ function programarApuestas(client) {
     });
 }
 
+async function economiaComunitaria(client) {
+    for (const guild of client.guilds.cache.values()) {
+        sueldos.pagarDia(guild.id, guild.members.cache.values());
+        metaBote.comprobar(guild.id, (userId) => guild.members.cache.has(userId));
+    }
+}
+
+function programarOrdenesCripto(client) {
+    // 🔔 Cada minuto: alertas de precio, stop-loss y compras recurrentes de TTCL (#298, #341, #351).
+    cron.schedule(
+        "* * * * *",
+        () =>
+            runJob("Órdenes de TTCL", () =>
+                ordenesCripto.revisar((userId, payload) => enviarAviso(client, userId, "cripto_ordenes", payload), mensajesOrdenes),
+            ),
+        { noOverlap: true },
+    );
+}
+
 function programarRetosYEconomia(client) {
     // ⚔️ Retos colgados: sin aceptar a tiempo, duelos abandonados y porras sin resolver (se devuelven o se resuelven).
     cron.schedule("*/5 * * * *", () => runJob("Retos caducados", () => retos.revisarRetos(client)), {
@@ -184,6 +265,36 @@ function programarRetosYEconomia(client) {
     cron.schedule("*/5 * * * *", () => runJob("Evento de TTCL", () => eventos.revisarYAvisar(client)), {
         noOverlap: true,
     });
+    // 🛒 Cada hora: los precios que subieron por la demanda bajan hacia su base (#412) y las ofertas del mercado caducadas
+    // vuelven a su dueño (#374).
+    cron.schedule(
+        "10 * * * *",
+        () =>
+            runJob("Mantenimiento de la tienda", () => {
+                tienda.recuperarPrecios([...client.guilds.cache.keys()]);
+                mercado.devolverCaducadas();
+            }),
+        { noOverlap: true },
+    );
+    // 💼 Cada hora: el sueldo diario por rol (una vez por día y persona, con registro en la base de datos, #416) y la meta
+    // comunitaria del bote (#415).
+    cron.schedule("20 * * * *", () => runJob("Sueldos y meta del bote", () => economiaComunitaria(client)), { noOverlap: true });
+    // 📈 Al empezar el día, el efectivo + banco de cada persona para la gráfica de 💰 Economía (#388); al arrancar guarda el de hoy
+    // si el bot estaba apagado a esa hora.
+    runJob("Patrimonio diario (arranque)", () => patrimonioDiario.guardarHoy());
+    cron.schedule("5 0 * * *", () => runJob("Patrimonio diario", () => patrimonioDiario.guardarHoy()), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    // 🏆 El domingo a las 20:00, a quien lo haya pedido y vaya primero en la clasificación de la semana (#394).
+    cron.schedule(
+        "0 20 * * 0",
+        () => runJob("Aviso del domingo de la clasificación", () => avisoDomingo.avisarLideres(client, embedDomingo)),
+        {
+            timezone: "Europe/Madrid",
+            noOverlap: true,
+        },
+    );
     // 🏦 Patrimonio: cada persona tiene su ciclo semanal (interés del banco e impuesto sobre lo que pasa del umbral).
     cron.schedule("0 * * * *", () => runJob("Patrimonio", () => patrimonio.revisar()), {
         noOverlap: true,
@@ -191,6 +302,10 @@ function programarRetosYEconomia(client) {
 }
 
 function programarComunidad(client) {
+    // ⏰ Recordatorios personales (/recordar): cada minuto manda por DM los que ya tocan (#320).
+    cron.schedule("* * * * *", () => runJob("Recordatorios personales", () => recordarPersonal.enviarVencidos(client)), {
+        noOverlap: true,
+    });
     // 📊 Encuestas: cada minuto cierra las que han acabado su tiempo y repinta su mensaje con el resultado final.
     cron.schedule("* * * * *", () => runJob("Encuestas vencidas", () => encuesta.cerrarVencidas(client)), {
         noOverlap: true,
@@ -233,12 +348,20 @@ function programarLiquidacionApuestas(client) {
     );
 }
 
-function programarMantenimiento() {
+function programarMantenimiento(client) {
     // Copia de seguridad diaria de la BD (data/backups, se conservan las últimas 7).
     cron.schedule("30 4 * * *", () => runJob("Backup de la BD", () => backups.hacerBackup()), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+    // Si el bot estaba caído a las 04:30, la copia de hoy se hace al arrancar (#419).
+    runJob("Backup de la BD (arranque)", () => (backups.faltaCopiaAlArrancar() ? backups.hacerBackup() : undefined));
+    // Mensajes de /mensaje programados para una hora (#424): cada 5 minutos y al arrancar, por si el bot estaba apagado.
+    cron.schedule("*/5 * * * *", () => runJob("Mensajes programados", () => mensajesProgramados.enviarVencidos(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    runJob("Mensajes programados (arranque)", () => mensajesProgramados.enviarVencidos(client));
     // Partidas de casino abandonadas (>15 min sin tocar): se liquidan como perdidas.
     setInterval(
         () =>
@@ -262,10 +385,12 @@ function programarTareas(client) {
     programarResumenAdmin(client);
     programarEspontaneos(client);
     programarApuestas(client);
+    programarPase(client);
+    programarOrdenesCripto(client);
     programarRetosYEconomia(client);
     programarComunidad(client);
     programarLiquidacionApuestas(client);
-    programarMantenimiento();
+    programarMantenimiento(client);
 }
 
 module.exports = { programarTareas };

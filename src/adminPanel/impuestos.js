@@ -7,6 +7,7 @@ const adminAudit = require("../systems/adminAudit");
 const patrimonio = require("../systems/patrimonio");
 const { simpleModal, modalConCampos, SI_NO, opcionElegida } = require("./common");
 const { fmtNumero } = require("../core/formato");
+const extras = require("./impuestosExtras");
 
 // Opciones de los desplegables: las mismas que valida el manejador.
 const BASES = [
@@ -32,7 +33,8 @@ function lineaRegla(r) {
               ? `ingreso: ${dinero.TIPOS[r.tipoMovimiento] || r.tipoMovimiento}`
               : "ingreso: general";
     const destino = r.destino === "bote" ? "→ bote" : "→ desaparece";
-    return `• \`#${r.id}\` ${r.activo ? "🟢" : "🔴"} ${ambito} — **${r.porcentaje}%** ${destino}`;
+    const porTramos = extras.textoTramos(r.id);
+    return `• \`#${r.id}\` ${r.activo ? "🟢" : "🔴"} ${ambito} — **${r.porcentaje}%** ${destino}${porTramos ? `\n   📊 ${porTramos}` : ""}`;
 }
 
 function buildImpuestosHome(guildId) {
@@ -45,7 +47,7 @@ function buildImpuestosHome(guildId) {
             "Reglas de impuesto del servidor: sobre **ingresos** (general, o limitada a un tipo concreto) o sobre **compras** " +
                 "en la tienda. Si hay una regla general de ingreso y otra específica para el mismo tipo, gana la específica.\n\n" +
                 lines +
-                `\n\n💰 Bote acumulado: **${fmtNumero(impuestos.boteTotal(guildId))}**`,
+                `\n\n💰 Bote acumulado: **${fmtNumero(impuestos.boteTotal(guildId))}**\n${extras.textoMeta(guildId)}`,
         )
         .setColor(0x1abc9c)
         .setTimestamp();
@@ -59,6 +61,7 @@ function buildImpuestosHome(guildId) {
     );
     const fila2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_impuestos_patrimonio").setLabel("🏦 Patrimonio").setStyle(ButtonStyle.Primary),
+        ...extras.filaBotones(),
     );
     return { embeds: [embed], components: [row, fila2] };
 }
@@ -80,17 +83,34 @@ function buildPatrimonio() {
             { name: "Interés", value: c.interes + " % sobre el banco", inline: true },
             { name: "Cada", value: c.dias + " días", inline: true },
             { name: "Destino", value: c.destino === "bote" ? "→ bote" : "→ desaparece", inline: true },
+            {
+                name: "🎭 Roles exentos del impuesto",
+                value: c.rolesExentos.length ? c.rolesExentos.map((r) => `<@&${r}>`).join(" ") : "Ninguno (siguen cobrando el interés)",
+            },
         )
         .setColor(0x16a085);
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_impuestos_patrimonio_edit").setLabel("✏️ Editar").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_impuestos_exentos").setLabel("🎭 Roles exentos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_impuestos_home").setLabel("◀ Impuestos").setStyle(ButtonStyle.Secondary),
     );
     return { embeds: [embed], components: [row] };
 }
 
+function formularioPatrimonio() {
+    const c = patrimonio.configuracion();
+    return modalConCampos("paneladmin_impuestos_patrimonio_modal", "Editar impuesto de patrimonio", [
+        { id: "umbral", label: "Umbral (monedas)", value: String(c.umbral) },
+        { id: "porcentaje", label: "Impuesto (% sobre el exceso)", value: String(c.porcentaje) },
+        { id: "interes", label: "Interés semanal (% del banco)", value: String(c.interes) },
+        { id: "dias", label: "Cada cuántos días", value: String(c.dias) },
+        { id: "destino", label: "Destino", tipo: "opciones", opciones: DESTINOS, valor: c.destino },
+    ]);
+}
+
 async function handleImpuestosButton(interaction) {
     const id = interaction.customId;
+    if (await extras.boton(interaction)) return true;
     if (id === "paneladmin_impuestos_home") {
         await interaction.update(buildImpuestosHome(interaction.guildId));
         return true;
@@ -100,16 +120,7 @@ async function handleImpuestosButton(interaction) {
         return true;
     }
     if (id === "paneladmin_impuestos_patrimonio_edit") {
-        const c = patrimonio.configuracion();
-        await interaction.showModal(
-            modalConCampos("paneladmin_impuestos_patrimonio_modal", "Editar impuesto de patrimonio", [
-                { id: "umbral", label: "Umbral (monedas)", value: String(c.umbral) },
-                { id: "porcentaje", label: "Impuesto (% sobre el exceso)", value: String(c.porcentaje) },
-                { id: "interes", label: "Interés semanal (% del banco)", value: String(c.interes) },
-                { id: "dias", label: "Cada cuántos días", value: String(c.dias) },
-                { id: "destino", label: "Destino", tipo: "opciones", opciones: DESTINOS, valor: c.destino },
-            ]),
-        );
+        await interaction.showModal(formularioPatrimonio());
         return true;
     }
     if (id === "paneladmin_impuestos_add") {
@@ -227,6 +238,7 @@ async function activarReglaModal(interaction) {
 
 async function handleImpuestosModal(interaction) {
     const id = interaction.customId;
+    if (await extras.modal(interaction)) return true;
     if (id === "paneladmin_impuestos_add_modal") return anadirReglaModal(interaction);
     if (id === "paneladmin_impuestos_patrimonio_modal") return patrimonioModal(interaction);
     if (id === "paneladmin_impuestos_remove_modal") return quitarReglaModal(interaction);

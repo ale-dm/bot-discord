@@ -1,6 +1,7 @@
 // Lo que se dice al cerrar: el DM a quien cobra, el resumen público y el embed de resultados.
 
 const avisosDm = require("../../avisosDm");
+const sonidosEventos = require("../../sonidos/eventos");
 const { logWarn, logDebug } = require("../../../core/logger");
 
 // Avisa por DM a quien haya cobrado algo. Best-effort: si tiene los DMs cerrados, se ignora.
@@ -20,12 +21,22 @@ async function avisarGanadores(client, pagos) {
     }
 }
 
+// 🔔 Una apuesta ganada grande hace sonar el sonido del evento en los servidores donde está quien ha cobrado (#326).
+function sonarApuestasGrandes(client, pagos) {
+    const grandes = pagos.filter((p) => !p.reembolso && p.premio >= sonidosEventos.UMBRAL_APUESTA_GRANDE);
+    if (!grandes.length) return;
+    for (const guild of client.guilds.cache.values()) {
+        if (grandes.some((p) => guild.members.cache.has(p.userId))) sonidosEventos.disparar(guild.id, "apuesta_grande");
+    }
+}
+
 /**
  * Publica los resultados de una liquidación en el canal de resultados de cada servidor que lo tenga configurado
  * (/paneladmin → ⚽ Apuestas). Best-effort: un canal que no existe o sin permisos se registra y se sigue.
  * @returns {Promise<number>} canales en los que se ha publicado
  */
 async function anunciarResultados(client, resumen) {
+    sonarApuestasGrandes(client, resumen.pagos || []);
     const embed = resultadosEmbed(resumen);
     if (!embed) return 0;
     const guildSettings = require("../../guildSettings");

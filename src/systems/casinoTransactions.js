@@ -9,6 +9,7 @@ const log = createLogger("Casino");
 const guildSettings = require("./guildSettings");
 const { validarApuesta, consumirLimites } = require("./casinoLimites");
 const { mensajeBloqueo } = require("./casinoAutoexclusion");
+const limitePerdidas = require("./limitePerdidas");
 const dobleONada = require("./casino/dobleONada");
 const eventos = require("./eventos");
 const achievements = require("./achievementsSystem");
@@ -143,6 +144,17 @@ function applyRtp(guildId, juego, apuesta, gananciaTotal) {
     return Number(apuesta || 0) + netWinAjustado;
 }
 
+/** Cobra el impuesto del casino sobre una ganancia neta (si es mayor que cero y el servidor lo tiene activo). Dentro de una transacción. */
+function cobrarImpuestoCasino(userId, guildId, gananciaNeta) {
+    if (!(gananciaNeta > 0)) return;
+    const impuestos = require("./impuestos");
+    const impuestoCalc = impuestos.calcularImpuesto(guildId, "casino", gananciaNeta);
+    if (!impuestoCalc) return;
+    dinero.cobrar(userId, impuestoCalc.impuesto);
+    dinero.apuntar(userId, "impuesto", `Impuesto sobre ${dinero.TIPOS.casino}`, -impuestoCalc.impuesto);
+    if (impuestoCalc.destino === "bote") impuestos.sumarBote(guildId, impuestoCalc.impuesto);
+}
+
 /**
  * Procesar ganancia de forma segura
  * @param {string} userId - ID del usuario
@@ -169,15 +181,7 @@ function procesarGanancia(userId, juego, apuesta, gananciaTotal, descripcion, de
 
         // Impuesto (F-EC-06a): solo sobre la ganancia neta de verdad, nunca sobre la apuesta
         // devuelta (eso ya era suyo, no es un ingreso).
-        if (resultadoNeto > 0) {
-            const impuestos = require("./impuestos");
-            const impuestoCalc = impuestos.calcularImpuesto(guildId, "casino", resultadoNeto);
-            if (impuestoCalc) {
-                dinero.cobrar(userId, impuestoCalc.impuesto);
-                dinero.apuntar(userId, "impuesto", `Impuesto sobre ${dinero.TIPOS.casino}`, -impuestoCalc.impuesto);
-                if (impuestoCalc.destino === "bote") impuestos.sumarBote(guildId, impuestoCalc.impuesto);
-            }
-        }
+        cobrarImpuestoCasino(userId, guildId, resultadoNeto);
 
         log.info(
             `Ganancia procesada: ${userId} - ${juego} - Total recibido: ${gananciaTotal} - Ganancia neta: ${resultadoNeto} - Nuevo saldo: ${nuevoSaldo}`,
@@ -223,6 +227,23 @@ function procesarPerdida(userId, juego, apuesta, descripcion, detalle) {
 }
 
 /**
+ * Liquida el seguro del blackjack (#333): la apuesta ya está cobrada. Si el crupier tiene blackjack paga 2 a 1 (se devuelve el seguro
+ * y dos veces más, con el impuesto del casino sobre lo ganado); si no, se pierde. Va al historial de movimientos, no a las partidas
+ * del casino: es parte de la misma mano y no cuenta como una partida más ni para los logros.
+ * @returns {{ exito: boolean, neto: number }} el neto del seguro (+2 veces o -1 vez lo apostado)
+ */
+function procesarSeguro(userId, guildId, seguro, crupierTieneBlackjack) {
+    const neto = crupierTieneBlackjack ? seguro * 2 : -seguro;
+    const exito = transaccionSegura(userId, () => {
+        if (crupierTieneBlackjack) dinero.pagar(userId, seguro * 3);
+        insertarHistorial(userId, crupierTieneBlackjack ? "Blackjack: seguro cobrado (2 a 1)" : "Blackjack: seguro perdido", neto);
+        cobrarImpuestoCasino(userId, guildId, neto);
+        return true;
+    });
+    return { exito, neto };
+}
+
+/**
  * Descontar apuesta de forma segura
  * @param {string} userId - ID del usuario
  * @param {number} cantidad - Cantidad a descontar
@@ -237,6 +258,13 @@ function descontarApuesta(userId, cantidad, guildId = null, juego = null) {
     const bloqueo = mensajeBloqueo(userId);
     if (bloqueo) {
         resultado.mensaje = bloqueo;
+        return resultado;
+    }
+
+    // Límite de pérdidas que se puso la propia persona (#319): tampoco se cobra ni se gasta cooldown ni cupo.
+    const tope = limitePerdidas.motivoDeBloqueo(userId, Number(cantidad) || 0);
+    if (tope) {
+        resultado.mensaje = `🛑 ${tope}`;
         return resultado;
     }
 
@@ -336,6 +364,7 @@ module.exports = {
     validarApuesta,
     procesarGanancia,
     procesarPerdida,
+    procesarSeguro,
     descontarApuesta,
     descontarExtra,
     obtenerSaldo,

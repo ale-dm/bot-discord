@@ -2,7 +2,7 @@
 // Las reglas de cada jugada están en ./blackjack; aquí solo el dinero.
 const bj = require("./blackjack");
 const activeGames = require("./activeGames");
-const { descontarExtra, procesarGanancia, procesarPerdida, applyRtp } = require("./casinoTransactions");
+const { descontarExtra, procesarGanancia, procesarPerdida, procesarSeguro, applyRtp } = require("./casinoTransactions");
 
 function liquidarMano(userId, guildId, apuesta, resultado, { blackjack = false, descripcion, detalle }) {
     if (resultado === "gana") {
@@ -42,6 +42,21 @@ function cobrarPasada(userId, state) {
         userHand: state.userHand,
         botHand: state.botHand,
     });
+}
+
+/** Rendirse (#337): se devuelve la mitad de la apuesta; el resto se pierde. En las partidas queda como «rendido», no como una derrota completa. */
+function cobrarRendicion(userId, state, devuelto) {
+    return procesarGanancia(userId, "blackjack", state.apuesta, devuelto, "Blackjack: rendido (recupera la mitad)", {
+        tipo: "rendido",
+        guildId: state.guildId,
+        userHand: state.userHand,
+        botHand: state.botHand,
+    });
+}
+
+/** Cobra el seguro (#333): lo que cuesta, que se descuenta del efectivo como doblar o separar. Devuelve { exito, mensaje }. */
+function cobrarSeguro(userId, guildId, state) {
+    return descontarExtra(userId, bj.costeSeguro(state), guildId);
 }
 
 /** Partida abandonada (más de 15 min sin tocar): lo que hay en juego se pierde. */
@@ -92,4 +107,14 @@ function cobrarExtraBJ(userId, guildId, apuesta) {
     return { exito: true };
 }
 
-module.exports = { liquidarMano, cobrarNatural, cobrarPasada, cobrarAbandono, liquidarManoSplit, cobrarExtraBJ };
+module.exports = {
+    liquidarMano,
+    cobrarNatural,
+    cobrarPasada,
+    cobrarAbandono,
+    cobrarRendicion,
+    cobrarSeguro,
+    liquidarSeguro: procesarSeguro,
+    liquidarManoSplit,
+    cobrarExtraBJ,
+};

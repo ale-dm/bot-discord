@@ -69,7 +69,8 @@ function campoAvisos(cfg) {
         name: "📢 Avisos",
         value:
             `Resultados: ${cfg.canal_resultados ? `se publican en <#${cfg.canal_resultados}>` : "no se publican (solo DM a quien cobra)"}\n` +
-            `Recordatorio por DM: ${cfg.recordatorio ? `**${cfg.recordatorio_min} min** antes del partido` : "desactivado"}\n` +
+            `Recordatorio por DM: ${cfg.recordatorio ? `**${cfg.recordatorio_min} min** antes del partido` : "desactivado"}` +
+            `${cfg.recordatorio && cfg.recordatorio_quiniela_horas ? ` · quiniela sin enviar: **${cfg.recordatorio_quiniela_horas} h** antes de cerrar` : ""}\n` +
             `⭐ Partido destacado del día: ${textoDestacado(cfg)}`,
     };
 }

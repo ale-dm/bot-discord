@@ -74,6 +74,15 @@ async function handlePremiosModal(interaction) {
     return true;
 }
 
+/** Un campo de texto del formulario, o null si el formulario no lo trae (uno abierto antes de añadirlo). */
+function leerOpcional(fields, id) {
+    try {
+        return fields.getTextInputValue(id);
+    } catch {
+        return null;
+    }
+}
+
 async function handleApuestasModal(interaction) {
     if (interaction.customId === "paneladmin_apu_limites_modal") return handleLimitesModal(interaction);
     if (interaction.customId === "paneladmin_apu_premios_modal") return handlePremiosModal(interaction);
@@ -87,12 +96,29 @@ async function handleApuestasModal(interaction) {
         });
         return true;
     }
-    guildSettings.setManySettings(interaction.guildId, { "apuestas.recordatorio": activo, "apuestas.recordatorio_min": minutos });
+    // Un formulario antiguo, sin el campo de la quiniela, deja lo que había (#340).
+    const textoHoras = leerOpcional(interaction.fields, "horas_quiniela");
+    const horas =
+        textoHoras === null
+            ? guildSettings.getSettings(interaction.guildId).apuestas.recordatorio_quiniela_horas
+            : Number(textoHoras.trim());
+    if (!Number.isInteger(horas) || horas < 0 || horas > 72) {
+        await interaction.reply({
+            content: "❌ Las horas antes de cerrar la quiniela son un número entero entre 0 y 72 (0 = no avisar).",
+            flags: MessageFlags.Ephemeral,
+        });
+        return true;
+    }
+    guildSettings.setManySettings(interaction.guildId, {
+        "apuestas.recordatorio": activo,
+        "apuestas.recordatorio_min": minutos,
+        "apuestas.recordatorio_quiniela_horas": horas,
+    });
     adminAudit.logAdminAction({
         guildId: interaction.guildId,
         actorId: interaction.user.id,
         action: "apuestas.recordatorio",
-        details: { activo, minutos },
+        details: { activo, minutos, horasQuiniela: horas },
     });
     if (interaction.isFromMessage?.()) await interaction.update(buildApuestasHome(interaction.guildId));
     else await interaction.reply({ content: "✅ Recordatorio actualizado.", flags: MessageFlags.Ephemeral });

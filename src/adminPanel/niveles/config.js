@@ -38,7 +38,16 @@ async function accionConfig(interaction, id, guildId) {
                 value:
                     cfg.streak_enabled === "0"
                         ? "Desactivada"
-                        : `+${cfg.streak_bonus_pct_per_day}%/día (máx +${cfg.streak_bonus_cap_pct}%)`,
+                        : `+${cfg.streak_bonus_pct_per_day}%/día (máx +${cfg.streak_bonus_cap_pct}%) · gracia: ${cfg.streak_grace_per_month} al mes`,
+                inline: true,
+            },
+            { name: "Tope diario", value: Number(cfg.xp_daily_cap) > 0 ? `${cfg.xp_daily_cap} XP al día` : "Sin tope", inline: true },
+            {
+                name: "XP por reacción recibida",
+                value:
+                    Number(cfg.xp_reaction_base) > 0
+                        ? `${cfg.xp_reaction_base} (cada ${cfg.xp_reaction_cooldown_sec}s por autor)`
+                        : "Desactivada",
                 inline: true,
             },
         )
@@ -52,6 +61,7 @@ async function accionConfig(interaction, id, guildId) {
     );
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_levels_cfg_streak").setLabel("🔥 Racha").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_levels_cfg_cap").setLabel("🧢 Tope diario").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_levels_formula_preview").setLabel("📈 Vista previa").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_levels_home").setLabel("◀ Niveles").setStyle(ButtonStyle.Secondary),
     );
@@ -66,6 +76,8 @@ async function accionCfgMsg(interaction, id, guildId) {
             { id: "xp_base", label: "XP base", value: cfg.xp_message_base },
             { id: "xp_bonus", label: "Bonus máx longitud", value: cfg.xp_message_len_bonus_max },
             { id: "xp_cd", label: "Cooldown (s)", value: cfg.xp_message_cooldown_sec },
+            { id: "xp_reaccion", label: "XP por reacción recibida (0 = off)", value: cfg.xp_reaction_base },
+            { id: "xp_reaccion_cd", label: "Cooldown de reacciones (s)", value: cfg.xp_reaction_cooldown_sec },
         ]),
     );
     return true;
@@ -117,6 +129,17 @@ async function accionCfgStreak(interaction, id, guildId) {
             },
             { id: "pct_per_day", label: "% bonus XP por día de racha", value: cfg.streak_bonus_pct_per_day },
             { id: "cap_pct", label: "% bonus máximo", value: cfg.streak_bonus_cap_pct },
+            { id: "gracia", label: "Días de gracia al mes (0 = sin gracia)", value: cfg.streak_grace_per_month },
+        ]),
+    );
+    return true;
+}
+
+async function accionCfgCap(interaction, id, guildId) {
+    const cfg = xp.getAllConfig(guildId);
+    await interaction.showModal(
+        simpleModal("paneladmin_levels_cfg_cap_modal", "Tope diario de XP", [
+            { id: "xp_cap", label: "XP máxima por persona al día (0 = sin tope)", value: cfg.xp_daily_cap },
         ]),
     );
     return true;
@@ -187,6 +210,7 @@ const ACCIONES_NIVELES = [
     [(id) => id === "paneladmin_levels_cfg_mult", accionCfgMult],
     [(id) => id === "paneladmin_levels_cfg_formula", accionCfgFormula],
     [(id) => id === "paneladmin_levels_cfg_streak", accionCfgStreak],
+    [(id) => id === "paneladmin_levels_cfg_cap", accionCfgCap],
     [(id) => id === "paneladmin_levels_formula_preview", accionFormulaPreview],
     [(id) => id === "paneladmin_levels_cfg_channel", accionCfgChannel],
     [(id) => id === "paneladmin_levels_cfg_channel_clear", accionCfgChannelClear],
@@ -206,9 +230,17 @@ async function modalMensajes(interaction) {
     const base = Math.max(1, parseInt(interaction.fields.getTextInputValue("xp_base"), 10));
     const bonus = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_bonus"), 10));
     const cd = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_cd"), 10));
+    const reaccion = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_reaccion"), 10));
+    const reaccionCd = Math.max(0, parseInt(interaction.fields.getTextInputValue("xp_reaccion_cd"), 10));
+    if ([base, bonus, cd, reaccion, reaccionCd].some(Number.isNaN)) {
+        await interaction.reply({ content: "Valores inválidos: todos son números enteros.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
     xp.setConfig(guildId, "xp_message_base", base);
     xp.setConfig(guildId, "xp_message_len_bonus_max", bonus);
     xp.setConfig(guildId, "xp_message_cooldown_sec", cd);
+    xp.setConfig(guildId, "xp_reaction_base", reaccion);
+    xp.setConfig(guildId, "xp_reaction_cooldown_sec", reaccionCd);
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.messages" });
     await interaction.reply({ content: "✅ Config mensajes actualizada.", flags: MessageFlags.Ephemeral });
     return true;
@@ -260,21 +292,39 @@ async function modalRacha(interaction) {
     const enabled = !["no", "n", "0", "false"].includes(enabledRaw);
     const pctPerDay = Math.max(0, parseFloat(interaction.fields.getTextInputValue("pct_per_day")));
     const capPct = Math.max(0, parseFloat(interaction.fields.getTextInputValue("cap_pct")));
-    if (isNaN(pctPerDay) || isNaN(capPct)) {
+    const gracia = Math.max(0, parseInt(interaction.fields.getTextInputValue("gracia"), 10));
+    if (isNaN(pctPerDay) || isNaN(capPct) || isNaN(gracia)) {
         await interaction.reply({ content: "Valores inválidos.", flags: MessageFlags.Ephemeral });
         return true;
     }
     xp.setConfig(guildId, "streak_enabled", enabled ? "1" : "0");
     xp.setConfig(guildId, "streak_bonus_pct_per_day", pctPerDay);
     xp.setConfig(guildId, "streak_bonus_cap_pct", capPct);
+    xp.setConfig(guildId, "streak_grace_per_month", gracia);
     adminAudit.logAdminAction({
         guildId,
         actorId: interaction.user.id,
         action: "xp.config.streak",
-        details: { enabled, pctPerDay, capPct },
+        details: { enabled, pctPerDay, capPct, gracia },
     });
     await interaction.reply({
-        content: `✅ Racha ${enabled ? "activada" : "desactivada"}: +${pctPerDay}%/día (máx +${capPct}%).`,
+        content: `✅ Racha ${enabled ? "activada" : "desactivada"}: +${pctPerDay}%/día (máx +${capPct}%), ${gracia} ${gracia === 1 ? "día" : "días"} de gracia al mes.`,
+        flags: MessageFlags.Ephemeral,
+    });
+    return true;
+}
+
+async function modalTope(interaction) {
+    const guildId = interaction.guildId;
+    const tope = parseInt(interaction.fields.getTextInputValue("xp_cap"), 10);
+    if (Number.isNaN(tope) || tope < 0) {
+        await interaction.reply({ content: "Valor inválido: un número entero, 0 o más.", flags: MessageFlags.Ephemeral });
+        return true;
+    }
+    xp.setConfig(guildId, "xp_daily_cap", tope);
+    adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.config.daily_cap", details: { tope } });
+    await interaction.reply({
+        content: tope > 0 ? `✅ Tope diario: ${tope} XP por persona.` : "✅ Sin tope diario de XP.",
         flags: MessageFlags.Ephemeral,
     });
     return true;
@@ -287,6 +337,7 @@ async function modal(interaction) {
     if (id === "paneladmin_levels_cfg_mult_modal") return modalMultiplicador(interaction);
     if (id === "paneladmin_levels_cfg_formula_modal") return modalFormula(interaction);
     if (id === "paneladmin_levels_cfg_streak_modal") return modalRacha(interaction);
+    if (id === "paneladmin_levels_cfg_cap_modal") return modalTope(interaction);
     return false;
 }
 

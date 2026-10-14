@@ -24,30 +24,32 @@ beforeEach(() => {
 
 describe("límite diario de respuestas", () => {
     test("con DUENDE_DAILY_LIMIT=2 responde dos veces al día y luego se calla", () => {
-        expect(generar.checkAndIncrementDailyLimit()).toBe(true);
-        expect(generar.checkAndIncrementDailyLimit()).toBe(true);
-        expect(generar.checkAndIncrementDailyLimit()).toBe(false);
-        expect(generar.checkAndIncrementDailyLimit()).toBe(false);
+        expect(generar.checkAndIncrementDailyLimit("a").ok).toBe(true);
+        expect(generar.checkAndIncrementDailyLimit("b").ok).toBe(true);
+        expect(generar.checkAndIncrementDailyLimit("c")).toEqual({ ok: false, motivo: "global" });
+        expect(generar.checkAndIncrementDailyLimit("d").ok).toBe(false);
     });
 
     test("al cambiar de día el contador vuelve a cero", () => {
         jest.setSystemTime(new Date("2026-10-11T00:00:30"));
-        expect(generar.checkAndIncrementDailyLimit()).toBe(true);
-        expect(generar.checkAndIncrementDailyLimit()).toBe(true);
-        expect(generar.checkAndIncrementDailyLimit()).toBe(false);
+        expect(generar.checkAndIncrementDailyLimit("a").ok).toBe(true);
+        expect(generar.checkAndIncrementDailyLimit("a").ok).toBe(true);
+        expect(generar.checkAndIncrementDailyLimit("a").ok).toBe(false);
     });
 
     test("con DUENDE_DAILY_LIMIT=0 no hay límite", () => {
         const anterior = process.env.DUENDE_DAILY_LIMIT;
         process.env.DUENDE_DAILY_LIMIT = "0";
+        process.env.DUENDE_DAILY_LIMIT_USER = "0";
         try {
             let sinLimite;
             jest.isolateModules(() => {
                 sinLimite = require("../src/services/duende/chat/generar");
             });
-            for (let i = 0; i < 50; i++) expect(sinLimite.checkAndIncrementDailyLimit()).toBe(true);
+            for (let i = 0; i < 50; i++) expect(sinLimite.checkAndIncrementDailyLimit("sin-limite").ok).toBe(true);
         } finally {
             process.env.DUENDE_DAILY_LIMIT = anterior;
+            delete process.env.DUENDE_DAILY_LIMIT_USER;
         }
     });
 });

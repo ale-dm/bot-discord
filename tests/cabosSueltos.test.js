@@ -24,7 +24,9 @@ describe("logros y pase de batalla", () => {
         const desbloqueados = await achievements.applyEvent(G, u, "casino_bet", 50, { anunciar: false });
         expect(desbloqueados.length).toBeGreaterThan(0);
         const esperado = Math.min(pase.CATEGORIAS.logro.tope, pase.CATEGORIAS.logro.xp * desbloqueados.length);
-        expect(pase.estado(G, u).xp).toBe(esperado);
+        // Solo la XP de la categoría «logro»: la misión de logro (#338) da más XP, pero solo los días en que toca.
+        const logroHoy = db.prepare("SELECT COALESCE(SUM(xp), 0) AS xp FROM pase_caps WHERE userId = ? AND categoria = 'logro'").get(u).xp;
+        expect(logroHoy).toBe(esperado);
     });
 
     test("los logros que salen al importar el historial de Plex no dan XP de pase", async () => {

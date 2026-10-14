@@ -23,12 +23,14 @@ afterEach(() => {
     jest.restoreAllMocks();
 });
 
+let contador = 0; // cada pulsación es de una persona distinta: el cooldown entre sonidos (#324) no ata unos tests con otros
 function interaccion(customId, { voz = null, guildId = G } = {}) {
+    const userId = `ana${++contador}`;
     return {
         customId,
         guildId,
         member: voz === undefined ? undefined : { voice: { channel: voz } },
-        user: { id: "ana", username: "ana", tag: "ana#0001" },
+        user: { id: userId, username: "ana", tag: "ana#0001" },
         reply: jest.fn(async () => {}),
         update: jest.fn(async () => {}),
         deferReply: jest.fn(async () => {}),
@@ -40,7 +42,8 @@ describe("definición y /sonidos", () => {
     test("el comando es sonidos y sus botones cuelgan del prefijo sonido_", () => {
         expect(sonidosCmd.data.name).toBe("sonidos");
         expect(sonidosCmd.componentHandlers).toEqual([
-            expect.objectContaining({ prefixes: ["sonido_"], method: "handleButton", acl: "sonidos" }),
+            expect.objectContaining({ types: ["button", "stringSelect"], prefixes: ["sonido_"], method: "handleButton", acl: "sonidos" }),
+            expect.objectContaining({ types: ["modal"], prefixes: ["sonido_modal_"], method: "handleModal", acl: "sonidos" }),
         ]);
     });
 
@@ -61,7 +64,8 @@ describe("definición y /sonidos", () => {
         expect(payload.flags).toBeUndefined();
         expect(payload.embeds[0].data.footer.text).toBe("Página 1 de 1 · 2 sonidos");
         const etiquetas = payload.components.flatMap((fila) => fila.components.map((b) => b.data.label));
-        expect(etiquetas).toEqual(["🔊 bombo", "🔊 Trompeta"]);
+        // Los sonidos y, debajo, los controles: buscar, aleatorio y más usados.
+        expect(etiquetas).toEqual(["🔊 bombo", "🔊 Trompeta", "🔍 Buscar", "🎲 Aleatorio", "🏆 Más usados"]);
     });
 });
 
@@ -77,7 +81,7 @@ describe("paginación", () => {
         expect(payload.embeds[0].data.footer.text).toBe("Página 2 de 2 · 21 sonidos");
         const botonesSonido = payload.components.slice(0, -1).flatMap((f) => f.components);
         expect(botonesSonido).toHaveLength(1);
-        const navegacion = payload.components.at(-1).components;
+        const navegacion = payload.components.at(-1).components.filter((b) => b.data.custom_id.startsWith("sonido_pagina_"));
         expect(navegacion.map((b) => b.data.custom_id)).toEqual(["sonido_pagina_0", "sonido_pagina_2"]);
         expect(navegacion[1].data.disabled).toBe(true);
         expect(navegacion[0].data.disabled).toBe(false);

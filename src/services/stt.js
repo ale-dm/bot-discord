@@ -220,4 +220,4 @@ async function listenAndTranscribe(client, guildId, channelId, invokingUserId, c
     receiver.speaking.on("start", onStart);
 }
 
-module.exports = { listenAndTranscribe };
+module.exports = { listenAndTranscribe, transcribeWithLocalServer };

@@ -1,6 +1,7 @@
 // Lectura de valores: convertir lo guardado al tipo de cada ajuste y pasarlo a la forma anidada.
 
 const { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO } = require("./definicion");
+const { CATEGORIAS } = require("../pase/constantes");
 
 function parseValue(key, value) {
     const type = KEY_TYPES[key] || "string";
@@ -72,6 +73,10 @@ function nodoEconomia(flat) {
             buy_cooldown_sec: flat["tienda.buy_cooldown_sec"],
             daily_limit: flat["tienda.daily_limit"],
             notif_channel_id: flat["tienda.notif_channel_id"],
+            recompra_pct: flat["tienda.recompra_pct"],
+            subida_pct: flat["tienda.subida_pct"],
+            recuperacion_pct: flat["tienda.recuperacion_pct"],
+            tope_pct: flat["tienda.tope_pct"],
         },
     };
 }
@@ -105,12 +110,26 @@ function nodoPlexYLogros(flat) {
     };
 }
 
+/** Los ajustes del pase de batalla (#353): activo, el tope de cada categoría, lo que cuesta cada nivel, el canal de anuncios y los objetos por nivel. */
+function nodoPase(flat) {
+    return {
+        activo: flat["pase.activo"],
+        topes: Object.fromEntries(Object.keys(CATEGORIAS).map((c) => [c, flat[`pase.tope_${c}`]])),
+        xp_nivel_base: flat["pase.xp_nivel_base"],
+        xp_nivel_paso: flat["pase.xp_nivel_paso"],
+        canal_nivel: flat["pase.canal_nivel"],
+        objetos: flat["pase.objetos"],
+    };
+}
+
 function nodoOtros(flat) {
     return {
+        pase: nodoPase(flat),
         apuestas: {
             canal_resultados: flat["apuestas.canal_resultados"],
             recordatorio: flat["apuestas.recordatorio"],
             recordatorio_min: flat["apuestas.recordatorio_min"],
+            recordatorio_quiniela_horas: flat["apuestas.recordatorio_quiniela_horas"],
             tope_diario: flat["apuestas.tope_diario"],
             max_partido: flat["apuestas.max_partido"],
             destacado: flat["apuestas.destacado"],
@@ -119,13 +138,26 @@ function nodoOtros(flat) {
         alertas: {
             enabled: flat["alertas.enabled"],
             admin_ids: flat["alertas.admin_ids"],
+            tipos: flat["alertas.tipos"],
+            canal: flat["alertas.canal"],
         },
+        mantenimiento: { activo: flat["mantenimiento.activo"], mensaje: flat["mantenimiento.mensaje"] },
         avisos: { cumple_channel_id: flat["avisos.cumple_channel_id"] },
         bienvenida: { canal_id: flat["bienvenida.canal_id"], texto: flat["bienvenida.texto"] },
         sugerencias: { canal_id: flat["sugerencias.canal_id"] },
+        sonidos: {
+            apagado: flat["sonidos.apagado"],
+            silencio_desde: flat["sonidos.silencio_desde"],
+            silencio_hasta: flat["sonidos.silencio_hasta"],
+            eventos_minutos: flat["sonidos.eventos_minutos"],
+        },
         clasificacion: {
             canal: flat["clasificacion.canal"],
             premio: flat["clasificacion.premio"],
+            premio_rico: flat["clasificacion.premio_rico"],
+            premio_activo: flat["clasificacion.premio_activo"],
+            premio_apostador: flat["clasificacion.premio_apostador"],
+            premio_constante: flat["clasificacion.premio_constante"],
             ultima_semana: flat["clasificacion.ultima_semana"],
         },
         liga: {

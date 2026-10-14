@@ -1,7 +1,7 @@
 // Reglas de la tragaperras: símbolos y pesos, los carretes, cuánto paga cada combinación, el jackpot progresivo
 // y el cobro de un giro. juegos/casino/tragaperras anima los carretes y pinta los mensajes.
 const db = require("../../core/db");
-const { procesarGanancia, procesarPerdida, applyRtp } = require("../casinoTransactions");
+const { procesarGanancia, procesarPerdida, descontarApuesta, applyRtp } = require("../casinoTransactions");
 const { logInfo } = require("../../core/logger");
 
 // Símbolos y sus valores
@@ -171,6 +171,65 @@ function liquidarGiro(userId, guildId, username, apuesta) {
     return { carretes, resultado, nuevoJackpot };
 }
 
+// Tiradas que se pueden pedir en una serie automática (#354), y la pausa entre una y otra (deja pasar un botón de parar y no
+// satura las ediciones del mensaje).
+const TIRADAS_AUTO = [10, 25, 50];
+const PAUSA_AUTO_MS = 300;
+
+/**
+ * Una serie de tiradas seguidas con la misma apuesta (#354). Cada tirada se cobra como una normal (saldo, cupo diario, cooldown,
+ * autoexclusión y topes) y la serie se corta al agotarse las tiradas, al fallar un cobro, al salir el jackpot o al pedir parar.
+ * `deps` es para los tests: { descontar, girar, pausa, debeParar, alProgreso(resumen) }.
+ * @returns {Promise<{ tiradas: number, hechas: number, apuesta: number, apostado: number, ganado: number, neto: number, aciertos: number,
+ *   mejor: number, jackpot: boolean, parada: boolean, motivo: string|null, nuevoJackpot: number|null }>}
+ *   `motivo`: por qué se cortó antes de tiempo, si fue un cobro rechazado.
+ */
+async function jugarSerie({ userId, guildId, username, apuesta, tiradas }, deps = {}) {
+    const descontar = deps.descontar || descontarApuesta;
+    const girar = deps.girar || liquidarGiro;
+    const pausa = deps.pausa || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    const r = {
+        tiradas,
+        hechas: 0,
+        apuesta,
+        apostado: 0,
+        ganado: 0,
+        neto: 0,
+        aciertos: 0,
+        mejor: 0,
+        jackpot: false,
+        parada: false,
+        motivo: null,
+        nuevoJackpot: null,
+    };
+    for (let i = 0; i < tiradas; i++) {
+        if (deps.debeParar?.()) {
+            r.parada = true;
+            break;
+        }
+        const cobro = descontar(userId, apuesta, guildId, "tragaperras");
+        if (!cobro.exito) {
+            r.motivo = cobro.mensaje;
+            break;
+        }
+        const giro = girar(userId, guildId, username, apuesta);
+        r.hechas++;
+        r.apostado += apuesta;
+        r.ganado += giro.resultado.ganancia;
+        r.nuevoJackpot = giro.nuevoJackpot;
+        if (giro.resultado.ganancia > apuesta) r.aciertos++;
+        r.mejor = Math.max(r.mejor, giro.resultado.ganancia - apuesta);
+        if (giro.resultado.tipo === "jackpot") {
+            r.jackpot = true;
+            break;
+        }
+        deps.alProgreso?.({ ...r, neto: r.ganado - r.apostado });
+        if (i < tiradas - 1) await pausa(PAUSA_AUTO_MS);
+    }
+    r.neto = r.ganado - r.apostado;
+    return r;
+}
+
 /**
  * Los últimos jackpots ganados, del más reciente al más antiguo (#456). Salen de la tabla del casino: cada jackpot se
  * guarda con tipo JACKPOT en el detalle, y `jackpot` es el bote que se llevó (la ganancia ya con el RTP).
@@ -186,4 +245,14 @@ function ultimosJackpots(limite = 10) {
         .map((f) => ({ userId: f.userId, fecha: f.fecha, cantidad: Number(f.cantidad) }));
 }
 
-module.exports = { SIMBOLOS, girarCarretes, calcularGanancia, obtenerJackpot, liquidarGiro, ultimosJackpots };
+module.exports = {
+    SIMBOLOS,
+    TIRADAS_AUTO,
+    PAUSA_AUTO_MS,
+    girarCarretes,
+    calcularGanancia,
+    obtenerJackpot,
+    liquidarGiro,
+    jugarSerie,
+    ultimosJackpots,
+};

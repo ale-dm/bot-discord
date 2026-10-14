@@ -4,8 +4,10 @@
 //   historial (todo lo apostado se apunta en negativo con tipo "apuestas"), así que también cuenta lo apostado y
 //   devuelto después.
 // - Máximo por partido: lo que cada uno puede tener apostado a un mismo partido, sumando todas sus apuestas a él.
+// Y antes que ellos, el límite de pérdidas personal (#319, systems/limitePerdidas).
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
+const limitePerdidas = require("../limitePerdidas");
 const { fmtNumero } = require("../../core/formato");
 
 const ZONA = "Europe/Madrid";
@@ -41,6 +43,9 @@ function limites(guildId) {
  * @returns {string|null} el motivo si se pasa de algún límite, o null si puede
  */
 function comprobar(guildId, userId, cantidad, { matchId = null, ahora = Date.now() } = {}) {
+    // El límite de pérdidas que se puso la propia persona (#319) vale en cualquier servidor, también sin límites del admin.
+    const propio = limitePerdidas.motivoDeBloqueo(userId, cantidad, ahora);
+    if (propio) return propio;
     const { topeDiario, maxPartido } = limites(guildId);
     if (topeDiario) {
         const hoy = apostadoHoy(userId, ahora);

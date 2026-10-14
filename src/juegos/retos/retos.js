@@ -11,6 +11,7 @@ const paneles = require("../../paneles/retos");
 const { importeElegido } = require("../../paneles/importes");
 const { avisarGanadores } = require("../../systems/apuestas/liquidacion");
 const { avisarTurno, enviarRecordatorios } = require("./avisos");
+const { botonRevancha } = require("./revancha");
 const { DEPORTES, sincronizarPartidos } = require("../../services/oddsApi");
 const { createLogger } = require("../../core/logger");
 const { esAdmin } = require("../../core/permisos");
@@ -200,26 +201,25 @@ async function bloquearDesdeReto(client, i, retoId) {
     void avisarGanadores(client, r.pagos);
 }
 
+// Al aceptar un duelo de blackjack, cada uno juega su mano en privado: se le dice cómo.
+function conAvisoBlackjack(r) {
+    if (r.ok && r.reto.juego === "blackjack") r.mensaje = "🃏 Pulsa **Mi mano** para jugar tu mano (solo la ves tú).";
+    return r;
+}
+
 async function botonReto(client, i) {
     const id = i.customId;
     const userId = i.user.id;
     const retoId = retoDe(id);
 
-    if (id.startsWith("retos_aceptar_")) {
-        const r = retos.aceptar(retoId, userId);
-        if (r.ok && r.reto.juego === "blackjack") r.mensaje = "🃏 Pulsa **Mi mano** para jugar tu mano (solo la ves tú).";
-        return responder(i, r);
-    }
+    if (id.startsWith("retos_aceptar_")) return responder(i, conAvisoBlackjack(retos.aceptar(retoId, userId)));
     if (id.startsWith("retos_rechazar_")) return responder(i, retos.rechazar(retoId, userId));
     if (id.startsWith("retos_cancelar_")) return responder(i, retos.cancelar(retoId, userId));
-    if (id.startsWith("retos_acepcontra_")) {
-        const r = retos.aceptarContraoferta(retoId, userId);
-        if (r.ok && r.reto.juego === "blackjack") r.mensaje = "🃏 Pulsa **Mi mano** para jugar tu mano (solo la ves tú).";
-        return responder(i, r);
-    }
+    if (id.startsWith("retos_acepcontra_")) return responder(i, conAvisoBlackjack(retos.aceptarContraoferta(retoId, userId)));
     if (id.startsWith("retos_contra_")) return abrirContraoferta(i, retoId);
     if (id.startsWith("retos_bloquear_")) return bloquearDesdeReto(client, i, retoId);
     if (id.startsWith("retos_rendirse_")) return responder(i, retos.rendirse(retoId, userId));
+    if (id.startsWith("retos_revancha_")) return botonRevancha(i, retoId);
     // retos_ppt_{jugada}_{id}
     if (id.startsWith("retos_ppt_")) {
         const r = retos.jugarPpt(retoId, userId, id.split("_")[2]);

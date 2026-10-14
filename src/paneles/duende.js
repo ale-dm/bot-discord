@@ -10,6 +10,7 @@ const {
     UserSelectMenuBuilder,
 } = require("discord.js");
 const perfiles = require("../systems/duende/perfiles");
+const { paginaDeLista } = require("./menuPaginado");
 
 const MAX_OPCIONES = 25;
 const cortar = (texto, max) => (texto.length > max ? `${texto.slice(0, max - 1)}…` : texto);
@@ -55,7 +56,7 @@ function buildInicio({ esAdmin, personalidad }) {
 }
 
 /** Lo que el Duende recuerda de `objetivo` (un usuario de Discord). Los admins pueden elegir a otra persona. */
-function buildRecuerdos({ esAdmin, objetivo, aviso = null }) {
+function buildRecuerdos({ esAdmin, objetivo, aviso = null, puedeBorrar = false }) {
     const perfil = perfiles.perfilDe(objetivo);
     const notas = perfil ? (perfil.notas.length ? perfil.notas : perfil.description ? [perfil.description] : []) : [];
     const lista = notas.length ? notas.map((n, i) => `${i + 1}. ${n}`).join("\n") : "*(todavía no recuerdo nada de esta persona)*";
@@ -74,6 +75,19 @@ function buildRecuerdos({ esAdmin, objetivo, aviso = null }) {
                     .setPlaceholder("Elegir a otra persona")
                     .setMinValues(1)
                     .setMaxValues(1),
+            ),
+        );
+    }
+    // 🗑️ Olvidar una sola nota (#405): solo la propia persona o un admin ven el menú.
+    if (puedeBorrar && perfil?.notas.length) {
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId(`duendepanel_nota_borrar_${objetivo.id}`)
+                    .setPlaceholder("Olvidar solo una nota")
+                    .addOptions(
+                        paginaDeLista(perfil.notas).items.map((n, i) => ({ label: cortar(`${i + 1}. ${n}`, 100), value: String(i) })),
+                    ),
             ),
         );
     }
@@ -99,7 +113,8 @@ function buildPersonalidad({ esAdmin, canal, personalidades, actual, aviso = nul
     const embed = new EmbedBuilder()
         .setTitle("🎭 Personalidad del Duende")
         .setDescription(
-            (aviso ? `${aviso}\n\n` : "") + `En este canal: **${actual ? actual.title || actual.id : "la de por defecto"}**\n\n${lista}`,
+            (aviso ? `${aviso}\n\n` : "") +
+                `En este canal: **${actual ? actual.title || actual.id : "la de por defecto"}**${actual ? ` · voz: ${actual.voz || "la global"}` : ""}\n\n${lista}`,
         )
         .setColor(0x8e44ad);
 
@@ -111,6 +126,20 @@ function buildPersonalidad({ esAdmin, canal, personalidades, actual, aviso = nul
                     .setCustomId("duendepanel_canal")
                     .setPlaceholder("Elegir la personalidad de este canal")
                     .addOptions(opcionesPersonalidades(personalidades, actual?.id)),
+            ),
+        );
+    }
+    // 🗣️ La voz de la personalidad de este canal (#396): una de las siete, o la global.
+    if (esAdmin && actual) {
+        filas.push(
+            new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId("duendepanel_voz")
+                    .setPlaceholder(`Voz de ${actual.title || actual.id}`)
+                    .addOptions([
+                        { label: "Voz global (por defecto)", value: "global", default: !actual.voz },
+                        ...perfiles.VOCES.map((v) => ({ label: v, value: v, default: v === actual.voz })),
+                    ]),
             ),
         );
     }

@@ -38,18 +38,22 @@ function rangoISO(temporada) {
     };
 }
 
-/** Clasificación de una temporada: [{ userId, puntos, quinielas }], de más a menos puntos. Solo quien ha sumado. */
-function clasificacion(temporada, limite = 10) {
+/**
+ * Clasificación de una temporada: [{ userId, puntos, quinielas }], de más a menos puntos. Solo quien ha sumado. Con `deporte`
+ * (#380), solo cuentan las quinielas de esa competición, con el mismo desempate; sin él, la general. Los premios de fin de
+ * temporada se calculan siempre con la general.
+ */
+function clasificacion(temporada, limite = 10, deporte = null) {
     const { desde, hasta } = rangoISO(temporada);
     return db
         .prepare(
             `SELECT a.user_id AS userId, SUM(a.aciertos) AS puntos, COUNT(*) AS quinielas
              FROM quiniela_apuestas a JOIN quinielas q ON q.id = a.quiniela_id
-             WHERE q.estado = 'cerrada' AND q.cerrada_en >= ? AND q.cerrada_en < ?
+             WHERE q.estado = 'cerrada' AND q.cerrada_en >= ? AND q.cerrada_en < ? AND (? IS NULL OR q.deporte = ?)
              GROUP BY a.user_id HAVING puntos > 0
              ORDER BY puntos DESC, quinielas ASC, a.user_id ASC LIMIT ?`,
         )
-        .all(desde, hasta, limite);
+        .all(desde, hasta, deporte, deporte, limite);
 }
 
 /** Premios de la temporada (puesto 1, 2 y 3) en monedas de este servidor. */

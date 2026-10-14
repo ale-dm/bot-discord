@@ -10,6 +10,7 @@ const {
 } = require("@discordjs/voice");
 const { createLogger } = require("../../core/logger");
 const { getGeminiTtsAudioStream, GEMINI_TTS_VOICE } = require("../geminiTts");
+const perfiles = require("../../systems/duende/perfiles");
 
 const voiceLog = createLogger("Duende").child("Voz");
 
@@ -114,15 +115,15 @@ function puedeHablarEn(voiceChannel, guild) {
 }
 
 /** El audio de Gemini TTS del texto limpio para leerlo en voz alta. Null si no hay nada que decir o el TTS falla. */
-async function audioDeRespuesta(respuesta, guild) {
+async function audioDeRespuesta(respuesta, guild, voz = DUENDE_TTS_VOICE) {
     const textoHablado = textoParaVoz(respuesta, guild);
     if (!textoHablado) {
         log("Nada que decir en voz alta tras limpiar el texto.");
         return null;
     }
     try {
-        const audioStream = await getTtsAudioStream(textoHablado, DUENDE_TTS_VOICE);
-        log("Audio TTS generado con voz:", DUENDE_TTS_VOICE);
+        const audioStream = await getTtsAudioStream(textoHablado, voz);
+        log("Audio TTS generado con voz:", voz);
         return audioStream;
     } catch (err) {
         voiceLog.warn("Error generando el audio TTS:", err);
@@ -265,7 +266,9 @@ async function tryVoiceReply(client, interaction, respuesta) {
         const voiceChannel = await canalDeQuienHabla(guild, interaction);
         if (!voiceChannel || !toca(interaction) || !puedeHablarEn(voiceChannel, guild)) return false;
 
-        const audioStream = await audioDeRespuesta(respuesta, guild);
+        // La voz de la personalidad del canal (#396); sin ella, la global.
+        const vozDelCanal = perfiles.vozDeCanal(interaction.channelId) || DUENDE_TTS_VOICE;
+        const audioStream = await audioDeRespuesta(respuesta, guild, vozDelCanal);
         if (!audioStream) return false;
 
         connection = await conectarAlCanal(guild, voiceChannel);

@@ -3,6 +3,7 @@
 // dinero.TIPOS) y "compra" (al gastar en la tienda). Gestionado desde Panel admin → Config Global
 // → Economía → Impuestos.
 const db = require("../core/db");
+const tramos = require("./impuestos/tramos");
 
 const PORCENTAJE_POR_DEFECTO = 5;
 
@@ -56,7 +57,9 @@ function anadirRegla(guildId, { base, tipoMovimiento = null, porcentaje, destino
 }
 
 function quitarRegla(guildId, id) {
-    return db.prepare("DELETE FROM impuestos_reglas WHERE guildId = ? AND id = ?").run(guildId, id).changes === 1;
+    const quitada = db.prepare("DELETE FROM impuestos_reglas WHERE guildId = ? AND id = ?").run(guildId, id).changes === 1;
+    if (quitada) tramos.borrarTramos(id);
+    return quitada;
 }
 
 function activarRegla(guildId, id, activo) {
@@ -86,7 +89,7 @@ function calcularImpuesto(guildId, tipo, cantidad) {
     asegurarReglaPorDefecto(guildId);
     const regla = reglaDeIngreso(guildId, tipo);
     if (!regla) return null;
-    const impuesto = Math.floor((cantidad * regla.porcentaje) / 100);
+    const impuesto = tramos.impuestoDe(regla, cantidad);
     if (impuesto <= 0) return null;
     return { impuesto, destino: regla.destino, reglaId: regla.id };
 }

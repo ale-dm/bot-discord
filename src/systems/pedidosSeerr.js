@@ -15,6 +15,8 @@ const DISPONIBLE = 5;
 const PARCIAL = 4;
 // requestId reservado: el servidor ya tiene su base (ver la migración 011).
 const BASE = 0;
+// Los rechazos (#406) se apuntan con el id de la petición en negativo, y su propia base va aparte.
+const BASE_RECHAZOS = -999999999;
 
 function avisadas(guildId) {
     return new Set(
@@ -108,4 +110,56 @@ async function avisarDisponibles(client) {
     return avisos;
 }
 
-module.exports = { avisarDisponibles };
+function textoRechazo(userId, titulo) {
+    return `❌ <@${userId}>, han rechazado tu petición de **${titulo}** en Seerr.`;
+}
+
+/**
+ * Avisa a quien pidió algo en Seerr cuando se rechaza (#406), una sola vez por petición, por el canal de novedades o por DM. La
+ * primera comprobación de un servidor solo fija la base: los rechazos anteriores no se avisan. Una petición borrada no se avisa.
+ * @returns {Promise<number>} avisos enviados
+ */
+async function avisarRechazados(client) {
+    let avisos = 0;
+    for (const guild of client.guilds.cache.values()) {
+        if (!guildSettings.getSettings(guild.id).seerr.avisar_disponible) continue;
+        const { url, apiKey } = seerrClient.getConfig(guild.id);
+        if (!url || !apiKey) continue;
+        try {
+            const rechazadas = (await seerrClient.getRequestsRaw(guild.id)).filter(
+                (p) => p.estadoPeticion === seerrClient.PETICION_RECHAZADA,
+            );
+            const ya = avisadas(guild.id);
+            if (!ya.has(BASE_RECHAZOS)) {
+                marcar(guild.id, [BASE_RECHAZOS, ...rechazadas.map((p) => -p.id)]);
+                log.info(`Avisos de rechazos: base fijada en ${guild.name} (${rechazadas.length} ya rechazadas, sin avisar)`);
+                continue;
+            }
+            const nuevas = rechazadas.filter((p) => !ya.has(-p.id));
+            if (!nuevas.length) continue;
+            marcar(
+                guild.id,
+                nuevas.map((p) => -p.id),
+            );
+            const canal = await canalNovedades(guild);
+            for (const p of nuevas) {
+                const userId = await discordIdDe(guild.id, p);
+                if (!userId) continue;
+                const titulo = (await seerrClient.getMediaTitle(guild.id, p.mediaType, p.tmdbId)) || "lo que pediste";
+                const contenido = textoRechazo(userId, titulo);
+                try {
+                    if (canal) await canal.send({ content: contenido, allowedMentions: { users: [userId] } });
+                    else if (!(await enviarAviso(client, userId, "pedido_seerr", { content: contenido }))) continue;
+                    avisos++;
+                } catch (e) {
+                    log.warn(`No se pudo avisar del rechazo de "${titulo}" a ${userId} en ${guild.name}: ${e.message}`);
+                }
+            }
+        } catch (e) {
+            log.warn(`Error comprobando los rechazos de Seerr en ${guild.name}: ${e.message}`);
+        }
+    }
+    return avisos;
+}
+
+module.exports = { avisarDisponibles, avisarRechazados };

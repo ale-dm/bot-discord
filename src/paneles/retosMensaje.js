@@ -156,6 +156,16 @@ function mensajeDuelo(reto, embed) {
         if (reto.juego === "blackjack" && reto.datos?.manos) {
             estado = `${persona(reto.creador)}: ${manoTexto(reto, reto.creador)}\n${persona(reto.rival)}: ${manoTexto(reto, reto.rival)}\n\n${estado}`;
         }
+        // 🔁 Revancha (#318): un duelo resuelto entre dos personas la ofrece, una sola vez.
+        if (retos.admiteRevancha(reto)) {
+            components = [
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`retos_revancha_${reto.id}`).setLabel("🔁 Revancha").setStyle(ButtonStyle.Primary),
+                ),
+            ];
+        } else if (reto.datos?.revancha) {
+            estado += `\n🔁 Revancha: reto #${reto.datos.revancha}.`;
+        }
     }
     embed
         .setTitle(`⚔️ Duelo de ${j.emoji} ${j.nombre}`)

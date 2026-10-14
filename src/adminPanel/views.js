@@ -26,6 +26,7 @@ function buildMainRows() {
     );
     const row4 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_sonidos_home").setLabel("🔊 Sonidos").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("paneladmin_pase_home").setLabel("🛡️ Pase").setStyle(ButtonStyle.Secondary),
     );
     return [row1, row2, row3, row4];
 }

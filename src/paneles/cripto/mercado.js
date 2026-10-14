@@ -82,6 +82,7 @@ async function pantallaMercado(guildId, dias = 7) {
     );
     const masInfo = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("cripto_eventos").setLabel("📰 Eventos").setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("criptoord_ordenes").setLabel("🔔 Alertas y órdenes").setStyle(ButtonStyle.Secondary),
     );
 
     return pantalla({ embeds: [embed], filas: [rangos, masInfo], actual: "mercado", files });

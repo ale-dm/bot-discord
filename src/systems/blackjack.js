@@ -55,7 +55,21 @@ function nuevaPartida({ apuesta, guildId, saldoRestante, baraja = crearBaraja(4)
     state.botHand = [robar(state), robar(state)];
     state.puedeDoblar = saldoRestante >= apuesta;
     state.puedeSplit = state.userHand[0].value === state.userHand[1].value && saldoRestante >= apuesta;
+    // Rendirse solo vale en la primera decisión (#337); el seguro, con un as visible y sin blackjack del jugador (#333).
+    state.puedeRendirse = true;
+    state.seguroPendiente = ofreceSeguro(state, saldoRestante);
     return state;
+}
+
+/** Lo que cuesta el seguro (#333): la mitad de la apuesta, redondeada hacia abajo. */
+const costeSeguro = (state) => Math.floor(state.apuesta / 2);
+
+/**
+ * ¿Se ofrece el seguro? Con un as visible del crupier, sin blackjack del jugador (ese se paga ya) y con efectivo para
+ * pagarlo. Se ofrece antes de mirar si el crupier tiene blackjack, para que sea una decisión de verdad.
+ */
+function ofreceSeguro(state, saldoRestante) {
+    return state.botHand[0].value === 11 && !esBlackjack(state.userHand) && saldoRestante >= costeSeguro(state) && costeSeguro(state) > 0;
 }
 
 /** Blackjack natural al repartir: "empate_blackjack", "blackjack" (gana el jugador), "derrota_blackjack" o null. */
@@ -93,6 +107,7 @@ function cobroGanador(apuesta, blackjack = false) {
 
 /** Pedir carta. Si se pasa, la partida termina (perdida). */
 function pedir(state) {
+    state.puedeRendirse = false;
     state.userHand.push(robar(state));
     const valor = handValue(state.userHand);
     const pasado = valor > 21;
@@ -119,6 +134,7 @@ function doblar(state) {
  * ases solo se reparte esa carta y ambas manos quedan plantadas (`sonAses`: ya se puede resolver).
  */
 function separar(state) {
+    state.puedeRendirse = false;
     const sonAses = state.userHand[0].value === 11 && state.userHand[1].value === 11;
     state.split = true;
     state.hands = [
@@ -176,6 +192,17 @@ function resolverSplit(state) {
     return { botVal, manos };
 }
 
+/**
+ * Rendirse (#337): solo en la primera decisión, con las dos cartas del reparto. La partida termina y se devuelve la mitad de la
+ * apuesta (redondeada hacia abajo). @returns {number|null} lo que se devuelve, o null si ya no se puede
+ */
+function rendirse(state) {
+    if (!state.puedeRendirse || state.finished || state.split || state.userHand.length !== 2) return null;
+    state.puedeRendirse = false;
+    state.finished = true;
+    return Math.floor(state.apuesta / 2);
+}
+
 /** Lo que hay en juego (para liquidar una partida abandonada). */
 function totalApostado(state) {
     return state.split ? state.splitApuesta * 2 : state.apuesta;
@@ -189,6 +216,9 @@ module.exports = {
     nuevaPartida,
     naturales,
 
+    costeSeguro,
+    ofreceSeguro,
+    rendirse,
     resolver,
     cobroGanador,
     pedir,

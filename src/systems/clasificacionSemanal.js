@@ -1,11 +1,13 @@
 // 🏆 Clasificación semanal con premios (F-EC-03): cada lunes, desde las 10:00 (hora de Madrid), se premia con el mismo
-// premio (clasificacion.premio, al 💵 efectivo) a tres personas y se publica en el canal de la clasificación:
+// premio (clasificacion.premio, o el propio de cada categoría si lo tiene: #372; al 💵 efectivo) a cuatro personas y se publica
+// en el canal de la clasificación:
 // - 💰 El más rico: más efectivo + banco ahora mismo (el dinero es global, como en 🏆 Rankings → Riqueza).
 // - 💬 El más activo: más XP ganada en el servidor desde la clasificación anterior (clasificacion_xp guarda la XP que
 //   tenía cada uno entonces; migración 022).
 // - ⚽ El mejor apostador: más beneficio en lo apostado y resuelto la semana anterior, de lunes a domingo (F-AP-03,
 //   apuestas/ranking.beneficioEntre); solo si ganó algo.
-// Una misma persona puede llevarse más de un premio. Cron cada hora de los lunes y al arrancar: una vez por semana y
+// - 📆 El más constante (#391): más días distintos con XP en la semana anterior (xp_diaria); en empate, más XP esa semana.
+// Una misma persona puede llevarse más de un premio (y cobra la suma). Cada semana se guarda quién ganó (#360). Cron cada hora de los lunes y al arrancar: una vez por semana y
 // servidor (clasificacion.ultima_semana), aunque el bot se reinicie. Sin canal elegido no se publica ni se paga nada.
 // Se configura en /paneladmin → ⚙️ Config Global → 🏆 Semanal.
 const db = require("../core/db");
@@ -20,34 +22,58 @@ const log = createLogger("Clasificación");
 const HORA = 10;
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-const { momentoMadrid: momento } = require("../core/zonaMadrid");
-const aFecha = (dia) => new Date(`${dia}T00:00:00Z`);
-const sumarDias = (dia, n) => new Date(aFecha(dia).getTime() + n * 86400 * 1000).toISOString().slice(0, 10);
-/** 1 = lunes … 7 = domingo. */
-const diaSemana = (dia) => aFecha(dia).getUTCDay() || 7;
+const { momentoMadrid: momento, aFecha, diaSemana, semanaAnterior } = require("../core/zonaMadrid");
+const historial = require("./clasificacion/historial");
 
-/** La semana anterior completa (lunes y domingo, AAAA-MM-DD, en hora de Madrid) respecto a `ahora`. */
-function semanaAnterior(ahora = Date.now()) {
-    const { dia } = momento(ahora);
-    const lunesActual = sumarDias(dia, 1 - diaSemana(dia));
-    return { lunes: sumarDias(lunesActual, -7), domingo: sumarDias(lunesActual, -1) };
+/** Las categorías, en el orden en que salen en el mensaje. */
+const CATEGORIAS = [
+    { id: "rico", emoji: "💰", nombre: "El más rico" },
+    { id: "activo", emoji: "💬", nombre: "El más activo" },
+    { id: "apostador", emoji: "⚽", nombre: "El mejor apostador" },
+    { id: "constante", emoji: "📆", nombre: "El más constante" },
+];
+
+/** El premio de una categoría (#372): el suyo si el admin le puso uno (0 o más) y, si no, el general `clasificacion.premio`. */
+function premioDe(cfg, categoria) {
+    const propio = Number(cfg[`premio_${categoria}`]);
+    return Number.isFinite(propio) && propio >= 0 ? propio : Math.max(0, Number(cfg.premio) || 0);
 }
 
-/** Quién gana cada premio (o null si nadie): { rico: {userId, total}, activo: {userId, xp}, apostador: {userId, beneficio, resueltas} }. */
-function ganadores(guildId, semana) {
-    const [rico] = dinero.masRicos(1);
-    const activo = db
+/** La XP ganada desde el último corte de cada persona, la mayor primero: [{ userId, xp }] (#368). */
+function ranking(guildId, limite = 10) {
+    return db
         .prepare(
             `SELECT u.userId, u.xp_total - COALESCE(c.xp_total, 0) AS xp FROM xp_users u
              LEFT JOIN clasificacion_xp c ON c.guildId = u.guildId AND c.userId = u.userId
-             WHERE u.guildId = ? ORDER BY xp DESC, u.userId LIMIT 1`,
+             WHERE u.guildId = ? ORDER BY xp DESC, u.userId LIMIT ?`,
         )
-        .get(guildId);
+        .all(guildId, limite);
+}
+
+/** Quién tiene más días con XP entre dos días (AAAA-MM-DD, incluidos): { userId, dias, xp } o undefined (#391). */
+function masConstante(guildId, desde, hasta) {
+    return db
+        .prepare(
+            `SELECT userId, COUNT(*) AS dias, SUM(xp) AS xp FROM xp_diaria WHERE guildId = ? AND dia BETWEEN ? AND ? AND xp > 0
+             GROUP BY userId ORDER BY dias DESC, xp DESC, userId LIMIT 1`,
+        )
+        .get(guildId, desde, hasta);
+}
+
+/**
+ * Quién gana cada premio (o null si nadie): { rico: {userId, total}, activo: {userId, xp}, apostador: {userId, beneficio, resueltas},
+ * constante: {userId, dias, xp} }.
+ */
+function ganadores(guildId, semana) {
+    const [rico] = dinero.masRicos(1);
+    const [activo] = ranking(guildId, 1);
     const [apostador] = rankingApuestas.beneficioEntre(semana.lunes, semana.domingo);
+    const constante = masConstante(guildId, semana.lunes, semana.domingo);
     return {
         rico: rico && rico.total > 0 ? { userId: rico.userId, total: rico.total } : null,
         activo: activo && activo.xp > 0 ? activo : null,
         apostador: apostador && apostador.beneficio > 0 ? apostador : null,
+        constante: constante || null,
     };
 }
 
@@ -56,24 +82,36 @@ function fechas({ lunes, domingo }) {
     return `del ${f(lunes)} al ${f(domingo)}`;
 }
 
-/** El mensaje de la clasificación (con aviso a los premiados). */
-function mensaje(g, semana, premio) {
-    const lineas = [];
-    if (g.rico) lineas.push(`💰 **El más rico**: <@${g.rico.userId}> (${fmtNumero(g.rico.total)} 🪙 entre efectivo y banco)`);
-    if (g.activo) lineas.push(`💬 **El más activo**: <@${g.activo.userId}> (+${fmtNumero(g.activo.xp)} XP esta semana)`);
-    if (g.apostador) {
-        const n = g.apostador.resueltas;
-        lineas.push(
-            `⚽ **El mejor apostador**: <@${g.apostador.userId}> (+${fmtNumero(g.apostador.beneficio)} 🪙 en ${n} ${n === 1 ? "apuesta" : "apuestas"})`,
-        );
-    }
+/** El texto del dato de cada ganador, para el mensaje. */
+const DETALLE = {
+    rico: (x) => `${fmtNumero(x.total)} 🪙 entre efectivo y banco`,
+    activo: (x) => `+${fmtNumero(x.xp)} XP esta semana`,
+    apostador: (x) => `+${fmtNumero(x.beneficio)} 🪙 en ${x.resueltas} ${x.resueltas === 1 ? "apuesta" : "apuestas"}`,
+    constante: (x) => `${x.dias} ${x.dias === 1 ? "día" : "días"} con XP`,
+};
+
+/**
+ * El mensaje de la clasificación (con aviso a los premiados). `premios`: un número (el mismo para todas las categorías) o
+ * { rico, activo, apostador, constante }; si no son todos iguales, cada línea lleva el suyo.
+ */
+function mensaje(g, semana, premios) {
+    const de = (id) => (typeof premios === "object" ? premios[id] : premios);
+    const distintos = new Set(CATEGORIAS.filter((c) => g[c.id]).map((c) => de(c.id))).size > 1;
+    const lineas = CATEGORIAS.filter((c) => g[c.id]).map(
+        (c) =>
+            `${c.emoji} **${c.nombre}**: <@${g[c.id].userId}> (${DETALLE[c.id](g[c.id])})${distintos ? ` · **${fmtNumero(de(c.id))}** 🪙` : ""}`,
+    );
     const cabecera = `🏆 **Clasificación semanal** · ${fechas(semana)}`;
     if (!lineas.length) return { content: `${cabecera}\n\nEsta semana no hay a quién premiar. 😴`, allowedMentions: { parse: [] } };
-    const premiados = [...new Set([g.rico, g.activo, g.apostador].filter(Boolean).map((x) => String(x.userId)))];
-    return {
-        content: `${cabecera}\n\n${lineas.join("\n")}\n\nCada premio: **${fmtNumero(premio)}** 🪙 al efectivo.`,
-        allowedMentions: { users: premiados },
-    };
+    const premiados = [
+        ...new Set(
+            CATEGORIAS.map((c) => g[c.id])
+                .filter(Boolean)
+                .map((x) => String(x.userId)),
+        ),
+    ];
+    const pie = distintos ? "Cada premio, al efectivo." : `Cada premio: **${fmtNumero(de("rico"))}** 🪙 al efectivo.`;
+    return { content: `${cabecera}\n\n${lineas.join("\n")}\n\n${pie}`, allowedMentions: { users: premiados } };
 }
 
 /**
@@ -89,18 +127,22 @@ async function publicar(guild, { semana = semanaAnterior() } = {}) {
         log.warn(`El canal de la clasificación semanal ${cfg.canal} no existe o no es de texto en ${guild.name || guild.id}`);
         return { ok: false, motivo: `No encuentro el canal <#${cfg.canal}> (o no es de texto).`, semana };
     }
-    const premio = Math.max(0, Number(cfg.premio) || 0);
+    const premios = Object.fromEntries(CATEGORIAS.map((c) => [c.id, premioDe(cfg, c.id)]));
     const g = ganadores(guild.id, semana);
-    await canal.send(mensaje(g, semana, premio));
+    await canal.send(mensaje(g, semana, premios));
     db.transaction(() => {
-        const premios = [
-            [g.rico, "el más rico"],
-            [g.activo, "el más activo"],
-            [g.apostador, "el mejor apostador"],
-        ];
-        for (const [ganador, que] of premios) {
-            if (ganador && premio > 0) dinero.pagarConImpuesto(ganador.userId, guild.id, "premio", `Clasificación semanal: ${que}`, premio);
+        for (const c of CATEGORIAS) {
+            if (g[c.id] && premios[c.id] > 0) {
+                dinero.pagarConImpuesto(
+                    g[c.id].userId,
+                    guild.id,
+                    "premio",
+                    `Clasificación semanal: ${c.nombre.toLowerCase()}`,
+                    premios[c.id],
+                );
+            }
         }
+        historial.guardar(guild.id, semana.lunes, g);
         db.prepare(
             `INSERT INTO clasificacion_xp (guildId, userId, xp_total) SELECT guildId, userId, xp_total FROM xp_users WHERE guildId = ?
              ON CONFLICT(guildId, userId) DO UPDATE SET xp_total = excluded.xp_total`,
@@ -109,7 +151,7 @@ async function publicar(guild, { semana = semanaAnterior() } = {}) {
     })();
     log.info(
         `Clasificación semanal (${semana.lunes}) en ${guild.name || guild.id}: rico=${g.rico?.userId || "-"} activo=${g.activo?.userId || "-"} ` +
-            `apostador=${g.apostador?.userId || "-"} · premio ${premio}`,
+            `apostador=${g.apostador?.userId || "-"} constante=${g.constante?.userId || "-"} · premios ${JSON.stringify(premios)}`,
     );
     return { ok: true, ganadores: g, semana };
 }
@@ -139,4 +181,14 @@ async function publicarTodos(client, ahora) {
     return publicadas;
 }
 
-module.exports = { HORA, semanaAnterior, ganadores, mensaje, publicar, publicarSiToca };
+module.exports = {
+    HORA,
+    CATEGORIAS,
+    semanaAnterior,
+    premioDe,
+    ranking,
+    ganadores,
+    mensaje,
+    publicar,
+    publicarSiToca,
+};
