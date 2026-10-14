@@ -17,6 +17,10 @@ const DEFAULT_CONFIG = {
     streak_enabled: "1",
     streak_bonus_pct_per_day: "2",
     streak_bonus_cap_pct: "50",
+    streak_grace_per_month: "0",
+    xp_daily_cap: "0",
+    xp_reaction_base: "3",
+    xp_reaction_cooldown_sec: "60",
 };
 
 const DEFAULT_TITLES = [
@@ -122,7 +126,8 @@ function setConfig(guildId, key, value) {
 function ensureUser(guildId, userId) {
     sentencia(`INSERT OR IGNORE INTO xp_users (guildId, userId) VALUES (?, ?)`).run(guildId, userId);
     return sentencia(
-        `SELECT guildId, userId, xp, nivel, xp_total, ultimo_msg, voz_inicio, voz_segundos, streak_dias, streak_last_day FROM xp_users WHERE guildId = ? AND userId = ?`,
+        `SELECT guildId, userId, xp, nivel, xp_total, ultimo_msg, voz_inicio, voz_segundos, streak_dias, streak_last_day,
+            streak_max, streak_gracia_mes, streak_gracia_usados, anuncios_off FROM xp_users WHERE guildId = ? AND userId = ?`,
     ).get(guildId, userId);
 }
 
@@ -217,6 +222,73 @@ function clearIgnoredChannels(guildId) {
     db.prepare(`DELETE FROM xp_ignored_channels WHERE guildId = ?`).run(guildId);
 }
 
+/** ¿Tiene alguno de los roles sin XP (#362)? `member` es un GuildMember (o algo con `roles.cache`); sin él, no. */
+function tieneRolIgnorado(guildId, member) {
+    const roles = member?.roles?.cache;
+    if (!roles || !roles.size) return false;
+    return sentencia(`SELECT roleId FROM xp_ignored_roles WHERE guildId = ?`)
+        .all(guildId)
+        .some((r) => roles.has(r.roleId));
+}
+
+function getIgnoredRoles(guildId) {
+    return db.prepare(`SELECT roleId, roleName FROM xp_ignored_roles WHERE guildId = ? ORDER BY roleName ASC`).all(guildId);
+}
+
+function addIgnoredRole(guildId, roleId, roleName) {
+    db.prepare(
+        `INSERT INTO xp_ignored_roles (guildId, roleId, roleName) VALUES (?, ?, ?)
+         ON CONFLICT(guildId, roleId) DO UPDATE SET roleName = excluded.roleName`,
+    ).run(guildId, roleId, roleName || null);
+}
+
+function removeIgnoredRole(guildId, roleId) {
+    return db.prepare(`DELETE FROM xp_ignored_roles WHERE guildId = ? AND roleId = ?`).run(guildId, roleId).changes > 0;
+}
+
+/** El multiplicador de XP de un canal (#369): 1 si no tiene; 0 lo deja como ignorado. */
+function multiplicadorCanal(guildId, channelId) {
+    if (!channelId) return 1;
+    const fila = sentencia(`SELECT multiplicador FROM xp_channel_multipliers WHERE guildId = ? AND channelId = ?`).get(guildId, channelId);
+    return fila ? Number(fila.multiplicador) : 1;
+}
+
+function getMultiplicadoresCanal(guildId) {
+    return db.prepare(`SELECT channelId, multiplicador FROM xp_channel_multipliers WHERE guildId = ? ORDER BY channelId`).all(guildId);
+}
+
+/** Guarda el multiplicador de un canal; el 1 (lo normal) lo quita. */
+function setMultiplicadorCanal(guildId, channelId, multiplicador) {
+    if (multiplicador === 1) {
+        db.prepare(`DELETE FROM xp_channel_multipliers WHERE guildId = ? AND channelId = ?`).run(guildId, channelId);
+        return;
+    }
+    db.prepare(
+        `INSERT INTO xp_channel_multipliers (guildId, channelId, multiplicador) VALUES (?, ?, ?)
+         ON CONFLICT(guildId, channelId) DO UPDATE SET multiplicador = excluded.multiplicador`,
+    ).run(guildId, channelId, multiplicador);
+}
+
+/** Si alguien no quiere que se anuncie su subida de nivel (#373). */
+function anunciosOff(guildId, userId) {
+    return !!sentencia(`SELECT anuncios_off FROM xp_users WHERE guildId = ? AND userId = ?`).get(guildId, userId)?.anuncios_off;
+}
+
+function setAnunciosOff(guildId, userId, valor) {
+    ensureUser(guildId, userId);
+    sentencia(`UPDATE xp_users SET anuncios_off = ? WHERE guildId = ? AND userId = ?`).run(valor ? 1 : 0, guildId, userId);
+}
+
+/** Cuándo (ms) recibió XP por última vez por una reacción, o null (#358). */
+function getUltimaReaccion(guildId, userId) {
+    return sentencia(`SELECT ultima_reaccion FROM xp_users WHERE guildId = ? AND userId = ?`).get(guildId, userId)?.ultima_reaccion ?? null;
+}
+
+function registrarReaccion(guildId, userId, ahora) {
+    ensureUser(guildId, userId);
+    sentencia(`UPDATE xp_users SET ultima_reaccion = ? WHERE guildId = ? AND userId = ?`).run(ahora, guildId, userId);
+}
+
 function getTitles(guildId) {
     ensureGuildDefaults(guildId);
     return db.prepare(`SELECT nivel, title, emoji FROM xp_level_titles WHERE guildId = ? ORDER BY nivel ASC`).all(guildId);
@@ -243,4 +315,15 @@ module.exports = {
     addIgnoredChannel,
     removeIgnoredChannel,
     clearIgnoredChannels,
+    tieneRolIgnorado,
+    getIgnoredRoles,
+    addIgnoredRole,
+    removeIgnoredRole,
+    multiplicadorCanal,
+    getMultiplicadoresCanal,
+    setMultiplicadorCanal,
+    anunciosOff,
+    setAnunciosOff,
+    getUltimaReaccion,
+    registrarReaccion,
 };

@@ -126,6 +126,7 @@ describe("🏅 Logros: filtro (F-PX-02e)", () => {
             "todos",
             "cat-social",
             "cat-xp",
+            "cat-racha",
             "cat-casino",
             "cat-cripto",
             "cat-tienda",

@@ -2,6 +2,7 @@
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const dinero = require("../../systems/dinero");
+const xp = require("../../systems/xpSystem");
 const plexLinks = require("../../systems/plexLinks");
 const plexTrofeos = require("../../systems/plexTrofeos");
 const plexIdiomas = require("../../systems/plexIdiomas");
@@ -39,6 +40,14 @@ async function buildPerfil(guild, ownerId, targetId) {
     if (propio) {
         extra.addComponents(
             new ButtonBuilder().setCustomId(`presentacion_editar_${ownerId}`).setLabel("✏️ Presentación").setStyle(ButtonStyle.Secondary),
+        );
+        // 📢 No anunciar mis subidas de nivel en el canal (#373): el botón muestra el estado y lo cambia.
+        const sinAnuncios = xp.anunciosOff(guild.id, ownerId);
+        extra.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`perfil_anuncios_${ownerId}_${targetId}_${sinAnuncios ? 0 : 1}`)
+                .setLabel(sinAnuncios ? "📢 Anunciar mis niveles: no" : "📢 Anunciar mis niveles: sí")
+                .setStyle(ButtonStyle.Secondary),
         );
     }
     return { content: "", embeds: [embed], components: [extra, filaPestanasPerfil(ownerId, targetId, "perfil")] };

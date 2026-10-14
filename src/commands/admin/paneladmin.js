@@ -87,12 +87,17 @@ module.exports = {
             prefixes: ["paneladmin_bank_", "paneladmin_plex_", "paneladmin_apodos_", "paneladmin_perfiles_"],
             method: "handleUserSelect",
         },
-        { types: ["roleSelect"], prefixes: ["paneladmin_levels_reward_role_", "paneladmin_plex_gordos_rol_"], method: "handleRoleSelect" },
+        {
+            types: ["roleSelect"],
+            prefixes: ["paneladmin_levels_reward_role_", "paneladmin_levels_ignored_role_select", "paneladmin_plex_gordos_rol_"],
+            method: "handleRoleSelect",
+        },
         {
             types: ["channelSelect"],
             ids: [
                 "paneladmin_levels_cfg_channel_select",
                 "paneladmin_levels_ignored_add_select",
+                "paneladmin_levels_mult_select",
                 "paneladmin_plex_novedades_channel_select",
                 "paneladmin_plex_channel_add_select",
                 "paneladmin_plex_ranking_canal_select",

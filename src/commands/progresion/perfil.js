@@ -60,6 +60,30 @@ function traducirAntiguo(id, userId) {
     return null;
 }
 
+/** Los botones que cambian una preferencia personal (ocultar los logros de Plex, no anunciar los niveles). true si la atendió. */
+async function preferencia(interaction, accion, parts, userId, targetId) {
+    // perfil_plexoculto_{o}_{t}_{1|0}: ocultar (1) o enseñar (0) tus logros de Plex.
+    if (accion === "plexoculto") {
+        const ocultar = parts[4] === "1";
+        require("../../systems/plexTrofeos").setOculto(interaction.guildId, userId, ocultar);
+        const payload = perfil.buildLogros(interaction.guildId, userId, userId);
+        await interaction.update({
+            ...payload,
+            content: ocultar
+                ? "🙈 Tus logros de Plex ya no se anuncian ni los ven los demás en tu perfil."
+                : "🍿 Tus logros de Plex vuelven a anunciarse y a verse en tu perfil.",
+        });
+        return true;
+    }
+    // perfil_anuncios_{o}_{t}_{1|0}: dejar de anunciar (1) o volver a anunciar (0) tus subidas de nivel en el canal.
+    if (accion === "anuncios") {
+        xp.setAnunciosOff(interaction.guildId, userId, parts[4] === "1");
+        await interaction.update(await pantalla(interaction, "perfil", userId, targetId));
+        return true;
+    }
+    return false;
+}
+
 module.exports = {
     componentHandlers: [
         { types: ["button"], prefixes: ["perfil_", "nivel_", "logros_"], method: "handleButton", acl: "perfil" },
@@ -123,19 +147,7 @@ module.exports = {
         }
 
         const [, accion, , targetId] = parts;
-        // perfil_plexoculto_{o}_{t}_{1|0}: ocultar (1) o enseñar (0) tus logros de Plex.
-        if (accion === "plexoculto") {
-            const ocultar = parts[4] === "1";
-            require("../../systems/plexTrofeos").setOculto(interaction.guildId, userId, ocultar);
-            const payload = perfil.buildLogros(interaction.guildId, userId, userId);
-            await interaction.update({
-                ...payload,
-                content: ocultar
-                    ? "🙈 Tus logros de Plex ya no se anuncian ni los ven los demás en tu perfil."
-                    : "🍿 Tus logros de Plex vuelven a anunciarse y a verse en tu perfil.",
-            });
-            return;
-        }
+        if (await preferencia(interaction, accion, parts, userId, targetId)) return;
         // perfil_reclamartodo_{o}_{t}_{filtro}: el filtro se mantiene (los mensajes de antes no lo llevan).
         if (accion === "reclamartodo") {
             const r = achievements.claimAll(interaction.guildId, userId);

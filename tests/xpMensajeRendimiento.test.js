@@ -75,6 +75,7 @@ describe("consultas por mensaje", () => {
         const hechas = await desde(() => handleMessageXp(mensaje({ userId: v })));
         expect(hechas.map((s) => s.split(" ").slice(0, 4).join(" "))).toEqual([
             "SELECT ultimo_msg FROM xp_users",
+            "SELECT multiplicador FROM xp_channel_multipliers",
             "SELECT 1 FROM xp_ignored_channels",
             "[tx] INSERT OR IGNORE",
             "[tx] UPDATE xp_users SET",

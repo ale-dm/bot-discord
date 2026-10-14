@@ -1,5 +1,5 @@
 // Importar discord.js
-const { Client, GatewayIntentBits, Collection, MessageFlags } = require("discord.js");
+const { Client, GatewayIntentBits, Collection, MessageFlags, Partials } = require("discord.js");
 const path = require("path");
 require("dotenv").config();
 const { createLogger, logErrorSync, flushLogs, registerSecret } = require("./core/logger");
@@ -23,7 +23,10 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessageReactions,
     ],
+    // Para recibir las reacciones a mensajes que no están en caché (XP por reacciones recibidas, #358).
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
 // Los logros que se calculan sin el servidor a mano (casino, cripto) lo buscan aquí para anunciarse.
@@ -307,6 +310,10 @@ client
     .catch((err) => {
         log.error("Error al iniciar sesión en Discord:", err);
     });
+
+client.on("messageReactionAdd", (reaction, user) => {
+    xpSystem.handleReactionXp(reaction, user).catch((e) => createLogger("XP").error(`Error procesando una reacción de ${user?.id}:`, e));
+});
 
 client.on("voiceStateUpdate", (oldState, newState) => {
     try {

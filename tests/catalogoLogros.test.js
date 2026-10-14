@@ -8,15 +8,15 @@ const { CATALOG } = require("../src/systems/logros/catalogo");
 
 const DIR = path.join(__dirname, "../src/systems/logros");
 
-test("el catálogo exportado es idéntico al de antes de partirlo (125 logros, mismo orden)", () => {
-    expect(CATALOG).toHaveLength(125);
+test("el catálogo exportado es idéntico al de antes de partirlo (131 logros, mismo orden)", () => {
+    expect(CATALOG).toHaveLength(131);
     // Huella del contenido y del orden tal como estaba en un solo fichero. Si se cambia un logro a propósito, se actualiza.
-    expect(crypto.createHash("sha1").update(JSON.stringify(CATALOG)).digest("hex")).toBe("c85cc415446e9578d01378ab4572d4bef307fcc9");
+    expect(crypto.createHash("sha1").update(JSON.stringify(CATALOG)).digest("hex")).toBe("d0ab2aef4a36b0ed8215eed77f2b7bd042e5d8b2");
 });
 
 test("las categorías salen juntas y en el orden de siempre, y los ids no se repiten", () => {
     const categorias = CATALOG.map((l) => l.category).filter((c, i, a) => c !== a[i - 1]);
-    expect(categorias).toEqual(["social", "xp", "casino", "cripto", "tienda", "plex"]);
+    expect(categorias).toEqual(["social", "xp", "racha", "casino", "cripto", "tienda", "plex"]);
     expect(new Set(CATALOG.map((l) => l.id)).size).toBe(CATALOG.length);
 });
 

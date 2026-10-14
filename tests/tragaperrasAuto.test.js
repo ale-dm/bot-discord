@@ -28,6 +28,13 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
+// Tres símbolos distintos en cada giro (cereza, naranja y siete): nunca hay premio, así que el saldo solo baja y la serie se corta siempre.
+function sinPremio() {
+    const valores = [0.01, 0.5, 0.99];
+    let k = 0;
+    jest.spyOn(Math, "random").mockImplementation(() => valores[k++ % valores.length]);
+}
+
 const sinPausa = { pausa: async () => {} };
 
 describe("la serie de tiradas", () => {
@@ -44,6 +51,7 @@ describe("la serie de tiradas", () => {
     });
 
     test("cada tirada pasa por el cobro normal, y si un cobro falla la serie se corta y dice por qué", async () => {
+        sinPremio();
         const u = jugador(120); // alcanza para dos tiradas de 50
         const r = await sistema.jugarSerie({ userId: u, guildId: null, username: "ana", apuesta: 50, tiradas: 25 }, sinPausa);
         expect(r.hechas).toBeGreaterThanOrEqual(2);
@@ -206,6 +214,7 @@ describe("el mensaje y sus botones", () => {
     });
 
     test("una serie cortada a mitad dice por qué en el resumen", async () => {
+        sinPremio();
         const u = jugador(120);
         const i = interaccion("tragaperras_auto_50", u, { values: ["25"] });
         await tragaperras.handleButton(null, i);

@@ -9,7 +9,14 @@ const log = createLogger("Avisos");
 /** Los tipos de DM que se pueden apagar. `id` es lo que se guarda; el orden es el del panel de /avisos. */
 const TIPOS = [
     { id: "racha_peligro", emoji: "⏳", nombre: "Racha en peligro", detalle: "Si no has ganado XP hoy y tu racha va a romperse" },
+    { id: "racha_perdida", emoji: "💔", nombre: "Racha perdida", detalle: "Una sola vez, cuando pierdes una racha de 3 días o más" },
     { id: "racha_activa", emoji: "🔥", nombre: "Racha activa", detalle: "Cuando sumas un día más a tu racha" },
+    {
+        id: "logros_pendientes",
+        emoji: "🏅",
+        nombre: "Logros sin reclamar",
+        detalle: "Los domingos, si tienes logros completados sin reclamar",
+    },
     { id: "recordatorio_partido", emoji: "⏰", nombre: "Recordatorio de partido", detalle: "Antes de un partido al que has apostado" },
     { id: "apuesta_cobrada", emoji: "🏆", nombre: "Apuesta cobrada", detalle: "Cuando ganas o te devuelven una apuesta" },
     {

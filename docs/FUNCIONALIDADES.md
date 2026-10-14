@@ -166,7 +166,9 @@ Migración 035: `duende_recuerdos_propuestos`. Tests: `tests/recuerdosAuto.test.
 | Voz | 5 XP por minuto | Sin mute ni ensordecer, y con al menos otra persona (no bot) en el canal. |
 | Multiplicadores | × multiplicador global del servidor · × ⚡ happy hour (si está en marcha) · × bonus de racha | Configurables en el panel. |
 
-- Los **canales ignorados** no dan XP (ni por texto ni por voz).
+- Los **canales ignorados** no dan XP (ni por texto ni por voz). Los **roles sin XP** tampoco (texto, reacciones y voz), y cada canal puede tener un **multiplicador** de ×0 a ×10 (×0 = ignorado).
+- **Reacciones**: quien recibe una reacción de otra persona gana 3 XP (configurable; cooldown de 60 s por autor).
+- **Tope diario**: opcional, de XP por persona y día (hora de Madrid); sin tope por defecto.
 - Cada persona puede tener un **multiplicador de coste** propio (subir de nivel le cuesta más o menos).
 - **⚡ Happy hour de XP** (F-EC-02): si un admin la activa (`/paneladmin` → ⚙️ Config Global → 🎉 Eventos), cada día
   de una hora a otra (hora de Madrid; de 20:00 a 22:00 por defecto, también puede pasar la medianoche) la XP se
@@ -210,10 +212,12 @@ por defecto volvían solos). Un servidor nuevo empieza con los rangos pero sin r
 
 ### Racha diaria
 
-- Cada día (hora de Madrid) en que ganas XP suma un día de racha; si fallas un día, vuelve a 1.
+- Cada día (hora de Madrid) en que ganas XP suma un día de racha; si fallas un día, vuelve a 1, salvo que un admin haya puesto **días de gracia al mes** (0 por defecto): faltar un solo día no la rompe si queda alguno en el mes natural.
+- Se guarda tu **mejor racha** y hay un ranking en 🏆 Rankings → 🔥 Rachas. Logros de 3, 7, 30 y 100 días.
 - Bonus de XP: +2 % por día de racha, con un máximo de +50 %.
 - A partir del segundo día, te avisa por DM de que la racha sigue.
 - ⏱️ A las 17:00 avisa por DM a quien tenga racha de 2 días o más y aún no haya ganado XP ese día.
+- 💔 A las 00:30 avisa una sola vez a quien acaba de perder una racha de 3 días o más.
 
 Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en el ranking, próxima recompensa y
 últimas subidas de nivel (antes era `/nivel`).
@@ -222,14 +226,15 @@ Se ve en `/perfil` → 👤 Perfil: nivel, XP, progreso, rango, racha, puesto en
 
 ## 5. Logros
 
-123 logros fijos en 6 categorías que se completan solos al hacer cosas, más los [trofeos de Plex](#trofeos-de-plex)
+129 logros fijos en 7 categorías que se completan solos al hacer cosas, más los [trofeos de Plex](#trofeos-de-plex)
 que se van creando; la recompensa en monedas se reclama a mano. Los de Plex (fijos y trofeos) tienen
 [dificultad](#dificultad-de-los-logros-de-plex).
 
 | Categoría | Logros (objetivo → recompensa) |
 |---|---|
 | Social | 1 mensaje → 100 · 100 → 400 · 1.000 → 1.500 · 2.500 → 2.500 · 5.000 → 5.000 |
-| XP | Voz 60 min → 300 · 300 min → 1.200 · 1.000 min → 3.500 · XP total 1.000 → 300 · 5.000 → 1.500 · 20.000 → 5.000 · Nivel 10 → 500 · 25 → 1.500 · 40 → 3.500 · 60 → 7.000 |
+| XP | Voz 60 min → 300 · 300 min → 1.200 · 1.000 min → 3.500 · XP total 1.000 → 300 · 5.000 → 1.500 · 20.000 → 5.000 · Nivel 10 → 500 · 25 → 1.500 · 40 → 3.500 · 60 → 7.000 · XP en un solo día 1.000 → 600 · 3.000 → 2.000 |
+| Racha | 3 días seguidos → 300 · 7 → 1.000 · 30 → 5.000 · 100 → 20.000 |
 | Casino | Primera apuesta → 150 · 10.000 apostadas → 800 · 50.000 → 3.500 · 25 victorias → 1.200 · 100 → 4.500 · 5.000 netas ganadas → 2.000 · 20.000 → 7.500 · *(oculto)* 50 derrotas → 1.800 |
 | Cripto | Primera compra → 150 · 10 operaciones → 900 · 50 → 4.000 · 20.000 movidas → 1.500 · 100.000 → 7.000 · 25 ventas → 2.500 · *(ocultos)* tener 500 TTCL → 1.800 · 2.000 TTCL → 9.000 |
 | Tienda | Primera compra → 120 · 20 compras → 1.100 · 50 → 3.200 · 5.000 gastadas → 1.300 · 20.000 → 6.000 |
@@ -399,7 +404,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores · 🔥 Rachas |
 
 **🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
 admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
@@ -890,7 +895,7 @@ Panel con botones, todo en mensajes efímeros. Cada cambio queda en la **auditor
 | ⚽ Apuestas | Apuestas pendientes y quinielas abiertas por competición · 💸 **Liquidar ahora** (normalmente lo hace el cron de cada hora) · 🧾 **Crear quiniela** de cualquiera de las siete competiciones · 📢 **Canal de resultados** (o 🔕 no publicar) · ⏰ **Recordatorio** antes del partido (activo y minutos) · 🚦 **Límites** por jugador: tope diario y máximo por partido (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) · ⭐ **Partido destacado** del día (publicarlo o no) |
 | 🛒 Catálogo | Los objetos, con si están a la venta, precio y stock · ➕ **Crear** (nombre, descripción, tipo —rol, consumible o coleccionable—, efecto `monedas:N`/`mensaje:texto` o rol, imagen) · ✏️ **Editar** un campo (nombre, descripcion, tipo, efecto, rol, imagen, categoria, rareza, unico) · 🗑️ **Eliminar** (si nadie lo tiene y no está a la venta) · 🏷️ **A la venta** (precio y stock; si ya lo estaba, los cambia) · ❌ **Quitar de la venta** |
 | 🩺 Sistema | Diagnóstico: uptime, memoria, comandos, servidores, BD, errores y avisos desde el arranque, último error, consumo de Gemini, créditos que quedan de la Odds API, alertas y ajustes de Duende/cripto/logros/tienda · **nivel de log** en caliente (menú) · 💎 **TTCL**: precio, circulación, registro de precios y holders · 🔔 **Alertas** (ver abajo; con la vista previa del 📊 resumen semanal) · 🤖 **Probar Gemini**: prueba el modelo del Duende (si existe y si usa las herramientas) · 🔊 **Probar voz**: genera una frase con Gemini TTS, dice con qué modelo y la adjunta para oírla (o explica qué le pasó a cada modelo) |
-| 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus y tope), vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP |
+| 📈 Niveles / XP | **Config**: XP por mensaje/voz, cooldown, fórmula de niveles, multiplicador global, canal de anuncios, racha (bonus, tope y días de gracia), tope diario de XP, XP por reacción, vista previa de la curva · **Recompensas**: roles por nivel y qué desbloquea cada uno (📝 Descripción, se muestra en `/perfil`) · **Usuarios**: ver perfil, ± XP, multiplicador de coste individual, reset de XP (con confirmación) · **Ignorados**: canales sin XP, roles sin XP y multiplicador de XP por canal |
 | ⚙️ Config Global | **🤖 Duende**: modelo (al cambiarlo se prueba en el momento y dice si funciona), temperatura, historial, canal permitido, **🕐 Tono** (más borde de madrugada y canales formales), **🏷️ Apodos** y **🧠 Perfiles** (ficha completa de cada persona —Discord ID, username, nombre, apodos, descripción, notas y cuánto de todo eso recibe el Duende— y edición de todos los campos en un formulario; borrar notas o el perfil entero) · **📈 Cripto**: comisiones, límites y cooldowns · **🎰 Casino**: apuesta mín./máx., cooldown, cupo diario, RTP por juego · **🛒 Tienda**: activar, cooldown, cupo diario, canal de avisos · **🏆 Semanal**: canal y premio de la [clasificación semanal](#-clasificación-semanal-con-premios-f-ec-03), y quién ganaría si fuera ahora · **🎉 Eventos**: ⚡ happy hour de XP (activa, multiplicador y horas) y 🎰 fin de semana del casino (activo y % de los premios), y si están en marcha · **🏛️ Impuestos**: reglas de impuesto sobre ingresos o compras (ver [Economía](#7-economía-banco-tienda-e-inventario)) — añadir, activar/desactivar y quitar reglas, y ver el bote acumulado · **🔐 Comandos**: activar/desactivar comandos y restringirlos por canal o rol · **🏅 Logros**: activar, canal de avisos, multiplicador de recompensas, categorías desactivadas · **🎁 Diario**: activar, base, monedas por día de racha y tope (con ejemplos de cuánto da cada racha) |
 | 🧾 Auditoría | Registro paginado de acciones de administración |
 | 🎬 Plex | Vincular cuentas de Plex, canales permitidos para las herramientas de Plex, canal de novedades, 📼 Sincronizar historial (y fichas e idiomas), 📣 Ranking semanal (vista previa, canal y publicar ahora). 🏆 Trofeos: fichas e idiomas pendientes, 🎌 bibliotecas de anime, trofeos creados por tipo y dificultad, crear y borrar trofeos de admin (también con fechas), 🪙 % de la importación (y cuántos vinculados están importando), 🎰 Roles de Gordos y 🔍 Idiomas (diagnóstico) |

@@ -18,6 +18,7 @@ const RANKINGS = {
     ttcl: "💎 TTCL",
     plex: "🍿 Plex",
     apuestas: "⚽ Apostadores",
+    rachas: "🔥 Rachas",
 };
 
 /** ⚽ Apostadores (F-AP-03): beneficio en apuestas, % de acierto en partidos y mejor racha de partidos ganados seguidos. */
@@ -36,6 +37,22 @@ function embedRankingApuestas() {
             text: `Beneficio de partidos y quinielas resueltos · acierto y racha, de los partidos · mín. ${rankingApuestas.MIN_RESUELTAS} apuestas resueltas`,
         })
         .setColor(0x3498db);
+}
+
+/** 🔥 Rachas (#339): las mejores rachas de siempre, con la racha actual de cada uno y el puesto de quien lo mira. */
+function embedRankingRachas(guildId, viewerId) {
+    const top = xp.getTopRachas(guildId, 10);
+    const lineas = top.map((r, i) => {
+        const actual = r.actual > 0 ? `${r.actual} ${r.actual === 1 ? "día" : "días"}` : "sin racha";
+        return `${MEDALLAS[i] || `**${i + 1}.**`} <@${r.userId}> — mejor **${r.mejor}** · actual ${actual}`;
+    });
+    const mio = viewerId && !top.some((r) => r.userId === viewerId) ? xp.puestoRacha(guildId, viewerId) : null;
+    const tuPuesto = mio ? `\n\nTu puesto: **#${mio.puesto}** (mejor racha ${mio.mejor})` : "";
+    return new EmbedBuilder()
+        .setTitle("🔥 Ranking de rachas")
+        .setDescription((lineas.join("\n") || "Nadie tiene todavía una racha.") + tuPuesto)
+        .setFooter({ text: "Ordenado por la mejor racha de días seguidos ganando XP" })
+        .setColor(0xff6b35);
 }
 
 /** 🍿 Rankings de Plex: más logros, más 🎰 Gordos, más políglota y más horas (este mes y de siempre). */
@@ -58,7 +75,7 @@ function embedRankingPlex(guildId) {
 }
 
 /** El embed de los rankings que no van con páginas (todos menos el de nivel), o null si el tipo es el de nivel. */
-function embedRankingFijo(guild, tipo) {
+function embedRankingFijo(guild, tipo, viewerId) {
     if (tipo === "riqueza") {
         const { lineasRicos } = require("../economia");
         return new EmbedBuilder()
@@ -90,12 +107,13 @@ function embedRankingFijo(guild, tipo) {
     }
     if (tipo === "plex") return embedRankingPlex(guild.id);
     if (tipo === "apuestas") return embedRankingApuestas();
+    if (tipo === "rachas") return embedRankingRachas(guild.id, viewerId);
     return null;
 }
 
 /** 🏆 Rankings: uno a la vez, elegido en el menú (el de nivel, con páginas). */
 async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0) {
-    const fijo = embedRankingFijo(guild, tipo);
+    const fijo = embedRankingFijo(guild, tipo, ownerId);
     const embed = fijo || (await buildTopEmbed(guild, page));
     const paginas = fijo ? null : { anterior: page > 0, siguiente: xp.getTop(guild.id, 10, (page + 1) * 10).length > 0 };
     const menu = new StringSelectMenuBuilder()

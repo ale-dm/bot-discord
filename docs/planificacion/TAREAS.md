@@ -577,3 +577,12 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] Completar las tres misiones del día: +100 XP una vez; tres días seguidos: +100 XP más (racha). Las misiones de tienda y de logro aparecen algún día.
 - [ ] `/paneladmin` → 🛡️ Pase: cambiar un tope y comprobar que el siguiente mensaje ya lo respeta; elegir canal de anuncios y subir de nivel; poner un objeto en un nivel y reclamarlo; desactivar el pase.
 - [ ] Último día de la temporada: DM con las recompensas sin cobrar (una sola vez). Ganar un reto: +15 XP de pase.
+
+**Fase 6: niveles, XP y logros (#336, #339, #342, #346, #352, #358, #362, #369, #373, #378, #383)**
+- [ ] Subir la racha a 3 días: sale el logro «Constante». `/perfil` → 🏆 Rankings → 🔥 Rachas: top con mejor y actual, y tu puesto.
+- [ ] Un día sin XP con una racha de 3 o más: a las 00:30 llega el DM «Has perdido tu racha» (una sola vez). Con `/paneladmin` → Niveles → ⚙️ Config → 🔥 Racha → 1 día de gracia, faltar un día mantiene la racha.
+- [ ] 🧢 Tope diario: poner uno bajo, llegar a él y comprobar que no sube más hasta mañana. Ganar 1.000 XP en un día: logro «Tarde intensa».
+- [ ] Reaccionar al mensaje de otra persona: su XP sube (3 por defecto, una vez por minuto). Comprobar que el bot recibe reacciones en mensajes viejos.
+- [ ] 🚫 Ignorados: poner un rol sin XP y un canal ×2; comprobar mensajes, reacciones y voz.
+- [ ] `/perfil` → 👤 Perfil → 📢 Anunciar mis niveles: «no» y subir de nivel: no se anuncia pero se da el rol.
+- [ ] Domingo 18:00: DM de logros sin reclamar, una vez por semana. `/avisos` tiene los tipos «Racha perdida» y «Logros sin reclamar».

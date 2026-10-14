@@ -22,4 +22,15 @@ function buildStreakWarningEmbed(guild, streakDias) {
         .setTimestamp();
 }
 
-module.exports = { buildStreakContinuedEmbed, buildStreakWarningEmbed };
+function buildStreakLostEmbed(guild, streakDias) {
+    return new EmbedBuilder()
+        .setTitle("💔 Has perdido tu racha")
+        .setDescription(
+            `Llevabas **${streakDias} días seguidos** ganando XP en **${guild.name}**, pero pasó un día entero sin que ganaras XP y la racha se ha acabado.\n` +
+                `Vuelve a empezar desde 1: escribe un mensaje o entra a un canal de voz.`,
+        )
+        .setColor(0x95a5a6)
+        .setTimestamp();
+}
+
+module.exports = { buildStreakContinuedEmbed, buildStreakWarningEmbed, buildStreakLostEmbed };

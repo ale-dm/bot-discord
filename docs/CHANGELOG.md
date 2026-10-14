@@ -2,6 +2,21 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 6 del plan restante: niveles, XP y logros)
+
+- **🔥 Logros de racha** (#336): categoría nueva «racha» con 3, 7, 30 y 100 días seguidos (300 · 1.000 · 5.000 · 20.000 monedas). Se completan al sumar el día; con la racha desactivada no se completa ninguno nuevo y los ya completados se conservan.
+- **⚡ Logros de XP en un día** (#383): 1.000 XP («Tarde intensa») y 3.000 XP («Día épico») en un mismo día de Madrid, con la XP final (racha y multiplicadores incluidos). La XP de cada día se guarda en `xp_diaria` y se borra lo de más de una semana. El catálogo pasa a 7 categorías.
+- **🏆 Mejor racha y ranking** (#339): se guarda la mejor racha de cada persona (parte de la actual) y `/perfil` → 🏆 Rankings → 🔥 Rachas ordena por la mejor, con la actual y el puesto de quien mira.
+- **💔 DM al perder una racha** (#342): una sola vez, al empezar el día (00:30), a quien tenía 3 días o más y ha pasado un día sin XP. El umbral es fijo. Se apaga en `/avisos` («Racha perdida»).
+- **🛟 Días de gracia** (#346): `streak_grace_per_month` (0 por defecto): faltar un solo día no rompe la racha si quedan días de gracia en el mes natural. Se aplica solo, sin activarlo. Con gracia disponible, el aviso de racha perdida llega un día más tarde.
+- **🧢 Tope diario de XP** (#352): `xp_daily_cap` (0 = sin tope). Se aplica a la ganancia final, sin mensaje de error. Los ajustes manuales de un admin ni se recortan ni cuentan.
+- **👍 XP por reacciones recibidas** (#358): el autor del mensaje gana 3 XP (configurable, 0 = apagado) cuando otra persona le reacciona, una vez cada 60 s por autor. Solo gana el autor. No cuentan reacciones propias, de bots, a bots, en canales ignorados ni de quien tiene un rol sin XP. El bot pide ahora el intent de reacciones y los parciales de mensaje.
+- **🎭 Roles sin XP** (#362): Panel admin → Niveles → 🚫 Ignorados → 🎭 Rol sin XP. No ganan XP por texto, reacciones ni voz; siguen saliendo en el ranking de niveles.
+- **✖️ Multiplicador de XP por canal** (#369): mismo panel, de ×0 a ×10 (×0 = canal ignorado; ×1 lo quita). Vale para mensajes, reacciones y voz, y se suma al global y al de la happy hour.
+- **📢 Anuncios de nivel off** (#373): `/perfil` → 👤 Perfil (el tuyo) → «Anunciar mis niveles»: con «no» no se publica nada en el canal; los roles se dan igual.
+- **🏅 Logros sin reclamar** (#378): los domingos a las 18:00, un DM a quien tiene logros completados sin reclamar (sin contar categorías desactivadas), como mucho una vez cada 7 días. Se apaga en `/avisos` («Logros sin reclamar»).
+- Migración 064. Tests: `tests/nivelesFase6.test.js`.
+
 ## 2026-10-14 (fase 5 del plan restante: pase de batalla)
 
 - **📊 Topes de hoy** (#331): la vista 📊 Topes de `/pase` enseña, por categoría, la XP usada hoy y su tope («usado / tope»), con las llenas marcadas. Las vistas pasan a dos filas de botones.

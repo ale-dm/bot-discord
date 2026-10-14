@@ -18,6 +18,7 @@ const plexHistorial = require("../systems/plexHistorial");
 const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
 const resumenApuestas = require("../systems/apuestas/resumenSemanal");
+const recordatorioLogros = require("../systems/logros/recordatorio");
 const paseHistorial = require("../systems/pase/historial");
 const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
@@ -66,6 +67,20 @@ function programarBasicas(client) {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
+    // 💔 Al empezar el día, a quien acaba de perder una racha larga (#342); de paso borra la XP diaria vieja.
+    cron.schedule("30 0 * * *", () => runJob("Aviso de racha perdida", () => xpSystem.runStreakLostJob(client)), {
+        timezone: "Europe/Madrid",
+        noOverlap: true,
+    });
+    // 🏅 Los domingos por la tarde, a quien tiene logros sin reclamar (#378).
+    cron.schedule(
+        "0 18 * * 0",
+        () => runJob("Recordatorio de logros sin reclamar", () => recordatorioLogros.runLogrosPendientesJob(client)),
+        {
+            timezone: "Europe/Madrid",
+            noOverlap: true,
+        },
+    );
 }
 
 function programarNovedadesPlex(client) {

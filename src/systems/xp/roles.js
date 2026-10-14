@@ -3,7 +3,7 @@
 const db = require("../../core/db");
 const { embedSubidaNivel } = require("../../discord/mensajes/nivel");
 const { createLogger } = require("../../core/logger");
-const { ensureGuildDefaults, getConfig, titleForLevel, nextTitle, xpForNextLevel } = require("./config");
+const { ensureGuildDefaults, getConfig, titleForLevel, nextTitle, xpForNextLevel, anunciosOff } = require("./config");
 
 const log = createLogger("XP");
 
@@ -37,6 +37,8 @@ async function tryAssignRewards(guild, member, oldLevel, newLevel) {
 
 async function maybeAnnounceLevelUp(guild, member, newLevel) {
     if (!guild || !member) return;
+    // #373: quien no quiere que se anuncie su subida (los roles se dan igual, en tryAssignRewards).
+    if (anunciosOff(guild.id, member.id)) return;
     const channelId = getConfig(guild.id, "xp_announce_channel_id");
     if (!channelId) {
         log.debug(`${guild.name}: sin canal de anuncios de nivel configurado; no se anuncia el nivel ${newLevel} de ${member.id}`);
