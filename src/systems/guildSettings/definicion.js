@@ -43,6 +43,10 @@ const DEFAULT_FLAT = {
     "tienda.buy_cooldown_sec": 0,
     "tienda.daily_limit": 0,
     "tienda.notif_channel_id": "",
+    "tienda.recompra_pct": 50,
+    "tienda.subida_pct": 0,
+    "tienda.recuperacion_pct": 5,
+    "tienda.tope_pct": 100,
 
     "logros.enabled": true,
     "logros.notify_channel_id": "",
@@ -138,6 +142,10 @@ const KEY_TYPES = {
     "tienda.buy_cooldown_sec": "number",
     "tienda.daily_limit": "number",
     "tienda.notif_channel_id": "string",
+    "tienda.recompra_pct": "number",
+    "tienda.subida_pct": "number",
+    "tienda.recuperacion_pct": "number",
+    "tienda.tope_pct": "number",
 
     "logros.enabled": "boolean",
     "logros.notify_channel_id": "string",

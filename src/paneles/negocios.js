@@ -5,21 +5,38 @@ const dinero = require("../systems/dinero");
 const negocios = require("../systems/negocios");
 const { fmtNumero } = require("../core/formato");
 
-// Una opción por cada negocio del catálogo: vender el que se tiene, o comprar el que no.
+// Opciones del menú por cada negocio del catálogo: el que se tiene, se puede mejorar (hasta el nivel 3) o vender; el que no, comprar.
 function opcionesCompraVenta(e) {
-    return Object.entries(negocios.CATALOGO).map(([tipo, c]) => {
+    return Object.entries(negocios.CATALOGO).flatMap(([tipo, c]) => {
         const suyo = e.negocios.find((n) => n.tipo === tipo);
-        return suyo
-            ? {
-                  label: `Vender ${c.emoji} ${c.nombre}`.slice(0, 100),
-                  description: `Recuperas ${fmtNumero(Math.floor((suyo.pagado * negocios.VENTA_PCT) / 100))} 🪙 en el banco`,
-                  value: `vender_${tipo}`,
-              }
-            : {
-                  label: `Comprar ${c.emoji} ${c.nombre}`.slice(0, 100),
-                  description: `${fmtNumero(c.precio)} 🪙 del banco · blanquea ${fmtNumero(c.blanqueoDia)}/día`.slice(0, 100),
-                  value: `comprar_${tipo}`,
-              };
+        if (!suyo) {
+            return [
+                {
+                    label: `Comprar ${c.emoji} ${c.nombre}`.slice(0, 100),
+                    description: `${fmtNumero(c.precio)} 🪙 del banco · blanquea ${fmtNumero(c.blanqueoDia)}/día`.slice(0, 100),
+                    value: `comprar_${tipo}`,
+                },
+            ];
+        }
+        const opciones = [];
+        if (suyo.nivel < negocios.NIVEL_MAX) {
+            const siguiente = negocios.valoresDeNivel(tipo, suyo.nivel + 1);
+            opciones.push({
+                label: `Mejorar ${c.emoji} ${c.nombre} al nivel ${suyo.nivel + 1}`.slice(0, 100),
+                description:
+                    `${fmtNumero(negocios.costeDeMejora(tipo, suyo.nivel + 1))} 🪙 del banco · blanquea ${fmtNumero(siguiente.blanqueoDia)}/día`.slice(
+                        0,
+                        100,
+                    ),
+                value: `mejorar_${tipo}`,
+            });
+        }
+        opciones.push({
+            label: `Vender ${c.emoji} ${c.nombre}`.slice(0, 100),
+            description: `Recuperas ${fmtNumero(Math.floor((suyo.pagado * negocios.VENTA_PCT) / 100))} 🪙 en el banco`,
+            value: `vender_${tipo}`,
+        });
+        return opciones;
     });
 }
 
@@ -27,7 +44,8 @@ function buildNegocios(userId, aviso = null) {
     const e = negocios.estado(userId);
     const lineas = e.negocios.length
         ? e.negocios.map(
-              (n) => `${n.emoji} **${n.nombre}** · +${fmtNumero(n.ingresoDia)} 🪙/día · blanquea ${fmtNumero(n.blanqueoDia)}/día`,
+              (n) =>
+                  `${n.emoji} **${n.nombre}** (nivel ${n.nivel}) · +${fmtNumero(n.ingresoDia)} 🪙/día · blanquea ${fmtNumero(n.blanqueoDia)}/día`,
           )
         : "Todavía no tienes ningún negocio.";
 

@@ -41,6 +41,12 @@ const TIPOS = [
     { id: "wrapped", emoji: "🎞️", nombre: "Wrapped mensual", detalle: "Tu resumen de Plex del mes, el día 1" },
     { id: "plex_series", emoji: "📺", nombre: "Series seguidas", detalle: "Episodios nuevos de las series que sigues" },
     { id: "plex_quiero_ver", emoji: "🍿", nombre: "Quiero ver", detalle: "Cuando llega a Plex algo de tu lista" },
+    {
+        id: "tienda_deseos",
+        emoji: "⭐",
+        nombre: "Lista de deseos",
+        detalle: "Cuando un objeto que sigues en la tienda vuelve a tener stock o baja de precio",
+    },
     { id: "pedido_seerr", emoji: "📥", nombre: "Pedidos de Seerr", detalle: "Cuando lo que pediste ya está disponible" },
     { id: "robo", emoji: "🥷", nombre: "Robos", detalle: "Cuando alguien intenta robarte" },
     { id: "cripto_evento", emoji: "📈", nombre: "Eventos de TTCL", detalle: "Cuando el mercado sube o baja por un evento" },

@@ -2,7 +2,8 @@
 // movimientos. No es un comando (antes era /banco): el router registra sus botones igual (src/perfil).
 // Atiende también "💵 Sacar del banco" desde el casino, la tienda y la cripto (dinero_sacar_{volver}): después
 // de sacar, la pantalla de la que venías se vuelve a pintar con el efectivo nuevo.
-const { MessageFlags } = require("discord.js");
+const { MessageFlags, AttachmentBuilder } = require("discord.js");
+const { csvDeMovimientos, TOPE_FILAS } = require("../systems/movimientosCsv");
 const dinero = require("../systems/dinero");
 const economia = require("../paneles/economia");
 const { importeElegido } = require("../paneles/importes");
@@ -64,6 +65,18 @@ function movimientos(interaction) {
     return interaction.update(economia.buildMovimientos(userId, targetId, tipo, Math.max(0, parseInt(pagina, 10) || 0)));
 }
 
+// 📤 Exporta tus movimientos (con el filtro activo) a un CSV que solo ves tú (#411).
+function exportarMovimientos(interaction) {
+    const tipo = interaction.customId.replace("dinero_exportar_", "");
+    const { csv, filas, truncado } = csvDeMovimientos(interaction.user.id, tipo === "todo" ? null : tipo);
+    const aviso = truncado ? ` Solo se exportan los ${TOPE_FILAS.toLocaleString("es")} más recientes.` : "";
+    return interaction.reply({
+        content: `📤 ${filas.toLocaleString("es")} movimientos.${aviso}`,
+        files: [new AttachmentBuilder(Buffer.from(csv, "utf8"), { name: "movimientos.csv" })],
+        flags: MessageFlags.Ephemeral,
+    });
+}
+
 // 🛡️ Límite de pérdidas (#319): quitarlo no es inmediato, así que se avisa de cuándo (la pantalla enseña lo pendiente).
 function quitarLimite(interaction) {
     const r = limitePerdidas.quitar(interaction.user.id);
@@ -115,6 +128,7 @@ const RUTAS_BOTON = [
     [(id) => id === "dinero_sacar" || id.startsWith("dinero_sacar_"), abrirSacar],
     // dinero_mov_{tipo}_{pagina}[_{de quién}] (sin "de quién", los tuyos: mensajes de antes).
     [(id) => id.startsWith("dinero_mov_"), movimientos],
+    [(id) => id.startsWith("dinero_exportar_"), exportarMovimientos],
 ].map(([encaja, manejador]) => [typeof encaja === "string" ? (id) => id === encaja : encaja, manejador]);
 
 module.exports = {
@@ -140,7 +154,12 @@ module.exports = {
         const userId = interaction.user.id;
         if (interaction.customId === "dinero_negocio_elegir") {
             const [accion, tipo] = interaction.values[0].split("_");
-            const r = accion === "comprar" ? negocios.comprar(userId, interaction.guildId, tipo) : negocios.vender(userId, tipo);
+            const r =
+                accion === "comprar"
+                    ? negocios.comprar(userId, interaction.guildId, tipo)
+                    : accion === "mejorar"
+                      ? negocios.mejorar(userId, tipo)
+                      : negocios.vender(userId, tipo);
             return interaction.update(panelNegocios.buildNegocios(userId, r.mensaje));
         }
         // dinero_filtro_{de quién}

@@ -508,6 +508,13 @@ Los botones de la tienda solo los puede usar quien la abrió.
 Una compra es atómica: o se cobra y se entrega el objeto, o no pasa nada. Se puede limitar con cooldown y
 cupo diario de compras.
 
+**Más cosas de la tienda**
+- 🎒 Inventario → **🎁 Gestionar**: 🎁 regalar un objeto a otra persona (sin monedas), 💰 vender una unidad a la tienda (`tienda.recompra_pct` % del precio base, 50 por defecto) o 🏷️ ponerla en el **mercado**. Los objetos de protección no se regalan ni se venden.
+- **🏷️ Mercado**: ofertas de otros jugadores a precio fijo (7 días, máx. 10 por persona), pagadas con efectivo y sin comisión.
+- **🎟️ Canjear**: códigos de monedas y/u objeto que crean los admins (usos máximos y caducidad; una vez por persona).
+- **⭐ Lista de deseos**: sigue hasta 25 objetos y recibe un DM cuando vuelven a tener stock o bajan de precio.
+- **Ofertas temporales** (descuento con inicio y fin) y **precio dinámico** (sube con las compras y baja cada hora hacia el base; apagado por defecto) los configura un admin en 🛒 Catálogo. El precio mostrado es siempre el cobrado.
+
 ### 🏛️ Impuestos (F-EC-06a)
 
 Motor de impuestos configurable por servidor, sin ningún % fijo en el código. Cada servidor tiene sus propias
@@ -556,6 +563,8 @@ El impuesto va al **bote** del servidor donde se usó la economía por última v
 sumidero. Todo se configura en Panel admin → Config Global → 🏛️ Impuestos → 🏦 Patrimonio. El primer ciclo de cada
 persona solo marca su fecha, sin cobrar.
 
+**Tramos, meta y sueldos** (Panel admin → Config Global → Impuestos): 📊 una regla de ingreso puede tener **tramos** (cada parte del ingreso paga el porcentaje de su tramo); 🎯 una **meta del bote** reparte el bote entre quien ha ganado XP en la última semana al llegar a la cifra; 💼 un **sueldo diario por rol** de Discord se paga cada día a quien lo tenga (suma de roles, con impuesto).
+
 ### 🏪 Negocios y blanqueo (F-EC-06d)
 
 Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran con dinero del **banco** (hay que ingresar antes).
@@ -573,7 +582,8 @@ Se gestionan desde **/perfil → 💰 Economía → 🏪 Negocios**. Se compran 
 - El tope se **reinicia a las 00:00 (hora de Madrid)**. Lo que no cabe en el tope de hoy se queda como dinero negro.
 - Cada negocio paga su **ingreso diario** en efectivo una vez al día (tipo 🏪 Negocios; también paga impuesto). El primer
   pago llega el día siguiente a comprarlo.
-- **Vender** un negocio devuelve el **50 % de lo pagado** al banco.
+- **Mejorar ⬆️** un negocio (hasta el nivel 3, con el banco): nivel 2 cuesta 1× el precio y da ×1,5 de blanqueo e ingreso; nivel 3 cuesta 2× y da ×2.
+- **Vender** un negocio devuelve el **50 % de todo lo pagado** (mejoras incluidas) al banco.
 - Un cron cada 5 minutos hace el blanqueo y los ingresos diarios; no avisa por DM.
 
 

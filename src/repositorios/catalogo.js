@@ -18,12 +18,26 @@ const crearObjeto = (nombre, descripcion, imagen, tipo, rolId, efecto) =>
 /** `columna` sale de una lista fija del panel (nunca de lo que escribe quien edita). */
 const editarCampoObjeto = (columna, valor, id) => db.prepare(`UPDATE objeto SET ${columna} = ? WHERE id = ?`).run(valor, id);
 
-const alguienTieneObjeto = (id) => Boolean(db.prepare("SELECT 1 FROM inventario WHERE itemId = ? LIMIT 1").get(id));
+/** Alguien lo tiene en el inventario, en una oferta del mercado o como premio de un código. */
+const alguienTieneObjeto = (id) =>
+    Boolean(
+        db.prepare("SELECT 1 FROM inventario WHERE itemId = ? LIMIT 1").get(id) ||
+        db.prepare("SELECT 1 FROM mercado_ofertas WHERE objetoId = ? LIMIT 1").get(id) ||
+        db.prepare("SELECT 1 FROM codigos WHERE objetoId = ? AND activo = 1 LIMIT 1").get(id),
+    );
 const objetoEstaEnVenta = (id) => Boolean(db.prepare("SELECT 1 FROM tienda WHERE objetoId = ? LIMIT 1").get(id));
 const borrarObjeto = (id) => db.prepare("DELETE FROM objeto WHERE id = ?").run(id);
 
-const ventaDeObjeto = (objetoId) => db.prepare("SELECT id, objetoId, precio, stock FROM tienda WHERE objetoId = ?").get(objetoId);
-const cambiarVenta = (precio, stock, id) => db.prepare("UPDATE tienda SET precio = ?, stock = ? WHERE id = ?").run(precio, stock, id);
+const ventaDeObjeto = (objetoId) =>
+    db
+        .prepare("SELECT id, objetoId, precio, stock, precio_base, descuento, oferta_inicio, oferta_fin FROM tienda WHERE objetoId = ?")
+        .get(objetoId);
+/** El admin fija un precio nuevo: pasa a ser también el base (se borra el ajuste por demanda, #412). */
+const cambiarVenta = (precio, stock, id) =>
+    db.prepare("UPDATE tienda SET precio = ?, stock = ?, precio_base = NULL WHERE id = ?").run(precio, stock, id);
+/** Una oferta temporal (#413): descuento en % entre dos momentos (ms); con descuento 0 se quita. */
+const ponerOferta = (descuento, inicio, fin, id) =>
+    db.prepare("UPDATE tienda SET descuento = ?, oferta_inicio = ?, oferta_fin = ? WHERE id = ?").run(descuento, inicio, fin, id);
 const ponerEnVenta = (objetoId, precio, stock) =>
     db.prepare("INSERT INTO tienda (objetoId, precio, stock) VALUES (?, ?, ?)").run(objetoId, precio, stock);
 const quitarDeVenta = (objetoId) => db.prepare("DELETE FROM tienda WHERE objetoId = ?").run(objetoId);
@@ -44,6 +58,7 @@ module.exports = {
     borrarObjeto,
     ventaDeObjeto,
     cambiarVenta,
+    ponerOferta,
     ponerEnVenta,
     quitarDeVenta,
     objetoPorId,

@@ -19,6 +19,10 @@ const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
 const resumenApuestas = require("../systems/apuestas/resumenSemanal");
 const recordatorioLogros = require("../systems/logros/recordatorio");
+const tienda = require("../systems/tienda");
+const mercado = require("../systems/mercado");
+const sueldos = require("../systems/sueldos");
+const metaBote = require("../systems/impuestos/meta");
 const paseHistorial = require("../systems/pase/historial");
 const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
@@ -202,6 +206,13 @@ function programarApuestas(client) {
     });
 }
 
+async function economiaComunitaria(client) {
+    for (const guild of client.guilds.cache.values()) {
+        sueldos.pagarDia(guild.id, guild.members.cache.values());
+        metaBote.comprobar(guild.id, (userId) => guild.members.cache.has(userId));
+    }
+}
+
 function programarRetosYEconomia(client) {
     // ⚔️ Retos colgados: sin aceptar a tiempo, duelos abandonados y porras sin resolver (se devuelven o se resuelven).
     cron.schedule("*/5 * * * *", () => runJob("Retos caducados", () => retos.revisarRetos(client)), {
@@ -219,6 +230,20 @@ function programarRetosYEconomia(client) {
     cron.schedule("*/5 * * * *", () => runJob("Evento de TTCL", () => eventos.revisarYAvisar(client)), {
         noOverlap: true,
     });
+    // 🛒 Cada hora: los precios que subieron por la demanda bajan hacia su base (#412) y las ofertas del mercado caducadas
+    // vuelven a su dueño (#374).
+    cron.schedule(
+        "10 * * * *",
+        () =>
+            runJob("Mantenimiento de la tienda", () => {
+                tienda.recuperarPrecios([...client.guilds.cache.keys()]);
+                mercado.devolverCaducadas();
+            }),
+        { noOverlap: true },
+    );
+    // 💼 Cada hora: el sueldo diario por rol (una vez por día y persona, con registro en la base de datos, #416) y la meta
+    // comunitaria del bote (#415).
+    cron.schedule("20 * * * *", () => runJob("Sueldos y meta del bote", () => economiaComunitaria(client)), { noOverlap: true });
     // 🏦 Patrimonio: cada persona tiene su ciclo semanal (interés del banco e impuesto sobre lo que pasa del umbral).
     cron.schedule("0 * * * *", () => runJob("Patrimonio", () => patrimonio.revisar()), {
         noOverlap: true,

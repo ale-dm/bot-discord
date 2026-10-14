@@ -45,4 +45,26 @@ function semanaAnterior(ahora = Date.now()) {
     return { lunes: sumarDias(lunesActual, -7), domingo: sumarDias(lunesActual, -1) };
 }
 
-module.exports = { momentoMadrid, aFecha, sumarDias, diaSemana, lunesDe, semanaAnterior };
+/** Cuánto se adelanta la hora de Madrid a UTC (ms) en un instante: 1 h en invierno, 2 h en verano. */
+function desfaseMadrid(instante) {
+    const m = momentoMadrid(instante);
+    const comoUtc = Date.UTC(m.anio, m.mes - 1, Number(m.dia.slice(8, 10)), m.hora, m.minuto);
+    return comoUtc - Math.floor(instante / 60000) * 60000;
+}
+
+/**
+ * Un texto «DD/MM/AAAA» o «DD/MM/AAAA HH:MM» en hora de Madrid, como milisegundos (null si no es una fecha válida). Sin hora,
+ * las 00:00.
+ */
+function fechaMadridAMs(texto) {
+    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/.exec(String(texto).trim());
+    if (!m) return null;
+    const [dia, mes, anio, hora = 0, minuto = 0] = m.slice(1).map((x) => (x === undefined ? undefined : Number(x)));
+    const comoUtc = Date.UTC(anio, mes - 1, dia, hora, minuto);
+    const ms = comoUtc - desfaseMadrid(comoUtc - desfaseMadrid(comoUtc));
+    const v = momentoMadrid(ms);
+    const ok = v.anio === anio && v.mes === mes && v.dia.endsWith(String(dia).padStart(2, "0")) && v.hora === hora && v.minuto === minuto;
+    return ok ? ms : null;
+}
+
+module.exports = { fechaMadridAMs, momentoMadrid, aFecha, sumarDias, diaSemana, lunesDe, semanaAnterior };

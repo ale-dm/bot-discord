@@ -208,6 +208,12 @@ function buildMovimientos(viewerId, targetId, tipo = "todo", pagina = 0) {
             .setDisabled(pagina >= paginas - 1),
         botonVolver(viewerId, targetId),
     );
+    // 📤 Exportar a CSV (#411): solo los movimientos propios, con el filtro activo.
+    if (viewerId === targetId) {
+        nav.addComponents(
+            new ButtonBuilder().setCustomId(`dinero_exportar_${tipo}`).setLabel("📤 Exportar").setStyle(ButtonStyle.Secondary),
+        );
+    }
     return { content: "", embeds: [embed], components: [new ActionRowBuilder().addComponents(selector), nav] };
 }
 

@@ -73,6 +73,10 @@ function nodoEconomia(flat) {
             buy_cooldown_sec: flat["tienda.buy_cooldown_sec"],
             daily_limit: flat["tienda.daily_limit"],
             notif_channel_id: flat["tienda.notif_channel_id"],
+            recompra_pct: flat["tienda.recompra_pct"],
+            subida_pct: flat["tienda.subida_pct"],
+            recuperacion_pct: flat["tienda.recuperacion_pct"],
+            tope_pct: flat["tienda.tope_pct"],
         },
     };
 }

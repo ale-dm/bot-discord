@@ -2,6 +2,22 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-14 (fase 7 del plan restante: economía, tienda e impuestos)
+
+- **🎁 Regalar** (#302): `/tienda` → 🎒 Inventario → 🎁 Gestionar → elegir objeto → 🎁 Regalar → persona → confirmar. Cambia de dueño sin mover monedas y queda en 📜 Movimientos de los dos (tipo 🎒 Objetos). No a un bot, a uno mismo, a quien no está en el servidor, a quien ya tiene un objeto único, ni objetos de protección (antirrobo y trampa; tampoco se pueden vender en el mercado).
+- **🏷️ Mercado entre jugadores** (#374): pestaña nueva de `/tienda`. Pones un objeto a precio fijo (máx. 10 ofertas, caduca a los 7 días); sale de tu inventario y vuelve si lo retiras o caduca (se devuelve al abrir el mercado y cada hora). El precio llega íntegro al vendedor, sin comisión ni impuesto, y solo se paga con efectivo (no con dinero negro). Movimiento 🏷️ Mercado y ventas para los dos.
+- **💰 Vender a la tienda** (#379): mismo menú Gestionar. Devuelve el `tienda.recompra_pct` % (50 por defecto, 0 = apagado) del precio base del catálogo y la unidad vuelve al stock. Si el objeto ya no está a la venta se rechaza. Los únicos se pueden vender y volver a comprar. El porcentaje es global, no por objeto.
+- **⬆️ Mejora de negocios** (#387): hasta el nivel 3 desde 🏪 Negocios, pagando del banco: nivel 2 cuesta 1× el precio base y da ×1,5 de blanqueo e ingreso; nivel 3 cuesta 2× y da ×2. No reinicia nada. La venta devuelve el 50 % de todo lo pagado, mejoras incluidas.
+- **📊 Tramos de impuesto** (#392): `/paneladmin` → Impuestos → 📊 Tramos. La parte del ingreso dentro de cada tramo paga su porcentaje (el de la regla vale desde 0); se mide sobre cada ingreso suelto, el redondeo es hacia abajo y un tramo del 0 % es válido. Una regla sin tramos da lo mismo que siempre.
+- **⭐ Lista de deseos** (#404): al confirmar una compra, ⭐ Seguir (hasta 25 objetos); «⭐ Mis deseos» los lista. DM al volver el stock o bajar el precio (también por una oferta), una vez por cambio; se apaga en `/avisos`.
+- **🎟️ Códigos canjeables** (#409): `/paneladmin` → Catálogo → 🎟️ Códigos (monedas y/u objeto, usos máximos, caducidad). Se canjean en `/tienda` → 🎟️ Canjear, una vez por persona; son globales, como el dinero. Movimiento 🎟️ Códigos.
+- **📤 Exportar movimientos** (#411): botón en 📜 Movimientos; CSV con `;`, UTF-8 con BOM, hora de Madrid y el filtro activo; privado; máx. 5.000 filas (los más recientes, con aviso). Solo los propios.
+- **💱 Precio dinámico** (#412): `tienda.subida_pct` (0 = apagado) sube el precio de cada objeto con cada compra hasta `tienda.tope_pct` % sobre el base, y cada hora baja `tienda.recuperacion_pct` % del base. Es global, no por objeto; los únicos quedan fuera. Al fijar un precio a mano, ese es el nuevo base.
+- **🏷️ Ofertas temporales** (#413): `/paneladmin` → Catálogo → 🏷️ Oferta (descuento, inicio y fin en hora de Madrid). El catálogo, la confirmación, el impuesto de compra y el cobro usan el mismo precio rebajado.
+- **🎯 Meta del bote** (#415): Impuestos → 🎯 Meta del bote (meta y recompensa por persona). Al llegar el bote, se reparte una sola vez entre quien ha ganado XP en la última semana y sigue en el servidor: la recompensa, o su parte si no da para todos. Solo se descuenta lo pagado (movimiento 🏆 Premios).
+- **🧾 Sueldo por rol** (#416): Impuestos → 💼 Sueldos por rol. Cada día (una vez por persona, con registro en la base de datos) paga la suma de los sueldos de sus roles al efectivo, con el impuesto de ingresos. Movimiento 🧾 Sueldos.
+- #414 (historial por tipo) ya estaba cubierto por #432. Migración 065. Tareas: «Mantenimiento de la tienda» y «Sueldos y meta del bote» (cada hora). Tests: `tests/economiaFase7.test.js` y `tests/tiendaExtrasUI.test.js`.
+
 ## 2026-10-14 (fase 6 del plan restante: niveles, XP y logros)
 
 - **🔥 Logros de racha** (#336): categoría nueva «racha» con 3, 7, 30 y 100 días seguidos (300 · 1.000 · 5.000 · 20.000 monedas). Se completan al sumar el día; con la racha desactivada no se completa ninguno nuevo y los ya completados se conservan.

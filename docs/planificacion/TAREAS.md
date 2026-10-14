@@ -586,3 +586,12 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [ ] 🚫 Ignorados: poner un rol sin XP y un canal ×2; comprobar mensajes, reacciones y voz.
 - [ ] `/perfil` → 👤 Perfil → 📢 Anunciar mis niveles: «no» y subir de nivel: no se anuncia pero se da el rol.
 - [ ] Domingo 18:00: DM de logros sin reclamar, una vez por semana. `/avisos` tiene los tipos «Racha perdida» y «Logros sin reclamar».
+
+**Fase 7: economía, tienda e impuestos (#302, #374, #379, #387, #392, #404, #409, #411, #412, #413, #415, #416)**
+- [ ] `/tienda` → 🎒 Inventario → 🎁 Gestionar: regalar un objeto (comprobar que sale en Movimientos de los dos y que un candado no se puede), vender a la tienda y poner en el mercado; comprar desde 🏷️ Mercado con otra cuenta.
+- [ ] ⭐ Seguir un objeto agotado; `/paneladmin` → Catálogo → A la venta con stock: llega el DM. Lo mismo bajando el precio o con 🏷️ Oferta.
+- [ ] 🏷️ Oferta temporal: el catálogo enseña el precio rebajado y la fecha de fin, la compra cobra ese precio, y al pasar el fin vuelve el normal. 💱 Precios: subida 10 % y comprobar que sube con cada compra.
+- [ ] 🎟️ Crear un código de 1 uso y canjearlo con dos cuentas (la segunda dice «agotado»).
+- [ ] 📜 Movimientos → 📤 Exportar: abrir el CSV en Excel y ver las tildes y las columnas.
+- [ ] 🏪 Negocios: mejorar un negocio, ver el nuevo blanqueo/ingreso y vender (50 % de todo lo pagado).
+- [ ] Impuestos: 📊 un tramo en una regla de ingreso; 🎯 una meta pequeña del bote; 💼 sueldo a un rol y comprobar el pago (una sola vez al día).
