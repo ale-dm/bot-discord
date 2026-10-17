@@ -51,7 +51,7 @@ async function empezarConversacion(interaction, { onTerminada, soloSiLeLlaman = 
         sesiones.delete(guildId);
         limpiarSesion(sesion);
         log.warn(`No se pudo empezar la conversación en directo: ${err.stack || err.message}`);
-        return { ok: false, error: "No se pudo conectar. Inténtalo otra vez en un momento." };
+        return { ok: false, error: err.aviso ?? "No se pudo conectar. Inténtalo otra vez en un momento." };
     }
 }
 

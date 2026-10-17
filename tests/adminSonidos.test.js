@@ -117,7 +117,7 @@ describe("los comandos", () => {
             guildId: G,
             user: { id: "ana" },
             member: { voice: { channel: enVoz } },
-            options: { getChannel: () => canal, getString: () => null },
+            options: { getChannel: () => canal, getString: () => null, getInteger: () => null },
             reply: jest.fn(async () => {}),
             deferReply: jest.fn(async () => {}),
             editReply: jest.fn(async () => {}),
@@ -135,7 +135,7 @@ describe("los comandos", () => {
         const elegido = { id: "c9", name: "General" };
         const i = interaccion({ canal: elegido });
         await conectar.run(null, i);
-        expect(spy).toHaveBeenCalledWith(elegido);
+        expect(spy).toHaveBeenCalledWith(elegido, { minutos: 30 });
         expect(i.editReply.mock.calls[0][0]).toMatch(/Conectado a \*\*General\*\*.*<t:\d+:t>/);
         spy.mockRestore();
     });
