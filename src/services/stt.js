@@ -8,6 +8,7 @@ const prism = require("prism-media");
 const axios = require("axios");
 const FormData = require("form-data");
 const { createLogger } = require("../core/logger");
+const presencia = require("../systems/presencia");
 const { LOGS_DIR } = require("../core/paths");
 
 const log = createLogger("STT");
@@ -184,6 +185,12 @@ async function listenAndTranscribe(client, guildId, channelId, invokingUserId, c
     let connection = getVoiceConnection(guildId);
     const guild = await client.guilds.fetch(guildId);
     const channel = await guild.channels.fetch(channelId);
+    // Si /conectar me ha puesto en otro canal, no escucho ahí: el audio llega del canal de la conexión, no del mío (#499).
+    const presente = presencia.actual(guildId);
+    if (presente && presente.canalId !== channelId) {
+        log.warn(`No escucho en ${channel.name}: estoy en ${presente.canalNombre} por /conectar`);
+        return;
+    }
 
     if (!connection) {
         log.debug(`Uniéndose al canal de voz ${channel.name}`);
