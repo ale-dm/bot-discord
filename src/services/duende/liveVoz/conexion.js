@@ -10,6 +10,7 @@ const {
     StreamType,
 } = require("@discordjs/voice");
 const prism = require("prism-media");
+const presencia = require("../../../systems/presencia");
 const { Modality } = require("@google/genai");
 const { getGenAI } = require("../../geminiClient");
 const { LIVE_MODEL, LIVE_VOICE } = require("./constantes");
@@ -21,9 +22,16 @@ const log = createLogger("Duende").child("VozEnVivo");
 
 async function conectarVoz(interaction, voiceChannel) {
     const guildId = interaction.guildId;
-    let connection = getVoiceConnection(guildId);
+    // Si /conectar me ha puesto en otro canal, no me muevo: la conversación no puede empezar aquí (#499).
+    const presente = presencia.actual(guildId);
+    if (presente && presente.canalId !== voiceChannel.id) {
+        const err = new Error(`Estoy en ${presente.canalNombre} por /conectar`);
+        err.aviso = `Ahora mismo estoy en **${presente.canalNombre}** por /conectar. Entra ahí, o pide que me salga con /conectar.`;
+        throw err;
+    }
+    let connection = presente ? presente.conexion : getVoiceConnection(guildId);
     if (!connection || connection.joinConfig.channelId !== voiceChannel.id) {
-        if (connection) {
+        if (connection && !presencia.esDePresencia(guildId, connection)) {
             try {
                 connection.destroy();
             } catch {

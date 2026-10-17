@@ -11,6 +11,8 @@ const {
 } = require("@discordjs/voice");
 const { getGeminiTtsAudioStream, GEMINI_TTS_VOICE } = require("../../services/geminiTts");
 const { logInfo, logError } = require("../../core/logger");
+const presencia = require("../../systems/presencia");
+const ocupacion = require("../../systems/ocupacion");
 
 // Cola por guild: guildId -> Array<{text, voice, username}>
 const queues = new Map();
@@ -21,8 +23,19 @@ async function getEdgeStream(text, voice) {
     return getGeminiTtsAudioStream(text, { voice });
 }
 
-/** Cuando la cola se vacía, la conexión se cierra un poco después (por si llega otro mensaje enseguida). */
+/** ¿Hay un /tts hablando o texto en cola en el servidor? (lo mira /conectar para no salir en mitad de una frase). */
+function estaHablando(guildId) {
+    const id = String(guildId);
+    return players.has(id) || (queues.get(id)?.length ?? 0) > 0;
+}
+ocupacion.registrar("tts", estaHablando, ocupacion.REINTENTO_CORTO_MS);
+
+/**
+ * Cuando la cola se vacía, la conexión se cierra un poco después (por si llega otro mensaje enseguida).
+ * No se cierra si la conexión es la de /conectar: esa la decide su presencia (#499).
+ */
 function desconectarTrasCola(connection) {
+    if (presencia.esDePresencia(connection.joinConfig?.guildId, connection)) return;
     setTimeout(() => {
         try {
             connection.destroy();
@@ -77,6 +90,16 @@ async function processQueue(guildId, connection) {
  * Si no se puede conectar, avisa al usuario y devuelve null.
  */
 async function obtenerConexion(interaction, channel, guildId) {
+    // Si /conectar me ha puesto en un canal, hablo por esa conexión si es el mismo canal, y no me muevo de allí (#499).
+    const presente = presencia.actual(guildId);
+    if (presente) {
+        if (presente.canalId === channel.id) return presente.conexion;
+        queues.delete(guildId);
+        await interaction.editReply({
+            content: `❌ Ahora mismo estoy en **${presente.canalNombre}** por /conectar. Entra ahí, o pide que me salga con /conectar.`,
+        });
+        return null;
+    }
     // Conectar o reutilizar conexión
     let connection = getVoiceConnection(guildId);
     // Si la conexión existente no está lista, es probable que quedara colgada
@@ -115,6 +138,7 @@ async function obtenerConexion(interaction, channel, guildId) {
 }
 
 module.exports = {
+    estaHablando,
     data: new SlashCommandBuilder()
         .setName("tts")
         .setDescription("El bot lee en voz alta el texto en tu canal de voz.")
