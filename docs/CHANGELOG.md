@@ -2,6 +2,45 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (F-EC-17: rasca y gana)
+
+- **🎟️ Rasca y gana (#521)**: nuevo juego en 🎰 Casino. Cartón de 3×3 al instante; tres iguales pagan 🍒×2, 🍋×3,
+  🍊×5, 🍇×8, 🔔×15, 💎×30 o ⭐×50. RTP base del 90,5 %, configurable por servidor (`casino.rtp_rasca`) desde
+  `/paneladmin` → 🎰 Casino → 🎲 RTP. Respeta saldo, cupo, cooldown, topes, autoexclusión y doble o nada como el resto.
+- Nuevos `src/systems/casino/rasca.js` y `src/juegos/casino/rasca.js`; tests en `tests/rasca.test.js`. Sin migraciones.
+- `npm run check` en verde (2867 tests).
+
+## 2026-10-18 (deps: dentro de rango, y better-sqlite3 se queda)
+
+- **📦 Dependencias** actualizadas dentro de rango: `dotenv` (16.4.5 → 16.6.1), `globals` (17.12 → 17.13), `jest`
+  (30.1.3 → 30.5.2) y `prettier` (3.9.9 → 3.9.10).
+- **🚫 `better-sqlite3` se queda en 12.2.0**: las 12.x nuevas (probado 12.11.1) cambian el manejo de claves foráneas al
+  `DROP TABLE` y rompen la migración 007 (`FOREIGN KEY constraint failed`). No se puede editar una migración ya aplicada,
+  así que no se sube; queda anotado en [TAREAS](planificacion/TAREAS.md) (T-05) para cuando se decida la 13.
+- `npm run check` en verde (2858 tests). Sin migraciones.
+
+## 2026-10-18 (T-05: modelos de Gemini retirados y dependencias)
+
+- **🖼️ `/imagen` estaba roto**: el modelo por defecto `gemini-2.0-flash-exp-image-generation` se apagó el 14 de
+  noviembre de 2025. Cambiado a `gemini-nano-banana-2.1` en [imagenGemini.js](../src/services/duende/imagenGemini.js).
+- **🔊 TTS**: quitado `gemini-2.5-flash-preview-tts` de `GEMINI_TTS_FALLBACK_MODELS` (se retira el 17 de noviembre de
+  2026); quedan `gemini-3.8-flash-tts` (por defecto) y `gemini-3.8-flash-lite-tts`
+  ([geminiTts.js](../src/services/geminiTts.js) y `.env.example`).
+- **📦 Dependencias**: actualizadas dentro de rango `@google/genai` (2.24 → 2.30) y `libsodium-wrappers` (0.8.2 → 0.8.4).
+  Sin vulnerabilidades en producción; las de `npm audit` son de desarrollo.
+- **🧪 Tests**: `tests/geminiTts.test.js` al día (la prueba del modelo 2.x se separó y usa el modelo configurado); 2858.
+- `gemini-2.5-flash`/`gemini-2.5-pro` siguen sirviéndose (acceso limitado a quien ya los usaba): se dejan y se vigilan.
+- `docs/planificacion/TAREAS.md` (T-05): la revisión queda cerrada salvo los saltos de versión mayor y `discord.js` 15.
+- Sin migraciones.
+
+## 2026-10-18 (fix: la clave de la Eurocopa en la Odds API)
+
+- **⚽ Clave de la Eurocopa corregida** en `DEPORTES` ([oddsApi.js](../src/services/oddsApi.js)): `soccer_uefa_euro` no
+  existe en The Odds API; la correcta es `soccer_uefa_european_championship`. El resto de claves (Mundial, Copa del Rey,
+  Europa League, LaLiga, Premier y Champions) se contrastaron con la lista oficial de la API y coinciden.
+- `docs/SIGUIENTES_PASOS.md`: el paso de comprobar las competiciones refleja la corrección.
+- Sin migraciones.
+
 ## 2026-10-18 (docs: repaso de toda la documentación)
 
 - **📚 Documentación al día**: repaso de los documentos vivos tras terminar el plan. README (estructura con `app/`, `discord/`, `repositorios/`; 29 comandos), FUNCIONALIDADES (ocho paneles, solo $TTCL, `/presentacion`), TAREAS (fuera las secciones de features ya cubiertas por las fases 1-12), PLAN_ISSUES (registro), índice de docs, CICLOS, MODALES y técnico.

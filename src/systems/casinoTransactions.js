@@ -108,6 +108,7 @@ const RTP_SETTING_BY_GAME = {
     tragaperras: "rtp_tragaperras",
     ruleta: "rtp_ruleta",
     adivinar: "rtp_adivinar",
+    rasca: "rtp_rasca",
 };
 
 /**

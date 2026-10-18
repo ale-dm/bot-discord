@@ -85,13 +85,14 @@ function filasHome(userId) {
         new ButtonBuilder().setCustomId("casino_pick_ppt").setLabel("✂️ PPT").setStyle(ButtonStyle.Secondary),
     );
     const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("casino_rasca").setLabel("🎟️ Rasca y gana").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("casino_ranking").setLabel("🏆 Ranking").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_historial").setLabel("📜 Historial").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_stats").setLabel("📊 Mis Stats").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("casino_autoex").setLabel("🔒 Autoexclusión").setStyle(ButtonStyle.Secondary),
-        backToPerfilBtn(userId),
     );
-    return [row1, row2];
+    const row3 = new ActionRowBuilder().addComponents(backToPerfilBtn(userId));
+    return [row1, row2, row3];
 }
 
 /** `guildId`: para avisar si hay un 🎉 fin de semana del casino en marcha (F-EC-02). */

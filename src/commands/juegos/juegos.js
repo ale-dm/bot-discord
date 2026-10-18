@@ -100,6 +100,7 @@ const PANTALLAS_CASINO = {
     casino_tragaperras: (i) => casino.buildPickApuesta(i.user.id, "tragaperras"),
     casino_blackjack: (i) => casino.buildPickApuesta(i.user.id, "blackjack"),
     casino_adivinar: (i) => casino.buildPickApuesta(i.user.id, "adivinar"),
+    casino_rasca: (i) => casino.buildPickApuesta(i.user.id, "rasca"),
     casino_ruleta: (i) => casino.buildPickRuleta(i.user.id),
     casino_jackpots: () => casino.buildJackpots(),
     casino_pick_ruleta_docenas: (i) => casino.buildPickDocenas(i.user.id),
@@ -111,6 +112,7 @@ const JUEGOS = {
     tragaperras: { modulo: "../../juegos/casino/tragaperras", opciones: (apuesta) => ({ apuesta }) },
     blackjack: { modulo: "../../juegos/casino/blackjack", opciones: (apuesta) => ({ apuesta }) },
     adivinar: { modulo: "../../juegos/casino/adivinar", opciones: (apuesta) => ({ apuesta }) },
+    rasca: { modulo: "../../juegos/casino/rasca", opciones: (apuesta) => ({ apuesta }) },
     // casino_play_ruleta_{apuesta}_{tipo}_{valor}
     ruleta: {
         modulo: "../../juegos/casino/ruleta",

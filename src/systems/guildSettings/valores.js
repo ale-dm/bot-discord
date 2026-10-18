@@ -66,6 +66,7 @@ function nodoEconomia(flat) {
             rtp_tragaperras: flat["casino.rtp_tragaperras"],
             rtp_ruleta: flat["casino.rtp_ruleta"],
             rtp_adivinar: flat["casino.rtp_adivinar"],
+            rtp_rasca: flat["casino.rtp_rasca"],
             ...nodoCasinoPorJuego(flat),
         },
         tienda: {

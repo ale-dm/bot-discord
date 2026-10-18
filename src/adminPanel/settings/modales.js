@@ -146,6 +146,7 @@ async function modalCasinoRtp(interaction, id, guildId) {
         "casino.rtp_tragaperras": interaction.fields.getTextInputValue("slots").trim(),
         "casino.rtp_ruleta": interaction.fields.getTextInputValue("ruleta").trim(),
         "casino.rtp_adivinar": interaction.fields.getTextInputValue("adivinar").trim(),
+        "casino.rtp_rasca": interaction.fields.getTextInputValue("rasca").trim(),
     });
     await interaction.reply({ content: "✅ RTP de casino actualizado.", flags: MessageFlags.Ephemeral });
     return true;

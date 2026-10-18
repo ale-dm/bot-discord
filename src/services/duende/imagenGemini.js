@@ -6,8 +6,9 @@ const { logWarn } = require("../../core/logger");
 
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || "";
 
-// gemini-2.0-flash-exp-image-generation genera imágenes nativas via generateContent (v1beta)
-const IMAGE_GEN_MODEL = process.env.IMAGE_GEN_MODEL || "gemini-2.0-flash-exp-image-generation";
+// gemini-nano-banana-2.1 (Nano Banana 2.1) genera imágenes nativas vía generateContent (v1beta). El anterior,
+// gemini-2.0-flash-exp-image-generation, se apagó el 14 de noviembre de 2025.
+const IMAGE_GEN_MODEL = process.env.IMAGE_GEN_MODEL || "gemini-nano-banana-2.1";
 const IMAGE_GEN_MAX_RETRIES = Number(process.env.IMAGE_GEN_MAX_RETRIES || 3);
 const IMAGE_GEN_RETRY_BASE_MS = Number(process.env.IMAGE_GEN_RETRY_BASE_MS || 5_000);
 
