@@ -224,6 +224,7 @@ async function accionCasinoRtp(interaction, id, guildId) {
         { id: "slots", label: "Tragaperras RTP %", value: String(c.rtp_tragaperras) },
         { id: "ruleta", label: "Ruleta RTP %", value: String(c.rtp_ruleta) },
         { id: "adivinar", label: "Adivinar RTP %", value: String(c.rtp_adivinar) },
+        { id: "rasca", label: "Rasca y gana RTP %", value: String(c.rtp_rasca) },
     ]);
     await interaction.showModal(modal);
     return true;

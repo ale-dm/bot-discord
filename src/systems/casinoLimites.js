@@ -8,6 +8,7 @@ const NOMBRE_JUEGO = {
     ruleta: "ruleta",
     ppt: "piedra, papel o tijera",
     adivinar: "adivinar la carta",
+    rasca: "rasca y gana",
 };
 
 /** El tope de apuesta de un juego (#460): el suyo si lo tiene, y si no el general. */

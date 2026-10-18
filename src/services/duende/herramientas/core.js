@@ -70,7 +70,7 @@ const DUENDE_CORE_TOOL_DECLARATIONS = [
     {
         name: "consultar_partidas_casino",
         description:
-            "Consulta las últimas partidas de casino (blackjack, ruleta, tragaperras, adivinar, piedra-papel-tijera) del usuario que te está hablando ahora mismo y cuánto lleva ganado y perdido en el casino.",
+            "Consulta las últimas partidas de casino (blackjack, ruleta, tragaperras, adivinar, rasca y gana, piedra-papel-tijera) del usuario que te está hablando ahora mismo y cuánto lleva ganado y perdido en el casino.",
         parameters: {
             type: SchemaType.OBJECT,
             properties: {

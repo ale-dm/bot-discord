@@ -168,7 +168,7 @@ describe("#407 ajustes con valor anterior y nuevo", () => {
 
     test("un modal de Config Global (casino RTP) audita su diff", async () => {
         const g = nuevoServidor();
-        const campos = { bj: "95", slots: "100", ruleta: "100", adivinar: "100" };
+        const campos = { bj: "95", slots: "100", ruleta: "100", adivinar: "100", rasca: "100" };
         const i = interaccion({ guildId: g, customId: "paneladmin_cfg_casino_rtp_modal", fields: { getTextInputValue: (k) => campos[k] } });
         await handleSettingsModal(i);
         expect(filasAuditoria(g, "settings")[0]).toMatchObject({

@@ -38,6 +38,7 @@ const DEFAULT_FLAT = {
     "casino.rtp_tragaperras": 100,
     "casino.rtp_ruleta": 100,
     "casino.rtp_adivinar": 100,
+    "casino.rtp_rasca": 100,
 
     "tienda.enabled": true,
     "tienda.buy_cooldown_sec": 0,
@@ -145,6 +146,7 @@ const KEY_TYPES = {
     "casino.rtp_tragaperras": "number",
     "casino.rtp_ruleta": "number",
     "casino.rtp_adivinar": "number",
+    "casino.rtp_rasca": "number",
 
     "tienda.enabled": "boolean",
     "tienda.buy_cooldown_sec": "number",

@@ -91,7 +91,7 @@ const SECCIONES = {
         ],
         texto: [
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",
-            "**Juegos**: blackjack (×2, blackjack ×2,5; con seguro, rendirse y 💡 consejo), tragaperras con jackpot (y tirada automática), ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20) y piedra, papel o tijera (×2).",
+            "**Juegos**: blackjack (×2, blackjack ×2,5; con seguro, rendirse y 💡 consejo), tragaperras con jackpot (y tirada automática), ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20), rasca y gana (×2 a ×50) y piedra, papel o tijera (×2).",
             "**Ruleta**: también a **calle** (3 números de una fila del tapete, ×12). **Piedra, papel o tijera** se puede jugar **al mejor de 3** (misma apuesta, gana quien llegue a 2 manos). Tras ganar, 🎲 **Doble o nada**: te juegas la ganancia a cara o cruz (solo una vez por victoria).",
             "🔒 **Autoexclusión**: desde el resumen del casino puedes bloquearte el casino 1 día, 1 semana o 1 mes; no se puede levantar antes de tiempo. Los admins pueden poner un tope de apuesta y un cooldown propios a cada juego.",
             "Eliges juego e importe con botones; al acabar: 🔄 Repetir · 🎲 Otra apuesta · 📊 Stats · ◀ Casino.",
