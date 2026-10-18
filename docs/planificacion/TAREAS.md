@@ -10,7 +10,7 @@ La reorganización de paneles, con los errores E-05 a E-15, va por partes según
 | [T-02](#t-02-desplegar-y-probar-en-discord) | Desplegar y probar en Discord | 🔴 Alta |
 | [T-03](#t-03-comprobar-en-discord-los-refactors-de-la-auditoría) | Comprobar en Discord los refactors de la auditoría (#243, #244). ✅ Confirmada por el usuario y liberada a `main` | ✅ Hecha |
 | [T-04](#t-04-comprobar-en-discord-los-refactors-de-tamaño-y-el-resumen-del-ranking) | Comprobar en Discord los refactors de tamaño (#278 a #281, #286), la eliminación de `/ia` y el ranking con resumen (#285) | 🔴 Alta |
-| [T-06](#t-06-probar-en-discord-las-fases-1-a-12-del-plan-restante) | Probar en Discord lo hecho en las fases 1 a 12 del plan restante (124 issues) | 🔴 Alta |
+| [T-06](#t-06-probar-en-discord-las-fases-1-a-12-del-plan-restante) | Probar en Discord lo hecho en las fases 1 a 12 del plan restante. ✅ Probado por el usuario y liberado a `main` (fases 1-12, #496/#497 y voz #499/#500); issues cerradas | ✅ Hecha |
 | [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
 
 ---
@@ -544,89 +544,91 @@ Revisión del 2026-10-10. Fuentes: [página de retiradas de Gemini](https://ai.g
 
 ## T-06 Probar en Discord las fases 1 a 12 del plan restante
 
+✅ **Hecha**: probado en Discord y en `main` desde las releases #497 y #502. La lista de abajo se conserva como registro.
+
 Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Orden y contenido: [PLAN_ISSUES](PLAN_ISSUES.md).
 
 **Fase 2: sonidos (#297, #301, #323 a #330)**
-- [ ] `/sonidos` con sonidos con categoría: el menú filtra; 🔍 Buscar «gol» deja solo los que lo contienen y ❌ quita la búsqueda.
-- [ ] 🎲 Aleatorio toca uno; con el servidor sin sonidos avisa. Dos sonidos seguidos tuyos en menos de 10 s: el segundo avisa de cuánto falta (un admin no tiene cooldown).
-- [ ] Pulsar un sonido con otro sonando: «en cola, puesto N»; suenan en orden y, con 5 esperando, el sexto se rechaza.
-- [ ] `/paneladmin` → 🔊 Sonidos → ✏️ Editar: 🔉 volumen (un sonido a 200 % suena más fuerte), 🏷️ categoría y 👥 roles (el botón sale con 🔒 y quien no tiene el rol recibe el aviso).
-- [ ] 🌙 Horario: con un tramo que incluya la hora actual no suena nada y avisa; con 📴 apagado también. Fuera del tramo vuelve a sonar.
-- [ ] 🔔 Eventos: con `/conectar` puesto, desbloquear un logro hace sonar su sonido; una segunda vez dentro del intervalo, no.
-- [ ] `/conectar sonido:` autocompleta los nombres y lo toca una vez al entrar.
-- [ ] 📊 Más usados (en `/sonidos` y en el panel admin) lista los sonidos por veces sonadas.
+- [x] `/sonidos` con sonidos con categoría: el menú filtra; 🔍 Buscar «gol» deja solo los que lo contienen y ❌ quita la búsqueda.
+- [x] 🎲 Aleatorio toca uno; con el servidor sin sonidos avisa. Dos sonidos seguidos tuyos en menos de 10 s: el segundo avisa de cuánto falta (un admin no tiene cooldown).
+- [x] Pulsar un sonido con otro sonando: «en cola, puesto N»; suenan en orden y, con 5 esperando, el sexto se rechaza.
+- [x] `/paneladmin` → 🔊 Sonidos → ✏️ Editar: 🔉 volumen (un sonido a 200 % suena más fuerte), 🏷️ categoría y 👥 roles (el botón sale con 🔒 y quien no tiene el rol recibe el aviso).
+- [x] 🌙 Horario: con un tramo que incluya la hora actual no suena nada y avisa; con 📴 apagado también. Fuera del tramo vuelve a sonar.
+- [x] 🔔 Eventos: con `/conectar` puesto, desbloquear un logro hace sonar su sonido; una segunda vez dentro del intervalo, no.
+- [x] `/conectar sonido:` autocompleta los nombres y lo toca una vez al entrar.
+- [x] 📊 Más usados (en `/sonidos` y en el panel admin) lista los sonidos por veces sonadas.
 
 **Fase 3: juego responsable, blackjack, tragaperras y revancha (#318, #319, #333, #337, #343, #354)**
-- [ ] `/perfil` → 💰 Economía → 🛡️ Límite de pérdidas: poner 100 por día; tras perder 100 en el casino, `/juegos` no deja apostar y lo explica; las apuestas deportivas tampoco. Bajarlo vale ya; subirlo dice que tarda 24 h.
-- [ ] Blackjack con un as visible: sale «¿Seguro?»; con seguro y blackjack del crupier no pierdes nada; sin blackjack pierdes el seguro y sigues. Se paga la mitad de la apuesta.
-- [ ] Blackjack: 🏳️ Rendirse recupera la mitad en la primera decisión y desaparece después de pedir carta; 💡 Consejo responde solo a ti.
-- [ ] Tragaperras: el desplegable 🔁 Auto x10 hace 10 tiradas y un solo resumen; ⏹️ Parar la corta; con cooldown global puesto, se corta y lo dice.
-- [ ] Duelo resuelto: 🔁 Revancha propone el mismo duelo al otro jugador y el botón desaparece del original.
+- [x] `/perfil` → 💰 Economía → 🛡️ Límite de pérdidas: poner 100 por día; tras perder 100 en el casino, `/juegos` no deja apostar y lo explica; las apuestas deportivas tampoco. Bajarlo vale ya; subirlo dice que tarda 24 h.
+- [x] Blackjack con un as visible: sale «¿Seguro?»; con seguro y blackjack del crupier no pierdes nada; sin blackjack pierdes el seguro y sigues. Se paga la mitad de la apuesta.
+- [x] Blackjack: 🏳️ Rendirse recupera la mitad en la primera decisión y desaparece después de pedir carta; 💡 Consejo responde solo a ti.
+- [x] Tragaperras: el desplegable 🔁 Auto x10 hace 10 tiradas y un solo resumen; ⏹️ Parar la corta; con cooldown global puesto, se corta y lo dice.
+- [x] Duelo resuelto: 🔁 Revancha propone el mismo duelo al otro jugador y el botón desaparece del original.
 
 **Fase 4: apuestas y quinielas (#296, #340, #345, #349, #356, #361, #366, #370, #375, #380, #384)**
-- [ ] Ficha de un partido y partido destacado: porcentaje junto a cada cuota y «Margen de la casa».
-- [ ] 📋 Mis jugadas → ⏳ En juego: «apostado a X · ahora Y ↑/↓/=»; el menú ↩️ cancela también una combinada (devuelta entera) y una 🔔 alerta.
-- [ ] 🔁 Repetir última: elegir partido → confirmar → se cobra solo al confirmar. 📤 CSV: llega el fichero en privado y se abre en Excel con las tildes bien.
-- [ ] Quiniela: 🎯 Rellenar favoritos no toca lo ya elegido; reiniciar el bot y volver a pulsar Apostar recupera los pronósticos («📝 borrador recuperado»).
-- [ ] 🏅 Liga: el menú de competición cambia la clasificación; la general sigue igual.
-- [ ] `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio: con horas > 0, quien suele jugar y no ha enviado la quiniela recibe el DM antes del cierre (una sola vez).
-- [ ] Lunes tras las 10:00: DM del resumen semanal de apuestas, una sola vez por semana. 🔔 en la ficha de un partido: crear una alerta y comprobar que llega el DM al cruzar la cuota.
+- [x] Ficha de un partido y partido destacado: porcentaje junto a cada cuota y «Margen de la casa».
+- [x] 📋 Mis jugadas → ⏳ En juego: «apostado a X · ahora Y ↑/↓/=»; el menú ↩️ cancela también una combinada (devuelta entera) y una 🔔 alerta.
+- [x] 🔁 Repetir última: elegir partido → confirmar → se cobra solo al confirmar. 📤 CSV: llega el fichero en privado y se abre en Excel con las tildes bien.
+- [x] Quiniela: 🎯 Rellenar favoritos no toca lo ya elegido; reiniciar el bot y volver a pulsar Apostar recupera los pronósticos («📝 borrador recuperado»).
+- [x] 🏅 Liga: el menú de competición cambia la clasificación; la general sigue igual.
+- [x] `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio: con horas > 0, quien suele jugar y no ha enviado la quiniela recibe el DM antes del cierre (una sola vez).
+- [x] Lunes tras las 10:00: DM del resumen semanal de apuestas, una sola vez por semana. 🔔 en la ficha de un partido: crear una alerta y comprobar que llega el DM al cruzar la cuota.
 
 **Fase 5: pase de batalla (#300, #331, #332, #334, #335, #338, #344, #348, #353, #359, #364)**
-- [ ] `/pase` → 📊 Topes: lo usado hoy por categoría; 🏆 Top: tu puesto y lo que falta si no estás entre los 10; 🕰️ Historial tras cambiar de temporada.
-- [ ] Completar las tres misiones del día: +100 XP una vez; tres días seguidos: +100 XP más (racha). Las misiones de tienda y de logro aparecen algún día.
-- [ ] `/paneladmin` → 🛡️ Pase: cambiar un tope y comprobar que el siguiente mensaje ya lo respeta; elegir canal de anuncios y subir de nivel; poner un objeto en un nivel y reclamarlo; desactivar el pase.
-- [ ] Último día de la temporada: DM con las recompensas sin cobrar (una sola vez). Ganar un reto: +15 XP de pase.
+- [x] `/pase` → 📊 Topes: lo usado hoy por categoría; 🏆 Top: tu puesto y lo que falta si no estás entre los 10; 🕰️ Historial tras cambiar de temporada.
+- [x] Completar las tres misiones del día: +100 XP una vez; tres días seguidos: +100 XP más (racha). Las misiones de tienda y de logro aparecen algún día.
+- [x] `/paneladmin` → 🛡️ Pase: cambiar un tope y comprobar que el siguiente mensaje ya lo respeta; elegir canal de anuncios y subir de nivel; poner un objeto en un nivel y reclamarlo; desactivar el pase.
+- [x] Último día de la temporada: DM con las recompensas sin cobrar (una sola vez). Ganar un reto: +15 XP de pase.
 
 **Fase 6: niveles, XP y logros (#336, #339, #342, #346, #352, #358, #362, #369, #373, #378, #383)**
-- [ ] Subir la racha a 3 días: sale el logro «Constante». `/perfil` → 🏆 Rankings → 🔥 Rachas: top con mejor y actual, y tu puesto.
-- [ ] Un día sin XP con una racha de 3 o más: a las 00:30 llega el DM «Has perdido tu racha» (una sola vez). Con `/paneladmin` → Niveles → ⚙️ Config → 🔥 Racha → 1 día de gracia, faltar un día mantiene la racha.
-- [ ] 🧢 Tope diario: poner uno bajo, llegar a él y comprobar que no sube más hasta mañana. Ganar 1.000 XP en un día: logro «Tarde intensa».
-- [ ] Reaccionar al mensaje de otra persona: su XP sube (3 por defecto, una vez por minuto). Comprobar que el bot recibe reacciones en mensajes viejos.
-- [ ] 🚫 Ignorados: poner un rol sin XP y un canal ×2; comprobar mensajes, reacciones y voz.
-- [ ] `/perfil` → 👤 Perfil → 📢 Anunciar mis niveles: «no» y subir de nivel: no se anuncia pero se da el rol.
-- [ ] Domingo 18:00: DM de logros sin reclamar, una vez por semana. `/avisos` tiene los tipos «Racha perdida» y «Logros sin reclamar».
+- [x] Subir la racha a 3 días: sale el logro «Constante». `/perfil` → 🏆 Rankings → 🔥 Rachas: top con mejor y actual, y tu puesto.
+- [x] Un día sin XP con una racha de 3 o más: a las 00:30 llega el DM «Has perdido tu racha» (una sola vez). Con `/paneladmin` → Niveles → ⚙️ Config → 🔥 Racha → 1 día de gracia, faltar un día mantiene la racha.
+- [x] 🧢 Tope diario: poner uno bajo, llegar a él y comprobar que no sube más hasta mañana. Ganar 1.000 XP en un día: logro «Tarde intensa».
+- [x] Reaccionar al mensaje de otra persona: su XP sube (3 por defecto, una vez por minuto). Comprobar que el bot recibe reacciones en mensajes viejos.
+- [x] 🚫 Ignorados: poner un rol sin XP y un canal ×2; comprobar mensajes, reacciones y voz.
+- [x] `/perfil` → 👤 Perfil → 📢 Anunciar mis niveles: «no» y subir de nivel: no se anuncia pero se da el rol.
+- [x] Domingo 18:00: DM de logros sin reclamar, una vez por semana. `/avisos` tiene los tipos «Racha perdida» y «Logros sin reclamar».
 
 **Fase 7: economía, tienda e impuestos (#302, #374, #379, #387, #392, #404, #409, #411, #412, #413, #415, #416)**
-- [ ] `/tienda` → 🎒 Inventario → 🎁 Gestionar: regalar un objeto (comprobar que sale en Movimientos de los dos y que un candado no se puede), vender a la tienda y poner en el mercado; comprar desde 🏷️ Mercado con otra cuenta.
-- [ ] ⭐ Seguir un objeto agotado; `/paneladmin` → Catálogo → A la venta con stock: llega el DM. Lo mismo bajando el precio o con 🏷️ Oferta.
-- [ ] 🏷️ Oferta temporal: el catálogo enseña el precio rebajado y la fecha de fin, la compra cobra ese precio, y al pasar el fin vuelve el normal. 💱 Precios: subida 10 % y comprobar que sube con cada compra.
-- [ ] 🎟️ Crear un código de 1 uso y canjearlo con dos cuentas (la segunda dice «agotado»).
-- [ ] 📜 Movimientos → 📤 Exportar: abrir el CSV en Excel y ver las tildes y las columnas.
-- [ ] 🏪 Negocios: mejorar un negocio, ver el nuevo blanqueo/ingreso y vender (50 % de todo lo pagado).
-- [ ] Impuestos: 📊 un tramo en una regla de ingreso; 🎯 una meta pequeña del bote; 💼 sueldo a un rol y comprobar el pago (una sola vez al día).
+- [x] `/tienda` → 🎒 Inventario → 🎁 Gestionar: regalar un objeto (comprobar que sale en Movimientos de los dos y que un candado no se puede), vender a la tienda y poner en el mercado; comprar desde 🏷️ Mercado con otra cuenta.
+- [x] ⭐ Seguir un objeto agotado; `/paneladmin` → Catálogo → A la venta con stock: llega el DM. Lo mismo bajando el precio o con 🏷️ Oferta.
+- [x] 🏷️ Oferta temporal: el catálogo enseña el precio rebajado y la fecha de fin, la compra cobra ese precio, y al pasar el fin vuelve el normal. 💱 Precios: subida 10 % y comprobar que sube con cada compra.
+- [x] 🎟️ Crear un código de 1 uso y canjearlo con dos cuentas (la segunda dice «agotado»).
+- [x] 📜 Movimientos → 📤 Exportar: abrir el CSV en Excel y ver las tildes y las columnas.
+- [x] 🏪 Negocios: mejorar un negocio, ver el nuevo blanqueo/ingreso y vender (50 % de todo lo pagado).
+- [x] Impuestos: 📊 un tramo en una regla de ingreso; 🎯 una meta pequeña del bote; 💼 sueldo a un rol y comprobar el pago (una sola vez al día).
 
 **Fase 8: perfil, clasificación y patrimonio (#347, #350, #355, #360, #368, #372, #377, #388, #391, #394, #397, #401)**
-- [ ] 💰 Economía: «Próximo cobro de patrimonio» con su estimación, resumen 🏦 Patrimonio y barras de los últimos 30 días (al día siguiente de arrancar con la migración ya hay una fila). 🙈 Ocultar mi economía y mirarlo con otra cuenta (perfil, economía y movimientos).
-- [ ] Clasificación: 🏆 Rankings → 📅 Esta semana (con y sin canal configurado) y 🗓️ Semanas tras la primera publicación; el lunes, premios distintos por categoría (🪙 Por categoría) y la nueva categoría 📆 El más constante.
-- [ ] 👤 Perfil: «Premios semanales» tras ganar uno y 🔔 Aviso del domingo (activarlo con otra cuenta que vaya primera y comprobar el DM el domingo a las 20:00).
-- [ ] Impuestos → 🏦 Patrimonio → 🎭 Roles exentos con un rol de prueba; 🏆 Rankings → 🏦 Patrimonio neto (comprobar que cuenta cripto y negocios).
+- [x] 💰 Economía: «Próximo cobro de patrimonio» con su estimación, resumen 🏦 Patrimonio y barras de los últimos 30 días (al día siguiente de arrancar con la migración ya hay una fila). 🙈 Ocultar mi economía y mirarlo con otra cuenta (perfil, economía y movimientos).
+- [x] Clasificación: 🏆 Rankings → 📅 Esta semana (con y sin canal configurado) y 🗓️ Semanas tras la primera publicación; el lunes, premios distintos por categoría (🪙 Por categoría) y la nueva categoría 📆 El más constante.
+- [x] 👤 Perfil: «Premios semanales» tras ganar uno y 🔔 Aviso del domingo (activarlo con otra cuenta que vaya primera y comprobar el DM el domingo a las 20:00).
+- [x] Impuestos → 🏦 Patrimonio → 🎭 Roles exentos con un rol de prueba; 🏆 Rankings → 🏦 Patrimonio neto (comprobar que cuenta cripto y negocios).
 
 **Fase 9: cripto y recordatorios (#298, #341, #351, #365, #320)**
-- [ ] `/cripto` → 💸 Vender → ✏️ Otra cantidad: pedir unas monedas y comprobar que recibes eso (o un poco menos); pedir más de lo que vale tu cartera y ver que no vende.
-- [ ] 📈 Mercado → 🔔 Alertas y órdenes: una alerta por encima y otra por debajo; mover el precio con compras/ventas y comprobar el DM (una sola vez). Un stop-loss justo por debajo y vender de otra cuenta para bajarlo.
-- [ ] 🛒 Comprar → 🔁 Compra recurrente (cada 1 h): ver la compra en 🧾 Historial; vaciar el efectivo y ver el DM de ciclo saltado.
-- [ ] `/recordar nuevo` («en 2 min») y `/recordar lista`: llega el DM; con los DMs cerrados no pasa nada.
+- [x] `/cripto` → 💸 Vender → ✏️ Otra cantidad: pedir unas monedas y comprobar que recibes eso (o un poco menos); pedir más de lo que vale tu cartera y ver que no vende.
+- [x] 📈 Mercado → 🔔 Alertas y órdenes: una alerta por encima y otra por debajo; mover el precio con compras/ventas y comprobar el DM (una sola vez). Un stop-loss justo por debajo y vender de otra cuenta para bajarlo.
+- [x] 🛒 Comprar → 🔁 Compra recurrente (cada 1 h): ver la compra en 🧾 Historial; vaciar el efectivo y ver el DM de ciclo saltado.
+- [x] `/recordar nuevo` («en 2 min») y `/recordar lista`: llega el DM; con los DMs cerrados no pasa nada.
 
 **Fase 10: Plex (#299, #381, #385, #389, #393, #399, #403, #406, #410)**
-- [ ] `/plex` → 🗓️ Estrenos (con el Seerr real: comprobar que `discover/…/upcoming` responde en tu versión) y pedir uno con 📥; 📡 Ahora con y sin nadie viendo algo; 🏆 Campeones tras la próxima publicación del ranking.
-- [ ] 🎬 Sesión de cine con varias películas (`Dune | Alien`), votar con dos cuentas, 🎯 Sugerir, y ver que el recordatorio nombra la ganadora. Repetir cada semana: comprobar que al empezar la sesión aparece la siguiente.
-- [ ] 📥 Mis pedidos: pedir algo, cancelarlo desde `/plex`; rechazar una petición en Seerr y ver el aviso (en el canal de novedades o por DM).
-- [ ] 🎞️ Wrapped → «Ver el del año pasado»; el 1 de enero llegan dos DM (mes y año).
+- [x] `/plex` → 🗓️ Estrenos (con el Seerr real: comprobar que `discover/…/upcoming` responde en tu versión) y pedir uno con 📥; 📡 Ahora con y sin nadie viendo algo; 🏆 Campeones tras la próxima publicación del ranking.
+- [x] 🎬 Sesión de cine con varias películas (`Dune | Alien`), votar con dos cuentas, 🎯 Sugerir, y ver que el recordatorio nombra la ganadora. Repetir cada semana: comprobar que al empezar la sesión aparece la siguiente.
+- [x] 📥 Mis pedidos: pedir algo, cancelarlo desde `/plex`; rechazar una petición en Seerr y ver el aviso (en el canal de novedades o por DM).
+- [x] 🎞️ Wrapped → «Ver el del año pasado»; el 1 de enero llegan dos DM (mes y año).
 
 **Fase 11: Duende e IA (#357, #363, #367, #371, #376, #382, #386, #390, #395, #396, #400, #405, #408)**
-- [ ] `/imagen` y 🔁 Otra versión (con otra cuenta no deja); `/imagenes`; pedirle al Duende «dibújame un gato» en el chat y comprobar el cooldown compartido y la cuota (`IMAGE_GEN_DAILY_LIMIT` bajo).
-- [ ] Gastar el tope de respuestas por persona (`DUENDE_DAILY_LIMIT_USER` bajo): el resto sigue; reiniciar el bot y ver que el contador se mantiene.
-- [ ] Mandar una nota de voz de Discord en el canal del Duende (el reconocedor local de `/escuchar` tiene que estar arrancado); `/resumen` con 30 mensajes.
-- [ ] Recuerdo propuesto por DM: ✏️ Editar (texto corto y texto bueno); con `DUENDE_RECUERDOS_CADUCA_DIAS=0` ver cómo caduca y pierde los botones a las 04:00.
-- [ ] `/conversación` hablando un rato y terminando: resumen en el canal. `/duende` → Personalidad → voz, y una respuesta por voz; 🧠 Recuerdos → olvidar una nota.
+- [x] `/imagen` y 🔁 Otra versión (con otra cuenta no deja); `/imagenes`; pedirle al Duende «dibújame un gato» en el chat y comprobar el cooldown compartido y la cuota (`IMAGE_GEN_DAILY_LIMIT` bajo).
+- [x] Gastar el tope de respuestas por persona (`DUENDE_DAILY_LIMIT_USER` bajo): el resto sigue; reiniciar el bot y ver que el contador se mantiene.
+- [x] Mandar una nota de voz de Discord en el canal del Duende (el reconocedor local de `/escuchar` tiene que estar arrancado); `/resumen` con 30 mensajes.
+- [x] Recuerdo propuesto por DM: ✏️ Editar (texto corto y texto bueno); con `DUENDE_RECUERDOS_CADUCA_DIAS=0` ver cómo caduca y pierde los botones a las 04:00.
+- [x] `/conversación` hablando un rato y terminando: resumen en el canal. `/duende` → Personalidad → voz, y una respuesta por voz; 🧠 Recuerdos → olvidar una nota.
 
 **Fase 12: administración (#398, #402, #407, #417-#425)**
-- [ ] 🧾 Auditoría: elegir una familia en el menú, pasar de página y refrescar (el filtro se mantiene); «Todas las acciones» lo quita.
-- [ ] Abrir el historial global del banco, buscar un usuario y abrir una ficha de 🧠 Perfiles: tres filas `consulta.*` en la auditoría; pasar de página no añade filas.
-- [ ] Cambiar un formulario de Config Global (RTP, tienda, una regla de comandos) y ver en la auditoría el antes y el después; reenviarlo igual → «sin cambios».
-- [ ] 🩺 Sistema → 💾 Copias: ver la lista, hacer copia ahora (con la de hoy existente pide confirmación) y comprobar `backup.manual`; arrancar el bot pasadas las 04:30 sin la copia de hoy → la crea.
-- [ ] 🩺 Sistema → 🕒 Tareas: ver «sin ejecutar»/última ejecución, reiniciar y comprobar que se conserva; lanzar una tarea a mano, comprobar `tarea.manual` y 📄 Exportar.
-- [ ] 🔔 Alertas: apagar una categoría y probar; poner un canal de respaldo, cerrar los DMs al bot y provocar una alerta.
-- [ ] `/mensaje usuario cuando:` con una hora a 10 minutos: llega con margen de 5 min; cancelar otro desde ✉️ Mensajes; apagar el bot pasada la hora y arrancarlo → llega con el aviso.
-- [ ] ⚙️ Config Global → 🛠️ Modo mantenimiento: con otra cuenta no admin, comandos y botones dan el mensaje; con admin todo sigue; apagarlo.
+- [x] 🧾 Auditoría: elegir una familia en el menú, pasar de página y refrescar (el filtro se mantiene); «Todas las acciones» lo quita.
+- [x] Abrir el historial global del banco, buscar un usuario y abrir una ficha de 🧠 Perfiles: tres filas `consulta.*` en la auditoría; pasar de página no añade filas.
+- [x] Cambiar un formulario de Config Global (RTP, tienda, una regla de comandos) y ver en la auditoría el antes y el después; reenviarlo igual → «sin cambios».
+- [x] 🩺 Sistema → 💾 Copias: ver la lista, hacer copia ahora (con la de hoy existente pide confirmación) y comprobar `backup.manual`; arrancar el bot pasadas las 04:30 sin la copia de hoy → la crea.
+- [x] 🩺 Sistema → 🕒 Tareas: ver «sin ejecutar»/última ejecución, reiniciar y comprobar que se conserva; lanzar una tarea a mano, comprobar `tarea.manual` y 📄 Exportar.
+- [x] 🔔 Alertas: apagar una categoría y probar; poner un canal de respaldo, cerrar los DMs al bot y provocar una alerta.
+- [x] `/mensaje usuario cuando:` con una hora a 10 minutos: llega con margen de 5 min; cancelar otro desde ✉️ Mensajes; apagar el bot pasada la hora y arrancarlo → llega con el aviso.
+- [x] ⚙️ Config Global → 🛠️ Modo mantenimiento: con otra cuenta no admin, comandos y botones dan el mensaje; con admin todo sigue; apagarlo.

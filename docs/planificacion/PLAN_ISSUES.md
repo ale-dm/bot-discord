@@ -1,14 +1,13 @@
 # Plan de las issues abiertas
 
-Estado a 2026-10-11: **185 issues abiertas**, en cinco tipos:
+Estado a 2026-10-18: **3 issues abiertas**, las tres de refactor de la fase 2 (**#472**, **#474** y **#475**). El resto
+del plan (182 issues: bugs, rendimiento, features y las verificaciones de modales) está hecho, probado en Discord y en
+`main`; el detalle, en el [CHANGELOG](../CHANGELOG.md).
 
 | Tipo | Nº | Números |
 |---|---|---|
-| Bugs | 3 | #468, #469, #470 |
-| Refactor (arquitectura limpia) | 10 | #471 a #480 |
-| Rendimiento | 7 | #481 a #487 |
-| Features nuevas | 150 | #318 a #320 y #321 a #467 |
-| Anteriores (ideas, modales, docs) | 15 | #282, #296 a #303, #305 a #310 |
+| Refactor (arquitectura limpia) | 3 | #472, #474, #475 |
+| Bugs, rendimiento, features y modales | 182 | cerradas (ver [CHANGELOG](../CHANGELOG.md)) |
 
 Este documento es el orden de trabajo. Cada issue aparece **una sola vez**, en una fase. Si cambia algo, actualizar aquí y
 en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
@@ -17,8 +16,7 @@ en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
 
 1. **Medir antes de optimizar.** Las cifras de rendimiento salen de benchmarks aislados. #481 mide en producción, y las
    demás issues de rendimiento citan esa medida antes de tocar código.
-2. **Bugs antes que features.** #468 y #469 están en código de #321 que todavía no está en `developer`: se arreglan antes
-   de mergear la rama.
+2. **Bugs antes que features.** Los bugs del plan (#468, #469 y #470) ya están corregidos y en `main`.
 3. **Cimientos antes que el área.** Un grupo de features que toca código acoplado empieza después de su refactor (columna
    *Requiere*). Así no se añade acoplamiento nuevo.
 4. **Los refactors no cambian el comportamiento.** Su criterio es que los tests de comportamiento pasen sin tocar sus
@@ -27,6 +25,9 @@ en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
 6. **Un grupo, un PR a `developer`** (squash). De `developer` a `main`, cuando se pida la release.
 
 ## Fases de un vistazo
+
+Estado: las fases 1 y 3 a 15 están terminadas, probadas en Discord y cerradas. Solo queda la **fase 2** con los tres
+refactors (#472, #474, #475). La fase 0 está hecha (los modales se verificaron y #282 se cerró).
 
 | Fase | Qué contiene | Nº | Condición de salida |
 |---|---|---|---|
@@ -58,7 +59,7 @@ Ninguna fase tiene más de 13 issues.
 | Un refactor cambia un comportamiento sin que los tests lo vean | Tests de caracterización antes de mover código (en #479 y en cada refactor) |
 | Límites de Discord (25 opciones en un menú, 45 caracteres en una etiqueta) | #470 lo resuelve de forma general; revisarlo en cada feature nueva |
 | Una decisión de producto bloquea una feature a mitad | Las decisiones se toman en la fase 0 (sección final), no al empezar el grupo |
-| Dos migraciones con el mismo número | Número libre en el momento de crear la migración (hoy, el 044); #325 y #484 la usan |
+| Dos migraciones con el mismo número | Número libre en el momento de crear la migración (hoy, el 071); #325 y #484 la usan |
 | Un PR de un grupo arrastra cambios de otro | Un grupo por PR; si toca un refactor a medias, esperar a que se mergee |
 
 ---
@@ -533,5 +534,5 @@ Cada issue aparece una vez en una fase. Para comprobarlo tras un cambio:
 python3 -c "import re,collections;s=open('docs/planificacion/PLAN_ISSUES.md').read();c=collections.Counter(int(x) for x in re.findall(r'^\| \[#(\d+)\]',s,flags=re.M));print(len(c),'unicas;',sorted(n for n,v in c.items() if v>1),'duplicadas')"
 ```
 
-El total esperado es 185 y ninguna duplicada (las menciones en «Decisiones» y en «Requiere» no cuentan, porque no empiezan
-por fila de tabla).
+El total es 185 y ninguna duplicada (las menciones en «Decisiones» y en «Requiere» no cuentan, porque no empiezan por fila
+de tabla). Con el plan terminado solo quedan abiertas las 3 de la fase 2.
