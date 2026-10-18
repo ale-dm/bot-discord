@@ -5,8 +5,9 @@
 // - Los modelos 3.x van por la Interactions API (POST /v1beta/interactions), la que documenta Google para TTS: el texto
 //   se manda tal cual (se lee literalmente; el tono, si se quiere, va aparte en speech_metadata.style) y devuelven WAV.
 // - Los 2.x van por generateContent y devuelven PCM crudo (audio/L16, 24 kHz), que aquí se envuelve en un WAV.
-// Antes solo se usaba gemini-2.5-flash-preview-tts por generateContent; Google lo está retirando (octubre de 2026) y
-// respondía HTTP 200 pero sin audio (finishReason OTHER), así que el bot entraba al canal de voz y no decía nada.
+// Antes solo se usaba gemini-2.5-flash-preview-tts por generateContent; Google lo retira el 17 de noviembre de 2026 y
+// respondía HTTP 200 pero sin audio (finishReason OTHER), así que el bot entraba al canal de voz y no decía nada. Ya no
+// está entre los respaldos: los 3.8 (por Interactions API) son el sustituto recomendado.
 const { Readable } = require("stream");
 const { createLogger } = require("../core/logger");
 
@@ -16,7 +17,7 @@ const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || "";
 const MODELO_POR_DEFECTO = "gemini-3.8-flash-tts";
 const GEMINI_TTS_MODEL = process.env.GEMINI_TTS_MODEL || MODELO_POR_DEFECTO;
-const GEMINI_TTS_FALLBACK_MODELS = (process.env.GEMINI_TTS_FALLBACK_MODELS ?? "gemini-3.8-flash-lite-tts,gemini-2.5-flash-preview-tts")
+const GEMINI_TTS_FALLBACK_MODELS = (process.env.GEMINI_TTS_FALLBACK_MODELS ?? "gemini-3.8-flash-lite-tts")
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean);
