@@ -1,12 +1,12 @@
 # Plan de las issues abiertas
 
-Estado a 2026-10-18: **3 issues abiertas**, las tres de refactor de la fase 2 (**#472**, **#474** y **#475**). El resto
-del plan (182 issues: bugs, rendimiento, features y las verificaciones de modales) está hecho, probado en Discord y en
-`main`; el detalle, en el [CHANGELOG](../CHANGELOG.md).
+Estado a 2026-10-18: **plan terminado, 0 issues abiertas**. Las 185 issues (bugs, rendimiento, features, verificaciones
+de modales y los tres refactors de la fase 2) están hechas, probadas en Discord y en `main`; el detalle, en el
+[CHANGELOG](../CHANGELOG.md). Las ideas nuevas se añaden como issue con la etiqueta `feature-idea`.
 
 | Tipo | Nº | Números |
 |---|---|---|
-| Refactor (arquitectura limpia) | 3 | #472, #474, #475 |
+| Refactor (arquitectura limpia) | 3 | #472, #474, #475 (cerradas) |
 | Bugs, rendimiento, features y modales | 182 | cerradas (ver [CHANGELOG](../CHANGELOG.md)) |
 
 Este documento es el orden de trabajo. Cada issue aparece **una sola vez**, en una fase. Si cambia algo, actualizar aquí y
@@ -26,8 +26,8 @@ en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
 
 ## Fases de un vistazo
 
-Estado: las fases 1 y 3 a 15 están terminadas, probadas en Discord y cerradas. Solo queda la **fase 2** con los tres
-refactors (#472, #474, #475). La fase 0 está hecha (los modales se verificaron y #282 se cerró).
+Estado: **todas las fases (0 a 15) están terminadas, probadas en Discord y cerradas**, incluida la fase 2 de refactor
+(#472, #474, #475). No queda nada por hacer.
 
 | Fase | Qué contiene | Nº | Condición de salida |
 |---|---|---|---|
@@ -87,13 +87,13 @@ Es la fase que bloquea todo lo demás: sin ella, la rama de sonidos no se puede 
 
 | # | Qué probar | Estado |
 |---|---|---|
-| [#305](https://github.com/ale-dm/bot-discord/issues/305) | G1: sí/no en grupos de radio | Pendiente |
-| [#306](https://github.com/ale-dm/bot-discord/issues/306) | G2: canales con selector | Pendiente |
-| [#307](https://github.com/ale-dm/bot-discord/issues/307) | G3: roles y personas con selector | Pendiente |
-| [#308](https://github.com/ale-dm/bot-discord/issues/308) | G4: opciones cerradas y horas | Pendiente |
-| [#309](https://github.com/ale-dm/bot-discord/issues/309) | G5: importes rápidos | Pendiente |
-| [#310](https://github.com/ale-dm/bot-discord/issues/310) | G6: ruleta en dos pasos y cine | Pendiente |
-| [#303](https://github.com/ale-dm/bot-discord/issues/303) | Idea original de los modales | Cerrar cuando #305–#310 pasen |
+| [#305](https://github.com/ale-dm/bot-discord/issues/305) | G1: sí/no en grupos de radio | Hecho |
+| [#306](https://github.com/ale-dm/bot-discord/issues/306) | G2: canales con selector | Hecho |
+| [#307](https://github.com/ale-dm/bot-discord/issues/307) | G3: roles y personas con selector | Hecho |
+| [#308](https://github.com/ale-dm/bot-discord/issues/308) | G4: opciones cerradas y horas | Hecho |
+| [#309](https://github.com/ale-dm/bot-discord/issues/309) | G5: importes rápidos | Hecho |
+| [#310](https://github.com/ale-dm/bot-discord/issues/310) | G6: ruleta en dos pasos y cine | Hecho |
+| [#303](https://github.com/ale-dm/bot-discord/issues/303) | Idea original de los modales | Cerrada |
 | [#282](https://github.com/ale-dm/bot-discord/issues/282) | Protección de ramas y Project board | Lo hace el dueño en GitHub |
 
 ### Medición
@@ -535,4 +535,4 @@ python3 -c "import re,collections;s=open('docs/planificacion/PLAN_ISSUES.md').re
 ```
 
 El total es 185 y ninguna duplicada (las menciones en «Decisiones» y en «Requiere» no cuentan, porque no empiezan por fila
-de tabla). Con el plan terminado solo quedan abiertas las 3 de la fase 2.
+de tabla). Con el plan terminado, ya no queda ninguna abierta.
