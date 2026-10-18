@@ -9,32 +9,26 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
 
 ## 1. Dónde estamos
 
-- El [plan de las issues](planificacion/PLAN_ISSUES.md) está hecho casi entero: las fases 1 y 3 a 15 están en `main` y
-  probadas en Discord, con sus issues cerradas. De las 185 issues del plan quedan **3 abiertas**, las tres de refactor de
-  la fase 2: **#472** (`systems/` sin embeds ni Discord), **#474** (reglas de los juegos separadas de sus manejadores) y
-  **#475** (herramientas del Duende con dependencias inyectadas).
-- Última release a `main`: la voz de `/conectar` elige el tiempo (#499, #500) y los tests deterministas (#501), tras las
-  fases 1-12 del plan restante (#496, #497). Todo en el [CHANGELOG](CHANGELOG.md).
+- El [plan de las issues](planificacion/PLAN_ISSUES.md) está **terminado**: las 185 issues están cerradas. La última en
+  caer ha sido la **fase 2**, los tres refactors de arquitectura: **#472** (`systems/` sin embeds ni Discord), **#474**
+  (reglas de los juegos separadas de sus manejadores) y **#475** (herramientas del Duende con dependencias inyectadas).
+- Última release a `main`: la fase 2 de refactor (#505, #506, #507), sobre la voz de `/conectar` (#499, #500) y los
+  tests deterministas (#501), tras las fases 1-12 del plan restante (#496, #497). Todo en el [CHANGELOG](CHANGELOG.md).
 - Migraciones: hasta la `070_admin_extras`. La siguiente es la `071`.
-- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2852 tests en 225 suites. Los tests usan una
+- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2857 tests en 225 suites. Los tests usan una
   BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
 - No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica no tiene filas abiertas
   ([DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md)); lo pendiente está en issues.
 
 ## 2. Lo primero, en este orden
 
-1. **Cerrar la fase 2**: los tres refactors que quedan son de arquitectura limpia (no cambian el comportamiento):
-   - **#472**: que `systems/` no construya mensajes ni embeds de Discord; cada sistema devuelve datos y un adaptador en
-     `src/discord/` (o `paneles/`) los pinta. Criterio: `grep -rl 'require("discord.js")' src/systems` vacío.
-   - **#474**: separar las reglas de los juegos de sus manejadores de Discord.
-   - **#475**: que las herramientas del Duende reciban sus dependencias en vez de hacer `require` diferido.
-2. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)). Al arrancar se aplican las migraciones pendientes; en el log,
-   `[Migraciones] Aplicada …`.
+1. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)): Portainer → Stacks → `el-duende` → **Pull and redeploy**. Al
+   arrancar se aplican las migraciones pendientes; en el log, `[Migraciones] Aplicada …`.
+2. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
 3. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Eurocopa, Copa
    del Rey y Europa League tienen claves sin verificar. El Mundial (`soccer_fifa_world_cup`) sí está confirmado. Si una
    clave no sale en `/v4/sports`, corregirla en `DEPORTES` de `src/services/oddsApi.js`.
-4. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
-5. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
+4. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
    `.env.example`): `TMDB_API_KEY` (trofeos por país), `SEERR_*` (recomendaciones y pedidos), `ODDS_DIRECTO`
    (apuestas en directo, opcional), `DUENDE_RECUERDOS_AUTO` y `DUENDE_RECUERDOS_MAX_DIA` (recuerdos automáticos),
    `SONIDOS_DIR` (opcional, si los sonidos no van en `DATA_DIR/sonidos`).
@@ -49,9 +43,9 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 
 ## 4. Ideas abiertas y plan
 
-Las ideas viven en issues con la etiqueta `feature-idea`. Hoy solo quedan abiertas las 3 de refactor de la fase 2 (#472,
-#474, #475), que son las siguientes en el [PLAN_ISSUES](planificacion/PLAN_ISSUES.md). Cuando se cierren, el plan queda
-terminado y cualquier idea nueva se añade como issue con su etiqueta.
+El [plan de las issues](planificacion/PLAN_ISSUES.md) está **terminado** y no quedan issues abiertas. A partir de aquí,
+cada idea nueva se añade como issue con la etiqueta `feature-idea`; las decisiones pendientes de la sección 3 (roles y
+recompensa del pase de batalla) siguen sin respuesta.
 
 ## 5. Mapa de lo nuevo
 
