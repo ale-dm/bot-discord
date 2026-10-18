@@ -14,7 +14,7 @@ criptomonedas e integración con Plex/Seerr.
 
 ## Cómo se usa
 
-Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (26 comandos en total):
+Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí (29 comandos en total):
 
 | Panel | Qué hay |
 |---|---|
@@ -31,7 +31,7 @@ Casi todo está en **ocho paneles** con pestañas y botones, enlazados entre sí
 `/ayuda` explica cada parte y tiene botones que abren estos paneles. El dinero está en **efectivo** (con lo que se
 juega y se compra) o en el **banco** (seguro; hay que sacarlo para gastarlo). De momento los paneles son públicos
 (solo quien los abre puede pulsarlos); los avisos de error, `/paneladmin` y lo que el Duende recuerda, en privado.
-Aparte: `/avisos` (qué DM recibes), `/encuesta`, `/cumpleaños`, `/sugerencia`, el Duende en el chat y por voz (`/imagen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/pase` (pase de batalla), `/bola8`, `/ping`, `/javier` y `/ayuda`. `/mensaje` es solo para admins.
+Aparte: `/avisos` (qué DM recibes), `/encuesta`, `/cumpleaños`, `/sugerencia`, `/recordar`, `/presentacion`, el Duende en el chat y por voz (`/imagen`, `/imagenes`, `/resumen`, `/tts`, `/escuchar`, `/conversación`), `/robar`, `/trabajar`, `/pase` (pase de batalla), `/bola8`, `/ping`, `/javier` y `/ayuda`. `/mensaje` es solo para admins.
 
 ## Puesta en marcha (desarrollo)
 
@@ -47,7 +47,9 @@ Otros comandos: `npm run start:bot` (sin voz) · `npm run start:vosk` (solo el s
 (comprueba los logros de Plex contra el Tautulli de verdad, sin tocar la BD).
 
 Antes de subir cambios: `npm run check` (ESLint + Prettier + tests). `npm run lint:fix` y `npm run format`
-corrigen lo automático; `npm run format:check` solo comprueba el formato.
+corrigen lo automático; `npm run format:check` solo comprueba el formato. `main` y `developer` están
+protegidas: se trabaja en una rama (`feature/`, `fix/`, `refactor/`, `docs/`) y se mergea por PR (ver
+[CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Estructura
 
@@ -55,29 +57,38 @@ corrigen lo automático; `npm run format:check` solo comprueba el formato.
 el-duende/
 ├── src/
 │   ├── index.js            Arranque: carga comandos, eventos de Discord y tareas programadas
+│   ├── app/
+│   │   └── tareas.js         Tareas programadas (cron): liquidación, backups, resúmenes…
 │   ├── core/               Infraestructura común (sin lógica del bot)
 │   │   ├── paths.js          Rutas del proyecto (data/, logs/, models/, commands/, juegos/, perfil/)
 │   │   ├── db.js             Conexión SQLite (data/banco.db)
 │   │   ├── logger.js         Logs con niveles, rotación y ocultación de secretos
 │   │   ├── componentRouter.js  Enruta botones/menús/formularios al módulo que los declara
 │   │   ├── interactionLog.js   Registro uniforme de interacciones y tareas
-│   │   ├── migrations/       Esquema de la BD: migraciones numeradas que se aplican solas al arrancar
-│   │   └── registerCommands.js Registra los slash commands en Discord
+│   │   ├── tareasRegistro.js   Registro de tareas programadas (evita solapamientos)
+│   │   ├── permisos.js       Comprobaciones de permisos de administrador
+│   │   ├── zonaMadrid.js     Fechas y horas en la zona de Madrid
+│   │   └── migrations/       Esquema de la BD: migraciones numeradas que se aplican solas al arrancar
+│   ├── discord/            Capa de Discord: adaptadores de envío y respuestas
+│   │   ├── registerCommands.js Registra los slash commands en Discord
+│   │   ├── respuestas.js     Respuestas privadas/efímeras y avisos
+│   │   ├── envios/           Envía a canales/usuarios: XP, logros, apuestas, Plex…
+│   │   └── mensajes/         Construye los mensajes de esos envíos (puros)
 │   ├── commands/           Un fichero por slash command, agrupados por tema
-│   │   ├── duende/           /duende /imagen /bola8 /javier
+│   │   ├── duende/           /duende /imagen /imagenes /resumen /bola8 /javier
 │   │   ├── voz/              /tts /escuchar /conversación /sonidos /conectar
-│   │   ├── juegos/           /juegos (casino, apuestas, mis jugadas y stats, en pestañas)
+│   │   ├── juegos/           /juegos (casino, apuestas, retos, mis jugadas y stats, en pestañas)
 │   │   ├── economia/         /tienda (catálogo, inventario y compras) /cripto /robar /trabajar
-│   ├── plex/             /plex (sesiones de cine, recomendaciones, Wrapped y perfil de Plex)
+│   │   ├── plex/             /plex (sesiones de cine, recomendaciones, Wrapped y perfil de Plex)
 │   │   ├── progresion/       /perfil (perfil, economía, juegos, logros y rankings, en pestañas) /pase
 │   │   ├── admin/            /paneladmin (banco, niveles, config, apuestas, catálogo, sistema...) /mensaje
-│   │   └── general/          /ayuda /ping
+│   │   └── general/          /ayuda /ping /avisos /encuesta /cumpleaños /sugerencia /recordar /presentacion
 │   ├── juegos/             Juegos del casino, apuestas y retos: no son comandos (se entra por /juegos), pero
 │   │                         sus botones se registran igual (casino/: blackjack, ruleta, tragaperras,
-│   │                         adivinar, ppt · apuestas/: partidos, quiniela, mis jugadas · retos/).
-│   │                         Sus reglas están en systems/ (casino/, apuestas/, retos/)
+│   │                         adivinar, ppt · apuestas/: partidos, quiniela, combinadas, mis jugadas · retos/).
+│   │                         Sus reglas están en systems/ y los datos en repositorios/
 │   ├── perfil/             Botones de dinero de /perfil (ingresar, sacar, transferir, movimientos)
-│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda, /cripto y /duende
+│   ├── paneles/            Mensajes de los paneles (embeds y botones) de /perfil, /juegos, /tienda, /cripto, /duende y /plex
 │   ├── adminPanel/         Secciones de /paneladmin (banco, niveles, ajustes, apuestas, catálogo, sistema, Plex, Seerr, apodos y
 │   │                         perfiles del Duende, auditoría)
 │   ├── systems/            Lógica del bot que usan varios comandos
@@ -89,9 +100,10 @@ el-duende/
 │   │                         alertas por DM a los admins, avisos de lo pedido en Seerr; xp/ (niveles,
 │   │                         rachas, roles), apuestas/ (liquidación, recordatorios y mis jugadas),
 │   │                         duende/ (memoria, perfiles, personas) y cripto/ (mercado, eventos y gráficos)
+│   ├── repositorios/       Acceso a datos (SQL) por dominio: dinero, casino, catálogo, apuestas, Plex…
 │   └── services/           Clientes de servicios externos
-│                             Gemini, Gemini TTS, Tautulli, Seerr, Odds API, Giphy, transcripción de
-│                             voz (STT); duende/ (herramientas, llamada a Gemini, voz)
+│                             Gemini, Gemini TTS, Tautulli, Seerr, Odds API, TMDB, Giphy, transcripción
+│                             de voz (STT); duende/ (herramientas, llamada a Gemini, voz)
 ├── vosk/                   Servidor de transcripción de voz (Python) + requirements.txt
 ├── tests/                  Tests (Jest), con BD en memoria: nunca tocan datos reales
 ├── scripts/                Utilidades de desarrollo y mantenimiento (no corren en producción)

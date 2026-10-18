@@ -10,4 +10,5 @@ ciclo que ya no existe también, así que la lista solo puede bajar. La lista ex
 2. `systems/dinero.js` ↔ `systems/prestamos.js`
 3. 4 ciclos del grupo `plexTrofeos` / `plexHistorial` / `plexGordos` / `achievementsSystem`
 
-Cada refactor de cimientos (#471–#480) debe reducir esta lista y actualizar este fichero y el JSON.
+Los refactors de cimientos (#471–#480) ya están hechos y bajaron la lista de 12 a 6. A partir de ahora, cualquier cambio que
+añada o quite un ciclo debe actualizar este fichero y `ciclos-permitidos.json` (el test `tests/ciclos.test.js` lo comprueba).

@@ -153,8 +153,8 @@ Diseñadas para que sea fácil añadir más sin tocar el resto (mismo patrón
 
 Todas de solo lectura — coherente con el mismo criterio que ya se aplicó a
 las herramientas de nivel/saldo/logros (primero demostrar que funcionan
-bien antes de plantear nada que "escriba" algo, relevante sobre todo de
-cara a la fase 2 con Seerr).
+bien antes de plantear nada que "escriba" algo, algo que importó cuando se
+integró Seerr).
 
 ### 3.1 Canal de novedades automático
 
