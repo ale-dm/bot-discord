@@ -23,7 +23,7 @@ const DEPORTES = {
     champions: { name: "Champions League 🏆", apiKey: "soccer_uefa_champs_league", emoji: "🏆" },
     // Las claves de estas cuatro se comprueban con scripts/competicionesOdds.js (la API cambia el nombre de algunas).
     mundial: { name: "Mundial 🌍", apiKey: "soccer_fifa_world_cup", emoji: "🌍" },
-    eurocopa: { name: "Eurocopa 🇪🇺", apiKey: "soccer_uefa_euro", emoji: "🇪🇺" },
+    eurocopa: { name: "Eurocopa 🇪🇺", apiKey: "soccer_uefa_european_championship", emoji: "🇪🇺" },
     copa_rey: { name: "Copa del Rey 👑", apiKey: "soccer_spain_copa_del_rey", emoji: "👑" },
     europa: { name: "Europa League 🟠", apiKey: "soccer_uefa_europa_league", emoji: "🟠" },
 };

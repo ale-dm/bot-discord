@@ -25,9 +25,11 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
 1. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)): Portainer → Stacks → `el-duende` → **Pull and redeploy**. Al
    arrancar se aplican las migraciones pendientes; en el log, `[Migraciones] Aplicada …`.
 2. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
-3. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Eurocopa, Copa
-   del Rey y Europa League tienen claves sin verificar. El Mundial (`soccer_fifa_world_cup`) sí está confirmado. Si una
-   clave no sale en `/v4/sports`, corregirla en `DEPORTES` de `src/services/oddsApi.js`.
+3. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Las siete claves
+   de `DEPORTES` (`src/services/oddsApi.js`) se han contrastado con la lista oficial de la API: la Eurocopa estaba mal
+   (`soccer_uefa_euro`, corregida a `soccer_uefa_european_championship`); las demás (Mundial, Copa del Rey, Europa
+   League, LaLiga, Premier y Champions) coinciden. Al desplegar, ejecutar el script con la clave real por si el plan
+   contratado no cubre alguna.
 4. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
    `.env.example`): `TMDB_API_KEY` (trofeos por país), `SEERR_*` (recomendaciones y pedidos), `ODDS_DIRECTO`
    (apuestas en directo, opcional), `DUENDE_RECUERDOS_AUTO` y `DUENDE_RECUERDOS_MAX_DIA` (recuerdos automáticos),

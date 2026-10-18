@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (fix: la clave de la Eurocopa en la Odds API)
+
+- **⚽ Clave de la Eurocopa corregida** en `DEPORTES` ([oddsApi.js](../src/services/oddsApi.js)): `soccer_uefa_euro` no
+  existe en The Odds API; la correcta es `soccer_uefa_european_championship`. El resto de claves (Mundial, Copa del Rey,
+  Europa League, LaLiga, Premier y Champions) se contrastaron con la lista oficial de la API y coinciden.
+- `docs/SIGUIENTES_PASOS.md`: el paso de comprobar las competiciones refleja la corrección.
+- Sin migraciones.
+
 ## 2026-10-18 (docs: repaso de toda la documentación)
 
 - **📚 Documentación al día**: repaso de los documentos vivos tras terminar el plan. README (estructura con `app/`, `discord/`, `repositorios/`; 29 comandos), FUNCIONALIDADES (ocho paneles, solo $TTCL, `/presentacion`), TAREAS (fuera las secciones de features ya cubiertas por las fases 1-12), PLAN_ISSUES (registro), índice de docs, CICLOS, MODALES y técnico.
