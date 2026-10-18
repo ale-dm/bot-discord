@@ -1,10 +1,17 @@
 // 🔌 /conectar (presencia del bot en un canal de voz, 30 minutos): entra y se queda, se sale sola al caducar, sustituye a la
-// anterior, no se corta una conversación con el Duende en marcha, y pide permisos. Discord y la voz no se llaman.
+// anterior, no se corta una conversación con el Duende, un sonido ni un /tts en marcha, y pide permisos. Discord y la voz no
+// se llaman.
 const { EventEmitter } = require("events");
 const presencia = require("../src/systems/presencia");
-const liveVoz = require("../src/services/duende/liveVoz");
+const ocupacion = require("../src/systems/ocupacion");
 
 const G = "g-presencia";
+// Lo que dirían los consumidores de audio: se pone a `true` para simular que están ocupados (#499).
+const ocupado = {};
+ocupacion.registrar("conversacion", () => !!ocupado.conversacion, ocupacion.REINTENTO_LARGO_MS);
+ocupacion.registrar("sonidos", () => !!ocupado.sonidos, ocupacion.REINTENTO_CORTO_MS);
+ocupacion.registrar("tts", () => !!ocupado.tts, ocupacion.REINTENTO_CORTO_MS);
+
 const canal = (id = "c1", permisos = true) => ({
     id,
     name: `Canal ${id}`,
@@ -21,7 +28,7 @@ const deps = (c = conexion()) => ({ unirse: jest.fn(() => c), esperarListo: asyn
 
 beforeEach(() => {
     presencia.desconectar(G);
-    jest.spyOn(liveVoz, "hayConversacionActiva").mockReturnValue(false);
+    for (const nombre of Object.keys(ocupado)) delete ocupado[nombre];
 });
 afterEach(() => {
     jest.useRealTimers();
@@ -67,7 +74,7 @@ test("si Discord me echa, la presencia se olvida", async () => {
 });
 
 test("con una conversación con el Duende en marcha, no entra", async () => {
-    liveVoz.hayConversacionActiva.mockReturnValue(true);
+    ocupado.conversacion = true;
     const d = deps();
     const r = await presencia.conectar(canal("c1"), { deps: d });
     expect(r.ok).toBe(false);
@@ -86,35 +93,85 @@ test("al caducar, si hay una conversación con el Duende, no se corta: se mira m
     jest.useFakeTimers();
     const c = conexion();
     await presencia.conectar(canal("c1"), { deps: deps(c) });
-    liveVoz.hayConversacionActiva.mockReturnValue(true);
+    ocupado.conversacion = true;
     jest.advanceTimersByTime(30 * 60 * 1000);
     expect(c.destroy).not.toHaveBeenCalled();
-    liveVoz.hayConversacionActiva.mockReturnValue(false);
+    ocupado.conversacion = false;
     jest.advanceTimersByTime(5 * 60 * 1000);
     expect(c.destroy).toHaveBeenCalled();
 });
 
 describe("no se corta un sonido a mitad", () => {
-    const sonidos = require("../src/systems/sonidos");
-
     test("al caducar, si suena un sonido, se espera a que acabe", async () => {
         jest.useFakeTimers();
         const c = conexion();
         await presencia.conectar(canal("c1"), { deps: deps(c) });
-        const suena = jest.spyOn(sonidos, "sonando").mockReturnValue(true);
+        ocupado.sonidos = true;
         jest.advanceTimersByTime(30 * 60 * 1000);
         expect(c.destroy).not.toHaveBeenCalled();
-        suena.mockReturnValue(false);
+        ocupado.sonidos = false;
         jest.advanceTimersByTime(10 * 1000);
         expect(c.destroy).toHaveBeenCalled();
     });
 
     test("/conectar no sustituye la presencia mientras suena un sonido", async () => {
         const c = conexion();
-        jest.spyOn(sonidos, "sonando").mockReturnValue(true);
+        ocupado.sonidos = true;
         const r = await presencia.conectar(canal("c2"), { deps: deps(c) });
         expect(r.ok).toBe(false);
         expect(r.motivo).toMatch(/suena un sonido/);
         expect(presencia.actual(G)).toBeNull();
     });
+});
+
+test("las duraciones que se pueden elegir son 15, 30, 60 y 120 minutos", () => {
+    expect(presencia.DURACIONES).toEqual([15, 30, 60, 120]);
+});
+
+test("con minutos: 120 se queda dos horas", async () => {
+    jest.useFakeTimers();
+    const c = conexion();
+    const r = await presencia.conectar(canal("c1"), { minutos: 120, deps: deps(c) });
+    expect(r.expira - Date.now()).toBeGreaterThan(119 * 60 * 1000);
+    jest.advanceTimersByTime(119 * 60 * 1000);
+    expect(c.destroy).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(2 * 60 * 1000);
+    expect(c.destroy).toHaveBeenCalled();
+});
+
+test("renovar cuenta el tiempo desde ahora, sin sumar al que quedaba", async () => {
+    jest.useFakeTimers();
+    const c = conexion();
+    await presencia.conectar(canal("c1"), { minutos: 15, deps: deps(c) });
+    jest.advanceTimersByTime(10 * 60 * 1000);
+    const r = presencia.renovar(G, 60);
+    expect(r.ok).toBe(true);
+    expect(r.expira - Date.now()).toBeGreaterThan(59 * 60 * 1000);
+    expect(r.expira - Date.now()).toBeLessThanOrEqual(60 * 60 * 1000);
+    jest.advanceTimersByTime(20 * 60 * 1000); // ya han pasado los 15 minutos originales
+    expect(c.destroy).not.toHaveBeenCalled();
+});
+
+test("renovar sin presencia lo dice", () => {
+    expect(presencia.renovar(G, 60).ok).toBe(false);
+});
+
+test("esDePresencia solo reconoce la conexión que puso /conectar", async () => {
+    const c = conexion();
+    await presencia.conectar(canal("c1"), { deps: deps(c) });
+    expect(presencia.esDePresencia(G, c)).toBe(true);
+    expect(presencia.esDePresencia(G, conexion())).toBe(false);
+    expect(presencia.esDePresencia(G, null)).toBe(false);
+});
+
+test("al caducar espera mientras un /tts está hablando", async () => {
+    jest.useFakeTimers();
+    ocupado.tts = true;
+    const c = conexion();
+    await presencia.conectar(canal("c1"), { minutos: 15, deps: deps(c) });
+    jest.advanceTimersByTime(15 * 60 * 1000);
+    expect(c.destroy).not.toHaveBeenCalled();
+    ocupado.tts = false;
+    jest.advanceTimersByTime(10 * 1000 + 1);
+    expect(c.destroy).toHaveBeenCalled();
 });

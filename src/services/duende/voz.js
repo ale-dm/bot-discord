@@ -11,6 +11,7 @@ const {
 const { createLogger } = require("../../core/logger");
 const { getGeminiTtsAudioStream, GEMINI_TTS_VOICE } = require("../geminiTts");
 const perfiles = require("../../systems/duende/perfiles");
+const presencia = require("../../systems/presencia");
 
 const voiceLog = createLogger("Duende").child("Voz");
 
@@ -132,12 +133,27 @@ async function audioDeRespuesta(respuesta, guild, voz = DUENDE_TTS_VOICE) {
 }
 
 /**
+ * Si /conectar me ha puesto en un canal: su conexión, si es este canal; null si es otro (no me muevo). `undefined` si no
+ * hay presencia y hay que seguir con la conexión normal.
+ */
+function conexionDePresencia(guild, voiceChannel) {
+    const presente = presencia.actual(guild.id);
+    if (!presente) return undefined;
+    if (presente.canalId === voiceChannel.id) return presente.conexion;
+    voiceLog.info(`Hay una presencia de /conectar en ${presente.canalNombre}; no me muevo a ${voiceChannel.name}`);
+    return null;
+}
+
+/**
  * Conexión de voz en el canal, reutilizando la que siga viva para no meter un handshake de voz (hasta 20s) entre cada
  * turno de la conversación. Null si no se pudo unir.
  */
 async function conectarAlCanal(guild, voiceChannel) {
     let connection = null;
     try {
+        // Si /conectar me ha puesto en un canal, uso esa conexión o no me muevo (#499).
+        const dePresencia = conexionDePresencia(guild, voiceChannel);
+        if (dePresencia !== undefined) return dePresencia;
         const existing = getVoiceConnection(guild.id);
         const existingIsUsable =
             existing &&
@@ -198,6 +214,8 @@ function programarSalidaPorInactividad(connection, guild) {
     if (prev) clearTimeout(prev);
     const timer = setTimeout(() => {
         voiceIdleTimers.delete(guild.id);
+        // La conexión de /conectar no es mía: su presencia decide cuándo sale (#499).
+        if (presencia.esDePresencia(guild.id, connection)) return;
         try {
             connection.destroy();
             voiceLog.info(`Salgo del canal de voz de ${guild.name} tras ${Math.round(VOICE_IDLE_DISCONNECT_MS / 1000)} s sin hablar`);
