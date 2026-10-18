@@ -7,8 +7,8 @@ Dos personas con acceso de escritura al repo. Para no pisarnos el trabajo ni rom
 - **`main`** — lo que corre en producción (el NAS). Solo llega aquí por PR desde `developer`, nunca con push directo.
 - **`developer`** — rama de integración. Aquí se juntan las features antes de pasar a `main`. Tampoco se le hace push
   directo: cada cosa nueva entra por PR desde su propia rama.
-- **`feature/lo-que-sea`** (o `fix/lo-que-sea`, o `refactor/lo-que-sea`) — una rama por cada cosa que se esté haciendo,
-  creada desde `developer`. Cuando esté lista, PR contra `developer`.
+- **`feature/lo-que-sea`** (o `fix/lo-que-sea`, `refactor/lo-que-sea`, `docs/lo-que-sea`) — una rama por cada cosa que
+  se esté haciendo, creada desde `developer`. Cuando esté lista, PR contra `developer`.
 
 De vez en cuando (cuando `developer` lleve un rato estable, no cada commit) se abre un PR de `developer` → `main`.
 
@@ -24,8 +24,9 @@ capas»), pueden compartir rama y PR: entonces el nombre los cubre todos (`refac
 
 ## Flujo del día a día
 
-**Nombre de la rama**: `feature/<nº issue>-algo-corto`, `fix/<nº issue>-algo-corto` o `refactor/<nº issue>-algo-corto`,
-p. ej. `feature/12-liga-pronosticos` para el issue #12. Así se ve de un vistazo a qué idea corresponde sin abrir GitHub.
+**Nombre de la rama**: `feature/<nº issue>-algo-corto`, `fix/<nº issue>-algo-corto` o `refactor/<nº issue>-algo-corto`
+(p. ej. `feature/12-liga-pronosticos` para el issue #12). Los cambios solo de documentación, que no cierran ninguna
+idea, pueden ir como `docs/algo-corto`. Así se ve de un vistazo a qué idea corresponde sin abrir GitHub.
 
 **Antes de empezar algo nuevo** — asígnate el issue en GitHub (o muévelo a "En progreso" en el Project board) para
 que el otro no empiece lo mismo, y parte siempre de `developer` al día:
