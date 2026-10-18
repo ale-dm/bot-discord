@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (release: la fase 2 de refactor a `main`)
+
+- **🚀 Release a `main`**: la fase 2 de refactor (#472/#474/#475) entra con merge commit (#507). Con esto queda **terminado el plan de las 185 issues**: no quedan issues abiertas.
+- **📄 Siguientes pasos al día**: `docs/SIGUIENTES_PASOS.md` refleja el plan terminado (2857 tests en 225 suites) y deja como primer paso el despliegue.
+- Sin migraciones.
+
 ## 2026-10-18 (refactor: los juegos y las herramientas separan sus capas, #474/#475)
 
 - **🧾 La quiniela separa reglas, caso de uso y manejador** (#474): las consultas a la base de datos salen de los manejadores (`quiniela.js`, `quiniela/botones.js`, `quiniela/vista.js`) a un nuevo `juegos/apuestas/quiniela/servicio.js` (la quiniela abierta, si ya apostaste y los datos de la vista con partidos y bote). `avisoDeApuesta` recibe sus consultas (efectivo, apuesta repetida y tope diario) como dependencias, así que `tests/quinielaReglas.test.js` prueba las reglas **sin base de datos ni Discord**. Las estadísticas del split de blackjack pasan a `juegos/casino/blackjackServicio.js`.
