@@ -450,8 +450,13 @@ Revisión del 2026-10-10, completada el 2026-10-18. Fuentes: [página de retirad
 
 **Dependencias**
 - [x] Sin vulnerabilidades en producción (`npm audit --omit=dev`). Las 32 que salen en `npm audit` son de desarrollo.
-- [x] Actualizado dentro del rango ya fijado: `@google/genai` (2.24 → 2.30, el SDK de Gemini) y `libsodium-wrappers`
-  (0.8.2 → 0.8.4, cifrado de la voz). `npm run check` en verde (2858 tests). Probar la voz y el Duende en Discord tras desplegar.
+- [x] Actualizado dentro del rango ya fijado: `@google/genai` (2.24 → 2.30), `libsodium-wrappers` (0.8.2 → 0.8.4),
+  `dotenv` (16.4.5 → 16.6.1), `globals` (17.12 → 17.13), `jest` (30.1.3 → 30.5.2) y `prettier` (3.9.9 → 3.9.10).
+  `npm run check` en verde (2858 tests). Probar la voz y el Duende en Discord tras desplegar.
+- [!] `better-sqlite3` **no** se sube de 12.2.0: las 12.x nuevas (probado 12.11.1) cambian el manejo de claves foráneas
+  al `DROP TABLE` y hacen fallar la migración 007 (`tests/migrations.test.js` → `FOREIGN KEY constraint failed`). Como no
+  se puede editar una migración ya aplicada, se queda en 12.2.0; revisar al decidir el salto a la 13 (quizá arreglando el
+  orden de borrado o desactivando las FK en el motor de migraciones).
 - [ ] Decidir los saltos de versión mayor: `better-sqlite3` 13 (empaquetado N-API), `dotenv` 18, `eslint` 10 y `opusscript` 0.1.
   Ninguno es urgente.
 - [ ] `discord.js` 14 sigue; la 15 está en prerelease según [su guía](https://discordjs.guide/v15). Cambios que afectan
