@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (deps: dentro de rango, y better-sqlite3 se queda)
+
+- **📦 Dependencias** actualizadas dentro de rango: `dotenv` (16.4.5 → 16.6.1), `globals` (17.12 → 17.13), `jest`
+  (30.1.3 → 30.5.2) y `prettier` (3.9.9 → 3.9.10).
+- **🚫 `better-sqlite3` se queda en 12.2.0**: las 12.x nuevas (probado 12.11.1) cambian el manejo de claves foráneas al
+  `DROP TABLE` y rompen la migración 007 (`FOREIGN KEY constraint failed`). No se puede editar una migración ya aplicada,
+  así que no se sube; queda anotado en [TAREAS](planificacion/TAREAS.md) (T-05) para cuando se decida la 13.
+- `npm run check` en verde (2858 tests). Sin migraciones.
+
 ## 2026-10-18 (T-05: modelos de Gemini retirados y dependencias)
 
 - **🖼️ `/imagen` estaba roto**: el modelo por defecto `gemini-2.0-flash-exp-image-generation` se apagó el 14 de
