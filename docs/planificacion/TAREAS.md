@@ -2,8 +2,9 @@
 
 Cosas que hay que **hacer a mano** (no son cambios de código): desplegar y comprobar en Discord. Los errores pendientes están en [ERRORES.md](ERRORES.md), la deuda técnica en [DEUDA_TECNICA.md](DEUDA_TECNICA.md) y
 las ideas en [FEATURES.md](FEATURES.md).
-La reorganización de paneles, con los errores E-05 a E-15, va por partes según el
-[plan de ejecución](diseno/reorganizacion-paneles.md#4-plan-de-ejecución).
+
+La reorganización de paneles y las fases 1 a 12 del [plan de issues](PLAN_ISSUES.md) ya están hechas y probadas;
+lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02, T-04 y T-05).
 
 | ID | Tarea | Prioridad |
 |---|---|---|
@@ -225,92 +226,6 @@ apuestas...). Solo se ha probado con tests y arranques sin conexión a Discord. 
 - [x] Como admin, eliges a otra persona con el selector y ves o cambias sus recuerdos.
 - [x] 🎭 Personalidad: como admin, eliges la del canal y se nota en la siguiente respuesta. Añadir y quitar funcionan.
 - [x] Los mensajes de texto al Duende y `/escuchar` siguen respondiendo como antes.
-
-**🛡️ Pase de batalla (#36)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 036_pase_batalla`.
-- [ ] `/pase` (efímero) muestra temporada, nivel, XP, próxima recompensa, pendientes y las 3 misiones del día.
-- [ ] Escribir, estar en voz, jugar al casino, operar en cripto, apostar y comprar en la tienda suben la XP del pase.
-- [ ] 🎁 Reclamar paga en monedas los niveles alcanzados y no cobrados, una sola vez.
-- [ ] 📜 Niveles y 🧩 Misiones y 🏆 Top se ven bien (sin mezclar temporadas).
-
-**🔴 Apuestas en directo (#12)**
-- [ ] Sin `ODDS_DIRECTO`: un partido empezado no admite apuestas (aviso de "apuestas cerradas").
-- [ ] Con `ODDS_DIRECTO=1`: un partido en juego (menos de 2 horas) sale en la lista y admite apuestas con la cuota actual.
-- [ ] Las cuotas de un partido en juego se refrescan (cada 10 min) y en Odds API se ve el gasto de créditos.
-- [ ] Después de 2 horas del inicio, ya no admite apuestas.
-
-**🎙️ Tertulia en /conversación (#16)**
-- [ ] `/conversación tertulia:sí` en un canal con dos o tres personas: el Duende entiende a quien habla y contesta al grupo.
-- [ ] Dos personas hablando a la vez no se cortan entre sí (el audio se oye mezclado, no a trozos).
-- [ ] Sin `tertulia`, `/conversación` se comporta como antes (por turnos).
-- [ ] `tertulia` con `con` se rechaza con el aviso.
-- [ ] Probado con voz real: ver si Gemini Live contesta bien con voces solapadas (si no, dejar la opción apagada y decirlo).
-
-**🧠 Recuerdos automáticos del Duende (#15)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 035_recuerdos_auto`.
-- [ ] Tras 10 mensajes largos de una persona en el canal del Duende, a veces llega un DM a los admins con el recuerdo propuesto.
-- [ ] ✅ Guardar lo añade a `/duende` → 🧠 Recuerdos de esa persona; ❌ Descartar no guarda nada.
-- [ ] Quien no es admin no puede decidir; un recuerdo ya decidido no se puede volver a decidir.
-
-**🌍 Trofeos por país (#19)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 034_paises_peliculas`.
-- [ ] Con `TMDB_API_KEY`, tras una sincronización, las películas con id de TMDB tienen países (`plex_fichas.paises`).
-- [ ] Con 5 películas de un mismo país vistas, sale "Viajero de …" (🟢); con 10, el de experto (🟡).
-- [ ] Sin `TMDB_API_KEY`, no pasa nada y no hay trofeos por país.
-
-**🎯 Recomendaciones personales (#22)**
-- [ ] `/plex` → 🎯 Para ti (con la cuenta de Plex vinculada y historial): salen hasta 5 títulos, con "Porque viste …".
-- [ ] Lo que ya has visto o ya está en Plex no sale.
-- [ ] 📥 pide el título en Seerr; un usuario sin perfil de Seerr vinculado recibe el aviso (y no se pide nada).
-- [ ] Sin cuenta vinculada o sin historial, lo dice.
-
-**🔊 /sonidos, 🔌 /conectar y 🍿 /plex**
-- [ ] `/paneladmin` → 🔊 Sonidos → ➕ Subir sonido: se elige un mp3 y un nombre; sale el aviso y aparece en `/sonidos`.
-- [ ] `/paneladmin` → 🔊 Sonidos → 🗑️ Borrar: el menú quita el sonido.
-- [ ] `/conectar canal:<voz>`: el bot entra y lo confirma con la hora de salida (unos 30 minutos).
-- [ ] Con el bot conectado por `/conectar`, pulsar un sonido en `/sonidos` suena en ese canal sin que el bot entre y salga.
-- [ ] Sin `/conectar`, pulsar un sonido estando en voz entra al canal, lo toca y se sale.
-- [ ] A los 30 minutos el bot se sale solo; `/conectar` sin canal con el bot conectado lo echa.
-- [ ] `/plex` tiene los cuatro botones; el formulario de cine crea la sesión.
-
-**🎞️ Plex Wrapped mensual (#23), por DM**
-- [ ] Al arrancar: `[Migraciones] Aplicada 038_plex_wrapped_enviados` y `[Migraciones] Aplicada 039_decadas_nombre`.
-- [ ] El día 1 después de las 10:00 (Madrid), cada persona vinculada con actividad recibe por DM su propio resumen (sus horas, sus series). Nada sale en ningún canal.
-- [ ] El resumen no menciona a otras personas. Quien no ha visto nada no recibe DM.
-- [ ] No se repite el mismo mes aunque el bot se reinicie.
-- [ ] `/plex` → 🎞️ Wrapped enseña solo tu resumen, y solo a ti.
-
-**🎬 Sesión de cine (#24)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 033_sesion_cine`.
-- [ ] `/plex` → 🎬 Sesión de cine con "Dune" y una hora dentro de 30 min: sale el mensaje con tu nombre como apuntado y los tres botones.
-- [ ] 🙋 Me apunto y 🚪 Me salgo actualizan la lista en el mismo mensaje.
-- [ ] 🛑 Cancelar: lo hace quien convoca; otra persona recibe el aviso de que no puede (y un admin sí puede).
-- [ ] 10 minutos antes: aparece el recordatorio en el canal, mencionando a los apuntados; no se repite.
-- [ ] Hora mal escrita (p. ej. `25:00`): sale el aviso y no se crea nada.
-
-**🧩 Combinadas (#1)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 032_combinadas`.
-- [ ] ⚽ Apuestas → 🧩 Combinada: sale el boleto (privado). Sumar un partido desde su menú "🧩 Sumar a mi combinada" lo añade.
-- [ ] Con un solo partido, "💰 Apostar combinada" está apagado. Con dos, cobra el importe y aparece en "Tus combinadas en juego".
-- [ ] Ganar: con todas las patas acertadas, se paga la cuota total al liquidarse el último partido.
-- [ ] Perder: una pata fallida pierde el boleto, aunque las demás acierten.
-- [ ] Caducar: si un partido no tiene resultado, la combinada se devuelve entera.
-- [ ] Un partido ya empezado o con la cuota cambiada no se puede apostar (sale el aviso para volver a sumarlo).
-
-**⚽ Goles y hándicap en apuestas (#9, #10)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 031_mercados_goles_hcap`.
-- [ ] ⚽ Apuestas → un partido con cuotas: aparecen ⬆️ Más de 2,5, ⬇️ Menos de 2,5, 🏠 local −1,5 y ✈️ visitante +1,5 (los que la API dé).
-- [ ] Apostar a más de 2,5 y que el partido acabe con 3 goles: cobra la cuota; con 2 goles, pierde.
-- [ ] Apostar a 🏠 −1,5 y que gane por 2: cobra; por 1: pierde. Apostar a ✈️ +1,5: gana si pierde por 1 o no pierde.
-- [ ] 🧾 Mis jugadas enseña el texto correcto ("Más de 2,5 goles", "Barça −1,5") y el máximo a cobrar.
-- [ ] Con `ODDS_MERCADOS=h2h`, las cuotas vuelven a pedirse solo con el 1X2 (y los botones nuevos no salen).
-
-**🏅 Liga de pronósticos (F-AP-12, #8)**
-- [ ] Al arrancar: `[Migraciones] Aplicada 030_liga_pronosticos`.
-- [ ] ⚽ Apuestas → 🏅 Liga: sale la clasificación de la temporada con puntos y quinielas, tu posición y "Temporadas anteriores".
-- [ ] Tras una quiniela cerrada, sus aciertos suman en la liga; una caducada no suma.
-- [ ] Empate a puntos y quinielas: va primero quien tiene el id menor (criterio fijo).
-- [ ] El 1 de julio desde las 10:00: se publica la clasificación final en el canal de la clasificación y se pagan 5.000 / 2.500 / 1.000 al efectivo (una sola vez).
 
 **🗂️ /cripto con pestañas (F-EC-12e, #121)**
 - [x] `/cripto` abre 📈 Mercado con la gráfica; los botones 24 h / 7 días / 30 días / Todo cambian el rango.

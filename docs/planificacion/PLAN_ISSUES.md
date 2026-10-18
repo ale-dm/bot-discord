@@ -1,4 +1,4 @@
-# Plan de las issues abiertas
+# Plan de las issues (terminado)
 
 Estado a 2026-10-18: **plan terminado, 0 issues abiertas**. Las 185 issues (bugs, rendimiento, features, verificaciones
 de modales y los tres refactors de la fase 2) están hechas, probadas en Discord y en `main`; el detalle, en el
@@ -9,8 +9,8 @@ de modales y los tres refactors de la fase 2) están hechas, probadas en Discord
 | Refactor (arquitectura limpia) | 3 | #472, #474, #475 (cerradas) |
 | Bugs, rendimiento, features y modales | 182 | cerradas (ver [CHANGELOG](../CHANGELOG.md)) |
 
-Este documento es el orden de trabajo. Cada issue aparece **una sola vez**, en una fase. Si cambia algo, actualizar aquí y
-en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md).
+Este documento recoge el orden en que se trabajó. Cada issue aparece **una sola vez**, en una fase. Se conserva como
+registro; lo que falte, en [SIGUIENTES_PASOS](../SIGUIENTES_PASOS.md) y en las issues nuevas con `feature-idea`.
 
 ## Principios
 

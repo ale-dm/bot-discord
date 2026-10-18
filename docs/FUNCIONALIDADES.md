@@ -1,7 +1,7 @@
 # El Duende — Qué hace el bot
 
 Documentación funcional de todo lo que hace El Duende: comandos, sistemas automáticos,
-configuración y datos. Refleja el código a fecha 2026-10-10.
+configuración y datos. Refleja el código a fecha 2026-10-18.
 
 > **Leyenda:** `*` = opción obligatoria · 🔒 = solo administradores · ⏱️ = tarea automática
 
@@ -34,14 +34,15 @@ El Duende es un bot de Discord para un grupo de amigos (un único servidor). Com
 - **Un personaje con IA** (Gemini) que participa en el chat, con memoria de la gente, personalidades,
   herramientas que consultan datos reales del bot y respuestas por voz.
 - **Progresión**: XP por mensajes y voz, niveles, rachas diarias, rangos con roles y logros.
-- **Economía virtual**: banco, tienda de objetos, casino, apuestas de fútbol reales, retos entre jugadores y criptomonedas
-  (una propia, $TTCL, y reales con precio de CoinGecko).
+- **Economía virtual**: banco, tienda de objetos, casino, apuestas de fútbol reales, retos entre jugadores y una
+  criptomoneda propia ($TTCL) con mercado de pool de liquidez.
 - **Integración con Plex** (vía Tautulli) y **Seerr** para consultar y pedir películas/series.
 - **Panel de administración** para configurarlo todo desde Discord.
 
-Casi todo se hace desde **cinco paneles** con pestañas y botones, enlazados entre sí: `/perfil` (perfil, economía,
+Casi todo se hace desde **ocho paneles** con pestañas y botones, enlazados entre sí: `/perfil` (perfil, economía,
 juegos, logros y rankings), `/juegos` (casino, apuestas, retos, mis jugadas y stats), `/tienda` (catálogo, inventario y
-compras), `/cripto` y, para admins, `/paneladmin`. `/ayuda` explica cada parte y tiene botones para abrirlas.
+compras), `/cripto`, `/duende` (hablar, recuerdos y personalidad), `/plex` (sesión de cine, recomendaciones, Wrapped y
+perfil de Plex), `/sonidos` y, para admins, `/paneladmin`. `/ayuda` explica cada parte y tiene botones para abrirlas.
 
 **Público o privado:** de momento los paneles y las partidas son **públicos** (los ve todo el canal), pero solo quien
 los abrió puede pulsar sus botones. Se quedan en privado los avisos de error, `/paneladmin`, lo que el Duende recuerda
@@ -989,7 +990,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 
 | Comando | Qué hace |
 |---|---|
-| `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
+| `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto`, `/duende`, `/plex`, `/sonidos` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
 | `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
@@ -997,6 +998,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/recordar` | ⏰ `nuevo cuando texto` («18:30», «mañana 09:00», «en 45 min»; hoy o mañana, hasta 24 h; texto de hasta 200 caracteres) y `lista` (con botón de borrar). Hasta 10 pendientes; el DM llega a su hora y, con los DMs cerrados, se pierde |
 | `/cumpleaños` | 🎂 `fecha dia mes`, `ver` (los próximos 5) y `borrar`. El bot felicita en el canal elegido desde las 09:00 (Madrid); el 29 de febrero se celebra el 28 los años no bisiestos |
 | `/sugerencia` | 💡 Formulario → idea en el canal del buzón con su número y 👍/👎 (un voto, cambiable); hasta 3 al día por persona. Un admin la acepta o descarta (con motivo) en ⚙️ Config Global → 📣 Comunidad y el autor lo recibe por DM |
+| `/presentacion` | 💬 Una frase sobre ti (hasta 150 caracteres) que sale en 👤 Perfil de `/perfil` cuando otra persona lo abre. Se abre con formulario; enviarlo vacío la borra |
 | Bienvenida | 👋 Al entrar alguien (no bots), mensaje en el canal elegido con `{usuario}` y `{miembros}` + cómo empezar (`/perfil`, `/ayuda`). Canal y texto en 📣 Comunidad |
 | 🔔 Avisarme | Las respuestas de cooldown de `/trabajar` y `/robar` traen el botón: un DM cuando acaba (una sola vez; sobrevive a un reinicio) |
 
@@ -1217,6 +1219,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/perfil` | [Perfil](#6-perfil) |
 | `/ping` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/plex` | [Plex y Seerr](#11-plex-y-seerr) |
+| `/presentacion` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/robar` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/sonidos` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/sugerencia` | [Utilidades](#14-utilidades-y-comandos-varios) |
