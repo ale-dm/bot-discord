@@ -94,7 +94,7 @@ Es la fase que bloquea todo lo demás: sin ella, la rama de sonidos no se puede 
 | [#309](https://github.com/ale-dm/bot-discord/issues/309) | G5: importes rápidos | Hecho |
 | [#310](https://github.com/ale-dm/bot-discord/issues/310) | G6: ruleta en dos pasos y cine | Hecho |
 | [#303](https://github.com/ale-dm/bot-discord/issues/303) | Idea original de los modales | Cerrada |
-| [#282](https://github.com/ale-dm/bot-discord/issues/282) | Protección de ramas y Project board | Lo hace el dueño en GitHub |
+| [#282](https://github.com/ale-dm/bot-discord/issues/282) | Protección de ramas y Project board | Protección hecha; Project board pendiente |
 
 ### Medición
 

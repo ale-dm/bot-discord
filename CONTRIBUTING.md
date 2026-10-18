@@ -107,26 +107,21 @@ git push
 Cada PR contra `main` o `developer` corre `npm run check` (`.github/workflows/test.yml`): ESLint, `prettier --check` y
 `jest`. Un PR con el check `test` en rojo no se mergea (y, con la protección de ramas bien puesta, GitHub no deja).
 
-## Falta configurar en GitHub (ajustes del repo, no código)
+## Configuración de GitHub (ajustes del repo, no código)
 
-> Estado a día de hoy: **`main` no está protegida** (`gh api repos/ale-dm/bot-discord/branches/main/protection` da
-> *Branch not protected*), así que ahora mismo todo esto depende de la disciplina. Es lo primero a arreglar.
+**Hecho** (aplicado por API el 2026-10-18): `main` y `developer` están protegidas. Se comprueba con
+`gh api repos/ale-dm/bot-discord/branches/main/protection`:
 
-Para que las reglas de arriba se cumplan solas y no dependan de acordarnos:
+- **PR obligatorio** antes de mergear (bloquea el push directo, **también para admins**: `enforce_admins`).
+- **Check `test` obligatorio** (el de `npm run check`), con `strict`: la rama tiene que estar al día con su base.
+- **0 aprobaciones**, para no romper la excepción de Claude (auto-merge con el CI verde). Si algún día se quiere revisión
+  del otro, subir a 1 — pero entonces Claude ya no podrá auto-mergear (y `developer → main` seguiría siendo de una
+  persona).
+- Sin force-push ni borrado de ramas; las conversaciones de review hay que resolverlas antes de mergear.
 
-1. **Settings → Branches → Branch protection rules**: una regla para `main` y otra para `developer`.
-   - "Require a pull request before merging" (bloquea el push directo).
-   - "Require status checks to pass before merging" → marcar el check `test` (el de `npm run check`).
-   - "Require approvals" (1) para que el otro tenga que aprobar antes de mergear. **Decisión pendiente**: con esto
-     activo, la excepción de Claude (auto-merge sin revisión) se choca con la regla. Opciones: (a) no exigir
-     aprobaciones y confiar en el CI; (b) exigirlas y que Claude no pueda auto-mergear; (c) exigirlas y dar bypass a
-     Claude. Hay que elegir una y dejarla escrita aquí.
-2. Con eso activo, GitHub ya no deja hacer push directo a `main`/`developer` ni mergear un PR con el check en rojo,
-   ni para el admin del repo si se marca "Do not allow bypassing the above settings".
-3. **Project board** (pestaña *Projects* del repo → *New project* → plantilla *Board*): esto no se puede crear con la
-   API usada aquí, hay que darle una vez a mano. Columnas sugeridas: Por hacer / En progreso / Hecho. Luego
-   *Add item* → *Add from repository* → filtrar por `label:feature-idea` para meter de golpe los 39 issues migrados
-   de `FEATURES.md`.
+**Pendiente**: el **Project board** (pestaña *Projects* → *New project* → plantilla *Board*). No se puede crear con la
+API (`gh` de aquí no trae el comando `project`), hay que darle una vez a mano. Columnas sugeridas: Por hacer / En
+progreso / Hecho. Luego *Add item* → *Add from repository* → filtrar por `label:feature-idea`.
 
 ## Ideas de funcionalidad
 
