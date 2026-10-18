@@ -91,8 +91,10 @@ git push
 - Siempre por PR, aunque sea un cambio pequeño — así el otro ve qué ha cambiado y por qué, y los tests corren solos.
 - La plantilla de PR pide marcar que `npm run check` (lint + formato + tests) pasa, si se ha probado en Discord y si
   toca migración. Rellenarla de verdad, no por rellenar.
-- Si el PR cierra una idea, se cierra su [Issue](https://github.com/ale-dm/bot-discord/issues?q=is%3Aopen+label%3Afeature-idea)
-  (poner "Closes #N" en la descripción del PR) y se apunta en [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
+- Si el PR cierra una idea, pon "Closes #N" en la descripción del PR y apúntalo en [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
+  **Ojo**: GitHub solo cierra el issue automáticamente al mergear en la rama por defecto (`main`), y nuestros PRs van a
+  `developer`; así que, al mergear el PR a `developer`, **cierra el issue a mano** (comentario con el enlace al PR). El
+  `Closes #N` se deja igual por si algún día el PR apunta a `main`.
 - Revisar el PR del otro antes de aprobar, aunque sea rápido — para eso somos dos.
 - **Excepción**: los PRs que abre Claude Code los mergea él mismo (squash) **en cuanto el check `test` del CI está
   verde**, sin esperar revisión — así lo pidió `ale-dm`. El CI es innegociable incluso aquí. Y la excepción vale solo
