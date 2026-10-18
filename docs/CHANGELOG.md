@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (docs: repaso de toda la documentación)
+
+- **📚 Documentación al día**: repaso de los documentos vivos tras terminar el plan. README (estructura con `app/`, `discord/`, `repositorios/`; 29 comandos), FUNCIONALIDADES (ocho paneles, solo $TTCL, `/presentacion`), TAREAS (fuera las secciones de features ya cubiertas por las fases 1-12), PLAN_ISSUES (registro), índice de docs, CICLOS, MODALES y técnico.
+- Sin cambios de código ni migraciones.
+
 ## 2026-10-18 (flujo: ramas de GitHub protegidas)
 
 - **🔒 Protección de ramas** (#282): `main` y `developer` exigen PR y el check `test` (`npm run check`), con `enforce_admins` (ni el dueño hace push directo) y **0 aprobaciones** para no romper el auto-merge de Claude con el CI verde. Aplicado por API; queda pendiente el Project board (se hace a mano en GitHub).
