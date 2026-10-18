@@ -79,21 +79,24 @@ describe("síntesis", () => {
         expect(llamadas.map((l) => l.modelo)).toEqual(["gemini-3.8-flash-lite-tts"]);
     });
 
-    test("un modelo que no existe (404) no se reintenta; el 2.5 va por generateContent y devuelve PCM", async () => {
-        const pcm = pcmTono();
+    test("un modelo que no existe (404) no se reintenta y pasa al siguiente", async () => {
+        const wav = tts.pcmToWav(pcmTono());
         simular(
             respuesta(404, { error: { message: "models/gemini-3.8-flash-tts is not found" } }),
-            respuesta(404, { error: { message: "not found" } }),
-            respuesta(200, generateContentConAudio(pcm)),
+            respuesta(200, interaccionConAudio(wav)),
         );
         const r = await tts.synthesizeSpeech("Hola", KEY);
-        expect(llamadas.map((l) => l.modelo)).toEqual([
-            "gemini-3.8-flash-tts",
-            "gemini-3.8-flash-lite-tts",
-            "gemini-2.5-flash-preview-tts",
-        ]);
-        expect(llamadas[2].url).toMatch(/models\/gemini-2\.5-flash-preview-tts:generateContent$/);
-        expect(llamadas[2].body.generationConfig).toMatchObject({ responseModalities: ["AUDIO"] });
+        expect(llamadas.map((l) => l.modelo)).toEqual(["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"]);
+        expect(r.equals(wav)).toBe(true);
+    });
+
+    test("un modelo 2.x configurado va por generateContent y devuelve PCM", async () => {
+        const pcm = pcmTono();
+        simular(respuesta(200, generateContentConAudio(pcm)));
+        const r = await tts.synthesizeSpeech("Hola", { ...KEY, model: "gemini-2.5-flash-preview-tts" });
+        expect(llamadas.map((l) => l.modelo)).toEqual(["gemini-2.5-flash-preview-tts"]);
+        expect(llamadas[0].url).toMatch(/models\/gemini-2\.5-flash-preview-tts:generateContent$/);
+        expect(llamadas[0].body.generationConfig).toMatchObject({ responseModalities: ["AUDIO"] });
         expect(r.readUInt32LE(24)).toBe(24000);
         expect(r.length).toBe(44 + pcm.length);
     });
@@ -116,11 +119,11 @@ describe("síntesis", () => {
     });
 
     test("si ninguno da audio, el error dice qué le pasó a cada uno", async () => {
-        simular(...Array.from({ length: 6 }, () => respuesta(200, sinAudio)));
+        simular(...Array.from({ length: 4 }, () => respuesta(200, sinAudio)));
         await expect(tts.synthesizeSpeech("Hola", KEY)).rejects.toThrow(
-            /no generó audio \(gemini-3\.8-flash-tts: respuesta sin audio \(fin=OTHER.*gemini-2\.5-flash-preview-tts: respuesta sin audio/,
+            /no generó audio \(gemini-3\.8-flash-tts: respuesta sin audio \(fin=OTHER.*gemini-3\.8-flash-lite-tts: respuesta sin audio/,
         );
-        expect(llamadas).toHaveLength(6);
+        expect(llamadas).toHaveLength(4);
     });
 });
 

@@ -2,6 +2,20 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (T-05: modelos de Gemini retirados y dependencias)
+
+- **🖼️ `/imagen` estaba roto**: el modelo por defecto `gemini-2.0-flash-exp-image-generation` se apagó el 14 de
+  noviembre de 2025. Cambiado a `gemini-nano-banana-2.1` en [imagenGemini.js](../src/services/duende/imagenGemini.js).
+- **🔊 TTS**: quitado `gemini-2.5-flash-preview-tts` de `GEMINI_TTS_FALLBACK_MODELS` (se retira el 17 de noviembre de
+  2026); quedan `gemini-3.8-flash-tts` (por defecto) y `gemini-3.8-flash-lite-tts`
+  ([geminiTts.js](../src/services/geminiTts.js) y `.env.example`).
+- **📦 Dependencias**: actualizadas dentro de rango `@google/genai` (2.24 → 2.30) y `libsodium-wrappers` (0.8.2 → 0.8.4).
+  Sin vulnerabilidades en producción; las de `npm audit` son de desarrollo.
+- **🧪 Tests**: `tests/geminiTts.test.js` al día (la prueba del modelo 2.x se separó y usa el modelo configurado); 2858.
+- `gemini-2.5-flash`/`gemini-2.5-pro` siguen sirviéndose (acceso limitado a quien ya los usaba): se dejan y se vigilan.
+- `docs/planificacion/TAREAS.md` (T-05): la revisión queda cerrada salvo los saltos de versión mayor y `discord.js` 15.
+- Sin migraciones.
+
 ## 2026-10-18 (fix: la clave de la Eurocopa en la Odds API)
 
 - **⚽ Clave de la Eurocopa corregida** en `DEPORTES` ([oddsApi.js](../src/services/oddsApi.js)): `soccer_uefa_euro` no

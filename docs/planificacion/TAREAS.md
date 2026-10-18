@@ -432,23 +432,26 @@ resumen (#285). Los tests cubren la lógica, no lo que se ve en Discord. Convien
 
 ## T-05 Revisar modelos de Gemini y dependencias
 
-Revisión del 2026-10-10. Fuentes: [página de retiradas de Gemini](https://ai.google.dev/gemini-api/docs/deprecations)
-(última actualización de la página: 2026-10-09), `npm outdated` y `npm audit --omit=dev`.
+Revisión del 2026-10-10, completada el 2026-10-18. Fuentes: [página de retiradas de Gemini](https://ai.google.dev/gemini-api/docs/deprecations),
+[página de modelos](https://ai.google.dev/gemini-api/docs/models), `npm outdated` y `npm audit --omit=dev`.
 
 **Modelos**
-- [ ] `gemini-2.5-flash` y `gemini-2.5-pro` (valores por defecto del Duende y sus respaldos): sin fecha de retirada en la
-  página oficial. Algunas fuentes de terceros dan el 16 de octubre de 2026; no aparece en Google. Vigilar.
-- [ ] `gemini-2.5-flash-preview-tts`: se retira el 17 de noviembre de 2026. No es el valor por defecto (`gemini-3.8-flash-tts`),
-  pero sigue en `GEMINI_TTS_FALLBACK_MODELS`. Quitarlo de los respaldos antes de esa fecha.
-- [ ] `/imagen`: el valor por defecto, `gemini-2.0-flash-exp-image-generation`, no aparece en la página de retiradas. Probar
-  `/imagen` en Discord. Si falla, fijar `IMAGE_GEN_MODEL` con `gemini-nano-banana-2.1` o `gemini-3.1-flash-lite-image`.
+- [ ] `gemini-2.5-flash` y `gemini-2.5-pro` (valores por defecto del Duende y sus respaldos): **no están retirados** y se
+  sirven «until further notice», pero Google limita el acceso a quien ya los usaba; para proyectos nuevos recomienda
+  `gemini-3.5-flash-lite` o `gemini-3.8-flash`. No es urgente; vigilar y plantear el salto a 3.8 si aparece aviso.
+- [x] `gemini-2.5-flash-preview-tts`: se retira el 17 de noviembre de 2026. Quitado de `GEMINI_TTS_FALLBACK_MODELS`
+  (`src/services/geminiTts.js` y `.env.example`); quedan `gemini-3.8-flash-tts` (por defecto) y `gemini-3.8-flash-lite-tts`.
+- [x] `/imagen`: el valor por defecto, `gemini-2.0-flash-exp-image-generation`, **se apagó el 14 de noviembre de 2025**, así
+  que `/imagen` estaba roto. Cambiado a `gemini-nano-banana-2.1` (el sustituto que recomienda Google) en
+  `src/services/duende/imagenGemini.js`. Falta probar `/imagen` en Discord tras desplegar; si fallara, fijar
+  `IMAGE_GEN_MODEL` con `gemini-3.1-flash-lite-image`.
 - [x] Voz en directo: `gemini-3.8-live`, el modelo que usa el código. El 2.5 native-audio se retira el 17 de noviembre de 2026
   y el código no lo usa.
 
 **Dependencias**
-- [x] Sin vulnerabilidades en producción (`npm audit`).
-- [ ] Actualizar dentro del rango ya fijado: `@google/genai` (2.24 → 2.28, el SDK de Gemini) y `libsodium-wrappers`
-  (0.8.2 → 0.8.4, cifrado de la voz). Probar la voz y el Duende después.
+- [x] Sin vulnerabilidades en producción (`npm audit --omit=dev`). Las 32 que salen en `npm audit` son de desarrollo.
+- [x] Actualizado dentro del rango ya fijado: `@google/genai` (2.24 → 2.30, el SDK de Gemini) y `libsodium-wrappers`
+  (0.8.2 → 0.8.4, cifrado de la voz). `npm run check` en verde (2858 tests). Probar la voz y el Duende en Discord tras desplegar.
 - [ ] Decidir los saltos de versión mayor: `better-sqlite3` 13 (empaquetado N-API), `dotenv` 18, `eslint` 10 y `opusscript` 0.1.
   Ninguno es urgente.
 - [ ] `discord.js` 14 sigue; la 15 está en prerelease según [su guía](https://discordjs.guide/v15). Cambios que afectan
