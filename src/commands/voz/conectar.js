@@ -1,5 +1,6 @@
-// 🔌 /conectar: el bot entra a un canal de voz y se queda 30 minutos, para que /sonidos suene sin entrar y salir cada vez.
-// Sin canal: si ya está conectado, se sale; si no, entra al canal de quien lo pide. Ver systems/presencia.js.
+// 🔌 /conectar: el bot entra a un canal de voz y se queda el tiempo que elijas (30 minutos por defecto), para que /sonidos
+// suene sin entrar y salir cada vez. Sin canal: si ya está conectado, se sale (o, con tiempo, se renueva); si no, entra al
+// canal de quien lo pide. Ver systems/presencia.js.
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require("discord.js");
 const presencia = require("../../systems/presencia");
 const sonidos = require("../../systems/sonidos");
@@ -9,6 +10,14 @@ const { efimero } = require("../../discord/respuestas");
 const { createLogger } = require("../../core/logger");
 
 const log = createLogger("Conectar");
+
+// Cómo se nombra una duración en minutos: "15 minutos", "1 hora", "2 horas".
+function etiquetaDuracion(minutos) {
+    if (minutos < 60) return `${minutos} minutos`;
+    return minutos === 60 ? "1 hora" : `${minutos / 60} horas`;
+}
+
+const OPCIONES_DURACION = presencia.DURACIONES.map((m) => ({ name: etiquetaDuracion(m), value: m }));
 
 /**
  * El sonido de entrada (#301): suena una vez, justo al entrar. Si no existe, no lo puede usar quien lo pide o no se puede tocar,
@@ -35,12 +44,19 @@ function sonarAlEntrar(interaction) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("conectar")
-        .setDescription("🔌 Entra a un canal de voz 30 minutos, para que /sonidos suene sin entrar y salir")
+        .setDescription("🔌 Entra a un canal de voz el tiempo que elijas, para que /sonidos suene sin entrar y salir")
         .addChannelOption((o) =>
             o
                 .setName("canal")
                 .setDescription("El canal de voz (por defecto, el tuyo; sin canal y ya conectado, me salgo)")
                 .addChannelTypes(ChannelType.GuildVoice)
+                .setRequired(false),
+        )
+        .addIntegerOption((o) =>
+            o
+                .setName("minutos")
+                .setDescription("Cuánto tiempo me quedo (por defecto, 30 minutos). Con el bot ya conectado, renueva el tiempo")
+                .addChoices(...OPCIONES_DURACION)
                 .setRequired(false),
         )
         .addStringOption((o) =>
@@ -56,20 +72,27 @@ module.exports = {
 
     async run(client, interaction) {
         const elegido = interaction.options.getChannel("canal");
-        if (!elegido && presencia.actual(interaction.guildId)) {
-            presencia.desconectar(interaction.guildId);
+        const minutos = interaction.options.getInteger("minutos");
+        const guildId = interaction.guildId;
+        if (!elegido && presencia.actual(guildId)) {
+            // Ya estoy conectado: con tiempo, renuevo; sin tiempo, me salgo como siempre.
+            if (minutos) {
+                const r = presencia.renovar(guildId, minutos);
+                return interaction.reply(efimero(`🔌 Me quedo ${etiquetaDuracion(minutos)}, hasta <t:${Math.floor(r.expira / 1000)}:t>.`));
+            }
+            presencia.desconectar(guildId);
             return interaction.reply(efimero("🔌 Me he salido del canal."));
         }
         const canal = elegido || interaction.member?.voice?.channel;
         if (!canal) return interaction.reply(efimero("🔌 Entra a un canal de voz, o elige uno en la opción *canal*."));
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        const r = await presencia.conectar(canal);
+        const r = await presencia.conectar(canal, { minutos: minutos || presencia.MINUTOS });
         if (!r.ok) return interaction.editReply(`❌ ${r.motivo}`);
         const hasta = Math.floor(r.expira / 1000);
         const aviso = sonarAlEntrar(interaction);
         return interaction.editReply(
-            `🔌 Conectado a **${r.canal}**. Me quedo hasta <t:${hasta}:t> (unos ${presencia.MINUTOS} minutos): ya puedes usar /sonidos.${aviso}`,
+            `🔌 Conectado a **${r.canal}**. Me quedo hasta <t:${hasta}:t> (${etiquetaDuracion(minutos || presencia.MINUTOS)}): ya puedes usar /sonidos.${aviso}`,
         );
     },
 };

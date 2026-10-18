@@ -2,6 +2,8 @@
 
 const { Mezclador } = require("../mezclador");
 const { createLogger } = require("../../../core/logger");
+const presencia = require("../../../systems/presencia");
+const ocupacion = require("../../../systems/ocupacion");
 
 const log = createLogger("Duende").child("VozEnVivo");
 
@@ -11,6 +13,7 @@ const sesiones = new Map();
 function hayConversacionActiva(guildId) {
     return sesiones.has(guildId);
 }
+ocupacion.registrar("conversacion", hayConversacionActiva, ocupacion.REINTENTO_LARGO_MS);
 
 function limpiarSesion(sesion) {
     clearInterval(sesion.idleCheckInterval);
@@ -40,10 +43,13 @@ function limpiarSesion(sesion) {
     } catch (e) {
         log.debug(`Error cerrando la sesión de Gemini Live: ${e.message}`);
     }
-    try {
-        sesion.connection?.destroy();
-    } catch (e) {
-        log.debug(`Error cerrando la conexión de voz: ${e.message}`);
+    // La conexión de /conectar no es de la conversación: no se cierra aquí (#499).
+    if (!presencia.esDePresencia(sesion.connection?.joinConfig?.guildId, sesion.connection)) {
+        try {
+            sesion.connection?.destroy();
+        } catch (e) {
+            log.debug(`Error cerrando la conexión de voz: ${e.message}`);
+        }
     }
 }
 

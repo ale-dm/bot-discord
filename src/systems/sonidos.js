@@ -205,6 +205,7 @@ function borrarPorNombre(guildId, nombre) {
 
 const ocupados = new Set(); // servidores con un sonido sonando
 const presencia = require("./presencia");
+const ocupacion = require("./ocupacion");
 
 /**
  * Toca el sonido en una conexión que ya existe (no se sale de ella al acabar). Termina cuando acaba el sonido, o cuando
@@ -252,6 +253,7 @@ function tocarEn(conexion, sonido, deps) {
 function sonando(guildId) {
     return ocupados.has(String(guildId));
 }
+ocupacion.registrar("sonidos", sonando, ocupacion.REINTENTO_CORTO_MS);
 
 /** El motivo por el que no se puede tocar ahora en el canal (o con la presencia), o null si se puede. `presente`: la presencia de /conectar. */
 function motivoNoSePuede(id, canal, presente, deps) {

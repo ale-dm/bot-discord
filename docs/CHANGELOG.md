@@ -2,6 +2,10 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-17 (voz: /conectar elige el tiempo)
+
+- **⏱️ /conectar elige el tiempo y nada lo desconecta** (#499): `/conectar` acepta la duración (15, 30, 60 o 120 minutos) y, si ya estás dentro, renueva el tiempo desde ahora. La conexión de `/conectar` pasa a ser la única dueña del audio del servidor: `/tts`, el Duende por voz, la conversación en directo y `/sonidos` la reutilizan en su canal, se niegan con un aviso si está en otro, y nunca la destruyen. La salida automática espera a que acabe un sonido, un `/tts` que hable o una conversación en marcha. Nuevo `src/systems/ocupacion.js`, que registra quién ocupa el audio de un servidor y quita dos ciclos de dependencias. Tests: `tests/ocupacion.test.js`, `tests/presencia.test.js` y los de sonidos.
+
 ## 2026-10-14 (fase 12 del plan restante: administración)
 
 - **🧾 Filtro de la auditoría** (#398): un menú en 🧾 Auditoría elige una familia de acción (banco, ajustes, alertas, logs, mensajes, Duende, XP, Plex, consultas, copias, tareas...). El pie lo indica y ◀ ▶ y 🔄 lo conservan. Con filtro el límite sigue siendo de 100 filas.

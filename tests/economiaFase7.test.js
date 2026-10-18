@@ -443,6 +443,8 @@ describe("exportar movimientos a CSV (#411)", () => {
 
 describe("meta comunitaria del bote (#415)", () => {
     const GM = "g-f7-meta";
+    // La participación se registra el 10/10/2026; comprobamos con ese mismo día, así el test no envejece.
+    const CUANDO = Date.UTC(2026, 9, 10, 8, 0);
     const participar = (userId, guildId = GM) =>
         db.prepare("INSERT OR REPLACE INTO xp_diaria (guildId, userId, dia, xp) VALUES (?, ?, '2026-10-10', 10)").run(guildId, userId);
 
@@ -452,12 +454,12 @@ describe("meta comunitaria del bote (#415)", () => {
         participar(b);
         meta.fijar(GM, 1000, 300);
         impuestos.sumarBote(GM, 900);
-        expect(meta.comprobar(GM)).toBeNull(); // aún no llega
+        expect(meta.comprobar(GM, () => true, CUANDO)).toBeNull(); // aún no llega
         impuestos.sumarBote(GM, 300);
-        expect(meta.comprobar(GM)).toEqual({ repartido: 600, personas: 2, porPersona: 300 });
+        expect(meta.comprobar(GM, () => true, CUANDO)).toEqual({ repartido: 600, personas: 2, porPersona: 300 });
         expect([dinero.efectivo(a), dinero.efectivo(b)]).toEqual([300, 300]);
         expect(impuestos.boteTotal(GM)).toBe(600);
-        expect(meta.comprobar(GM)).toBeNull(); // no se paga dos veces
+        expect(meta.comprobar(GM, () => true, CUANDO)).toBeNull(); // no se paga dos veces
         expect(dinero.movimientos(a).filas[0].tipo).toBe("premio");
     });
 
@@ -468,7 +470,7 @@ describe("meta comunitaria del bote (#415)", () => {
         participar("fuera", GM2);
         meta.fijar(GM2, 100, 100);
         impuestos.sumarBote(GM2, 100);
-        const r = meta.comprobar(GM2, (id) => id !== "fuera");
+        const r = meta.comprobar(GM2, (id) => id !== "fuera", CUANDO);
         expect(r).toEqual({ repartido: 100, personas: 4, porPersona: 25 });
         expect(dinero.efectivo(gente[0])).toBe(25);
     });

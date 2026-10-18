@@ -241,7 +241,7 @@ describe("/conectar con sonido de entrada (#301)", () => {
         guildId: G,
         user: { id: "ana" },
         member: { voice: { channel: canal }, roles: { cache: new Set() } },
-        options: { getChannel: () => canal, getString: () => sonido },
+        options: { getChannel: () => canal, getString: () => sonido, getInteger: () => null },
         reply: jest.fn(async () => {}),
         deferReply: jest.fn(async () => {}),
         editReply: jest.fn(async () => {}),
