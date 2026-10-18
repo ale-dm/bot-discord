@@ -269,6 +269,11 @@ describe("/recordar (#320)", () => {
     const AHORA = Date.UTC(2026, 9, 14, 8, 0);
     const iso = (ms) => new Date(ms).toISOString();
 
+    // Cada test parte sin recordatorios: los de un test anterior quedarían vencidos y el cron los mandaría de más.
+    beforeEach(() => {
+        db.prepare("DELETE FROM recordatorios_personales").run();
+    });
+
     test("la hora: HH:MM de hoy o de mañana, «mañana HH:MM», «en N min/h» hasta 24 h", () => {
         const c = (t) => recordar.parsearCuando(t, AHORA);
         expect(iso(c("18:30").cuando)).toBe("2026-10-14T16:30:00.000Z");
