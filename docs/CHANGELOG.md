@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (flujo: ramas de GitHub protegidas)
+
+- **🔒 Protección de ramas** (#282): `main` y `developer` exigen PR y el check `test` (`npm run check`), con `enforce_admins` (ni el dueño hace push directo) y **0 aprobaciones** para no romper el auto-merge de Claude con el CI verde. Aplicado por API; queda pendiente el Project board (se hace a mano en GitHub).
+- `docs/planificacion/PLAN_ISSUES.md`: la fila de #282 refleja la protección hecha.
+- Sin migraciones.
+
 ## 2026-10-18 (release: la fase 2 de refactor a `main`)
 
 - **🚀 Release a `main`**: la fase 2 de refactor (#472/#474/#475) entra con merge commit (#507). Con esto queda **terminado el plan de las 185 issues**: no quedan issues abiertas.
