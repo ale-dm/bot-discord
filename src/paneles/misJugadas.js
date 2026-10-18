@@ -10,7 +10,7 @@ const { filasCancelar, buildConfirmarCancelar, buildConfirmarCancelarCombinada }
 const mercados = require("../systems/apuestas/mercados");
 const { filaPestanas } = require("./pestanasJuegos");
 
-const EMOJI_JUEGO = { blackjack: "🃏", tragaperras: "🎰", slots: "🎰", ruleta: "🎡", adivinar: "🔮", ppt: "✂️" };
+const EMOJI_JUEGO = { blackjack: "🃏", tragaperras: "🎰", slots: "🎰", ruleta: "🎡", adivinar: "🔮", ppt: "✂️", rasca: "🎟️" };
 const fecha = (iso) => new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const eleccionTexto = (a) => mercados.textoEleccion(a);
 const signo = (n) => `${n >= 0 ? "+" : ""}${n.toLocaleString("es")}`;

@@ -220,7 +220,7 @@ function buildCasinoPanel(guildId) {
             { name: "Frecuencia", value: `Cooldown: **${c.global_cooldown_sec}s**\nDiario: **${c.daily_limit || "∞"}**`, inline: true },
             {
                 name: "RTP",
-                value: `BJ **${c.rtp_blackjack}%** · Slots **${c.rtp_tragaperras}%**\nRuleta **${c.rtp_ruleta}%** · Adivinar **${c.rtp_adivinar}%**`,
+                value: `BJ **${c.rtp_blackjack}%** · Slots **${c.rtp_tragaperras}%**\nRuleta **${c.rtp_ruleta}%** · Adivinar **${c.rtp_adivinar}%**\nRasca y gana **${c.rtp_rasca}%**`,
                 inline: false,
             },
             { name: "Por juego (tope · cooldown)", value: textoPorJuego(c), inline: false },
@@ -338,7 +338,7 @@ function buildEventosPanel(guildId) {
                 name: "🎰 Fin de semana del casino",
                 value: casino.activo
                     ? `Sábado y domingo: premio neto de cada victoria al **${fmtNumero(casino.pct)} %**${ahora(casino)}\n` +
-                      "Encima del RTP de cada juego (blackjack, tragaperras, ruleta y adivinar)."
+                      "Encima del RTP de cada juego (blackjack, tragaperras, ruleta, adivinar y rasca y gana)."
                     : "Desactivado",
             },
         )

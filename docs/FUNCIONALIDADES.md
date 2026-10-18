@@ -643,10 +643,10 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 - Se juega con el **💵 efectivo** (ver [Dinero](#7-economía-banco-tienda-e-inventario)). Apuesta mínima 10 y máxima 100.000 (configurable).
 - Opcionalmente: cooldown entre jugadas y cupo diario de jugadas. Una apuesta rechazada (sin saldo, fuera
   de límites) no gasta cupo.
-- **RTP** configurable por juego (blackjack, tragaperras, ruleta, adivinar): escala solo el premio neto,
+- **RTP** configurable por juego (blackjack, tragaperras, ruleta, adivinar y rasca y gana): escala solo el premio neto,
   nunca la probabilidad ni la apuesta devuelta en un empate.
 - **🎉 Fin de semana del casino** (F-EC-02): si un admin lo activa (`/paneladmin` → ⚙️ Config Global → 🎉 Eventos), el
-  sábado y el domingo (hora de Madrid) el premio neto de esos cuatro juegos sube (al 150 % por defecto), encima de su
+  sábado y el domingo (hora de Madrid) el premio neto de esos cinco juegos sube (al 150 % por defecto), encima de su
   RTP. Mientras dura, la pantalla de 🎰 Casino lo dice arriba.
 - **Tope y cooldown por juego** (#460, #461): `/paneladmin` → ⚙️ Config Global → 🎰 Casino → 🎯 Tope por juego y ⏱️ Cooldown por juego. Un juego sin ajuste propio usa el general; el cupo diario cuenta todos los juegos juntos.
 - **🔒 Autoexclusión** (#463): desde el resumen del casino, 1 día, 1 semana o 1 mes. Ningún juego cobra apuestas (tampoco doblar o separar) mientras dure, no se puede levantar antes (ni un admin), y al acabar el casino vuelve solo.
@@ -671,6 +671,7 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 | 🎡 Ruleta | Ruleta europea (0–36): primero el tipo de apuesta (color, par/impar, mitad, docena o número exacto, con un formulario) y después el importe. | Rojo/negro, par/impar, bajo/alto ×2 · Docenas ×3 · **Calle** (3 números de una fila del tapete: 1-2-3, 4-5-6…) ×12 · Número exacto ×36 |
 | 🔮 Adivinar | "Ride the bus": 4 rondas — color, mayor/menor, dentro/fuera, palo. Te puedes retirar desde la ronda 3. | Acumulado ×2 → ×3 → ×4 → **×20** si aciertas las 4 |
 | ✂️ Piedra, papel o tijera | Contra el Duende: importe y después jugada. | Victoria ×2 · Empate: recuperas la apuesta. **Al mejor de 3** (#457): misma apuesta, fija, cobrada una vez; gana quien llega a 2 manos o lleva más tras la tercera (empate: recuperas); una serie sin responder 15 min se cierra y se devuelve |
+| 🎟️ Rasca y gana (#521) | Cartón de 3×3 al instante: ganas si salen tres símbolos iguales. | Tres iguales: 🍒×2 🍋×3 🍊×5 🍇×8 🔔×15 💎×30 ⭐×50 |
 
 ---
 

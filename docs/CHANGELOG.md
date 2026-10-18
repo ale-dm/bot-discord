@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (F-EC-17: rasca y gana)
+
+- **🎟️ Rasca y gana (#521)**: nuevo juego en 🎰 Casino. Cartón de 3×3 al instante; tres iguales pagan 🍒×2, 🍋×3,
+  🍊×5, 🍇×8, 🔔×15, 💎×30 o ⭐×50. RTP base del 90,5 %, configurable por servidor (`casino.rtp_rasca`) desde
+  `/paneladmin` → 🎰 Casino → 🎲 RTP. Respeta saldo, cupo, cooldown, topes, autoexclusión y doble o nada como el resto.
+- Nuevos `src/systems/casino/rasca.js` y `src/juegos/casino/rasca.js`; tests en `tests/rasca.test.js`. Sin migraciones.
+- `npm run check` en verde (2867 tests).
+
 ## 2026-10-18 (deps: dentro de rango, y better-sqlite3 se queda)
 
 - **📦 Dependencias** actualizadas dentro de rango: `dotenv` (16.4.5 → 16.6.1), `globals` (17.12 → 17.13), `jest`
