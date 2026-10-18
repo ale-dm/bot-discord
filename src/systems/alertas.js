@@ -5,9 +5,10 @@
 // Para no inundar a nadie: la misma alerta (misma `clave`) no se repite hasta pasado su cooldown, y como mucho salen
 // MAX_POR_HORA a la hora. Lo que pasa antes de conectar a Discord (errores al arrancar) se guarda y se manda al
 // conectar. Aquí nunca se registra nada como error: un fallo al avisar de un error no puede generar otra alerta.
-const { embedAlerta } = require("../discord/mensajes/alerta");
+//
+// Este módulo es puro (#472): decide qué alertar y lleva el cooldown, pero quien manda los DMs y publica en el canal de
+// respaldo es un transporte que instala src/discord/envios/alertas.js al conectar (`usarTransporte`).
 const guildSettings = require("./guildSettings");
-const { intentarDm } = require("./avisosDm");
 const { createLogger, onError } = require("../core/logger");
 
 const log = createLogger("Alertas");
@@ -38,12 +39,18 @@ const categoriaActiva = (cfg, categoria) => !categoria || guildSettings.parseCsv
 // Títulos más claros para los errores de algunos módulos.
 const TITULOS_POR_AMBITO = { Backups: "💾 La copia de seguridad ha fallado" };
 
-let client = null;
+// El transporte de Discord (lo instala src/discord/envios/alertas.js): sabe a quién avisar y manda los DMs y el canal.
+let transporte = null;
 let dejarDeEscuchar = null;
 const ultimaPorClave = new Map();
 const enviadasUltimaHora = [];
 const pendientes = [];
 const historial = [];
+
+/** Lo llama el adaptador de Discord al conectar (y null para reiniciar, en los tests). */
+function usarTransporte(t) {
+    transporte = t || null;
+}
 
 /** Mismo error con distintos ids o números = misma alerta. */
 const normalizar = (texto) =>
@@ -64,34 +71,9 @@ function escucharErrores() {
     });
 }
 
-/** IDs de quienes reciben las alertas, de todos los servidores con las alertas activas (y con esa categoría, si se indica). */
+/** IDs de quienes reciben las alertas (los decide el transporte, que mira los servidores y su configuración). */
 function destinatarios(categoria = null) {
-    if (!client) return [];
-    const ids = new Set();
-    for (const guild of client.guilds.cache.values()) {
-        const cfg = guildSettings.getSettings(guild.id).alertas;
-        if (!cfg.enabled || !categoriaActiva(cfg, categoria)) continue;
-        const propios = guildSettings.parseCsvIds(cfg.admin_ids);
-        for (const id of propios.length ? propios : [guild.ownerId].filter(Boolean)) ids.add(String(id));
-    }
-    return [...ids];
-}
-
-/** Publica la alerta en el canal de respaldo de cada servidor que lo tiene puesto (#423). Un fallo solo se registra. */
-async function publicarEnCanalDeRespaldo(embed, categoria) {
-    let publicadas = 0;
-    for (const guild of client.guilds.cache.values()) {
-        const cfg = guildSettings.getSettings(guild.id).alertas;
-        if (!cfg.enabled || !cfg.canal || !categoriaActiva(cfg, categoria)) continue;
-        try {
-            const canal = await client.channels.fetch(cfg.canal);
-            await canal.send({ embeds: [embed], allowedMentions: { parse: [] } });
-            publicadas++;
-        } catch (e) {
-            log.warn(`No se pudo publicar la alerta en el canal de respaldo ${cfg.canal} de ${guild.id}: ${e.message}`);
-        }
-    }
-    return publicadas;
+    return transporte ? transporte.destinatarios(categoria) : [];
 }
 
 async function enviar({ titulo, detalle, at = Date.now(), categoria = null }) {
@@ -100,16 +82,7 @@ async function enviar({ titulo, detalle, at = Date.now(), categoria = null }) {
         log.info(`Alerta sin destinatarios (alertas o categoría desactivadas): ${titulo}`);
         return 0;
     }
-    const embed = embedAlerta(titulo, detalle, at);
-    let enviadas = 0;
-    let cerrados = 0;
-    for (const id of ids) {
-        const resultado = await intentarDm(client, id, { embeds: [embed] });
-        if (resultado === "ok") enviadas++;
-        else if (resultado === "cerrado") cerrados++;
-    }
-    // Si nadie la recibió por tener los DMs cerrados, va al canal de respaldo; otros errores no son motivo para publicarla.
-    const enCanal = !enviadas && cerrados ? await publicarEnCanalDeRespaldo(embed, categoria) : 0;
+    const { enviadas = 0, enCanal = 0 } = (await transporte.enviar({ titulo, detalle, at, categoria })) || {};
     historial.unshift({ at, titulo, enviadas, destinatarios: ids.length, enCanal });
     historial.length = Math.min(historial.length, 10);
     log.info(
@@ -126,7 +99,7 @@ async function alertar({ clave, titulo, detalle, cooldownMs = COOLDOWN_POR_DEFEC
     const ahora = Date.now();
     // Una categoría apagada en todos los servidores no envía nada ni gasta el cooldown ni el máximo por hora (#422).
     const categoria = categoriaDe(clave);
-    if (client && categoria && !destinatarios(categoria).length) return 0;
+    if (transporte && categoria && !destinatarios(categoria).length) return 0;
     if (!forzar) {
         const ultima = ultimaPorClave.get(clave);
         if (ultima && ahora - ultima < cooldownMs) return 0;
@@ -137,7 +110,7 @@ async function alertar({ clave, titulo, detalle, cooldownMs = COOLDOWN_POR_DEFEC
         }
     }
     ultimaPorClave.set(clave, ahora);
-    if (!client) {
+    if (!transporte) {
         if (pendientes.length < MAX_PENDIENTES) pendientes.push({ titulo, detalle, at: ahora, categoria });
         return 0;
     }
@@ -145,9 +118,8 @@ async function alertar({ clave, titulo, detalle, cooldownMs = COOLDOWN_POR_DEFEC
     return enviar({ titulo, detalle, at: ahora, categoria });
 }
 
-/** Conectado a Discord: desde ahora se envían, y se mandan las que se guardaron al arrancar. */
-async function iniciar(discordClient) {
-    client = discordClient;
+/** Conectado a Discord: manda las que se guardaron al arrancar. */
+async function iniciar() {
     const guardadas = pendientes.splice(0);
     for (const p of guardadas) await enviar(p);
 }
@@ -176,11 +148,24 @@ function probar(quien) {
 
 /** Solo para los tests. */
 function _reiniciar() {
-    client = null;
+    transporte = null;
     ultimaPorClave.clear();
     enviadasUltimaHora.length = 0;
     pendientes.length = 0;
     historial.length = 0;
 }
 
-module.exports = { CATEGORIAS, categoriaDe, escucharErrores, iniciar, alertar, destinatarios, estado, probar, _reiniciar, MAX_POR_HORA };
+module.exports = {
+    CATEGORIAS,
+    categoriaDe,
+    categoriaActiva,
+    escucharErrores,
+    usarTransporte,
+    iniciar,
+    alertar,
+    destinatarios,
+    estado,
+    probar,
+    _reiniciar,
+    MAX_POR_HORA,
+};

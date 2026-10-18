@@ -47,6 +47,15 @@ for (const ruta of [
     "../src/commands/general/encuesta",
     "../src/systems/avisosCooldown",
     "../src/systems/cumpleanos",
+    "../src/discord/envios/alertas",
+    "../src/discord/envios/apuestas",
+    "../src/discord/envios/logros",
+    "../src/discord/envios/plexWrapped",
+    "../src/discord/envios/recuerdos",
+    "../src/discord/envios/resumenAdmin",
+    "../src/discord/envios/destacado",
+    "../src/discord/envios/xp",
+    "../src/discord/envios/rachas",
 ]) {
     jest.doMock(ruta, simulado);
 }

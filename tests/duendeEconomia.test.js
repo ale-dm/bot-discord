@@ -20,6 +20,7 @@ const dinero = require("../src/systems/dinero");
 const retos = require("../src/systems/retos");
 const prestamos = require("../src/systems/prestamos");
 const liquidacion = require("../src/systems/apuestas/liquidacion");
+const { resultadosEmbed } = require("../src/discord/mensajes/apuestas");
 const paneles = require("../src/paneles/retos");
 const propuestas = require("../src/paneles/duendeEconomia");
 const economia = require("../src/paneles/economia");
@@ -154,7 +155,7 @@ describe("🧙 apostar contra el Duende a un partido", () => {
         expect(efectivo("pp-b")).toBe(900);
         expect(retos.obtener(pierde.reto.id).estado).toBe("resuelto");
         expect(resumen.pagos.map((p) => p.userId)).not.toContain(retos.DUENDE);
-        const anuncio = liquidacion.resultadosEmbed(resumen).data.description;
+        const anuncio = resultadosEmbed(resumen).data.description;
         expect(anuncio).toMatch(
             /⚔️ \*\*Reto\*\* <@pp-a> vs 🧙 \*\*el Duende\*\* · Betis 2-1 Sevilla\n🏆 Gana <@pp-a> y se lleva \*\*800\*\*/,
         );

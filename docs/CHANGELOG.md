@@ -2,6 +2,19 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (refactor: los juegos y las herramientas separan sus capas, #474/#475)
+
+- **🧾 La quiniela separa reglas, caso de uso y manejador** (#474): las consultas a la base de datos salen de los manejadores (`quiniela.js`, `quiniela/botones.js`, `quiniela/vista.js`) a un nuevo `juegos/apuestas/quiniela/servicio.js` (la quiniela abierta, si ya apostaste y los datos de la vista con partidos y bote). `avisoDeApuesta` recibe sus consultas (efectivo, apuesta repetida y tope diario) como dependencias, así que `tests/quinielaReglas.test.js` prueba las reglas **sin base de datos ni Discord**. Las estadísticas del split de blackjack pasan a `juegos/casino/blackjackServicio.js`.
+- **🧙 Las herramientas del Duende inyectan sus dependencias** (#475): cada grupo (`economia`, `seerr`, `core`, `plex`, `imagen`) recibe lo que usa como último argumento, con las reales por defecto, y ningún fichero hace `require` dentro de funciones. `tests/herramientasDuendeInyeccion.test.js` prueba cada grupo con dobles.
+- Sin migraciones.
+
+## 2026-10-18 (refactor: los sistemas no dependen de Discord, #472)
+
+- **🧩 `systems/` sin Discord**: los sistemas que quedaban (destacado, liquidación de apuestas, alertas, resumen semanal de admins, recuerdos del Duende, Plex Wrapped, logros sin reclamar, XP y rachas, roles de nivel) dejan de pintar embeds, mandar DMs o asignar roles. Devuelven **datos puros** y el envío vive en **`src/discord/envios/`** (adaptadores) que llama el punto de llamada (`core/mensajes.js`, `index.js`, `app/tareas.js`, paneles...). `addXp` ahora devuelve `eventos` (`subidaNivel`, `rachaActiva`) y el adaptador `src/discord/envios/xp.js` los pinta.
+- **🚫 Regla ESLint** (`eslint.config.js`): `src/systems/**` no puede importar nada de `src/discord/` (ni sus adaptadores). `src/core/` sigue sin poder importar `discord.js` (#477).
+- **🧪 Tests**: cada sistema se prueba ya sin cliente de Discord, y los adaptadores con servidores/clientes simulados. Test de memoria del Duende hecho menos sensible al tiempo de escritura en disco.
+- Sin migraciones.
+
 ## 2026-10-18 (release y cierre del plan)
 
 - **🚀 Release a `main`**: las fases 1-12 del plan restante (#496, #497) y, después, la voz de `/conectar` (#499, #500) con los tests deterministas (#501), con merge commit (#502).

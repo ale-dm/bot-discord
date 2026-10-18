@@ -261,9 +261,10 @@ async function handleSistemaButton(interaction) {
     // 📊 Vista previa del resumen semanal (F-AD-02): lo que llegaría ahora, solo a quien pulsa (no cuenta como enviado).
     if (id === "paneladmin_sis_resumen") {
         const { construir } = require("../systems/resumenAdmin");
+        const { embedResumen } = require("../discord/mensajes/resumenSemanal");
         await interaction.reply({
             content: "📊 Así va el resumen de esta semana (llega por DM los lunes a las 09:00 a quien recibe las alertas):",
-            embeds: [construir()],
+            embeds: [embedResumen(construir())],
             flags: MessageFlags.Ephemeral,
         });
         return true;

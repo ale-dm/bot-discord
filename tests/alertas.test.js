@@ -11,6 +11,7 @@ jest.mock("@google/genai", () => ({
 const { createLogger } = require("../src/core/logger");
 const guildSettings = require("../src/systems/guildSettings");
 const alertas = require("../src/systems/alertas");
+const alertasEnvios = require("../src/discord/envios/alertas");
 const oddsApi = require("../src/services/oddsApi");
 const { generateContentWithTimeout } = require("../src/services/geminiClient");
 const paneladmin = require("../src/commands/admin/paneladmin");
@@ -42,14 +43,14 @@ test("los errores de antes de conectar se guardan y se mandan al conectar, al du
     log.error("La base de datos no responde");
     await esperar();
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     expect(client.dms).toEqual([expect.objectContaining({ id: DUENO, titulo: "❌ Error nuevo en el bot" })]);
     expect(client.dms[0].payload.embeds[0].data.description).toMatch(/\[Prueba\] La base de datos no responde/);
 });
 
 test("el mismo error (aunque cambien los números) no se repite; uno distinto sí", async () => {
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     log.error("La partida 123 falló");
     log.error("La partida 456 falló");
     log.error("Otra cosa distinta");
@@ -62,7 +63,7 @@ test("el mismo error (aunque cambien los números) no se repite; uno distinto s�
 
 test("un backup fallido sale con su propio título", async () => {
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     createLogger("Backups").error("La copia de seguridad banco-2026-10-02.db falló:", new Error("disco lleno"));
     await esperar();
     expect(client.dms[0].titulo).toBe("💾 La copia de seguridad ha fallado");
@@ -70,7 +71,7 @@ test("un backup fallido sale con su propio título", async () => {
 
 test("con admins puestos van a ellos; desactivadas no van a nadie", async () => {
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     guildSettings.setSetting(G, "alertas.admin_ids", "111111111111111111,222222222222222222");
     expect(await alertas.alertar({ clave: "a", titulo: "Uno", detalle: "x" })).toBe(2);
     expect(client.dms.map((d) => d.id)).toEqual(["111111111111111111", "222222222222222222"]);
@@ -82,7 +83,7 @@ test("con admins puestos van a ellos; desactivadas no van a nadie", async () => 
 
 test(`como mucho ${alertas.MAX_POR_HORA} a la hora (la prueba del panel no cuenta)`, async () => {
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     for (let n = 0; n < alertas.MAX_POR_HORA + 3; n++) await alertas.alertar({ clave: `k${n}`, titulo: `T${n}`, detalle: "x" });
     expect(client.dms).toHaveLength(alertas.MAX_POR_HORA);
     expect(await alertas.probar("admin")).toBe(1);
@@ -90,7 +91,7 @@ test(`como mucho ${alertas.MAX_POR_HORA} a la hora (la prueba del panel no cuent
 
 test("la Odds API con menos de 50 créditos avisa una vez (y el panel enseña los créditos)", async () => {
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     global.fetch = jest.fn(async () => ({ ok: true, headers: new Map([["x-requests-remaining", "30"]]), json: async () => [] }));
     await oddsApi.obtenerResultados("laliga");
     await oddsApi.obtenerResultados("premier");
@@ -114,7 +115,7 @@ test("la Odds API con menos de 50 créditos avisa una vez (y el panel enseña lo
 
 test("Gemini sin cuota avisa", async () => {
     const client = clienteFalso();
-    await alertas.iniciar(client);
+    await alertasEnvios.iniciar(client);
     mockGenerate.mockRejectedValueOnce(Object.assign(new Error("RESOURCE_EXHAUSTED: quota exceeded"), { status: 429 }));
     await expect(generateContentWithTimeout({ model: "gemini-x", contents: [] }, 0, "Duende")).rejects.toThrow(/quota/);
     await esperar();
@@ -167,7 +168,7 @@ describe("/paneladmin → 🩺 Sistema → 🔔 Alertas", () => {
 
     test("📨 Probar manda una alerta y dice a cuántos ha llegado", async () => {
         const client = clienteFalso();
-        await alertas.iniciar(client);
+        await alertasEnvios.iniciar(client);
         const i = interaccion({ customId: "paneladmin_sis_alertas_probar" });
         await paneladmin.handleButton(null, i);
         expect(client.dms.map((d) => d.titulo)).toEqual(["🔔 Alerta de prueba"]);

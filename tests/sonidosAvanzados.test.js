@@ -11,7 +11,7 @@ const cola = require("../src/systems/sonidos/cola");
 const silencio = require("../src/systems/sonidos/silencio");
 const eventos = require("../src/systems/sonidos/eventos");
 const achievements = require("../src/systems/achievementsSystem");
-const anuncios = require("../src/systems/apuestas/liquidacion/anuncios");
+const anuncios = require("../src/discord/envios/apuestas");
 
 const G = "g-sonidos-avanzados";
 

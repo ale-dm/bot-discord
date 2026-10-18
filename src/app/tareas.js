@@ -3,11 +3,13 @@
 const { cron } = require("../core/tareasRegistro");
 const { ActivityType } = require("discord.js");
 const { createLogger } = require("../core/logger");
-const alertas = require("../systems/alertas");
-const xpSystem = require("../systems/xpSystem");
+const alertas = require("../discord/envios/alertas");
+const xpEnvios = require("../discord/envios/xp");
+const rachasEnvios = require("../discord/envios/rachas");
 const tautulliClient = require("../services/tautulliClient");
 const { runJob } = require("../core/interactionLog");
 const pagarapuestas = require("../systems/apuestas/liquidacion");
+const enviosApuestas = require("../discord/envios/apuestas");
 const blackjack = require("../juegos/casino/blackjack.js");
 const adivinar = require("../juegos/casino/adivinar.js");
 const pptSerie = require("../systems/casino/pptSerie");
@@ -18,7 +20,7 @@ const plexHistorial = require("../systems/plexHistorial");
 const plexRankingSemanal = require("../systems/plexRankingSemanal");
 const clasificacionSemanal = require("../systems/clasificacionSemanal");
 const resumenApuestas = require("../systems/apuestas/resumenSemanal");
-const recordatorioLogros = require("../systems/logros/recordatorio");
+const recordatorioLogros = require("../discord/envios/logros");
 const ordenesCripto = require("../systems/cripto/ordenes");
 const mensajesOrdenes = require("../discord/mensajes/criptoOrdenes");
 const { enviarAviso } = require("../systems/avisosDm");
@@ -33,15 +35,15 @@ const metaBote = require("../systems/impuestos/meta");
 const paseHistorial = require("../systems/pase/historial");
 const paseAvisos = require("../systems/pase/avisos");
 const oddsApi = require("../services/oddsApi");
-const plexWrapped = require("../systems/plexWrapped");
+const plexWrapped = require("../discord/envios/plexWrapped");
 const cine = require("../systems/cine");
-const recuerdosAuto = require("../systems/duende/recuerdosAuto");
+const recuerdosAuto = require("../discord/envios/recuerdos");
 const cineSeries = require("../systems/cine/series");
 const { pantallaSesion } = require("../paneles/cine");
 const liga = require("../systems/apuestas/liga");
-const resumenAdmin = require("../systems/resumenAdmin");
+const resumenAdmin = require("../discord/envios/resumenAdmin");
 const espontaneo = require("../systems/duende/espontaneo");
-const destacado = require("../systems/apuestas/destacado");
+const destacado = require("../discord/envios/destacado");
 const recordatorios = require("../systems/apuestas/recordatorios");
 const retos = require("../juegos/retos/retos");
 const duende = require("../juegos/retos/duende");
@@ -77,13 +79,13 @@ function programarBasicas(client) {
     runJob("Alertas pendientes del arranque", () => alertas.iniciar(client));
     actualizarActividad(client);
     setInterval(() => actualizarActividad(client), 5400000);
-    setInterval(() => runJob("XP de voz", () => xpSystem.voiceTick(client)), 60000);
-    cron.schedule("0 17 * * *", () => runJob("Aviso de rachas", () => xpSystem.runStreakWarningJob(client)), {
+    setInterval(() => runJob("XP de voz", () => xpEnvios.procesarVoiceTick(client)), 60000);
+    cron.schedule("0 17 * * *", () => runJob("Aviso de rachas", () => rachasEnvios.runStreakWarningJob(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
     // 💔 Al empezar el día, a quien acaba de perder una racha larga (#342); de paso borra la XP diaria vieja.
-    cron.schedule("30 0 * * *", () => runJob("Aviso de racha perdida", () => xpSystem.runStreakLostJob(client)), {
+    cron.schedule("30 0 * * *", () => runJob("Aviso de racha perdida", () => rachasEnvios.runStreakLostJob(client)), {
         timezone: "Europe/Madrid",
         noOverlap: true,
     });
@@ -337,8 +339,8 @@ function programarLiquidacionApuestas(client) {
                         origen: "cron",
                     });
                     if (resumen) {
-                        await pagarapuestas.avisarGanadores(client, resumen.pagos);
-                        await pagarapuestas.anunciarResultados(client, resumen);
+                        await enviosApuestas.avisarGanadores(client, resumen.pagos);
+                        await enviosApuestas.anunciarResultados(client, resumen);
                         await retos.actualizarMensajes(client, resumen.retosCerrados);
                     }
                 },

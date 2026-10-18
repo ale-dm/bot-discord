@@ -8,7 +8,9 @@
 
 ## Cómo se ha probado
 
-<!-- `npm test`, prueba manual en Discord, script de solo lectura... -->
+<!-- `npm run check`, prueba manual en Discord, script de solo lectura... -->
 
-- [ ] `npm test` en verde
+- [ ] `npm run check` (lint + formato + tests) en verde
 - [ ] Probado en Discord (si toca comandos/paneles)
+- [ ] Anotado en `docs/CHANGELOG.md`
+- [ ] Sin migraciones (o indicar el número: `NNN_...`)

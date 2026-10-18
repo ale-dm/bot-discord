@@ -32,8 +32,10 @@ La configuración (`.env`) se guarda en el propio stack de Portainer, no en un f
 
 ## Actualizar
 
-1. En el PC: `npm run check` y `git push`. Para probar en Discord, con el bot local parado (con el mismo
-   token responderían los dos).
+1. En el PC: `npm run check` y `git push -u origin <rama>` (tu rama `feature/fix/refactor`, **no** `main`). Eso no
+   despliega nada: el servidor sigue en `main`, y solo se mueve al mergear el PR `developer → main` (ver
+   [CONTRIBUTING](CONTRIBUTING.md)). Para probar en Discord, con el bot local parado (con el mismo token
+   responderían los dos).
 2. **Copia de la BD** en el servidor:
 
        cp /compose/duende-bot/data/banco.db /compose/duende-bot/data/banco.db.bak-$(date +%F)

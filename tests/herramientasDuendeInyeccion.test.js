@@ -4,6 +4,7 @@ const { DUENDE_ECONOMIA_EXECUTORS: economia } = require("../src/services/duende/
 const { DUENDE_SEERR_EXECUTORS: seerr } = require("../src/services/duende/herramientas/seerr");
 const { DUENDE_CORE_EXECUTORS: core } = require("../src/services/duende/herramientas/core");
 const { DUENDE_PLEX_EXECUTORS: plex } = require("../src/services/duende/herramientas/plex");
+const { DUENDE_IMAGEN_EXECUTORS: imagen } = require("../src/services/duende/herramientas/imagen");
 
 const ctx = { guildId: "g", userId: "u", channelId: "c" };
 
@@ -113,5 +114,45 @@ describe("plex", () => {
         const tautulliClient = { getActivity: jest.fn(async () => []) };
         await plex.consultar_viendo_ahora({}, ctx, { tautulliClient });
         expect(tautulliClient.getActivity).toHaveBeenCalledWith("g");
+    });
+
+    test("los trofeos delegan en la dependencia inyectada", async () => {
+        const consultarTrofeosPlex = jest.fn(async () => ({ ok: true }));
+        const r = await plex.consultar_trofeos_plex({ persona: "x" }, ctx, { consultarTrofeosPlex });
+        expect(r).toEqual({ ok: true });
+        expect(consultarTrofeosPlex).toHaveBeenCalledWith({ persona: "x" }, ctx);
+    });
+});
+
+describe("imagen", () => {
+    test("fuera del chat (sin poder adjuntar) no reserva ni genera", async () => {
+        const imagenes = { reservar: jest.fn(), generarConTimeout: jest.fn() };
+        const r = await imagen.generar_imagen({ descripcion: "un gato" }, { userId: "u" }, { imagenes });
+        expect(r).toEqual({ error: "Aquí no puedo enviar imágenes." });
+        expect(imagenes.reservar).not.toHaveBeenCalled();
+    });
+
+    test("si se pasa el límite diario, no genera y cambia el timestamp relativo por 'mañana'", async () => {
+        const imagenes = {
+            reservar: () => ({ ok: false }),
+            mensajeDeLimite: () => "Has llegado al límite, vuelve <t:123:R>.",
+            generarConTimeout: jest.fn(),
+        };
+        const r = await imagen.generar_imagen({ descripcion: "un gato" }, { userId: "u", imagenes: [] }, { imagenes });
+        expect(r.error).toMatch(/mañana/);
+        expect(imagenes.generarConTimeout).not.toHaveBeenCalled();
+    });
+
+    test("la imagen generada se deja en ctx.imagenes con la descripción", async () => {
+        const ctx2 = { userId: "u", imagenes: [] };
+        const buffer = Buffer.from("px");
+        const imagenes = {
+            reservar: () => ({ ok: true }),
+            generarConTimeout: jest.fn(async () => ({ imageBuffer: buffer, mimeType: "image/png" })),
+        };
+        const r = await imagen.generar_imagen({ descripcion: "un gato", estilo: "óleo" }, ctx2, { imagenes });
+        expect(r).toEqual({ ok: true, nota: "La imagen se enviará al canal junto a tu respuesta." });
+        expect(ctx2.imagenes).toEqual([{ buffer, mimeType: "image/png", descripcion: "un gato" }]);
+        expect(imagenes.generarConTimeout).toHaveBeenCalledWith("un gato. Estilo: óleo", []);
     });
 });

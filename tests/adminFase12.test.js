@@ -16,6 +16,7 @@ const db = require("../src/core/db");
 const adminAudit = require("../src/systems/adminAudit");
 const guildSettings = require("../src/systems/guildSettings");
 const alertas = require("../src/systems/alertas");
+const alertasEnvios = require("../src/discord/envios/alertas");
 const backups = require("../src/systems/backups");
 const programados = require("../src/systems/mensajesProgramados");
 const mantenimiento = require("../src/systems/mantenimiento");
@@ -234,7 +235,7 @@ describe("#417 #418 #419 copias de seguridad", () => {
             guilds: { cache: new Map([["g-copia", { id: "g-copia", ownerId: "900000000000000009" }]]) },
             users: { fetch: async (id) => ({ id, send: async (p) => dms.push(p) }) },
         };
-        await alertas.iniciar(client);
+        await alertasEnvios.iniciar(client);
         guildSettings.setManySettings("g-copia", { "alertas.enabled": true, "alertas.tipos": "backup" });
         const rota = { backup: async (tmp) => fs.writeFileSync(tmp, "esto no es una base de datos sqlite") };
 
@@ -418,7 +419,7 @@ describe("#422 #423 alertas por categoría y canal de respaldo", () => {
 
     test("una categoría apagada no envía ni cuenta para el límite por hora; las demás siguen", async () => {
         const c = cliente();
-        await alertas.iniciar(c);
+        await alertasEnvios.iniciar(c);
         guildSettings.setSetting(G, "alertas.tipos", "error");
         for (let i = 0; i < alertas.MAX_POR_HORA + 3; i++) {
             expect(await alertas.alertar({ clave: `odds-creditos${i}`, titulo: "Odds", detalle: "x" })).toBe(0);
@@ -429,7 +430,7 @@ describe("#422 #423 alertas por categoría y canal de respaldo", () => {
 
     test("con todas las categorías activas todo llega como antes, y la prueba del panel no depende de ellas", async () => {
         const c = cliente();
-        await alertas.iniciar(c);
+        await alertasEnvios.iniciar(c);
         guildSettings.setSetting(G, "alertas.tipos", "");
         expect(await alertas.probar("admin")).toBe(1);
         guildSettings.setSetting(G, "alertas.tipos", "error,gemini,odds,backup");
@@ -438,7 +439,7 @@ describe("#422 #423 alertas por categoría y canal de respaldo", () => {
 
     test("con los DMs cerrados la alerta se publica en el canal de respaldo", async () => {
         const c = cliente({ cerrados: true });
-        await alertas.iniciar(c);
+        await alertasEnvios.iniciar(c);
         guildSettings.setSetting(G, "alertas.canal", "500000000000000005");
         expect(await alertas.alertar({ clave: "error:Prueba:cerrados", titulo: "Error", detalle: "x" })).toBe(0);
         expect(c.publicadas).toHaveLength(1);
@@ -448,7 +449,7 @@ describe("#422 #423 alertas por categoría y canal de respaldo", () => {
 
     test("si el canal no existe, solo se registra y las siguientes alertas siguen saliendo", async () => {
         const c = cliente({ cerrados: true, canal: "falla" });
-        await alertas.iniciar(c);
+        await alertasEnvios.iniciar(c);
         guildSettings.setSetting(G, "alertas.canal", "500000000000000005");
         await expect(alertas.alertar({ clave: "error:Prueba:a", titulo: "A", detalle: "x" })).resolves.toBe(0);
         await expect(alertas.alertar({ clave: "error:Prueba:b", titulo: "B", detalle: "x" })).resolves.toBe(0);
@@ -457,14 +458,14 @@ describe("#422 #423 alertas por categoría y canal de respaldo", () => {
 
     test("sin canal no se publica en ninguna parte, y si el DM llega no se usa el canal", async () => {
         const cerrado = cliente({ cerrados: true });
-        await alertas.iniciar(cerrado);
+        await alertasEnvios.iniciar(cerrado);
         await alertas.alertar({ clave: "error:Prueba:sin canal", titulo: "X", detalle: "x" });
         expect(cerrado.publicadas).toHaveLength(0);
 
         alertas._reiniciar();
         guildSettings.setSetting(G, "alertas.canal", "500000000000000005");
         const abierto = cliente();
-        await alertas.iniciar(abierto);
+        await alertasEnvios.iniciar(abierto);
         await alertas.alertar({ clave: "error:Prueba:con dm", titulo: "Y", detalle: "x" });
         expect(abierto.dms).toHaveLength(1);
         expect(abierto.publicadas).toHaveLength(0);
@@ -475,7 +476,7 @@ describe("#422 #423 alertas por categoría y canal de respaldo", () => {
         c.users.fetch = async () => {
             throw new Error("Unknown User");
         };
-        await alertas.iniciar(c);
+        await alertasEnvios.iniciar(c);
         guildSettings.setSetting(G, "alertas.canal", "500000000000000005");
         await alertas.alertar({ clave: "error:Prueba:otro", titulo: "Z", detalle: "x" });
         expect(c.publicadas).toHaveLength(0);

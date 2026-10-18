@@ -2,16 +2,11 @@
 // vinculada recibe por DM su propio resumen del mes anterior: sus horas vistas, sus películas y episodios, y sus series más
 // vistas. Es privado: no se publica nada en ningún canal ni se muestran datos de otras personas. Usa la copia local del
 // historial (plex_reproducciones), como el ranking semanal. Una vez por mes y persona (plex_wrapped_enviados).
-const { adjuntoWrapped } = require("../discord/mensajes/wrapped");
 const db = require("../core/db");
 const avisosDm = require("./avisosDm");
 const plexLinks = require("./plexLinks");
 const plexHistorial = require("./plexHistorial");
-const tautulli = require("../services/tautulliClient");
 const { renderPng, FONDO, TEXTO, TEXTO_SUAVE, REJILLA } = require("./cripto/graficos");
-const { createLogger } = require("../core/logger");
-
-const log = createLogger("PlexWrapped");
 const HORA = 10;
 const TOP_SERIES = 5;
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -146,68 +141,36 @@ const yaEnviado = (guildId, tautulliUserId, mes) => {
     );
 };
 
-/** Manda por DM el resumen de cada persona vinculada que ha visto algo ese mes y aún no lo tiene. Un DM fallido no para a los demás. */
-async function enviarPorDm(client, guild, mes) {
-    let enviados = 0;
-    for (const link of plexLinks.getLinks(guild.id)) {
-        if (yaEnviado(guild.id, link.tautulliUserId, mes)) continue;
-        const r = resumenPersonal(guild.id, link.tautulliUserId, mes);
-        if (r.horas <= 0) continue;
-        try {
-            if (avisosDm.silenciado(link.discordUserId, "wrapped")) continue;
-            const usuario = await client.users.fetch(link.discordUserId);
-            const buf = graficoPersonal(r);
-            const files = adjuntoWrapped(buf);
-            await usuario.send({ content: mensajePersonal(r), files, allowedMentions: { parse: [] } });
-            const { tabla, columna } = registro(mes);
-            db.prepare(`INSERT INTO ${tabla} (guildId, tautulliUserId, ${columna}, enviado_en) VALUES (?, ?, ?, ?)`).run(
-                String(guild.id),
-                String(link.tautulliUserId),
-                mes.mes,
-                Date.now(),
-            );
-            enviados++;
-        } catch (e) {
-            log.debug(`No se pudo mandar el Plex Wrapped a ${link.plexUsername} (DMs cerrados o error): ${e.message}`);
-        }
+/**
+ * Las personas a las que les toca el resumen de ese mes en un servidor: las vinculadas, que han visto algo, que no lo
+ * tienen ya y que no lo han silenciado. Devuelve los datos para que el adaptador de Discord mande el DM.
+ */
+function pendientesDe(guildId, mes) {
+    const pendientes = [];
+    for (const link of plexLinks.getLinks(guildId)) {
+        if (yaEnviado(guildId, link.tautulliUserId, mes)) continue;
+        const resumen = resumenPersonal(guildId, link.tautulliUserId, mes);
+        if (resumen.horas <= 0) continue;
+        if (avisosDm.silenciado(link.discordUserId, "wrapped")) continue;
+        pendientes.push({
+            discordUserId: link.discordUserId,
+            tautulliUserId: link.tautulliUserId,
+            plexUsername: link.plexUsername,
+            resumen,
+        });
     }
-    return enviados;
+    return pendientes;
 }
 
-let enCurso = null;
-
-/** Cron (cada hora) y arranque: el día 1 desde las 10:00 (Madrid), manda el resumen del mes anterior a cada persona. */
-function enviarSiToca(client, ahora = Date.now()) {
-    if (!enCurso) enCurso = enviar(client, ahora).finally(() => (enCurso = null));
-    return enCurso;
+/** Apunta que el resumen de esa persona y ese mes ya se ha mandado (una vez por mes y persona). */
+function registrarEnviado(guildId, tautulliUserId, mes) {
+    const { tabla, columna } = registro(mes);
+    db.prepare(`INSERT INTO ${tabla} (guildId, tautulliUserId, ${columna}, enviado_en) VALUES (?, ?, ?, ?)`).run(
+        String(guildId),
+        String(tautulliUserId),
+        mes.mes,
+        Date.now(),
+    );
 }
 
-async function enviar(client, ahora) {
-    const { dia, hora } = plexHistorial.momento(Math.floor(ahora / 1000));
-    if (!dia.endsWith("-01") || hora < HORA) return 0;
-    // El 1 de enero, además del mes (diciembre), el resumen del año entero (#381).
-    const periodos = dia.endsWith("-01-01") ? [mesAnterior(ahora), anioAnterior(ahora)] : [mesAnterior(ahora)];
-    let enviados = 0;
-    for (const guild of client.guilds.cache.values()) {
-        if (!plexLinks.getLinks(guild.id).length) continue;
-        const { url, apiKey } = tautulli.getConfig(guild.id);
-        if (url && apiKey) {
-            try {
-                await plexHistorial.sincronizar(guild.id);
-            } catch (e) {
-                log.warn(`Plex Wrapped: no se pudo copiar lo último del historial de ${guild.name} (se usa lo que hay): ${e.message}`);
-            }
-        }
-        for (const periodo of periodos) {
-            try {
-                enviados += await enviarPorDm(client, guild, periodo);
-            } catch (e) {
-                log.warn(`No se pudo mandar el Plex Wrapped (${periodo.mes}) en ${guild.name}: ${e.message}`);
-            }
-        }
-    }
-    log.info(`Plex Wrapped ${periodos.map((p) => p.mes).join(" y ")}: ${enviados} resúmenes enviados por DM`);
-    return enviados;
-}
-
-module.exports = { HORA, mesAnterior, anioAnterior, resumenPersonal, mensajePersonal, graficoPersonal, enviarPorDm, enviarSiToca };
+module.exports = { HORA, mesAnterior, anioAnterior, resumenPersonal, mensajePersonal, graficoPersonal, pendientesDe, registrarEnviado };
