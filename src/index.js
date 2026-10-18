@@ -132,7 +132,7 @@ client.once("clientReady", async () => {
         runJob(
             `Backfill de roles (${guild.name})`,
             async () => {
-                const asignados = await xpSystem.backfillRoles(guild);
+                const asignados = await require("./discord/envios/roles").backfillRoles(guild);
                 if (asignados > 0) log.info(`Backfill: ${asignados} roles de nivel asignados en ${guild.name}`);
                 // Después del backfill, que ya ha cargado los miembros del servidor: pedirlos otra vez
                 // a la vez hacía que Discord limitara la petición ("opcode 8 was rate limited").
@@ -329,7 +329,12 @@ client
     });
 
 client.on("messageReactionAdd", (reaction, user) => {
-    xpSystem.handleReactionXp(reaction, user).catch((e) => createLogger("XP").error(`Error procesando una reacción de ${user?.id}:`, e));
+    xpSystem
+        .handleReactionXp(reaction, user)
+        .then((xp) => {
+            if (xp) return require("./discord/envios/xp").procesarResultadoXp(xp.guild, xp.member, xp.resultado);
+        })
+        .catch((e) => createLogger("XP").error(`Error procesando una reacción de ${user?.id}:`, e));
 });
 
 client.on("voiceStateUpdate", (oldState, newState) => {

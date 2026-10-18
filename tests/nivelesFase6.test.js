@@ -8,9 +8,11 @@ const diaria = require("../src/systems/xp/diaria");
 const achievements = require("../src/systems/achievementsSystem");
 const { ensureUser } = require("../src/systems/xp/config");
 const { handleMessageXp, handleReactionXp } = require("../src/systems/xp/actividad");
-const { runLogrosPendientesJob } = require("../src/systems/logros/recordatorio");
+const { runLogrosPendientesJob } = require("../src/discord/envios/logros");
 const rankings = require("../src/paneles/perfil/rankings");
 const avisosDm = require("../src/systems/avisosDm");
+const rachasEnvios = require("../src/discord/envios/rachas");
+const xpEnvios = require("../src/discord/envios/xp");
 
 let n = 0;
 const nuevoServidor = () => `g-f6-${++n}`;
@@ -146,7 +148,7 @@ describe("DM al perder una racha larga (#342)", () => {
         fijarRacha(g, "perdida-c", 5, "2026-10-09"); // sigue viva
         fijarRacha(g, "perdida-d", 5, "2026-10-07"); // ya se avisó otro día
         const client = cliente([servidor(g)]);
-        await rachas.runStreakLostJob(client);
+        await rachasEnvios.runStreakLostJob(client);
         expect(enviados.map((e) => e.para)).toEqual(["perdida-a"]);
         expect(enviados[0].embeds[0].data.description).toContain("**12 días seguidos**");
     });
@@ -158,7 +160,7 @@ describe("DM al perder una racha larga (#342)", () => {
         fijarRacha(g2, "sin-racha", 4, "2026-10-08");
         avisosDm.fijar("silenciado", "racha_perdida", false);
         xp.setConfig(g2, "streak_enabled", "0");
-        await rachas.runStreakLostJob(cliente([servidor(g), servidor(g2)]));
+        await rachasEnvios.runStreakLostJob(cliente([servidor(g), servidor(g2)]));
         expect(enviados).toHaveLength(0);
     });
 
@@ -166,16 +168,16 @@ describe("DM al perder una racha larga (#342)", () => {
         const g = nuevoServidor();
         xp.setConfig(g, "streak_grace_per_month", "1");
         fijarRacha(g, "con-gracia", 6, "2026-10-08");
-        await rachas.runStreakLostJob(cliente([servidor(g)]));
+        await rachasEnvios.runStreakLostJob(cliente([servidor(g)]));
         expect(enviados).toHaveLength(0); // aún puede salvarla volviendo hoy
         dia("2026-10-11T12:00:00Z");
-        await rachas.runStreakLostJob(cliente([servidor(g)]));
+        await rachasEnvios.runStreakLostJob(cliente([servidor(g)]));
         expect(enviados.map((e) => e.para)).toEqual(["con-gracia"]);
     });
 
     test("también limpia la XP diaria vieja", async () => {
         diaria.sumar("g-limpieza", "u", "2026-09-01", 5);
-        await rachas.runStreakLostJob(cliente());
+        await rachasEnvios.runStreakLostJob(cliente());
         expect(diaria.xpDeHoy("g-limpieza", "u", "2026-09-01")).toBe(0);
     });
 });
@@ -349,12 +351,14 @@ describe("desactivar mis anuncios de subida de nivel (#373)", () => {
         const guild = servidor(g, { channels: { cache: new Map([["anuncios", canal]]) } });
         const miembroConToString = (id) => ({ ...miembro(id), toString: () => `<@${id}>`, user: { id } });
 
-        await xp.addXp(guild, miembroConToString("a"), 100000);
+        const ra = await xp.addXp(guild, miembroConToString("a"), 100000);
+        await xpEnvios.procesarResultadoXp(guild, miembroConToString("a"), ra);
         expect(send).toHaveBeenCalledTimes(1);
 
         xp.setAnunciosOff(g, "b", true);
         expect(xp.anunciosOff(g, "b")).toBe(true);
-        await xp.addXp(guild, miembroConToString("b"), 100000);
+        const rb = await xp.addXp(guild, miembroConToString("b"), 100000);
+        await xpEnvios.procesarResultadoXp(guild, miembroConToString("b"), rb);
         expect(send).toHaveBeenCalledTimes(1);
         expect(ensureUser(g, "b").nivel).toBeGreaterThan(0);
 

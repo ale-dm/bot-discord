@@ -17,6 +17,7 @@ const seerrClient = require("../src/services/seerrClient");
 const guildSettings = require("../src/systems/guildSettings");
 const plexLinks = require("../src/systems/plexLinks");
 const wrapped = require("../src/systems/plexWrapped");
+const wrappedEnvios = require("../src/discord/envios/plexWrapped");
 const campeones = require("../src/systems/plexCampeones");
 const cine = require("../src/systems/cine");
 const votos = require("../src/systems/cine/votos");
@@ -97,14 +98,14 @@ describe("Wrapped anual (#381)", () => {
             guilds: { cache: new Map([[g, { id: g, name: "S" }]]) },
         };
         jest.spyOn(require("../src/services/tautulliClient"), "getConfig").mockReturnValue({ url: "", apiKey: "" });
-        expect(await wrapped.enviarSiToca(c, AHORA)).toBe(2);
+        expect(await wrappedEnvios.enviarSiToca(c, AHORA)).toBe(2);
         const dms = c.enviados.get("disc-a");
         expect(dms).toHaveLength(2);
         expect(dms[0].content).toMatch(/diciembre de 2026/);
         expect(dms[1].content).toMatch(/Wrapped · 2026/);
         expect(c.enviados.has("disc-b")).toBe(false);
         expect(db.prepare("SELECT COUNT(*) AS n FROM plex_wrapped_anual_enviados WHERE guildId = ?").get(g).n).toBe(1);
-        expect(await wrapped.enviarSiToca(c, AHORA + 3600000)).toBe(0); // aunque el bot se reinicie ese día
+        expect(await wrappedEnvios.enviarSiToca(c, AHORA + 3600000)).toBe(0); // aunque el bot se reinicie ese día
     });
 
     test("otro día 1 solo manda el del mes", async () => {
@@ -113,7 +114,7 @@ describe("Wrapped anual (#381)", () => {
         ver(g, 1, Date.UTC(2026, 8, 20, 18), 3600, { serie: "X" });
         const c = { ...clienteDm(), guilds: { cache: new Map([[g, { id: g, name: "S" }]]) } };
         jest.spyOn(require("../src/services/tautulliClient"), "getConfig").mockReturnValue({ url: "", apiKey: "" });
-        expect(await wrapped.enviarSiToca(c, Date.UTC(2026, 9, 1, 11))).toBe(1);
+        expect(await wrappedEnvios.enviarSiToca(c, Date.UTC(2026, 9, 1, 11))).toBe(1);
         expect(db.prepare("SELECT COUNT(*) AS n FROM plex_wrapped_anual_enviados WHERE guildId = ?").get(g).n).toBe(0);
     });
 });

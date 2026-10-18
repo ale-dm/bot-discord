@@ -1,14 +1,12 @@
 // Lo que se ve de la quiniela: la quiniela de una competición (o el aviso de que no hay, con el botón de crearla para admins).
 // Lo usan el comando (quiniela.js) y el botón Refrescar (quiniela/botones.js), así que no dependen uno del otro (#474).
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
-const repo = require("../../../repositorios/apuestas");
+const servicio = require("./servicio");
 const { DEPORTES } = require("../../../services/oddsApi");
 const { minimoAciertosQuiniela } = require("../../../systems/apuestas/liquidacion");
-const misJugadas = require("../../../systems/apuestas/misJugadas");
 const { lineaQuiniela } = require("../../../paneles/misJugadas");
 const { filaPestanas } = require("../../../paneles/pestanasJuegos");
 const { esAdmin } = require("../../../core/permisos");
-const { obtenerPartidosQuiniela } = require("../../../systems/apuestas/quinielas");
 
 // La quiniela sin partido abierto: aviso (y botón de crearla, si es admin) con sus pestañas.
 function vistaSinQuiniela(interaction, deporte, deporteSeleccionado, isAdmin) {
@@ -39,14 +37,11 @@ function vistaSinQuiniela(interaction, deporte, deporteSeleccionado, isAdmin) {
 }
 
 // La quiniela abierta: sus partidos, el bote, tu quiniela si ya has apostado y los botones de apostar.
-function vistaQuiniela(interaction, quiniela, deporte, deporteSeleccionado) {
-    const partidos = obtenerPartidosQuiniela(quiniela.id);
+function vistaQuiniela(interaction, { quiniela, partidos, bote, tuya }, deporte, deporteSeleccionado) {
     const listado = partidos.map((p) => `${p.orden}. ${p.home_team} vs ${p.away_team}`).join("\n");
-    const bote = repo.boteQuiniela(quiniela.id);
 
     // Si ya has apostado, tus pronósticos con ✅/❌ en los partidos jugados (antes solo se decía que ya
     // habías apostado, y no había forma de volver a verlos).
-    const tuya = misJugadas.quinielaDe(interaction.user.id, quiniela.id);
     const embed = new EmbedBuilder()
         .setTitle(`🧾 ${quiniela.jornada} — ${deporte.name}`)
         .setDescription(
@@ -93,12 +88,12 @@ async function mostrar(interaction, deporteForzado = null) {
         return;
     }
 
-    const quiniela = repo.ultimaQuinielaAbierta(deporteSeleccionado);
-    if (!quiniela) {
+    const datos = servicio.datosDeVista(deporteSeleccionado, interaction.user.id);
+    if (!datos) {
         await responder(vistaSinQuiniela(interaction, deporte, deporteSeleccionado, esAdmin(interaction)));
         return;
     }
-    await responder(vistaQuiniela(interaction, quiniela, deporte, deporteSeleccionado));
+    await responder(vistaQuiniela(interaction, datos, deporte, deporteSeleccionado));
 }
 
 module.exports = { mostrar, vistaQuiniela, vistaSinQuiniela };

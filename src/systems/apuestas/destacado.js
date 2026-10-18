@@ -4,14 +4,8 @@
 //
 // "Partido grande": de los de hoy que aún no han empezado, el que más apuestas tiene ya; a igualdad, el más igualado
 // (cuotas de local y visitante más parecidas, que suele ser un partido entre dos buenos equipos) y, si no, el primero.
-// Cron cada hora de 10 a 20 y al arrancar: se publica una vez al día por servidor (apuestas.destacado_dia), aunque el
-// bot se reinicie. Se activa o desactiva en /paneladmin → ⚽ Apuestas.
-const { mensajeDestacado } = require("../../discord/mensajes/destacado");
+// El envío (embed y botones) vive en src/discord/envios/destacado (#472): aquí solo se elige el partido.
 const db = require("../../core/db");
-const guildSettings = require("../guildSettings");
-const { createLogger } = require("../../core/logger");
-
-const log = createLogger("Apuestas");
 
 /** Desde esta hora (Madrid) se publica. */
 const HORA = 10;
@@ -38,46 +32,4 @@ function elegir(ahora = Date.now()) {
     return candidatos[0] || null;
 }
 
-/**
- * El mensaje: el partido con sus cuotas y los mismos botones de apostar que el detalle del partido en /juegos (abren el
- * formulario de cada uno; si el partido ya ha empezado, el formulario lo rechaza).
- */
-const mensaje = mensajeDestacado;
-
-/**
- * Cron y arranque: en cada servidor con el destacado activo y canal de resultados, si son las 10:00 o más y hoy no se ha
- * publicado, publica el de hoy. @returns {Promise<number>} servidores en los que se ha publicado
- */
-async function publicarSiToca(client, ahora = Date.now()) {
-    const { dia, hora } = momento(ahora);
-    if (hora < HORA) return 0;
-    let publicados = 0;
-    for (const guild of client.guilds.cache.values()) {
-        const cfg = guildSettings.getSettings(guild.id).apuestas;
-        if (!cfg.destacado || !cfg.canal_resultados || cfg.destacado_dia === dia) continue;
-        const partido = elegir(ahora);
-        if (!partido) {
-            log.debug(`Partido destacado: hoy no queda ningún partido con cuotas (${guild.name})`);
-            continue;
-        }
-        try {
-            const canal =
-                guild.channels.cache.get(cfg.canal_resultados) || (await guild.channels.fetch(cfg.canal_resultados).catch(() => null));
-            if (!canal?.isTextBased?.()) {
-                log.warn(`Partido destacado: el canal de resultados ${cfg.canal_resultados} de ${guild.name} no existe o no es de texto`);
-                continue;
-            }
-            await canal.send(mensaje(partido));
-            guildSettings.setSetting(guild.id, "apuestas.destacado_dia", dia);
-            publicados++;
-            log.info(
-                `Partido destacado del ${dia} en ${guild.name}: ${partido.home_team} vs ${partido.away_team} (${partido.apuestas} apuestas)`,
-            );
-        } catch (e) {
-            log.warn(`No se pudo publicar el partido destacado en ${guild.name}: ${e.message}`);
-        }
-    }
-    return publicados;
-}
-
-module.exports = { HORA, momento, elegir, mensaje, publicarSiToca };
+module.exports = { HORA, momento, elegir };

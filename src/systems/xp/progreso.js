@@ -4,10 +4,8 @@ const db = require("../../core/db");
 const achievements = require("../achievementsSystem");
 const { createLogger } = require("../../core/logger");
 const { ensureGuildDefaults, getConfig, ensureUser, xpForNextLevel, titleForLevel, nextTitle } = require("./config");
-const { madridDateStr, updateStreak, streakBonusPct, getEffectiveStreak, buildStreakContinuedEmbed } = require("./rachas");
+const { madridDateStr, updateStreak, streakBonusPct, getEffectiveStreak } = require("./rachas");
 const diaria = require("./diaria");
-const { enviarAviso } = require("../avisosDm");
-const { tryAssignRewards, maybeAnnounceLevelUp } = require("./roles");
 const eventos = require("../eventos");
 
 const log = createLogger("XP");
@@ -52,7 +50,9 @@ async function addXp(guild, member, amount, opciones = {}) {
     const dia = madridDateStr();
     let gain = calcularGanancia(guildId, amount, streak, opciones.multiplicadorCanal ?? 1);
     if (!opciones.manual) gain = recortarAlTope(guildId, userId, gain, dia);
-    const resultado = { gain, oldLevel, streak_dias: streak.streakDias, streakDias: streak.streakDias };
+    // Qué ha cambiado (subida de nivel, racha que se continúa): el adaptador de Discord lo pinta (src/discord/envios/xp).
+    const efectos = { subidaNivel: null, rachaActiva: null };
+    const resultado = { gain, oldLevel, streak_dias: streak.streakDias, streakDias: streak.streakDias, eventos: efectos };
     if (gain <= 0) return { ...user, ...resultado };
 
     user.xp += gain;
@@ -75,19 +75,22 @@ async function addXp(guild, member, amount, opciones = {}) {
     await achievements.applyEvent(guild, userId, "xp_level", user.nivel);
     if (!opciones.manual) await achievements.applyEvent(guild, userId, "xp_dia", diaria.sumar(guildId, userId, dia, gain));
 
-    if (user.nivel > oldLevel) await registrarSubida(guild, member, guildId, userId, oldLevel, user.nivel);
+    if (user.nivel > oldLevel) {
+        await registrarSubida(guild, guildId, userId, oldLevel, user.nivel);
+        efectos.subidaNivel = { oldLevel, newLevel: user.nivel };
+    }
 
     if (streakEnabled && streak.incremented && streak.streakDias >= 2) {
         const pct = streakBonusPct(guildId, streak.streakDias);
         log.debug(`${userId}: racha de ${streak.streakDias} días (+${pct}% XP)`);
-        await enviarAviso(guild.client, userId, "racha_activa", { embeds: [buildStreakContinuedEmbed(guild, streak.streakDias, pct)] });
+        efectos.rachaActiva = { streakDias: streak.streakDias, pct };
     }
 
     return { ...user, ...resultado };
 }
 
-/** Guarda cada nivel nuevo en el historial, da los roles de premio y anuncia la subida. */
-async function registrarSubida(guild, member, guildId, userId, oldLevel, nivel) {
+/** Guarda cada nivel nuevo en el historial (los roles y el anuncio los pinta el adaptador de Discord). */
+async function registrarSubida(guild, guildId, userId, oldLevel, nivel) {
     const insertHistory = db.prepare(`
             INSERT INTO xp_level_history (guildId, userId, nivel, createdAt)
             VALUES (?, ?, ?, ?)
@@ -96,8 +99,6 @@ async function registrarSubida(guild, member, guildId, userId, oldLevel, nivel) 
         insertHistory.run(guildId, userId, lvl, Date.now());
     }
     log.info(`${userId} sube a nivel ${nivel} (desde ${oldLevel}) en ${guild.name}`);
-    await tryAssignRewards(guild, member, oldLevel, nivel);
-    await maybeAnnounceLevelUp(guild, member, nivel);
 }
 
 function getProfile(guildId, userId) {

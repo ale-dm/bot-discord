@@ -6,6 +6,13 @@ const limites = require("./limites");
 const { estaBloqueadoPorTiempo, yaApostoQuiniela } = require("./quinielas");
 const { logInfo } = require("../../core/logger");
 
+/** Lo que consultan las reglas al cobrar (#474): en los tests se pasan dobles y no hace falta la base de datos. */
+const REALES_APUESTA = {
+    saldoGastable: (userId) => dinero.saldoGastable(userId),
+    yaAposto: yaApostoQuiniela,
+    comprobarLimite: limites.comprobar,
+};
+
 const MAX_BET_AMOUNT = Number(process.env.MAX_BET_AMOUNT || 1000);
 const MIN_BET_AMOUNT = Number(process.env.MIN_BET_AMOUNT || 10);
 const SIN_EFECTIVO = "❌ No te llega el efectivo. Saca dinero del banco (💵 Sacar).";
@@ -22,8 +29,9 @@ function cierreDeLaJornada(partidos) {
 /**
  * El aviso de la primera comprobación que falle al apostar, o null si se puede cobrar. `pronosticosCompletos`: false si el
  * editor aún tiene algún partido sin rellenar. Síncrona a propósito: el tope diario va justo antes del cobro, sin await por medio.
+ * `d`: las dependencias con las que se consulta el efectivo, la apuesta repetida y el tope diario (dobles en los tests).
  */
-function avisoDeApuesta({ userId, guildId, quinielaId, partidos, pronosticos, pronosticosCompletos = true, cantidad }) {
+function avisoDeApuesta({ userId, guildId, quinielaId, partidos, pronosticos, pronosticosCompletos = true, cantidad }, d = REALES_APUESTA) {
     if (!pronosticosValidos(pronosticos, partidos) || !pronosticosCompletos) {
         return "❌ Pronósticos incompletos o inválidos. Completa todos los partidos antes de confirmar.";
     }
@@ -32,10 +40,10 @@ function avisoDeApuesta({ userId, guildId, quinielaId, partidos, pronosticos, pr
     }
     // Quien aún no tiene cuenta empieza con el saldo inicial (como en el casino). Se apuesta con el 💵 efectivo + 🥷 dinero negro
     // (systems/dinero, F-EC-06b: se gasta igual).
-    if (dinero.saldoGastable(userId) < cantidad) return SIN_EFECTIVO;
-    if (yaApostoQuiniela(quinielaId, userId)) return "⚠️ Ya has apostado esta quiniela.";
+    if (d.saldoGastable(userId) < cantidad) return SIN_EFECTIVO;
+    if (d.yaAposto(quinielaId, userId)) return "⚠️ Ya has apostado esta quiniela.";
     // 🚦 Tope diario del servidor (F-AP-09), que suma partidos y quiniela.
-    const limite = limites.comprobar(guildId, userId, cantidad);
+    const limite = d.comprobarLimite(guildId, userId, cantidad);
     if (limite) {
         logInfo(`[Quiniela] Apuesta de ${userId} (${cantidad}) rechazada por los límites: ${limite}`);
         return `🚦 ${limite}`;

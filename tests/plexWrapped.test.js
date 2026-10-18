@@ -4,6 +4,7 @@
 const db = require("../src/core/db");
 const plexLinks = require("../src/systems/plexLinks");
 const wrapped = require("../src/systems/plexWrapped");
+const wrappedEnvios = require("../src/discord/envios/plexWrapped");
 
 let n = 0;
 let filaId = 1000;
@@ -90,7 +91,7 @@ test("cada persona recibe por DM solo su propio resumen, y nada en ningún canal
     ver(g, 1, madrid(9, 5, 21), 2 * 3600, { serie: "Severance" });
     ver(g, 2, madrid(9, 6, 21), 1 * 3600, { serie: "Shogun" });
     const c = cliente();
-    expect(await wrapped.enviarPorDm(c, { id: g }, MES())).toBe(2);
+    expect(await wrappedEnvios.enviarPorDm(c, { id: g }, MES())).toBe(2);
     expect(c.enviados.get("disc-ana")[0].content).toMatch(/Severance/);
     expect(c.enviados.get("disc-ana")[0].content).not.toMatch(/Shogun/);
     expect(c.enviados.get("disc-luis")[0].content).toMatch(/Shogun/);
@@ -104,11 +105,11 @@ test("un DM que falla no para a los demás, y nadie recibe el mismo mes dos vece
     ver(g, 11, madrid(9, 5, 21), 3600, { serie: "X" });
     ver(g, 12, madrid(9, 5, 21), 3600, { serie: "Y" });
     const c = cliente(["disc-a"]);
-    expect(await wrapped.enviarPorDm(c, { id: g }, MES())).toBe(1);
+    expect(await wrappedEnvios.enviarPorDm(c, { id: g }, MES())).toBe(1);
     expect(c.enviados.has("disc-b")).toBe(true);
     // Segunda pasada: B ya lo tiene; A (con DMs cerrados) se vuelve a intentar.
     const otra = cliente();
-    expect(await wrapped.enviarPorDm(otra, { id: g }, MES())).toBe(1);
+    expect(await wrappedEnvios.enviarPorDm(otra, { id: g }, MES())).toBe(1);
     expect(otra.enviados.has("disc-b")).toBe(false);
 });
 
@@ -118,8 +119,8 @@ test("el día 1 a partir de las 10:00 (Madrid) se envía, y otros días no", asy
     ver(g, 21, madrid(9, 5, 21), 3600, { serie: "Q" });
     const c = cliente();
     const client = { users: c.users, guilds: { cache: new Map([[g, { id: g, name: g }]]) } };
-    expect(await wrapped.enviarSiToca(client, madrid(10, 1, 9))).toBe(0);
-    expect(await wrapped.enviarSiToca(client, madrid(10, 2, 11))).toBe(0);
-    expect(await wrapped.enviarSiToca(client, madrid(10, 1, 11))).toBe(1);
-    expect(await wrapped.enviarSiToca(client, madrid(10, 1, 14))).toBe(0);
+    expect(await wrappedEnvios.enviarSiToca(client, madrid(10, 1, 9))).toBe(0);
+    expect(await wrappedEnvios.enviarSiToca(client, madrid(10, 2, 11))).toBe(0);
+    expect(await wrappedEnvios.enviarSiToca(client, madrid(10, 1, 11))).toBe(1);
+    expect(await wrappedEnvios.enviarSiToca(client, madrid(10, 1, 14))).toBe(0);
 });

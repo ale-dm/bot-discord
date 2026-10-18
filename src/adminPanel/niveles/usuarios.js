@@ -2,6 +2,7 @@
 // multiplicador de coste.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const xp = require("../../systems/xpSystem");
+const xpEnvios = require("../../discord/envios/xp");
 const adminAudit = require("../../systems/adminAudit");
 const { modalConCampos, usuarioElegido } = require("../common");
 
@@ -78,7 +79,8 @@ async function modalAjustar(interaction) {
         await interaction.reply({ content: "ID o cantidad inválida.", flags: MessageFlags.Ephemeral });
         return true;
     }
-    await xp.adjustUserXp(interaction.guild, userId, amount);
+    const resultado = await xp.adjustUserXp(interaction.guild, userId, amount);
+    await xpEnvios.procesarResultadoXp(interaction.guild, userId, resultado);
     const p = xp.getProfile(guildId, userId);
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "xp.user.adjust", details: { userId, amount } });
     await interaction.reply({ content: `✅ XP ajustada. LVL ${p.nivel}, total ${p.xp_total}.`, flags: MessageFlags.Ephemeral });

@@ -3,7 +3,6 @@
 // (alertas.admin_ids), con ✅ Guardar y ❌ Descartar. Nada se guarda sin que un admin lo apruebe.
 // Para no gastar Gemini en cada mensaje: se mira a cada persona cada RONDA mensajes con texto de verdad (60 caracteres o
 // más), en el canal del Duende si hay uno, y con un tope de llamadas por día y servidor. DUENDE_RECUERDOS_AUTO=0 lo apaga.
-const { mensajePropuesta } = require("../../discord/mensajes/recuerdos");
 const db = require("../../core/db");
 const guildSettings = require("../guildSettings");
 const perfiles = require("./perfiles");
@@ -71,8 +70,11 @@ function adminsDe(guildId) {
     return guildSettings.parseCsvIds(guildSettings.getSettings(guildId).alertas.admin_ids);
 }
 
-/** Pregunta a Gemini por una persona y, si hay algo, lo guarda como propuesta y avisa a los admins. */
-async function analizar(client, guildId, usuario, textos, deps = {}) {
+/**
+ * Pregunta a Gemini por una persona y, si hay algo, lo guarda como propuesta. No avisa a nadie: devuelve la propuesta
+ * para que el adaptador de Discord (src/discord/envios/recuerdos) mande los DMs.
+ */
+async function analizar(guildId, usuario, textos, deps = {}) {
     const gemini = deps.gemini || ((parts) => generarConGemini(parts, { maxTokens: 200, thinkingBudget: 0 }));
     const respuesta = await gemini(instruccion(textos));
     const texto = leerRecuerdo(respuesta);
@@ -81,40 +83,21 @@ async function analizar(client, guildId, usuario, textos, deps = {}) {
         .prepare("INSERT INTO duende_recuerdos_propuestos (guildId, userId, nombre, texto, creada_en) VALUES (?, ?, ?, ?, ?)")
         .run(String(guildId), String(usuario.id), usuario.nombre, texto, Date.now());
     const propuesta = { id: lastInsertRowid, guildId, userId: usuario.id, nombre: usuario.nombre, texto };
-    await avisarAdmins(client, propuesta);
     log.info(`Recuerdo propuesto sobre ${usuario.nombre} (${guildId}): «${texto}»`);
     return propuesta;
 }
 
-/** Un DM a cada admin con la propuesta y los dos botones. Un admin que tiene los DMs cerrados no para a los demás. */
-async function avisarAdmins(client, propuesta) {
-    const { embed, fila } = mensajePropuesta(propuesta);
-    for (const adminId of adminsDe(propuesta.guildId)) {
-        try {
-            const usuario = await client.users.fetch(adminId);
-            const dm = await usuario.send({ embeds: [embed], components: [fila], allowedMentions: { parse: [] } });
-            // Se apunta el mensaje para quitarle los botones si la propuesta caduca (#390).
-            if (dm?.id) {
-                db.prepare(
-                    "INSERT OR REPLACE INTO duende_recuerdos_dms (propuesta_id, userId, canalId, mensajeId) VALUES (?, ?, ?, ?)",
-                ).run(propuesta.id, String(adminId), String(dm.channelId ?? ""), String(dm.id));
-            }
-        } catch (e) {
-            log.debug(`No se pudo avisar a ${adminId} del recuerdo propuesto: ${e.message}`);
-        }
-    }
-}
-
 /**
- * Mira un mensaje de una persona: acumula y, cada RONDA, pide a Gemini que decida. Se llama en cada mensaje del servidor;
- * no bloquea nada (la llamada a Gemini va en segundo plano).
+ * Mira un mensaje de una persona: acumula y, cada RONDA, pide a Gemini que decida. Se llama en cada mensaje del
+ * servidor. Devuelve `null` si aún no toca, o una promesa con la propuesta (o null) si se ha llamado a Gemini, para
+ * que el adaptador de Discord avise a los admins.
  */
 function observar(message, deps = {}) {
-    if (!activo() || !message.guildId || message.author?.bot) return;
+    if (!activo() || !message.guildId || message.author?.bot) return null;
     const texto = String(message.content || "").trim();
-    if (texto.length < MIN_CARACTERES) return;
+    if (texto.length < MIN_CARACTERES) return null;
     const canalDuende = guildSettings.getSettings(message.guildId).duende?.allowed_channel_id;
-    if (canalDuende && message.channelId !== canalDuende) return;
+    if (canalDuende && message.channelId !== canalDuende) return null;
 
     const clave = `${message.guildId}|${message.author.id}`;
     const ahora = deps.ahora ? deps.ahora() : Date.now();
@@ -123,14 +106,12 @@ function observar(message, deps = {}) {
         buffers.delete(clave); // se reinserta al final: así el orden del mapa es el de la última actividad
         buffers.set(clave, { textos, ultimo: ahora });
         if (buffers.size > MAX_BUFFERS) buffers.delete(buffers.keys().next().value);
-        return;
+        return null;
     }
     buffers.delete(clave);
-    if (!puedeLlamar(message.guildId)) return;
+    if (!puedeLlamar(message.guildId)) return null;
     const usuario = { id: message.author.id, nombre: message.member?.displayName || message.author.username };
-    analizar(message.client, message.guildId, usuario, textos, deps).catch((e) =>
-        log.warn(`No se pudo analizar la conversación de ${usuario.nombre}: ${e.message}`),
-    );
+    return analizar(message.guildId, usuario, textos, deps);
 }
 
 /**
@@ -170,28 +151,23 @@ function puedeDecidir(id, adminId) {
 }
 
 /**
- * Caduca las propuestas pendientes de más de DIAS_CADUCA días (#390): pasan a `caducado` y se les quitan los botones a sus DMs. No se
- * avisa a nadie; las ya decididas no cambian. @returns {Promise<number>} propuestas caducadas
+ * Caduca las propuestas pendientes de más de DIAS_CADUCA días (#390): pasan a `caducado`. Devuelve los DMs que hay que
+ * limpiar para que el adaptador de Discord les quite los botones; las ya decididas no cambian.
+ * @returns {{ total: number, dms: Array<{ propuestaId: number, userId: string, mensajeId: string }> }}
  */
-async function caducarPendientes(client, ahora = Date.now()) {
+function caducarPendientes(ahora = Date.now()) {
     const limite = ahora - DIAS_CADUCA * 86400000;
     const caducadas = db.prepare("SELECT id FROM duende_recuerdos_propuestos WHERE estado = 'pendiente' AND creada_en < ?").all(limite);
+    const dms = [];
     for (const { id } of caducadas) {
         const r = db.prepare("UPDATE duende_recuerdos_propuestos SET estado = 'caducado' WHERE id = ? AND estado = 'pendiente'").run(id);
         if (r.changes !== 1) continue;
         for (const dm of db.prepare("SELECT userId, mensajeId FROM duende_recuerdos_dms WHERE propuesta_id = ?").all(id)) {
-            try {
-                const canal = await (await client.users.fetch(dm.userId)).createDM();
-                const mensaje = await canal.messages.fetch(dm.mensajeId);
-                await mensaje.edit({ content: "⌛ Esta propuesta caducó sin decidirse.", components: [] });
-            } catch (e) {
-                log.debug(`No se pudieron quitar los botones del DM de la propuesta ${id}: ${e.message}`);
-            }
+            dms.push({ propuestaId: id, userId: dm.userId, mensajeId: dm.mensajeId });
         }
         db.prepare("DELETE FROM duende_recuerdos_dms WHERE propuesta_id = ?").run(id);
     }
-    if (caducadas.length) log.info(`${caducadas.length} propuestas de recuerdo caducadas (más de ${DIAS_CADUCA} días sin decidir)`);
-    return caducadas.length;
+    return { total: caducadas.length, dms };
 }
 
 /**
@@ -228,6 +204,7 @@ module.exports = {
     leerRecuerdo,
     resolver,
     puedeDecidir,
+    adminsDe,
     caducarPendientes,
     DIAS_CADUCA,
     limpiar,

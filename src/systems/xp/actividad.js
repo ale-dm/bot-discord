@@ -79,9 +79,11 @@ async function handleMessageXp(message) {
 
     registrarMensaje(guildId, message.author.id, now);
 
-    await addXp(message.guild, member || { id: message.author.id }, gain, { multiplicadorCanal: multiplicadorDelCanal });
+    const autor = member || { id: message.author.id };
+    const resultado = await addXp(message.guild, autor, gain, { multiplicadorCanal: multiplicadorDelCanal });
     await achievements.applyEvent(message.guild, message.author.id, "message_count", 1);
     pase.registrarSeguro(guildId, message.author.id, "mensaje");
+    return { guild: message.guild, member: autor, resultado };
 }
 
 /**
@@ -108,7 +110,9 @@ async function handleReactionXp(reaction, user) {
     if (tieneRolIgnorado(guildId, autor)) return;
 
     registrarReaccion(guildId, mensaje.author.id, ahora);
-    await addXp(mensaje.guild, autor || { id: mensaje.author.id }, base, { multiplicadorCanal: multiplicadorDelCanal });
+    const autorXp = autor || { id: mensaje.author.id };
+    const resultado = await addXp(mensaje.guild, autorXp, base, { multiplicadorCanal: multiplicadorDelCanal });
+    return { guild: mensaje.guild, member: autorXp, resultado };
 }
 
 function handleVoiceStateUpdate(oldState, newState) {
@@ -154,6 +158,7 @@ function flushVoiceSeconds(guildId, userId) {
 }
 
 async function voiceTick(client) {
+    const resultados = [];
     const rows = db.prepare(`SELECT guildId, userId, voz_inicio FROM xp_users WHERE voz_inicio IS NOT NULL`).all();
     for (const row of rows) {
         const guild = client.guilds.cache.get(row.guildId);
@@ -179,10 +184,12 @@ async function voiceTick(client) {
         const perMin = Number(getConfig(row.guildId, "xp_voice_per_min") || 5);
         const xpGain = Math.floor((gainedSecs / 60) * perMin);
         if (xpGain > 0) {
-            await addXp(guild, member, xpGain, { multiplicadorCanal: multiplicadorDelCanal });
+            const resultado = await addXp(guild, member, xpGain, { multiplicadorCanal: multiplicadorDelCanal });
             await achievements.applyEvent(guild, member.id, "voice_minutes", gainedSecs / 60);
+            resultados.push({ guild, member, resultado });
         }
     }
+    return resultados;
 }
 
 module.exports = { handleMessageXp, handleReactionXp, handleVoiceStateUpdate, voiceTick };

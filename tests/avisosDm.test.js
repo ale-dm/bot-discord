@@ -7,6 +7,7 @@ const avisosDm = require("../src/systems/avisosDm");
 const avisosCmd = require("../src/commands/general/avisos");
 const { buildAvisos } = require("../src/paneles/avisos");
 const rachas = require("../src/systems/xp/rachas");
+const rachasEnvios = require("../src/discord/envios/rachas");
 
 const U = "u-avisos";
 const clienteCon = (send) => ({ users: { fetch: jest.fn(async () => ({ send })) } });
@@ -100,7 +101,7 @@ describe("los envíos del bot respetan la preferencia", () => {
             guilds: { cache: new Map([[g, { id: g, name: "Servidor" }]]) },
             users: { fetch: jest.fn(async (id) => ({ send: async () => enviados.push(id) })) },
         };
-        await rachas.runStreakWarningJob(client);
+        await rachasEnvios.runStreakWarningJob(client);
         expect(enviados).toEqual(["encendido"]);
     });
 });

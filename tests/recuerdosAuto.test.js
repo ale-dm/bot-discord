@@ -5,6 +5,7 @@ const db = require("../src/core/db");
 const guildSettings = require("../src/systems/guildSettings");
 const perfiles = require("../src/systems/duende/perfiles");
 const recuerdos = require("../src/systems/duende/recuerdosAuto");
+const recuerdosEnvios = require("../src/discord/envios/recuerdos");
 
 const G = "g-recuerdos";
 const ADMIN = "admin-rec";
@@ -119,7 +120,7 @@ describe("la respuesta de Gemini", () => {
         const usuario = { id: u, nombre: "Ana" };
         const client = { users: { fetch: jest.fn(async () => ({ send: jest.fn(async () => {}) })) } };
         const gemini = jest.fn(async () => 'Claro: {"recuerdo": "Ana hace escalada los martes"}');
-        const p = await recuerdos.analizar(client, G, usuario, [LARGO], { gemini });
+        const p = await recuerdosEnvios.analizar(client, G, usuario, [LARGO], { gemini });
         expect(p).toMatchObject({ guildId: G, userId: u, nombre: "Ana", texto: "Ana hace escalada los martes" });
         expect(client.users.fetch).toHaveBeenCalledWith(ADMIN);
         expect(db.prepare("SELECT estado FROM duende_recuerdos_propuestos WHERE id = ?").get(p.id).estado).toBe("pendiente");
@@ -128,9 +129,9 @@ describe("la respuesta de Gemini", () => {
     test("sin nada que recordar, o con una respuesta que no es JSON, no se propone nada", async () => {
         const client = { users: { fetch: jest.fn() } };
         expect(
-            await recuerdos.analizar(client, G, { id: "x", nombre: "X" }, [LARGO], { gemini: async () => '{"recuerdo": null}' }),
+            await recuerdosEnvios.analizar(client, G, { id: "x", nombre: "X" }, [LARGO], { gemini: async () => '{"recuerdo": null}' }),
         ).toBeNull();
-        expect(await recuerdos.analizar(client, G, { id: "x", nombre: "X" }, [LARGO], { gemini: async () => "no sé" })).toBeNull();
+        expect(await recuerdosEnvios.analizar(client, G, { id: "x", nombre: "X" }, [LARGO], { gemini: async () => "no sé" })).toBeNull();
         expect(db.prepare("SELECT COUNT(*) AS n FROM duende_recuerdos_propuestos").get().n).toBe(0);
     });
 
@@ -154,7 +155,7 @@ describe("la respuesta de Gemini", () => {
 describe("la decisión de un admin", () => {
     async function propuesta(userId = `r-${++n}`) {
         const client = { users: { fetch: jest.fn(async () => ({ send: jest.fn(async () => {}) })) } };
-        return recuerdos.analizar(client, G, { id: userId, nombre: "Ana" }, [LARGO], {
+        return recuerdosEnvios.analizar(client, G, { id: userId, nombre: "Ana" }, [LARGO], {
             gemini: async () => '{"recuerdo": "Ana hace escalada"}',
         });
     }

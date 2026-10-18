@@ -4,6 +4,8 @@ process.env.ODDS_API_KEY = "clave-de-prueba";
 const db = require("../src/core/db");
 const guildSettings = require("../src/systems/guildSettings");
 const liquidacion = require("../src/systems/apuestas/liquidacion");
+const enviosApuestas = require("../src/discord/envios/apuestas");
+const { resultadosEmbed } = require("../src/discord/mensajes/apuestas");
 const { enviarRecordatorios } = require("../src/systems/apuestas/recordatorios");
 const paneladmin = require("../src/commands/admin/paneladmin");
 
@@ -76,7 +78,7 @@ describe("resultados en el canal", () => {
         const canal = canalFalso();
         guildSettings.setSetting(G, "apuestas.canal_resultados", "canal-1");
         const client = clienteFalso({ canales: { "canal-1": canal }, guilds: [G, "guild-sin-canal"] });
-        expect(await liquidacion.anunciarResultados(client, resumen)).toBe(1);
+        expect(await enviosApuestas.anunciarResultados(client, resumen)).toBe(1);
         const enviado = canal.send.mock.calls[0][0];
         expect(enviado.allowedMentions).toEqual({ parse: [] });
         const texto = enviado.embeds[0].data.description;
@@ -85,7 +87,7 @@ describe("resultados en el canal", () => {
     });
 
     test("una quiniela en la que nadie llega al mínimo sale como devuelta", () => {
-        const embed = liquidacion.resultadosEmbed({
+        const embed = resultadosEmbed({
             partidos: [{ deporte: "laliga", home: "A", away: "B", marcador: "0-0", apostantes: 3, ganadores: [], repartido: 0 }],
             quinielas: [
                 {
@@ -107,14 +109,14 @@ describe("resultados en el canal", () => {
 
     test("sin nada cerrado o sin canal no se publica nada", async () => {
         const canal = canalFalso();
-        expect(await liquidacion.anunciarResultados(clienteFalso({ canales: { "canal-1": canal } }), { partidos: [], quinielas: [] })).toBe(
-            0,
-        );
+        expect(
+            await enviosApuestas.anunciarResultados(clienteFalso({ canales: { "canal-1": canal } }), { partidos: [], quinielas: [] }),
+        ).toBe(0);
         guildSettings.setSetting(G, "apuestas.canal_resultados", "no-existe");
         const resumen = {
             partidos: [{ deporte: "laliga", home: "A", away: "B", marcador: "1-0", apostantes: 1, ganadores: ["x"], repartido: 20 }],
         };
-        expect(await liquidacion.anunciarResultados(clienteFalso({ canales: { "canal-1": canal } }), resumen)).toBe(0);
+        expect(await enviosApuestas.anunciarResultados(clienteFalso({ canales: { "canal-1": canal } }), resumen)).toBe(0);
         expect(canal.send).not.toHaveBeenCalled();
         guildSettings.setSetting(G, "apuestas.canal_resultados", "");
     });

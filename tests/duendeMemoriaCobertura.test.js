@@ -91,9 +91,10 @@ describe("guardado diferido (#486)", () => {
     // El reloj se simula, pero la escritura en segundo plano usa el disco de verdad: se espera a que el fichero aparezca.
     const fakeTimers = () => jest.useFakeTimers({ now: AHORA, doNotFake: ["setImmediate", "nextTick"] });
     async function esperarFichero() {
-        for (let i = 0; i < 200 && !fs.existsSync(ruta()); i++) await new Promise((r) => setImmediate(r));
+        // La escritura es asíncrona de verdad (disco): con la máquina cargada puede tardar más de lo que parece.
+        for (let i = 0; i < 5000 && !fs.existsSync(ruta()); i++) await new Promise((r) => setImmediate(r));
         // El rename termina justo después de existir el .tmp: se espera a que desaparezca.
-        for (let i = 0; i < 200 && fs.existsSync(ruta() + ".tmp"); i++) await new Promise((r) => setImmediate(r));
+        for (let i = 0; i < 5000 && fs.existsSync(ruta() + ".tmp"); i++) await new Promise((r) => setImmediate(r));
     }
 
     test("pedir el guardado no escribe nada en ese momento: la escritura sale pasados 5 s, en segundo plano y compacta", async () => {
