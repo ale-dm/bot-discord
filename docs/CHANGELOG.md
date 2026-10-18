@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-18 (release y cierre del plan)
+
+- **🚀 Release a `main`**: las fases 1-12 del plan restante (#496, #497) y, después, la voz de `/conectar` (#499, #500) con los tests deterministas (#501), con merge commit (#502).
+- **✅ Verificación en Discord** de las fases 1-12 y cierre de las issues del [plan](planificacion/PLAN_ISSUES.md). Quedan abiertas solo las 3 de refactor de la fase 2 (#472, #474, #475).
+- **📄 Documentación al día**: [SIGUIENTES_PASOS](SIGUIENTES_PASOS.md), [PLAN_ISSUES](planificacion/PLAN_ISSUES.md) y [TAREAS](planificacion/TAREAS.md) (T-06 hecha) reflejan el estado real (migraciones hasta la 070, 2852 tests en 225 suites).
+
 ## 2026-10-17 (voz: /conectar elige el tiempo)
 
 - **⏱️ /conectar elige el tiempo y nada lo desconecta** (#499): `/conectar` acepta la duración (15, 30, 60 o 120 minutos) y, si ya estás dentro, renueva el tiempo desde ahora. La conexión de `/conectar` pasa a ser la única dueña del audio del servidor: `/tts`, el Duende por voz, la conversación en directo y `/sonidos` la reutilizan en su canal, se niegan con un aviso si está en otro, y nunca la destruyen. La salida automática espera a que acabe un sonido, un `/tts` que hable o una conversación en marcha. Nuevo `src/systems/ocupacion.js`, que registra quién ocupa el audio de un servidor y quita dos ciclos de dependencias. Tests: `tests/ocupacion.test.js`, `tests/presencia.test.js` y los de sonidos.

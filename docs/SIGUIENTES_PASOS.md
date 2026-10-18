@@ -1,7 +1,7 @@
 # Siguientes pasos
 
 Para quien coja el proyecto ahora: dónde está, qué comprobar primero y qué decisiones quedan abiertas. Actualizado el
-2026-10-11. Si algo de aquí ya está hecho, borrarlo (y apuntarlo en el [CHANGELOG](CHANGELOG.md)).
+2026-10-18. Si algo de aquí ya está hecho, borrarlo (y apuntarlo en el [CHANGELOG](CHANGELOG.md)).
 
 Para entender el proyecto en general: [README](../README.md) (puesta en marcha y convenciones),
 [FUNCIONALIDADES](FUNCIONALIDADES.md) (qué hace el bot), [DEPLOY](DEPLOY.md) (cómo se despliega) y las ideas, que son
@@ -9,31 +9,32 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
 
 ## 1. Dónde estamos
 
-- Todas las issues de funcionalidad de la planificación están hechas: apuestas (combinadas, goles y hándicap, directo,
-  liga de pronósticos, quinielas, retos), cripto (pool de liquidez, solo TTCL, panel con pestañas), tienda y Duende con
-  panel, Plex (`/plex` con botones, trofeos por país, recomendaciones, sesión de cine, Wrapped privado por DM), pase de
-  batalla, `/sonidos` y `/conectar`.
-- Auditoría de código del 2026-10-10: #238 a #244 y #278 a #281 están cerradas. #243 y #244 se comprobaron en Discord (T-03) y están en `main`. La puntuación del código está en 9,6 / 10 ([PUNTUACION](planificacion/PUNTUACION.md)). Lo que queda: #282 (configuración de GitHub sin verificar) y revisar `juegos/` fichero a fichero (Organización, 9 de 10).
-- Migraciones: hasta la `043_resumen_apuestas`, la tabla del ranking (#285). La siguiente es la `044`.
-- Los cabos sueltos de la revisión del 2026-10-08 están cerrados (ver el CHANGELOG).
-- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2406 tests en 204 suites. Los tests usan una
+- El [plan de las issues](planificacion/PLAN_ISSUES.md) está hecho casi entero: las fases 1 y 3 a 15 están en `main` y
+  probadas en Discord, con sus issues cerradas. De las 185 issues del plan quedan **3 abiertas**, las tres de refactor de
+  la fase 2: **#472** (`systems/` sin embeds ni Discord), **#474** (reglas de los juegos separadas de sus manejadores) y
+  **#475** (herramientas del Duende con dependencias inyectadas).
+- Última release a `main`: la voz de `/conectar` elige el tiempo (#499, #500) y los tests deterministas (#501), tras las
+  fases 1-12 del plan restante (#496, #497). Todo en el [CHANGELOG](CHANGELOG.md).
+- Migraciones: hasta la `070_admin_extras`. La siguiente es la `071`.
+- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2852 tests en 225 suites. Los tests usan una
   BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
 - No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica no tiene filas abiertas
   ([DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md)); lo pendiente está en issues.
 
 ## 2. Lo primero, en este orden
 
-1. **Probar en Discord** lo que cambió sin tests de Discord: la lista [T-04](planificacion/TAREAS.md) (refactors de tamaño, casino, Duende y voz, y el ranking). T-03 (#243, #244) ya está confirmada y en `main`.
-2. **Comprobar en GitHub** la protección de ramas, el check `test` y el Project board que describe CONTRIBUTING (#282). Desde el entorno no hay herramienta para leerlo.
+1. **Cerrar la fase 2**: los tres refactors que quedan son de arquitectura limpia (no cambian el comportamiento):
+   - **#472**: que `systems/` no construya mensajes ni embeds de Discord; cada sistema devuelve datos y un adaptador en
+     `src/discord/` (o `paneles/`) los pinta. Criterio: `grep -rl 'require("discord.js")' src/systems` vacío.
+   - **#474**: separar las reglas de los juegos de sus manejadores de Discord.
+   - **#475**: que las herramientas del Duende reciban sus dependencias en vez de hacer `require` diferido.
+2. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)). Al arrancar se aplican las migraciones pendientes; en el log,
+   `[Migraciones] Aplicada …`.
 3. **Comprobar las competiciones de la Odds API**: `ODDS_API_KEY=... node scripts/competicionesOdds.js`. Eurocopa, Copa
    del Rey y Europa League tienen claves sin verificar. El Mundial (`soccer_fifa_world_cup`) sí está confirmado. Si una
    clave no sale en `/v4/sports`, corregirla en `DEPORTES` de `src/services/oddsApi.js`.
-4. **Ramas remotas viejas**: las ramas `feature/…` ya fusionadas siguen en GitHub. Borrarlas desde la web de GitHub
-   (el proxy del entorno no deja borrarlas por git).
-5. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
-6. **Desplegar** desde `main` ([DEPLOY](DEPLOY.md)). Al arrancar se aplican las migraciones pendientes; en el log,
-   `[Migraciones] Aplicada …`.
-7. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
+4. **Copia de seguridad** de `data/banco.db` antes de desplegar (`npm run db:backup` dentro del contenedor).
+5. **Variables de entorno nuevas** que hay que tener en el `.env` del servidor para usar lo de estas semanas (ver
    `.env.example`): `TMDB_API_KEY` (trofeos por país), `SEERR_*` (recomendaciones y pedidos), `ODDS_DIRECTO`
    (apuestas en directo, opcional), `DUENDE_RECUERDOS_AUTO` y `DUENDE_RECUERDOS_MAX_DIA` (recuerdos automáticos),
    `SONIDOS_DIR` (opcional, si los sonidos no van en `DATA_DIR/sonidos`).
@@ -45,22 +46,12 @@ Ninguna de estas se ha implementado; cada una necesita una respuesta antes de to
 - **Roles de Discord en el pase de batalla.** El diseño los proponía (moderación, emojis…) y no se han concedido, porque
   los permisos del servidor los decide el servidor. Si se quieren, se harían uno a uno y con confirmación explícita.
 - **Recompensa del pase**: ahora son monedas (80…2.500, más un bonus de 2.000 al final). Se podría cambiar a TTCL.
-- **Cancelar una combinada** antes de que empiece algún partido (hoy solo se cancelan apuestas sueltas).
-- **Sonidos**: #321 (renombrar y cambiar archivo) y #322 (probar desde el panel) están hechas en
-  `claude/compassionate-newton-udiuga`, sin probar en Discord. Lo siguiente es la fase 0 del
-  [plan](planificacion/PLAN_ISSUES.md): #468 y #469 antes de mergear, y luego #470.
-- **Trofeos por país**: dependen de que Tautulli devuelva los `guid` `tmdb://`. Si no lo hace, los trofeos por país no
-  salen.
-- **Recomendaciones de Seerr**: se asume que `/{movie|tv}/{id}/recommendations` responde como en la documentación. Si
-  devuelve otra cosa, el panel "🎯 Para ti" quedaría vacío sin error.
 
 ## 4. Ideas abiertas y plan
 
-Hay 185 issues abiertas: 3 bugs (#468–#470), 10 refactors de arquitectura (#471–#480), 7 de rendimiento (#481–#487), 150 features y 15 anteriores.
-El orden de trabajo está en [PLAN_ISSUES](planificacion/PLAN_ISSUES.md), en fases (0 a 15), cada una con su condición de salida:
-0) cerrar lo abierto (bugs de sonidos, PR de sonidos, verificación de modales, medición), 1) victorias rápidas sin
-refactor, 2) cimientos de arquitectura y el rendimiento que los necesita, 3 a 15) features por dominio, en fases de como
-mucho 13 issues.
+Las ideas viven en issues con la etiqueta `feature-idea`. Hoy solo quedan abiertas las 3 de refactor de la fase 2 (#472,
+#474, #475), que son las siguientes en el [PLAN_ISSUES](planificacion/PLAN_ISSUES.md). Cuando se cierren, el plan queda
+terminado y cualquier idea nueva se añade como issue con su etiqueta.
 
 ## 5. Mapa de lo nuevo
 
@@ -68,7 +59,8 @@ mucho 13 issues.
 |---|---|
 | `src/commands/plex/plex.js`, `src/paneles/plex.js` | `/plex` con botones: cine, para ti, Wrapped y perfil |
 | `src/systems/plexWrapped.js` | Wrapped mensual privado: un DM por persona (día 1, desde las 10:00 de Madrid) |
-| `src/systems/sonidos.js`, `src/systems/presencia.js` | Guardar y reproducir sonidos; la presencia de `/conectar` (30 min por defecto) |
+| `src/systems/sonidos.js`, `src/systems/presencia.js` | Guardar y reproducir sonidos; la presencia de `/conectar` (15, 30, 60 o 120 min) |
+| `src/systems/ocupacion.js` | Quién ocupa el audio de un servidor: `/conectar` es el dueño y los demás reutilizan su conexión |
 | `src/commands/voz/sonidos.js`, `src/commands/voz/conectar.js` | `/sonidos` (tablero de botones) y `/conectar` |
 | `src/adminPanel/sonidos.js` | `/paneladmin` → 🔊 Sonidos: subir (modal con archivo) y borrar |
 | `src/systems/pase/pase.js`, `src/paneles/pase.js`, `src/commands/progresion/pase.js` | Pase de batalla; `/pase` |
@@ -93,9 +85,9 @@ Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del 
 
 ## 6. Recetas
 
-- **Una migración nueva**: el siguiente número libre (hoy el `060`) en `src/core/migrations`, con `up(db)`. Nunca editar
-  una que ya se haya aplicado en producción. Actualizar el número de migraciones en `tests/plexImportacion.test.js`
-  (`runMigrations(bd)`, hoy 26) y la lista de su comentario.
+- **Una migración nueva**: el siguiente número libre (hoy el `071`) en `src/core/migrations`, con `up(db)`. Nunca editar
+  una que ya se haya aplicado en producción. En `tests/plexImportacion.test.js` el número de migraciones se cuenta solo
+  (`runMigrations(bd)`), así que no hay que tocarlo.
 - **Un comando nuevo**: el módulo en `src/commands/…`, con `data` y `run`, y su nombre en la lista de
   `tests/parte8Admin.test.js`. Si tiene botones, `componentHandlers` con un prefijo propio. Añadirlo a `/ayuda`
   (`src/commands/general/ayuda.js`) y a [FUNCIONALIDADES](FUNCIONALIDADES.md).
