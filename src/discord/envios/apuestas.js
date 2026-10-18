@@ -1,8 +1,10 @@
-// Lo que se dice al cerrar: el DM a quien cobra, el resumen público y el embed de resultados.
-
-const avisosDm = require("../../avisosDm");
-const sonidosEventos = require("../../sonidos/eventos");
-const { logWarn, logDebug } = require("../../../core/logger");
+// Adaptador de la liquidación de apuestas (#472): los DM a quien cobra, el sonido de las apuestas grandes y el
+// resumen público en el canal de resultados. Las reglas viven en src/systems/apuestas/liquidacion.
+const avisosDm = require("../../systems/avisosDm");
+const sonidosEventos = require("../../systems/sonidos/eventos");
+const guildSettings = require("../../systems/guildSettings");
+const { logWarn, logDebug } = require("../../core/logger");
+const { resultadosEmbed } = require("../mensajes/apuestas");
 
 // Avisa por DM a quien haya cobrado algo. Best-effort: si tiene los DMs cerrados, se ignora.
 async function avisarGanadores(client, pagos) {
@@ -39,7 +41,6 @@ async function anunciarResultados(client, resumen) {
     sonarApuestasGrandes(client, resumen.pagos || []);
     const embed = resultadosEmbed(resumen);
     if (!embed) return 0;
-    const guildSettings = require("../../guildSettings");
     let publicados = 0;
     for (const guild of client.guilds.cache.values()) {
         const canalId = guildSettings.getSettings(guild.id).apuestas.canal_resultados;
@@ -59,6 +60,4 @@ async function anunciarResultados(client, resumen) {
     return publicados;
 }
 
-const { menciones, resultadosEmbed, resumenEmbed } = require("../../../discord/mensajes/apuestas");
-
-module.exports = { avisarGanadores, menciones, resultadosEmbed, anunciarResultados, resumenEmbed };
+module.exports = { avisarGanadores, anunciarResultados };

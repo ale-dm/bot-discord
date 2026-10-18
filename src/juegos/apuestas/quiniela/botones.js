@@ -2,7 +2,7 @@
 
 const { EmbedBuilder, ModalBuilder, MessageFlags } = require("discord.js");
 const { filasImporte } = require("../../../paneles/importes");
-const repo = require("../../../repositorios/apuestas");
+const servicio = require("./servicio");
 const { DEPORTES } = require("../../../services/oddsApi");
 const { esAdmin } = require("../../../core/permisos");
 const {
@@ -48,13 +48,13 @@ async function botonCrear(client, interaction, customId) {
 
 async function botonApostar(client, interaction, customId, userId) {
     const quinielaId = parseInt(customId.replace("quiniela_apostar_", ""), 10);
-    const quiniela = repo.quinielaAbierta(quinielaId);
+    const quiniela = servicio.quinielaAbierta(quinielaId);
     if (!quiniela) {
         await interaction.reply({ content: "❌ La quiniela ya no está disponible.", flags: MessageFlags.Ephemeral });
         return;
     }
 
-    const yaAposto = repo.yaApostoQuiniela(quinielaId, userId);
+    const yaAposto = servicio.yaAposto(quinielaId, userId);
     if (yaAposto) {
         await interaction.reply({ content: "⚠️ Ya has enviado una apuesta para esta quiniela.", flags: MessageFlags.Ephemeral });
         return;
@@ -74,7 +74,7 @@ async function botonApostar(client, interaction, customId, userId) {
 // Sesión y quiniela abierta de quien pulsa, o null si ya no valen (ya se ha avisado).
 async function sesionYQuinielaAbierta(interaction, userId, quinielaId) {
     const sesion = obtenerSesion(userId, quinielaId);
-    const quiniela = repo.quinielaAbierta(quinielaId);
+    const quiniela = servicio.quinielaAbierta(quinielaId);
     if (!sesion || !quiniela) {
         await interaction.reply({
             content: "❌ Sesión no válida o expirada. Pulsa de nuevo en Apostar quiniela.",

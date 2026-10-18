@@ -10,22 +10,15 @@
 // se reinicie. Vista previa en /paneladmin → 🩺 Sistema → 🔔 Alertas → 📊 Resumen semanal.
 const fs = require("fs");
 const path = require("path");
-const { embedResumen } = require("../discord/mensajes/resumenSemanal");
 const db = require("../core/db");
-const alertas = require("./alertas");
-const { sendDm } = require("./avisosDm");
-const { createLogger, getLogStats } = require("../core/logger");
+const { getLogStats } = require("../core/logger");
 const { getUsage } = require("../services/geminiClient");
 const { creditosRestantes, CREDITOS_AVISO } = require("../services/oddsApi");
-
-const log = createLogger("Resumen");
 
 const HORA = 9;
 const DIAS = 7;
 const DIA_MS = 86400 * 1000;
 const CLAVE = "resumen_admin_semana";
-
-const { momentoMadrid: momento } = require("../core/zonaMadrid");
 
 // Los mismos que usa el logger para rotar (core/logger): más allá del último, lo antiguo se borra.
 const LOG_MAX_FILES = Math.max(1, Number(process.env.LOG_MAX_FILES || 5));
@@ -95,41 +88,23 @@ function usoGemini(arranque = Date.now() - process.uptime() * 1000) {
     return { ...resta, desdeArranque: !geminiAnterior, arranque };
 }
 
-/** El resumen de los últimos 7 días, como embed. */
+/** Los datos del resumen de los últimos 7 días (los pinta src/discord/mensajes/resumenSemanal). */
 function construir(ahora = Date.now(), { dir } = {}) {
     const desde = ahora - DIAS * DIA_MS;
     const e = errores(desde, dir);
     const c = comandos(desde, dir);
     const g = usoGemini();
     const odds = creditosRestantes();
-    return embedResumen({ ahora, desde, dias: DIAS, e, c, g, odds, creditosAviso: CREDITOS_AVISO });
+    return { ahora, desde, dias: DIAS, e, c, g, odds, creditosAviso: CREDITOS_AVISO };
 }
 
 const semanaEnviada = () => db.prepare("SELECT valor FROM config WHERE clave = ?").get(CLAVE)?.valor || "";
 const apuntarSemana = (dia) =>
     db.prepare("INSERT INTO config (clave, valor) VALUES (?, ?) ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor").run(CLAVE, dia);
 
-/**
- * Cron (cada hora de los lunes) y arranque: si es lunes desde las 09:00 (Madrid) y esta semana no se ha mandado, lo
- * manda por DM a quien recibe las alertas. @returns {Promise<number>} DMs enviados
- */
-async function enviarSiToca(client, ahora = Date.now(), opciones = {}) {
-    const { dia, hora, lunes } = momento(ahora);
-    if (!lunes || hora < HORA || semanaEnviada() === dia) return 0;
-    const ids = alertas.destinatarios();
-    if (!ids.length) {
-        log.info("Resumen semanal sin destinatarios (alertas desactivadas)");
-        return 0;
-    }
-    const embed = construir(ahora, opciones);
-    let enviados = 0;
-    for (const id of ids) {
-        if (await sendDm(client, id, { embeds: [embed] })) enviados++;
-    }
-    apuntarSemana(dia);
+/** El resumen ya se ha mandado: desde el siguiente, Gemini cuenta solo lo nuevo. */
+function marcarEnviado() {
     geminiAnterior = getUsage();
-    log.info(`Resumen semanal enviado a ${enviados}/${ids.length} admins`);
-    return enviados;
 }
 
 /** Solo para los tests. */
@@ -137,4 +112,4 @@ function _reiniciar() {
     geminiAnterior = null;
 }
 
-module.exports = { HORA, errores, comandos, usoGemini, construir, enviarSiToca, _reiniciar };
+module.exports = { HORA, errores, comandos, usoGemini, construir, semanaEnviada, apuntarSemana, marcarEnviado, _reiniciar };

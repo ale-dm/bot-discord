@@ -1,14 +1,9 @@
-// Rachas diarias (días seguidos ganando XP, en hora de Madrid): el bonus de XP que dan, el DM al
-// continuarla y el aviso diario a quien está a punto de perderla.
+// Rachas diarias (días seguidos ganando XP, en hora de Madrid): el bonus de XP que dan y a quién hay que avisar de que
+// está a punto de perderla o la ha perdido. Los DM los manda el adaptador de Discord (src/discord/envios/rachas, #472).
 const db = require("../../core/db");
-const { createLogger } = require("../../core/logger");
 const { getConfig, ensureUser } = require("./config");
-const { sendDm, enviarAviso } = require("../avisosDm");
-const { buildStreakContinuedEmbed, buildStreakWarningEmbed, buildStreakLostEmbed } = require("../../discord/mensajes/rachas");
 const { sumarDias } = require("../../core/zonaMadrid");
 const diaria = require("./diaria");
-
-const log = createLogger("XP");
 
 /** Desde cuántos días de racha se avisa de haberla perdido. */
 const RACHA_MINIMA_AVISO = 3;
@@ -88,63 +83,56 @@ function getEffectiveStreak(guildId, userId) {
     return continuaRacha(guildId, user, today) ? user.streak_dias || 0 : 0;
 }
 
-async function runStreakWarningJob(client) {
+/** A quién toca avisar de que va a perder la racha: llevaba 2+ días seguidos y ayer aún no ganó XP (racha viva). */
+function avisosRachaPeligro() {
     const yesterday = madridYesterdayStr();
-    const rows = db
+    return db
         .prepare(
             `
-        SELECT guildId, userId, streak_dias
+        SELECT guildId, userId, streak_dias AS streakDias
         FROM xp_users
         WHERE streak_dias >= 2 AND streak_last_day = ?
     `,
         )
-        .all(yesterday);
-
-    let enviados = 0;
-    for (const row of rows) {
-        const guild = client.guilds.cache.get(row.guildId);
-        if (!guild) continue;
-        if (getConfig(row.guildId, "streak_enabled") === "0") continue;
-        const embed = buildStreakWarningEmbed(guild, row.streak_dias);
-        if (await enviarAviso(client, row.userId, "racha_peligro", { embeds: [embed] })) enviados++;
-    }
-    log.info(`Aviso de racha en peligro: ${enviados}/${rows.length} DMs enviados`);
+        .all(yesterday)
+        .filter((row) => getConfig(row.guildId, "streak_enabled") !== "0");
 }
 
 /**
- * DM único al perder una racha de 3 días o más (#342). La racha se pierde cuando pasa un día entero sin XP: el último día
- * con XP fue anteayer. Con días de gracia la pérdida llega un día más tarde (hace 3 días), y solo si entonces la gracia
- * estaba disponible: si no, ya se avisó ayer. Así cada racha perdida se avisa una sola vez. Al final borra la XP diaria vieja.
+ * A quién toca avisar de que ha perdido una racha de 3 días o más (#342). La racha se pierde cuando pasa un día entero sin
+ * XP: el último día con XP fue anteayer. Con días de gracia la pérdida llega un día más tarde (hace 3 días), y solo si
+ * entonces la gracia estaba disponible: si no, ya se avisó ayer. Así cada racha perdida se avisa una sola vez.
  */
-async function runStreakLostJob(client) {
-    const hoy = madridDateStr();
+function avisosRachaPerdida(hoy = madridDateStr()) {
     const rows = db
         .prepare(
-            `SELECT guildId, userId, streak_dias, streak_last_day, streak_gracia_mes, streak_gracia_usados
+            `SELECT guildId, userId, streak_dias AS streakDias, streak_last_day, streak_gracia_mes, streak_gracia_usados
              FROM xp_users WHERE streak_dias >= ? AND streak_last_day IN (?, ?)`,
         )
         .all(RACHA_MINIMA_AVISO, sumarDias(hoy, -2), sumarDias(hoy, -3));
 
-    let enviados = 0;
+    const avisos = [];
     for (const row of rows) {
-        const guild = client.guilds.cache.get(row.guildId);
-        if (!guild || getConfig(row.guildId, "streak_enabled") === "0") continue;
+        if (getConfig(row.guildId, "streak_enabled") === "0") continue;
         const anteayer = row.streak_last_day === sumarDias(hoy, -2);
         const salvadaPorGracia = graciaDisponible(row.guildId, row, anteayer ? hoy : sumarDias(hoy, -1));
         if (anteayer === salvadaPorGracia) continue;
-        if (await enviarAviso(client, row.userId, "racha_perdida", { embeds: [buildStreakLostEmbed(guild, row.streak_dias)] })) enviados++;
+        avisos.push({ guildId: row.guildId, userId: row.userId, streakDias: row.streakDias });
     }
-    log.info(`Aviso de racha perdida: ${enviados}/${rows.length} DMs enviados`);
+    return avisos;
+}
+
+/** Borra la XP diaria vieja (se llama tras el aviso de racha perdida). */
+function limpiarDiaria(hoy = madridDateStr()) {
     diaria.limpiar(hoy);
 }
 
 module.exports = {
     madridDateStr,
-    runStreakLostJob,
     updateStreak,
     streakBonusPct,
     getEffectiveStreak,
-    sendDm,
-    buildStreakContinuedEmbed,
-    runStreakWarningJob,
+    avisosRachaPeligro,
+    avisosRachaPerdida,
+    limpiarDiaria,
 };

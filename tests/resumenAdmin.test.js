@@ -11,7 +11,10 @@ jest.mock("../src/services/geminiClient", () => ({
     getUsage: () => ({ ...usoGemini }),
 }));
 const alertas = require("../src/systems/alertas");
+const alertasEnvios = require("../src/discord/envios/alertas");
 const resumen = require("../src/systems/resumenAdmin");
+const resumenEnvios = require("../src/discord/envios/resumenAdmin");
+const { embedResumen } = require("../src/discord/mensajes/resumenSemanal");
 const paneladmin = require("../src/commands/admin/paneladmin");
 
 // Lunes 12 de octubre de 2026 a las 09:30 en Madrid (07:30 UTC).
@@ -68,14 +71,14 @@ test("si ya se han borrado logs rotados y no queda nada anterior a la semana, se
     fs.writeFileSync(path.join(otro, "app-log.5.txt"), `${hace(2)} INFO  [Comando] /ping · ana (1) en #g @ S · 1 ms\n`);
     fs.writeFileSync(path.join(otro, "app-log.txt"), `${hace(1)} INFO  [Comando] /ping · ana (1) en #g @ S · 1 ms\n`);
     expect(resumen.comandos(LUNES - 7 * 86400 * 1000, otro)).toMatchObject({ total: 2, principioPerdido: true });
-    expect(resumen.construir(LUNES, { dir: otro }).data.fields.at(-1)).toMatchObject({ name: "ℹ️ Logs" });
+    expect(embedResumen(resumen.construir(LUNES, { dir: otro })).data.fields.at(-1)).toMatchObject({ name: "ℹ️ Logs" });
 });
 
 test("Gemini: desde el arranque la primera vez, y desde el resumen anterior después", async () => {
     Object.assign(usoGemini, { llamadas: 40, errores: 2, cuotaAgotada: 1, tokensEntrada: 12000, tokensSalida: 3000 });
     expect(resumen.usoGemini(0)).toMatchObject({ llamadas: 40, errores: 2, desdeArranque: true });
     const campo = (embed) => embed.data.fields.find((f) => f.name === "🤖 Gemini").value;
-    expect(campo(resumen.construir(LUNES, { dir }))).toMatch(
+    expect(campo(embedResumen(resumen.construir(LUNES, { dir })))).toMatch(
         /^40 llamadas · 2 errores \(1 por cuota\) · tokens 12\.000 de entrada \/ 3000 de salida\n_Desde el arranque del bot/,
     );
 });
@@ -86,15 +89,15 @@ describe("el DM de los lunes", () => {
         guilds: { cache: new Map([["g", { id: "g", ownerId: "dueño" }]]) },
         users: { fetch: jest.fn(async () => user) },
     };
-    beforeAll(() => alertas.iniciar(client));
+    beforeAll(() => alertasEnvios.iniciar(client));
     afterAll(() => alertas._reiniciar());
 
     test("solo los lunes desde las 09:00 de Madrid, una vez por semana, a quien recibe las alertas", async () => {
-        expect(await resumen.enviarSiToca(client, LUNES - 3600 * 1000, { dir })).toBe(0); // 08:30
-        expect(await resumen.enviarSiToca(client, LUNES + 86400 * 1000, { dir })).toBe(0); // martes
+        expect(await resumenEnvios.enviarSiToca(client, LUNES - 3600 * 1000, { dir })).toBe(0); // 08:30
+        expect(await resumenEnvios.enviarSiToca(client, LUNES + 86400 * 1000, { dir })).toBe(0); // martes
         expect(user.send).not.toHaveBeenCalled();
 
-        expect(await resumen.enviarSiToca(client, LUNES, { dir })).toBe(1);
+        expect(await resumenEnvios.enviarSiToca(client, LUNES, { dir })).toBe(1);
         expect(client.users.fetch).toHaveBeenCalledWith("dueño");
         const embed = user.send.mock.calls[0][0].embeds[0].data;
         expect(embed.title).toBe("📊 Resumen semanal del bot");
@@ -109,12 +112,12 @@ describe("el DM de los lunes", () => {
         expect(embed.fields[3].value).toBe("Sin consultar desde el arranque.");
 
         // Una hora después (o tras reiniciar), nada.
-        expect(await resumen.enviarSiToca(client, LUNES + 3600 * 1000, { dir })).toBe(0);
+        expect(await resumenEnvios.enviarSiToca(client, LUNES + 3600 * 1000, { dir })).toBe(0);
         expect(user.send).toHaveBeenCalledTimes(1);
 
         // La semana siguiente, Gemini cuenta solo lo nuevo.
         usoGemini.llamadas = 55;
-        expect(await resumen.enviarSiToca(client, LUNES + 7 * 86400 * 1000, { dir })).toBe(1);
+        expect(await resumenEnvios.enviarSiToca(client, LUNES + 7 * 86400 * 1000, { dir })).toBe(1);
         const gemini = user.send.mock.calls[1][0].embeds[0].data.fields.find((f) => f.name === "🤖 Gemini").value;
         expect(gemini).toMatch(/^15 llamadas · 0 errores/);
         expect(gemini).not.toMatch(/arranque/);

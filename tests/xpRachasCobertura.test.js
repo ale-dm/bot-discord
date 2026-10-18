@@ -3,6 +3,9 @@
 const db = require("../src/core/db");
 const xp = require("../src/systems/xpSystem");
 const rachas = require("../src/systems/xp/rachas");
+const { sendDm } = require("../src/systems/avisosDm");
+const { buildStreakContinuedEmbed } = require("../src/discord/mensajes/rachas");
+const { runStreakWarningJob } = require("../src/discord/envios/rachas");
 const { ensureUser } = require("../src/systems/xp/config");
 
 let n = 0;
@@ -150,7 +153,7 @@ describe("sendDm: el DM no debe romper el flujo", () => {
         const send = jest.fn(async () => {});
         const client = { users: { fetch: jest.fn(async () => ({ send })) } };
 
-        await expect(rachas.sendDm(client, UID, { content: "hola" })).resolves.toBe(true);
+        await expect(sendDm(client, UID, { content: "hola" })).resolves.toBe(true);
         expect(client.users.fetch).toHaveBeenCalledWith(UID);
         expect(send).toHaveBeenCalledWith({ content: "hola" });
     });
@@ -166,7 +169,7 @@ describe("sendDm: el DM no debe romper el flujo", () => {
             },
         };
 
-        await expect(rachas.sendDm(client, UID, {})).resolves.toBe(false);
+        await expect(sendDm(client, UID, {})).resolves.toBe(false);
     });
 
     test("cualquier otro error también devuelve false", async () => {
@@ -178,13 +181,13 @@ describe("sendDm: el DM no debe romper el flujo", () => {
             },
         };
 
-        await expect(rachas.sendDm(client, UID, {})).resolves.toBe(false);
+        await expect(sendDm(client, UID, {})).resolves.toBe(false);
     });
 });
 
 describe("buildStreakContinuedEmbed", () => {
     test("muestra los días seguidos y el bonus redondeado al entero", () => {
-        const embed = rachas.buildStreakContinuedEmbed({ name: "Servidor Uno" }, 4, 4.6).data;
+        const embed = buildStreakContinuedEmbed({ name: "Servidor Uno" }, 4, 4.6).data;
 
         expect(embed.title).toBe("🔥 ¡Racha activa!");
         expect(embed.description).toContain("**4 días seguidos**");
@@ -222,7 +225,7 @@ describe("runStreakWarningJob: aviso a quien va a perder la racha", () => {
             users: { fetch },
         };
 
-        await rachas.runStreakWarningJob(client);
+        await runStreakWarningJob(client);
 
         const avisados = fetch.mock.calls.map(([id]) => id);
         expect(avisados.sort()).toEqual(["a", "g"]);
@@ -234,7 +237,7 @@ describe("runStreakWarningJob: aviso a quien va a perder la racha", () => {
 
     test("sin nadie a quien avisar no llama a Discord", async () => {
         const fetch = jest.fn();
-        await rachas.runStreakWarningJob({ guilds: { cache: new Map() }, users: { fetch } });
+        await runStreakWarningJob({ guilds: { cache: new Map() }, users: { fetch } });
         expect(fetch).not.toHaveBeenCalled();
     });
 });

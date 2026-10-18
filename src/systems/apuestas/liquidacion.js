@@ -4,14 +4,9 @@
 
 const { AUTO_MIN_HORAS_DESDE_INICIO, minimoAciertosQuiniela } = require("./liquidacion/caducidad");
 const { liquidarApuestas } = require("./liquidacion/orquesta");
-const { avisarGanadores, resultadosEmbed, anunciarResultados, resumenEmbed } = require("./liquidacion/anuncios");
 
 module.exports = {
     liquidarApuestas,
-    avisarGanadores,
-    anunciarResultados,
-    resultadosEmbed,
     minimoAciertosQuiniela,
-    resumenEmbed,
     AUTO_MIN_HORAS_DESDE_INICIO,
 };

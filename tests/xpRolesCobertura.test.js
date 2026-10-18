@@ -4,6 +4,7 @@
 const db = require("../src/core/db");
 const xp = require("../src/systems/xpSystem");
 const rolesXp = require("../src/systems/xp/roles");
+const rolesEnvios = require("../src/discord/envios/roles");
 
 let n = 0;
 const nuevoServidor = () => `g-roles-${++n}`;
@@ -44,8 +45,8 @@ function ponerUsuario(guildId, userId, nivel) {
 describe("tryAssignRewards: dar los roles al subir de nivel", () => {
     test("sin servidor o sin miembro no hace nada", async () => {
         const m = miembro("u1");
-        await rolesXp.tryAssignRewards(null, m, 0, 5);
-        await rolesXp.tryAssignRewards(servidor(nuevoServidor()), null, 0, 5);
+        await rolesEnvios.tryAssignRewards(null, m, 0, 5);
+        await rolesEnvios.tryAssignRewards(servidor(nuevoServidor()), null, 0, 5);
         expect(m.roles.add).not.toHaveBeenCalled();
     });
 
@@ -60,7 +61,7 @@ describe("tryAssignRewards: dar los roles al subir de nivel", () => {
         rolesXp.setReward(id, 5, r5.id, "Cinco");
         const m = miembro("u1");
 
-        await rolesXp.tryAssignRewards(g, m, 2, 10);
+        await rolesEnvios.tryAssignRewards(g, m, 2, 10);
 
         expect(m.roles.add.mock.calls.map(([r]) => r.id)).toEqual(["300", "500", "1000"]);
     });
@@ -74,7 +75,7 @@ describe("tryAssignRewards: dar los roles al subir de nivel", () => {
         rolesXp.setReward(id, 10, r10.id, "Diez");
         const m = miembro("u1");
 
-        await rolesXp.tryAssignRewards(g, m, 5, 10);
+        await rolesEnvios.tryAssignRewards(g, m, 5, 10);
 
         expect(m.roles.add.mock.calls.map(([r]) => r.id)).toEqual(["1000"]);
     });
@@ -86,8 +87,8 @@ describe("tryAssignRewards: dar los roles al subir de nivel", () => {
         rolesXp.setReward(id, 5, r5.id, "Cinco");
         const m = miembro("u1");
 
-        await rolesXp.tryAssignRewards(g, m, 5, 5);
-        await rolesXp.tryAssignRewards(g, m, 0, 4);
+        await rolesEnvios.tryAssignRewards(g, m, 5, 5);
+        await rolesEnvios.tryAssignRewards(g, m, 0, 4);
 
         expect(m.roles.add).not.toHaveBeenCalled();
     });
@@ -100,7 +101,7 @@ describe("tryAssignRewards: dar los roles al subir de nivel", () => {
         rolesXp.setReward(id, 5, r5.id, "Cinco");
         const m = miembro("u1");
 
-        await rolesXp.tryAssignRewards(g, m, 0, 5);
+        await rolesEnvios.tryAssignRewards(g, m, 0, 5);
 
         expect(m.roles.add.mock.calls.map(([r]) => r.id)).toEqual(["500"]);
     });
@@ -115,7 +116,7 @@ describe("tryAssignRewards: dar los roles al subir de nivel", () => {
         const m = miembro("u1");
         m.roles.add.mockRejectedValueOnce(new Error("Missing Permissions"));
 
-        await expect(rolesXp.tryAssignRewards(g, m, 0, 5)).resolves.toBeUndefined();
+        await expect(rolesEnvios.tryAssignRewards(g, m, 0, 5)).resolves.toBeUndefined();
 
         expect(m.roles.add).toHaveBeenCalledTimes(2);
         expect(m.roles.add.mock.calls[1][0].id).toBe("500");
@@ -128,7 +129,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         const canal = canalDeTexto("c-sin-config");
         const g = servidor(id, { canales: [canal] });
 
-        await rolesXp.maybeAnnounceLevelUp(g, miembro("u1"), 5);
+        await rolesEnvios.maybeAnnounceLevelUp(g, miembro("u1"), 5);
 
         expect(canal.send).not.toHaveBeenCalled();
         expect(g.channels.fetch).not.toHaveBeenCalled();
@@ -140,8 +141,8 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         xp.setConfig(id, "xp_announce_channel_id", "c1");
         const g = servidor(id, { canales: [canal] });
 
-        await expect(rolesXp.maybeAnnounceLevelUp(null, miembro("u1"), 5)).resolves.toBeUndefined();
-        await rolesXp.maybeAnnounceLevelUp(g, null, 5);
+        await expect(rolesEnvios.maybeAnnounceLevelUp(null, miembro("u1"), 5)).resolves.toBeUndefined();
+        await rolesEnvios.maybeAnnounceLevelUp(g, null, 5);
         expect(canal.send).not.toHaveBeenCalled();
     });
 
@@ -153,7 +154,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         rolesXp.setRewardDescription(id, 10, "1000", "Mover usuarios", "🚶");
         const g = servidor(id, { canales: [canal] });
 
-        await rolesXp.maybeAnnounceLevelUp(g, miembro("u1"), 10);
+        await rolesEnvios.maybeAnnounceLevelUp(g, miembro("u1"), 10);
 
         expect(canal.send).toHaveBeenCalledTimes(1);
         const embed = canal.send.mock.calls[0][0].embeds[0].data;
@@ -172,7 +173,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         xp.setConfig(id, "xp_announce_channel_id", "c1");
         const g = servidor(id, { canales: [canal] });
 
-        await rolesXp.maybeAnnounceLevelUp(g, miembro("u1"), 75);
+        await rolesEnvios.maybeAnnounceLevelUp(g, miembro("u1"), 75);
 
         const embed = canal.send.mock.calls[0][0].embeds[0].data;
         const campo = (nombre) => embed.fields.find((f) => f.name === nombre).value;
@@ -187,7 +188,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         xp.setConfig(id, "xp_announce_channel_id", "c1");
         const g = servidor(id, { canales: [canal] });
 
-        await rolesXp.maybeAnnounceLevelUp(g, miembro("u1"), 1);
+        await rolesEnvios.maybeAnnounceLevelUp(g, miembro("u1"), 1);
 
         const embed = canal.send.mock.calls[0][0].embeds[0].data;
         const campo = (nombre) => embed.fields.find((f) => f.name === nombre).value;
@@ -202,7 +203,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         const g = servidor(id);
         g.channels.fetch = jest.fn(async () => canal);
 
-        await rolesXp.maybeAnnounceLevelUp(g, miembro("u1"), 3);
+        await rolesEnvios.maybeAnnounceLevelUp(g, miembro("u1"), 3);
 
         expect(g.channels.fetch).toHaveBeenCalledWith("c-fetch");
         expect(canal.send).toHaveBeenCalledTimes(1);
@@ -214,11 +215,11 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
 
         const sinCanal = servidor(id);
         sinCanal.channels.fetch = jest.fn(async () => null);
-        await rolesXp.maybeAnnounceLevelUp(sinCanal, miembro("u1"), 3);
+        await rolesEnvios.maybeAnnounceLevelUp(sinCanal, miembro("u1"), 3);
 
         const canalDeVoz = canalDeTexto("c-raro", { texto: false });
         const conVoz = servidor(id, { canales: [canalDeVoz] });
-        await rolesXp.maybeAnnounceLevelUp(conVoz, miembro("u1"), 3);
+        await rolesEnvios.maybeAnnounceLevelUp(conVoz, miembro("u1"), 3);
 
         expect(canalDeVoz.send).not.toHaveBeenCalled();
     });
@@ -233,7 +234,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         });
         const g = servidor(id, { canales: [canal] });
 
-        await expect(rolesXp.maybeAnnounceLevelUp(g, miembro("u1"), 3)).resolves.toBeUndefined();
+        await expect(rolesEnvios.maybeAnnounceLevelUp(g, miembro("u1"), 3)).resolves.toBeUndefined();
         expect(canal.send).toHaveBeenCalledTimes(1);
     });
 
@@ -245,7 +246,7 @@ describe("maybeAnnounceLevelUp: el anuncio de subida de nivel", () => {
         xp.setConfig(id, "xp_announce_channel_id", "c1");
         const g = servidor(id, { canales: [canal] });
 
-        await rolesXp.maybeAnnounceLevelUp(g, { id: "u-plano" }, 10);
+        await rolesEnvios.maybeAnnounceLevelUp(g, { id: "u-plano" }, 10);
 
         expect(canal.send.mock.calls[0][0].embeds[0].data.description).toBe("<@u-plano> alcanzó el **Nivel 10**");
     });
@@ -308,7 +309,7 @@ describe("configuración de recompensas", () => {
 
 describe("backfillRoles: dar los roles pendientes al arrancar", () => {
     test("sin servidor no hace nada", async () => {
-        await expect(rolesXp.backfillRoles(null)).resolves.toBeUndefined();
+        await expect(rolesEnvios.backfillRoles(null)).resolves.toBeUndefined();
     });
 
     test("da lo que falta a quien tiene nivel, sin repetir lo que ya tiene y sin tocar a los que no son de nivel", async () => {
@@ -329,7 +330,7 @@ describe("backfillRoles: dar los roles pendientes al arrancar", () => {
         ponerUsuario(id, "uc", 0);
         ponerUsuario(id, "ud", 9); // no está en caché: se salta
 
-        const asignados = await rolesXp.backfillRoles(g);
+        const asignados = await rolesEnvios.backfillRoles(g);
 
         expect(asignados).toBe(2);
         expect(ua.roles.add.mock.calls.map(([r]) => r.id)).toEqual(["500"]);
@@ -344,7 +345,7 @@ describe("backfillRoles: dar los roles pendientes al arrancar", () => {
         rolesXp.setReward(id, 2, "gone", "Borrado");
         ponerUsuario(id, "u1", 2);
 
-        expect(await rolesXp.backfillRoles(g)).toBe(0);
+        expect(await rolesEnvios.backfillRoles(g)).toBe(0);
         expect(m.roles.add).not.toHaveBeenCalled();
     });
 
@@ -359,7 +360,7 @@ describe("backfillRoles: dar los roles pendientes al arrancar", () => {
         rolesXp.setReward(id, 5, "500", "Cinco");
         ponerUsuario(id, "u1", 5);
 
-        expect(await rolesXp.backfillRoles(g)).toBe(1);
+        expect(await rolesEnvios.backfillRoles(g)).toBe(1);
         expect(m.roles.add).toHaveBeenCalledTimes(2);
     });
 
@@ -374,7 +375,7 @@ describe("backfillRoles: dar los roles pendientes al arrancar", () => {
         rolesXp.setReward(id, 3, "300", "Tres");
         ponerUsuario(id, "u1", 4);
 
-        await expect(rolesXp.backfillRoles(g)).resolves.toBe(1);
+        await expect(rolesEnvios.backfillRoles(g)).resolves.toBe(1);
         expect(g.members.fetch).toHaveBeenCalled();
     });
 });

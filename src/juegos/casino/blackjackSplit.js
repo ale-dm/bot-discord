@@ -1,7 +1,7 @@
 // Blackjack: separar (split) una mano en dos. Cobrar la segunda apuesta, jugar cada mano y liquidarlas por separado. El flujo de
 // la partida está en ./blackjack, y lo común de la mesa en ./blackjackMesa.
 const { EmbedBuilder, MessageFlags } = require("discord.js");
-const repo = require("../../repositorios/casino");
+const { estadisticasBlackjack } = require("./blackjackServicio");
 const bj = require("../../systems/blackjack");
 const { liquidarManoSplit } = require("../../systems/blackjackCobros");
 const { terminarPartida, cobrarExtra } = require("./blackjackMesa");
@@ -37,18 +37,13 @@ async function liquidarManosSplit(interaction, state, userId, botVal, manos) {
     return { totalGanancia, resultadosTexto, manosGanadas, manosEmpate };
 }
 
-// Estadísticas de blackjack del jugador (para el resumen de un split).
-function estadisticasBJ(userId) {
-    return repo.estadisticasBlackjack(userId);
-}
-
 // Fin del split: juega el crupier, se liquida cada mano por separado y se enseña el resumen.
 async function evaluarSplitFinal(interaction, state, userId) {
     const { botVal, manos } = bj.resolverSplit(state);
     const liquidado = await liquidarManosSplit(interaction, state, userId, botVal, manos);
     if (!liquidado) return;
 
-    const embed = embedResumenSplit(state, estadisticasBJ(userId), { botVal, ...liquidado });
+    const embed = embedResumenSplit(state, estadisticasBlackjack(userId), { botVal, ...liquidado });
     await interaction.update({ embeds: [embed], components: [filaFin(state)] });
     terminarPartida(userId);
 }

@@ -2,7 +2,7 @@
 // el editor de pronósticos, en quiniela/editor.js, y los botones, en quiniela/botones.js.
 
 const { MessageFlags } = require("discord.js");
-const repo = require("../../repositorios/apuestas");
+const servicio = require("./quiniela/servicio");
 const dinero = require("../../systems/dinero");
 const { logInfo } = require("../../core/logger");
 const { filaTrasApostar } = require("../../paneles/misJugadas");
@@ -46,7 +46,7 @@ module.exports = {
         if (!customId.startsWith("quiniela_modal_confirmar_")) return;
 
         const quinielaId = parseInt(customId.replace("quiniela_modal_confirmar_", ""), 10);
-        const quiniela = repo.quinielaAbierta(quinielaId);
+        const quiniela = servicio.quinielaAbierta(quinielaId);
         if (!quiniela) {
             await interaction.reply({ content: "❌ Quiniela no disponible.", flags: MessageFlags.Ephemeral });
             return;

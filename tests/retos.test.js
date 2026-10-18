@@ -6,6 +6,7 @@ const db = require("../src/core/db");
 const dinero = require("../src/systems/dinero");
 const retos = require("../src/systems/retos");
 const liquidacion = require("../src/systems/apuestas/liquidacion");
+const { resultadosEmbed } = require("../src/discord/mensajes/apuestas");
 const paneles = require("../src/paneles/retos");
 const botones = require("../src/juegos/retos/retos");
 const juegos = require("../src/commands/juegos/juegos");
@@ -194,7 +195,7 @@ describe("retos a un partido", () => {
         expect(resumen.pagos).toEqual(expect.arrayContaining([expect.objectContaining({ userId: "rp-a", premio: 1000 })]));
         // Sin apuestas normales a ese partido, no sale como "nadie acertó"; el reto sale aparte.
         expect(resumen.partidos).toEqual([]);
-        expect(liquidacion.resultadosEmbed(resumen).data.description).toMatch(
+        expect(resultadosEmbed(resumen).data.description).toMatch(
             /⚔️ \*\*Reto\*\* <@rp-a> vs <@rp-b> · Betis 2-1 Sevilla\n🏆 Gana <@rp-a> y se lleva \*\*1\.?000\*\*/,
         );
     });

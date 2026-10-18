@@ -4,6 +4,8 @@
 const db = require("../src/core/db");
 const guildSettings = require("../src/systems/guildSettings");
 const destacado = require("../src/systems/apuestas/destacado");
+const destacadoEnvios = require("../src/discord/envios/destacado");
+const { mensajeDestacado } = require("../src/discord/mensajes/destacado");
 const apuestas = require("../src/juegos/apuestas/apuestas");
 const paneladmin = require("../src/commands/admin/paneladmin");
 
@@ -54,7 +56,7 @@ test("el de hoy que aún no ha empezado: con más apuestas y, a igualdad, el má
 });
 
 test("el mensaje lleva las cuotas y los mismos botones de apostar que /juegos", async () => {
-    const msg = destacado.mensaje(destacado.elegir(AHORA));
+    const msg = mensajeDestacado(destacado.elegir(AHORA));
     const embed = msg.embeds[0].data;
     expect(embed.title).toBe("⭐ Partido destacado del día");
     expect(embed.description).toMatch(/\*\*Local C\*\* vs \*\*Visitante C\*\* · LaLiga/);
@@ -78,22 +80,22 @@ describe("publicación", () => {
     guildSettings.setSetting("g-desactivado", "apuestas.destacado", false);
 
     test("antes de las 10:00 de Madrid no se publica", async () => {
-        expect(await destacado.publicarSiToca(client, Date.UTC(2026, 9, 15, 7, 30))).toBe(0);
+        expect(await destacadoEnvios.publicarSiToca(client, Date.UTC(2026, 9, 15, 7, 30))).toBe(0);
         expect(canal.send).not.toHaveBeenCalled();
     });
 
     test("una vez al día, solo donde está activo y con canal", async () => {
-        expect(await destacado.publicarSiToca(client, AHORA)).toBe(1);
+        expect(await destacadoEnvios.publicarSiToca(client, AHORA)).toBe(1);
         expect(canal.send).toHaveBeenCalledTimes(1);
         expect(canal.send.mock.calls[0][0].embeds[0].data.description).toMatch(/Local C/);
         expect(guildSettings.getSettings("g-con-canal").apuestas.destacado_dia).toBe("2026-10-15");
         // Una hora después (o tras reiniciar), nada nuevo.
-        expect(await destacado.publicarSiToca(client, AHORA + 3600 * 1000)).toBe(0);
+        expect(await destacadoEnvios.publicarSiToca(client, AHORA + 3600 * 1000)).toBe(0);
         // Al día siguiente, el de ese día.
-        expect(await destacado.publicarSiToca(client, Date.UTC(2026, 9, 16, 8, 30))).toBe(1);
+        expect(await destacadoEnvios.publicarSiToca(client, Date.UTC(2026, 9, 16, 8, 30))).toBe(1);
         expect(canal.send.mock.calls[1][0].embeds[0].data.description).toMatch(/Local H/);
         // Un día sin partidos no se publica (ni se marca, por si llegan más tarde).
-        expect(await destacado.publicarSiToca(client, Date.UTC(2026, 9, 20, 8, 30))).toBe(0);
+        expect(await destacadoEnvios.publicarSiToca(client, Date.UTC(2026, 9, 20, 8, 30))).toBe(0);
         expect(guildSettings.getSettings("g-con-canal").apuestas.destacado_dia).toBe("2026-10-16");
         expect(fetchLlamado).toBe(false);
     });

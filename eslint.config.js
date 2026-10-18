@@ -66,4 +66,19 @@ module.exports = [
             ],
         },
     },
+    {
+        // #472: systems/ es lógica pura. Lo que manda o pinta cosas de Discord (embeds, DMs, roles) vive en
+        // src/discord/ y lo llama el punto de llamada; el sistema solo devuelve los datos.
+        files: ["src/systems/**/*.js"],
+        rules: {
+            "no-restricted-syntax": [
+                "error",
+                {
+                    selector: "CallExpression[callee.name='require'][arguments.0.value=/discord\\//]",
+                    message:
+                        "systems/ no puede importar src/discord/: mueve el envío al adaptador de src/discord/envios y llámalo desde el punto de llamada (#472).",
+                },
+            ],
+        },
+    },
 ];

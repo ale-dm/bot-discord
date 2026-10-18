@@ -25,6 +25,7 @@ const { enviarRespuestaTexto } = require("../src/services/duende/chat/enviar");
 const notaDeVoz = require("../src/services/notaDeVoz");
 const mensajes = require("../src/core/mensajes");
 const recuerdos = require("../src/systems/duende/recuerdosAuto");
+const recuerdosEnvios = require("../src/discord/envios/recuerdos");
 const duende = require("../src/commands/duende/duende");
 const liveResumen = require("../src/services/duende/liveVoz/resumen");
 const perfiles = require("../src/systems/duende/perfiles");
@@ -462,20 +463,22 @@ describe("recuerdos propuestos: editar y caducar (#386, #390)", () => {
         );
         const edit = jest.fn(async () => {});
         const client = { users: { fetch: async () => ({ createDM: async () => ({ messages: { fetch: async () => ({ edit }) } }) }) } };
-        expect(await recuerdos.caducarPendientes(client, ahora)).toBe(1);
+        expect(await recuerdosEnvios.caducarPendientes(client, ahora)).toBe(1);
         expect(edit).toHaveBeenCalledWith({ content: expect.stringMatching(/caducó/), components: [] });
         const estado = (id) => db.prepare("SELECT estado FROM duende_recuerdos_propuestos WHERE id = ?").get(id).estado;
         expect([estado(vieja), estado(decidida), estado(reciente)]).toEqual(["caducado", "descartado", "pendiente"]);
         expect(recuerdos.resolver(vieja, ADMIN, true).mensaje).toMatch(/caducó/);
         expect(recuerdos.puedeDecidir(vieja, ADMIN).ok).toBe(false);
-        expect(await recuerdos.caducarPendientes(client, ahora)).toBe(0);
+        expect(await recuerdosEnvios.caducarPendientes(client, ahora)).toBe(0);
     });
 
     test("avisarAdmins apunta el mensaje del DM de cada admin", async () => {
         const id = propuesta();
         const dm = { id: "dm-777", channelId: "dm-canal" };
         const client = { users: { fetch: async () => ({ send: async () => dm }) } };
-        await recuerdos.analizar(client, G, { id: "x", nombre: "X" }, ["t"], { gemini: async () => '{"recuerdo": "algo que recordar"}' });
+        await recuerdosEnvios.analizar(client, G, { id: "x", nombre: "X" }, ["t"], {
+            gemini: async () => '{"recuerdo": "algo que recordar"}',
+        });
         expect(db.prepare("SELECT mensajeId, canalId FROM duende_recuerdos_dms WHERE mensajeId = 'dm-777'").get()).toEqual({
             mensajeId: "dm-777",
             canalId: "dm-canal",

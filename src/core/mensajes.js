@@ -230,7 +230,8 @@ function registrarMensajes(client) {
 
         const tXp = performance.now();
         try {
-            await xpSystem.handleMessageXp(message);
+            const xp = await xpSystem.handleMessageXp(message);
+            if (xp) await require("../discord/envios/xp").procesarResultadoXp(xp.guild, xp.member, xp.resultado);
         } catch (e) {
             msgLog.error(`Error dando XP por mensaje · ${whoWhere(message)}`, e);
         }
@@ -239,7 +240,7 @@ function registrarMensajes(client) {
         // 🧠 Recuerdos automáticos del Duende (#15): mira la conversación en segundo plano; no bloquea nada.
         const tRecuerdos = performance.now();
         try {
-            require("../systems/duende/recuerdosAuto").observar(message);
+            require("../discord/envios/recuerdos").observar(message);
         } catch (e) {
             msgLog.error(`Error mirando la conversación para los recuerdos del Duende · ${whoWhere(message)}`, e);
         }
