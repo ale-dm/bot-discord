@@ -5,13 +5,13 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 ## 2026-10-19 (agentes seleccionables)
 
 - **🤖 Agentes**: `explorador` y `revisor` pasan de `subagent` a `all`, así aparecen en el selector de agentes y siguen disponibles como subagentes del `orquestador`. Se actualizan las definiciones de `.opencode/agents/` y `AGENTS.md`.
-- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2866 tests, 1 omitido).
+- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2866 tests pasados, 1 omitido).
 
 ## 2026-10-19 (equipo de agentes de OpenCode)
 
 - **🤖 Equipo de agentes y skill de tests**: se versionan en el repositorio `AGENTS.md`, los cuatro agentes de `.opencode/agents/` (orquestador, explorador, desarrollador y revisor), el enrutado de skills por tarea y la skill `estandar-tests` con checklist y plantilla. Los permisos `skill` de cada agente limitan qué skill puede cargar.
 - **🔧 ESLint**: las plantillas de `.opencode/skills/**/templates/` quedan fuera del lint; son placeholders que se copian a `tests/`. La plantilla se llama `test-base.template.js` para que Jest no la ejecute.
-- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2867 tests, 1 omitido).
+- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2866 tests pasados, 1 omitido).
 
 ## 2026-10-18 (F-EC-17: rasca y gana)
 
