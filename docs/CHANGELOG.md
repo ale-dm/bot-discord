@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-19 (skills de dominio)
+
+- **🧩 Siete skills de dominio** en `.opencode/skills/`: `apuestas-liquidacion`, `plex-seerr`, `duende-ia`, `voz-sonidos`, `cripto-ttcl`, `admin-panel` y `despliegue-docker`. Cada `SKILL.md` tiene las reglas sacadas del código y la documentación actuales, y el mapa de ficheros, tablas, tareas y tests va en su `references/`.
+- **🤖 Agentes**: el `desarrollador` y el `revisor` pueden cargar las siete, y sus prompts dicen cuándo cargar cada una.
+- **📄 `AGENTS.md`**: ya no queda ninguna skill «prevista» en la tabla de enrutado.
+- Sin cambios de código del bot ni migraciones.
+
 ## 2026-10-19 (skills transversales con activación automática)
 
 - **🧩 Seis skills nuevas** en `.opencode/skills/`: `migracion-sqlite`, `comando-discord`, `panel-discord`, `economia-dinero`, `git-pr` y `docs-proyecto`. Cada `description` dice cuándo cargarla y cuándo no, para que el agente la active por su cuenta.

@@ -36,6 +36,13 @@ permission:
     economia-dinero: allow
     docs-proyecto: allow
     git-pr: allow
+    apuestas-liquidacion: allow
+    plex-seerr: allow
+    duende-ia: allow
+    voz-sonidos: allow
+    cripto-ttcl: allow
+    admin-panel: allow
+    despliegue-docker: allow
 ---
 
 # Desarrollador de El Duende
@@ -58,6 +65,13 @@ Cárgalas tú mismo, sin esperar a que te lo pidan, en cuanto la tarea entre en 
 - `comando-discord`: si creas, renombras o borras un slash command, o le añades subcomandos u opciones.
 - `panel-discord`: si cambias mensajes, embeds, botones, selects o modales.
 - `economia-dinero`: si el cambio cobra, paga, transfiere o toca saldos.
+- `apuestas-liquidacion`: si tocas apuestas a partidos, mercados, combinadas, quinielas, límites de apuesta, la Odds API o la liquidación.
+- `plex-seerr`: si tocas Tautulli, Seerr, vínculos, historial, logros o trofeos de Plex, pedidos o sus herramientas del Duende.
+- `duende-ia`: si tocas el chat del Duende, Gemini, el prompt, herramientas, perfiles, cuotas o imágenes.
+- `voz-sonidos`: si tocas canales de voz, `/conectar`, `/sonidos`, `/tts`, STT, la voz del Duende o `/conversación`.
+- `cripto-ttcl`: si tocas TTCL: pool, compra y venta, comisiones, órdenes, eventos o las pantallas de `/cripto`.
+- `admin-panel`: si añades o cambias una sección, botón, formulario o ajuste de `/paneladmin`.
+- `despliegue-docker`: si cambias el `Dockerfile`, `deploy/`, la versión de Node, una dependencia del sistema, una variable de entorno o los pasos de `docs/DEPLOY.md`.
 - `docs-proyecto`: al cerrar cualquier cambio, para saber qué documentos actualizar.
 - `git-pr`: solo si te piden rama, commit, push o PR.
 - `opencode`: solo si la tarea es configurar OpenCode, no para código del bot.

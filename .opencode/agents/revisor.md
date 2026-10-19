@@ -24,6 +24,13 @@ permission:
     migracion-sqlite: allow
     panel-discord: allow
     economia-dinero: allow
+    apuestas-liquidacion: allow
+    plex-seerr: allow
+    duende-ia: allow
+    voz-sonidos: allow
+    cripto-ttcl: allow
+    admin-panel: allow
+    despliegue-docker: allow
 ---
 
 # Revisor de El Duende
@@ -45,6 +52,13 @@ Cárgalas tú mismo según lo que toque el diff, sin esperar a que te lo pidan:
 - `migracion-sqlite`: si el diff añade o cambia algo en `src/core/migrations/` o en el esquema.
 - `panel-discord`: si el diff toca `src/paneles/`, `componentHandlers`, botones, selects o modales.
 - `economia-dinero`: si el diff mueve dinero o toca saldos, impuestos o la tabla `banco`.
+- `apuestas-liquidacion`: si el diff toca `src/systems/apuestas/`, `src/juegos/apuestas/`, la Odds API o la liquidación.
+- `plex-seerr`: si el diff toca los clientes de Tautulli o Seerr, `src/systems/plex*`, pedidos de Seerr o sus herramientas del Duende.
+- `duende-ia`: si el diff toca `src/services/duende/`, `src/systems/duende/`, Gemini o las herramientas del Duende.
+- `voz-sonidos`: si el diff toca conexiones de voz, sonidos, TTS, STT o la conversación en directo.
+- `cripto-ttcl`: si el diff toca `src/systems/cripto/`, `src/paneles/cripto/`, las órdenes de TTCL o los ajustes `cripto.*`.
+- `admin-panel`: si el diff toca `src/adminPanel/` o `/paneladmin`.
+- `despliegue-docker`: si el diff toca el `Dockerfile`, `.dockerignore`, `deploy/`, variables de entorno o `docs/DEPLOY.md`.
 - No cargues skills de producto, exploración ni configuración de OpenCode; no forman parte de una revisión de código del bot.
 
 ## Qué buscas

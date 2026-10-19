@@ -26,13 +26,13 @@ Cada agente tiene permitidas solo las skills de su ámbito. No se carga una skil
 | Documentación del proyecto | `docs-proyecto` | `desarrollador`, `orquestador` |
 | Git, ramas y PR | `git-pr` | `desarrollador` |
 | Economía y dinero | `economia-dinero` | `desarrollador`, `revisor` |
-| Apuestas y liquidación | `apuestas-liquidacion` (prevista) | `desarrollador`, `revisor` |
-| Plex y Seerr | `plex-seerr` (prevista) | `desarrollador`, `revisor` |
-| Duende e IA | `duende-ia` (prevista) | `desarrollador`, `revisor` |
-| Voz y sonidos | `voz-sonidos` (prevista) | `desarrollador`, `revisor` |
-| Cripto TTCL | `cripto-ttcl` (prevista) | `desarrollador`, `revisor` |
-| Panel de administración | `admin-panel` (prevista) | `desarrollador`, `revisor` |
-| Despliegue y Docker | `despliegue-docker` (prevista) | `desarrollador`, `revisor` |
+| Apuestas y liquidación | `apuestas-liquidacion` | `desarrollador`, `revisor` |
+| Plex y Seerr | `plex-seerr` | `desarrollador`, `revisor` |
+| Duende e IA | `duende-ia` | `desarrollador`, `revisor` |
+| Voz y sonidos | `voz-sonidos` | `desarrollador`, `revisor` |
+| Cripto TTCL | `cripto-ttcl` | `desarrollador`, `revisor` |
+| Panel de administración | `admin-panel` | `desarrollador`, `revisor` |
+| Despliegue y Docker | `despliegue-docker` | `desarrollador`, `revisor` |
 
 `opencode` y `report` son skills **integradas** de OpenCode: no viven en `.opencode/skills/` y no hay que crearlas. Se mantienen en los permisos de los agentes que las usan.
 
