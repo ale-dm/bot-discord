@@ -30,6 +30,12 @@ permission:
     "*": deny
     estandar-tests: allow
     opencode: allow
+    migracion-sqlite: allow
+    comando-discord: allow
+    panel-discord: allow
+    economia-dinero: allow
+    docs-proyecto: allow
+    git-pr: allow
 ---
 
 # Desarrollador de El Duende
@@ -45,8 +51,16 @@ Eres el desarrollador del proyecto. Implementas cambios completos y verificables
 
 ## Skills
 
-- `estandar-tests`: cárgala siempre que vayas a crear, modificar o revisar tests.
-- `opencode`: cárgala solo si la tarea es configurar OpenCode, no para código del bot.
+Cárgalas tú mismo, sin esperar a que te lo pidan, en cuanto la tarea entre en su ámbito. Si entran varias, carga todas las que apliquen, empezando por la más específica.
+
+- `estandar-tests`: siempre que vayas a crear, modificar o revisar tests.
+- `migracion-sqlite`: si cambias el esquema (tabla, columna, índice) o tocas `src/core/migrations/`.
+- `comando-discord`: si creas, renombras o borras un slash command, o le añades subcomandos u opciones.
+- `panel-discord`: si cambias mensajes, embeds, botones, selects o modales.
+- `economia-dinero`: si el cambio cobra, paga, transfiere o toca saldos.
+- `docs-proyecto`: al cerrar cualquier cambio, para saber qué documentos actualizar.
+- `git-pr`: solo si te piden rama, commit, push o PR.
+- `opencode`: solo si la tarea es configurar OpenCode, no para código del bot.
 - No cargues skills de producto, exploración o revisión; no son tu rol.
 
 ## Cómo implementar

@@ -20,12 +20,12 @@ Cada agente tiene permitidas solo las skills de su ámbito. No se carga una skil
 | Reportar un bug de OpenCode | `report` | `orquestador` |
 | Producto, roadmap, ideas, decisiones | — (prompt del orquestador) | `orquestador` |
 | Explorar estado, arquitectura y oportunidades | — (prompt del explorador) | `explorador` |
-| Migración de BD | `migracion-sqlite` (prevista) | `desarrollador`, `revisor` |
-| Comando nuevo | `comando-discord` (prevista) | `desarrollador` |
-| Panel, botones o modales | `panel-discord` (prevista) | `desarrollador`, `revisor` |
-| Documentación del proyecto | `docs-proyecto` (prevista) | `desarrollador`, `orquestador` |
-| Git, ramas y PR | `git-pr` (prevista) | `desarrollador` |
-| Economía y dinero | `economia-dinero` (prevista) | `desarrollador`, `revisor` |
+| Migración de BD | `migracion-sqlite` | `desarrollador`, `revisor` |
+| Comando nuevo | `comando-discord` | `desarrollador` |
+| Panel, botones o modales | `panel-discord` | `desarrollador`, `revisor` |
+| Documentación del proyecto | `docs-proyecto` | `desarrollador`, `orquestador` |
+| Git, ramas y PR | `git-pr` | `desarrollador` |
+| Economía y dinero | `economia-dinero` | `desarrollador`, `revisor` |
 | Apuestas y liquidación | `apuestas-liquidacion` (prevista) | `desarrollador`, `revisor` |
 | Plex y Seerr | `plex-seerr` (prevista) | `desarrollador`, `revisor` |
 | Duende e IA | `duende-ia` (prevista) | `desarrollador`, `revisor` |
@@ -38,7 +38,8 @@ Cada agente tiene permitidas solo las skills de su ámbito. No se carga una skil
 
 Reglas:
 
-- Carga la skill **solo** si la tarea entra en su fila. Si hay varias, carga la más específica.
+- Carga la skill **solo** si la tarea entra en su fila, y hazlo sin esperar a que te lo pidan: cada agente la activa en cuanto ve que la tarea es suya. Si entran varias, cárgalas todas, empezando por la más específica.
+- La activación automática depende de la `description` de cada `SKILL.md`: debe decir cuándo cargarla («Cárgala siempre que…») y cuándo no.
 - Si no hay skill aplicable, trabaja con el prompt del agente y este `AGENTS.md`.
 - No cargues una skill para una tarea que no sea suya; el permiso `skill` de cada agente ya lo impide.
 - Al crear una skill nueva: añádela a esta tabla y a los permisos `skill` de los agentes que deban usarla.

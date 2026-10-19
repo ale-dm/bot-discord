@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-19 (skills transversales con activación automática)
+
+- **🧩 Seis skills nuevas** en `.opencode/skills/`: `migracion-sqlite`, `comando-discord`, `panel-discord`, `economia-dinero`, `git-pr` y `docs-proyecto`. Cada `description` dice cuándo cargarla y cuándo no, para que el agente la active por su cuenta.
+- **🤖 Agentes**: el `desarrollador` puede cargar las seis; el `revisor`, `migracion-sqlite`, `panel-discord` y `economia-dinero`; el `orquestador`, `docs-proyecto`. Sus prompts indican cuándo cargar cada una sin que se lo pidan.
+- **📄 `AGENTS.md`**: esas seis dejan de estar «previstas» y se documenta la regla de activación automática.
+- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2866 tests pasados, 1 omitido).
+
 ## 2026-10-19 (verificación de agentes y skills integradas)
 
 - **✅ Verificado en OpenCode 2.0.32**: el `explorador` rechaza editar (no tiene herramienta de edición en su catálogo) y solo ve la skill `estandar-tests`; el `orquestador` ve `opencode` y `report`; el `desarrollador` ve `estandar-tests` y `opencode`.

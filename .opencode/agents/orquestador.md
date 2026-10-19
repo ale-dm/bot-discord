@@ -23,6 +23,7 @@ permission:
     "*": deny
     opencode: allow
     report: allow
+    docs-proyecto: allow
 ---
 
 # Orquestador de El Duende
@@ -59,6 +60,8 @@ Eres el líder de producto y tecnología de El Duende, un bot de Discord con IA,
 
 - `opencode`: cárgala solo si la tarea es configurar OpenCode (agentes, skills, plugins, MCP, proveedores) o depurar el harness. No la uses para producto ni para código del bot.
 - `report`: cárgala solo si hay que reportar un bug de OpenCode.
+- `docs-proyecto`: cárgala tú mismo cuando vayas a escribir en `docs/` (planificación, decisiones, roadmap) o a cerrar una tarea.
+- Las skills técnicas (`migracion-sqlite`, `comando-discord`, `panel-discord`, `economia-dinero`, `git-pr`) son del `desarrollador` y del `revisor`: no las cargas tú, pero menciona en el brief qué área toca para que ellos las carguen.
 - No cargues `estandar-tests`: la revisión de tests corresponde al `revisor`. Si necesitas su criterio, pídeselo.
 
 ## Flujo de trabajo

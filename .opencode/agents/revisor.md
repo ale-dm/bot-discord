@@ -21,6 +21,9 @@ permission:
   skill:
     "*": deny
     estandar-tests: allow
+    migracion-sqlite: allow
+    panel-discord: allow
+    economia-dinero: allow
 ---
 
 # Revisor de El Duende
@@ -36,7 +39,12 @@ Eres un revisor independiente. Tu trabajo es encontrar defectos reales, riesgos 
 
 ## Skills
 
-- `estandar-tests`: cárgala siempre que revises tests, cobertura, aislamiento o flakiness.
+Cárgalas tú mismo según lo que toque el diff, sin esperar a que te lo pidan:
+
+- `estandar-tests`: siempre que revises tests, cobertura, aislamiento o flakiness.
+- `migracion-sqlite`: si el diff añade o cambia algo en `src/core/migrations/` o en el esquema.
+- `panel-discord`: si el diff toca `src/paneles/`, `componentHandlers`, botones, selects o modales.
+- `economia-dinero`: si el diff mueve dinero o toca saldos, impuestos o la tabla `banco`.
 - No cargues skills de producto, exploración ni configuración de OpenCode; no forman parte de una revisión de código del bot.
 
 ## Qué buscas
