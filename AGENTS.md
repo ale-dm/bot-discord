@@ -9,6 +9,13 @@
 
 Flujo recomendado: `orquestador` → `explorador` (si falta contexto) → `desarrollador` → `revisor` → `orquestador` para decidir y cerrar.
 
+Los mismos cuatro existen en dos herramientas:
+
+- **OpenCode**: `.opencode/agents/<agente>.md`. Es la copia completa del prompt y de los permisos (`permission:`); se cambia de agente con Tab.
+- **Claude Code** (terminal o la app de Claude): subagentes en `.claude/agents/<agente>.md`. La sesión principal los lanza cuando el encargo encaja con su `description`, o cuando se le pide («que el revisor mire esto»). Cada uno trabaja con su propio contexto, así que lo que lee no llena la conversación. Sus prompts son cortos y remiten a `.opencode/agents/<agente>.md`, así que hay una sola copia del rol. `explorador` usa `haiku`, `revisor` usa `sonnet` y los otros dos, el modelo de la sesión.
+
+Si cambias el rol de un agente, cámbialo en `.opencode/agents/`. En `.claude/agents/` solo van la `description`, las herramientas (`tools`) y el modelo (`model`).
+
 ## Skills del proyecto y enrutado
 
 Cada agente tiene permitidas solo las skills de su ámbito. No se carga una skill “por si acaso”: se carga cuando la tarea entra en su fila.
@@ -34,18 +41,18 @@ Cada agente tiene permitidas solo las skills de su ámbito. No se carga una skil
 | Panel de administración | `admin-panel` | `desarrollador`, `revisor` |
 | Despliegue y Docker | `despliegue-docker` | `desarrollador`, `revisor` |
 
-`opencode` y `report` son skills **integradas** de OpenCode: no viven en `.opencode/skills/` y no hay que crearlas. Se mantienen en los permisos de los agentes que las usan.
+`opencode` y `report` son skills **integradas** de OpenCode: no viven en `.claude/skills/` y no hay que crearlas. Se mantienen en los permisos de los agentes que las usan.
 
 Reglas:
 
 - Carga la skill **solo** si la tarea entra en su fila, y hazlo sin esperar a que te lo pidan: cada agente la activa en cuanto ve que la tarea es suya. Si entran varias, cárgalas todas, empezando por la más específica.
 - La activación automática depende de la `description` de cada `SKILL.md`: debe decir cuándo cargarla («Cárgala siempre que…») y cuándo no.
 - Si no hay skill aplicable, trabaja con el prompt del agente y este `AGENTS.md`.
-- No cargues una skill para una tarea que no sea suya; el permiso `skill` de cada agente ya lo impide.
+- No cargues una skill para una tarea que no sea suya. En OpenCode, el permiso `skill` de cada agente ya lo impide; en Claude Code, depende de esta tabla y de la sección «Skills» de cada agente.
 - Al crear una skill nueva: añádela a esta tabla y a los permisos `skill` de los agentes que deban usarla.
-- Formato que exige OpenCode: la skill vive en `.opencode/skills/<nombre>/SKILL.md` y su `name` es ese mismo `<nombre>` (minúsculas y guiones). Los permisos de cada agente van en `permission:` (singular) con las claves `edit`, `bash`, `task` y `skill`; gana la última regla que coincide, así que `"*"` va primero.
+- Formato común: la skill vive en `.claude/skills/<nombre>/SKILL.md` y su `name` es ese mismo `<nombre>` (minúsculas y guiones). OpenCode y Claude Code leen esa carpeta, así que hay una sola copia para los dos. En OpenCode, los permisos de cada agente van en `permission:` (singular) con las claves `edit`, `bash`, `task` y `skill`; gana la última regla que coincide, así que `"*"` va primero.
 - Mantén `SKILL.md` corto (reglas y un índice) y deja el detalle en `references/`, para que cargar la skill cueste poco contexto.
-- La única copia de los agentes y de las skills propias del proyecto es `.opencode/` de este repositorio; las integradas (`opencode`, `report`) vienen con OpenCode. Abre OpenCode en la raíz del repositorio.
+- Las skills propias del proyecto están solo en `.claude/skills/`, y los agentes, en `.opencode/agents/` (con sus subagentes de Claude Code en `.claude/agents/`). Las integradas (`opencode`, `report`) vienen con OpenCode. Abre OpenCode, o la sesión de la app de Claude, en la raíz de este repositorio: si no, no se cargan ni los agentes ni las skills.
 
 ## Dónde está el código
 
