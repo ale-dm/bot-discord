@@ -1,6 +1,6 @@
 ---
 description: "Revisor de código de El Duende: audita cambios, detecta fallos y riesgos, y verifica tests sin modificar el código."
-mode: subagent
+mode: all
 color: "#ff6b6b"
 steps: 18
 permissions:

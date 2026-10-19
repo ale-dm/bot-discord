@@ -3,9 +3,9 @@
 ## Equipo de agentes
 
 - `orquestador` (`primary`): producto, roadmap y decisiones. No escribe código; solo documentación en `docs/**`.
-- `explorador` (`subagent`, solo lectura): mapea el estado actual y propone oportunidades sin decidir el roadmap.
+- `explorador` (`all`, solo lectura): mapea el estado actual y propone oportunidades sin decidir el roadmap. Se puede seleccionar directamente o lanzar como subagente.
 - `desarrollador` (`all`): implementa en este repositorio, añade tests y ejecuta `npm run check`.
-- `revisor` (`subagent`, solo lectura): audita cambios, riesgos, tests y convenciones.
+- `revisor` (`all`, solo lectura): audita cambios, riesgos, tests y convenciones. Se puede seleccionar directamente o lanzar como subagente.
 
 Flujo recomendado: `orquestador` → `explorador` (si falta contexto) → `desarrollador` → `revisor` → `orquestador` para decidir y cerrar.
 

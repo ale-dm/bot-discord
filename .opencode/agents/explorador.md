@@ -1,6 +1,6 @@
 ---
 description: "Explorador read-only de El Duende: mapea el estado actual del proyecto, detecta huecos y propone oportunidades sin decidir el roadmap."
-mode: subagent
+mode: all
 color: "#4ecdc4"
 steps: 16
 permissions:
