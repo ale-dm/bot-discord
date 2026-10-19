@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-19 (agentes y skills también en Claude Code)
+
+- **🧩 Skills en `.claude/skills/`** (antes en `.opencode/skills/`): OpenCode y Claude Code (la terminal o la app de Claude) leen esa carpeta, así que las 14 skills sirven en los dos con una sola copia. En Claude Code se cargan solas cuando la tarea encaja con su `description`.
+- **🤖 Subagentes de Claude Code** en `.claude/agents/`: `orquestador`, `explorador` (con `haiku`), `desarrollador` y `revisor` (con `sonnet`). Cada uno trabaja con su propio contexto y lee su rol de `.opencode/agents/<agente>.md`, que sigue siendo la única copia del prompt.
+- **📄 `AGENTS.md`**: explica las dos herramientas y que la sesión hay que abrirla en la raíz del repositorio. `eslint.config.js` ignora ahora las plantillas de `.claude/skills/`.
+- Sin cambios de código del bot.
+
 ## 2026-10-19 (test de rendimiento de XP fiable en CI)
 
 - **🧪 `tests/xpMensajeRendimiento.test.js`**: en GitHub Actions los topes de microsegundos se triplican (`process.env.CI`). Un mensaje en cooldown salía a 20,6-21,6 µs con un tope de 20 y el check `test` fallaba de vez en cuando aunque el cambio fuera solo de documentación (#546, #547). En local los topes siguen igual, y el número de consultas por mensaje se sigue comprobando en los demás tests del fichero.
