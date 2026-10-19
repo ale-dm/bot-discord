@@ -34,6 +34,8 @@ Cada agente tiene permitidas solo las skills de su ámbito. No se carga una skil
 | Panel de administración | `admin-panel` (prevista) | `desarrollador`, `revisor` |
 | Despliegue y Docker | `despliegue-docker` (prevista) | `desarrollador`, `revisor` |
 
+`opencode` y `report` son skills **integradas** de OpenCode: no viven en `.opencode/skills/` y no hay que crearlas. Se mantienen en los permisos de los agentes que las usan.
+
 Reglas:
 
 - Carga la skill **solo** si la tarea entra en su fila. Si hay varias, carga la más específica.
@@ -42,7 +44,7 @@ Reglas:
 - Al crear una skill nueva: añádela a esta tabla y a los permisos `skill` de los agentes que deban usarla.
 - Formato que exige OpenCode: la skill vive en `.opencode/skills/<nombre>/SKILL.md` y su `name` es ese mismo `<nombre>` (minúsculas y guiones). Los permisos de cada agente van en `permission:` (singular) con las claves `edit`, `bash`, `task` y `skill`; gana la última regla que coincide, así que `"*"` va primero.
 - Mantén `SKILL.md` corto (reglas y un índice) y deja el detalle en `references/`, para que cargar la skill cueste poco contexto.
-- La única copia de agentes y skills es `.opencode/` de este repositorio. Abre OpenCode en la raíz del repositorio.
+- La única copia de los agentes y de las skills propias del proyecto es `.opencode/` de este repositorio; las integradas (`opencode`, `report`) vienen con OpenCode. Abre OpenCode en la raíz del repositorio.
 
 ## Dónde está el código
 

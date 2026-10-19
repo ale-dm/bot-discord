@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-19 (verificación de agentes y skills integradas)
+
+- **✅ Verificado en OpenCode 2.0.32**: el `explorador` rechaza editar (no tiene herramienta de edición en su catálogo) y solo ve la skill `estandar-tests`; el `orquestador` ve `opencode` y `report`; el `desarrollador` ve `estandar-tests` y `opencode`.
+- **📄 `AGENTS.md`**: aclara que `opencode` y `report` son skills integradas de OpenCode, no ficheros de `.opencode/skills/`, y que la única copia de agentes y skills propias del proyecto sigue siendo `.opencode/`.
+- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2866 tests pasados, 1 omitido).
+
 ## 2026-10-19 (permisos de agentes y skill en el formato de OpenCode)
 
 - **🔒 Permisos de agentes**: los cuatro agentes usaban `permissions:` con una lista `action/resource/effect`, que OpenCode no reconoce; al no aplicarse, todo quedaba en `allow` y `explorador` y `revisor` no eran de solo lectura. Pasan a `permission:` con `edit`, `bash`, `task` y `skill`. De paso, `git branch` del explorador ya no permite borrar ramas, `git diff --output` queda bloqueado, el revisor no puede lanzar `npm run lint:fix`, y el desarrollador bloquea también `rm -r`, `rm -fr`, `del /s` y `rmdir /s`.
