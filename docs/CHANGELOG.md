@@ -2,6 +2,10 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-19 (test de rendimiento de XP fiable en CI)
+
+- **🧪 `tests/xpMensajeRendimiento.test.js`**: en GitHub Actions los topes de microsegundos se triplican (`process.env.CI`). Un mensaje en cooldown salía a 20,6-21,6 µs con un tope de 20 y el check `test` fallaba de vez en cuando aunque el cambio fuera solo de documentación (#546, #547). En local los topes siguen igual, y el número de consultas por mensaje se sigue comprobando en los demás tests del fichero.
+
 ## 2026-10-19 (skills de dominio)
 
 - **🧩 Siete skills de dominio** en `.opencode/skills/`: `apuestas-liquidacion`, `plex-seerr`, `duende-ia`, `voz-sonidos`, `cripto-ttcl`, `admin-panel` y `despliegue-docker`. Cada `SKILL.md` tiene las reglas sacadas del código y la documentación actuales, y el mapa de ficheros, tablas, tareas y tests va en su `references/`.
