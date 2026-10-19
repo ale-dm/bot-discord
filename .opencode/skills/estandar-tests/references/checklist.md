@@ -48,3 +48,21 @@
 - [ ] ¿Queda algún mock, timer o env sin restaurar?
 - [ ] ¿Se respetan los límites de Discord y los `customId` únicos?
 - [ ] ¿La cobertura nueva es de comportamiento, no de líneas ejecutadas?
+- [ ] ¿El mock está en la frontera y no sustituye la lógica bajo test?
+- [ ] ¿Se ha ejecutado `npm test` y, si aplica, `npm run check`?
+
+## Definition of Done
+
+Un cambio de tests está terminado cuando:
+
+- [ ] El archivo está en `tests/` con el nombre correcto.
+- [ ] El comentario de cabecera explica qué cubre y qué se mockea.
+- [ ] Usa `test`, nombres en español y `describe` por área/issue.
+- [ ] Cubre camino feliz, límites y errores/rollback relevantes.
+- [ ] Asserta estado y efectos, no solo mensajes.
+- [ ] No toca red, Discord, BD real ni APIs reales.
+- [ ] Restaura mocks, timers, env, fetch y temporales.
+- [ ] No tiene `.only`, `.skip`, `test.failing` ni `console.*`.
+- [ ] `npm test` pasa.
+- [ ] Si tocó código, `npm run check` pasa.
+- [ ] La documentación asociada está actualizada.

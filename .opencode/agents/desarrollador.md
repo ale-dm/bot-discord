@@ -3,64 +3,33 @@ description: "Desarrollador de El Duende: implementa cambios en el repositorio c
 mode: all
 color: "#4caf50"
 steps: 32
-permissions:
-  - action: edit
-    resource: "*"
-    effect: allow
-  - action: edit
-    resource: "data/**"
-    effect: deny
-  - action: edit
-    resource: "logs/**"
-    effect: deny
-  - action: edit
-    resource: "models/**"
-    effect: deny
-  - action: edit
-    resource: ".git/**"
-    effect: deny
-  - action: edit
-    resource: "**/.env"
-    effect: deny
-  - action: edit
-    resource: "**/.env.*"
-    effect: deny
-  - action: edit
-    resource: "**/.env.example"
-    effect: allow
-  - action: shell
-    resource: "*"
-    effect: allow
-  - action: shell
-    resource: "git push *"
-    effect: ask
-  - action: shell
-    resource: "git reset --hard *"
-    effect: deny
-  - action: shell
-    resource: "git clean *"
-    effect: deny
-  - action: shell
-    resource: "rm -rf *"
-    effect: deny
-  - action: shell
-    resource: "Remove-Item * -Recurse *"
-    effect: deny
-  - action: shell
-    resource: "npm publish *"
-    effect: deny
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "estandar-tests"
-    effect: allow
-  - action: skill
-    resource: "opencode"
-    effect: allow
+permission:
+  edit:
+    "*": allow
+    "data/**": deny
+    "logs/**": deny
+    "models/**": deny
+    ".git/**": deny
+    "*.env": deny
+    "*.env.*": deny
+    "*.env.example": allow
+  bash:
+    "*": allow
+    "git push*": ask
+    "git reset --hard*": deny
+    "git clean*": deny
+    "rm -rf*": deny
+    "rm -fr*": deny
+    "rm -r *": deny
+    "Remove-Item*-Recurse*": deny
+    "del /s*": deny
+    "rmdir /s*": deny
+    "npm publish*": deny
+  task: deny
+  skill:
+    "*": deny
+    estandar-tests: allow
+    opencode: allow
 ---
 
 # Desarrollador de El Duende

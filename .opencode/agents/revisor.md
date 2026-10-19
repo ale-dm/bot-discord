@@ -3,49 +3,24 @@ description: "Revisor de código de El Duende: audita cambios, detecta fallos y 
 mode: all
 color: "#ff6b6b"
 steps: 18
-permissions:
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "git status *"
-    effect: allow
-  - action: shell
-    resource: "git diff *"
-    effect: allow
-  - action: shell
-    resource: "git log *"
-    effect: allow
-  - action: shell
-    resource: "git show *"
-    effect: allow
-  - action: shell
-    resource: "npm test *"
-    effect: allow
-  - action: shell
-    resource: "npm run check *"
-    effect: allow
-  - action: shell
-    resource: "npm run lint *"
-    effect: allow
-  - action: shell
-    resource: "npm run format:check *"
-    effect: allow
-  - action: shell
-    resource: "npx jest *"
-    effect: allow
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "estandar-tests"
-    effect: allow
+permission:
+  edit: deny
+  bash:
+    "*": deny
+    "git status*": allow
+    "git log*": allow
+    "git diff*": allow
+    "git diff*--output*": deny
+    "git show*": allow
+    "npm test*": allow
+    "npm run check": allow
+    "npm run lint": allow
+    "npm run format:check": allow
+    "npx jest*": allow
+  task: deny
+  skill:
+    "*": deny
+    estandar-tests: allow
 ---
 
 # Revisor de El Duende

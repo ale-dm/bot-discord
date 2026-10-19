@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-19 (permisos de agentes y skill en el formato de OpenCode)
+
+- **🔒 Permisos de agentes**: los cuatro agentes usaban `permissions:` con una lista `action/resource/effect`, que OpenCode no reconoce; al no aplicarse, todo quedaba en `allow` y `explorador` y `revisor` no eran de solo lectura. Pasan a `permission:` con `edit`, `bash`, `task` y `skill`. De paso, `git branch` del explorador ya no permite borrar ramas, `git diff --output` queda bloqueado, el revisor no puede lanzar `npm run lint:fix`, y el desarrollador bloquea también `rm -r`, `rm -fr`, `del /s` y `rmdir /s`.
+- **🧪 Skill `estandar-tests`**: su `name` pasa a `estandar-tests` (antes era un título libre, y OpenCode exige el nombre de la carpeta). El `SKILL.md` baja de 311 a unas 50 líneas con las reglas y un índice. El detalle pasa sin cambios a `references/escritura.md`, `references/datos-y-mocks.md` y `references/discord-falso.md`, y la Definition of Done a `references/checklist.md`. La descripción limita su uso a tareas de tests.
+- **📄 `AGENTS.md`**: documenta el formato que exige OpenCode y que `.opencode/` de este repositorio es la única copia.
+- Sin cambios de código del bot ni migraciones. `npm run check` en verde (2866 tests pasados, 1 omitido).
+
 ## 2026-10-19 (agentes seleccionables)
 
 - **🤖 Agentes**: `explorador` y `revisor` pasan de `subagent` a `all`, así aparecen en el selector de agentes y siguen disponibles como subagentes del `orquestador`. Se actualizan las definiciones de `.opencode/agents/` y `AGENTS.md`.

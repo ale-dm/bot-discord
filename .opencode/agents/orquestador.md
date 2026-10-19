@@ -3,49 +3,26 @@ description: "Orquestador de producto y desarrollo de El Duende: decide priorida
 mode: primary
 color: "#f5c542"
 steps: 24
-permissions:
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: edit
-    resource: "docs/**"
-    effect: allow
-  - action: shell
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "git status *"
-    effect: allow
-  - action: shell
-    resource: "git log *"
-    effect: allow
-  - action: shell
-    resource: "git diff *"
-    effect: allow
-  - action: shell
-    resource: "git show *"
-    effect: allow
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: subagent
-    resource: "explorador"
-    effect: allow
-  - action: subagent
-    resource: "desarrollador"
-    effect: allow
-  - action: subagent
-    resource: "revisor"
-    effect: allow
-  - action: skill
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "opencode"
-    effect: allow
-  - action: skill
-    resource: "report"
-    effect: allow
+permission:
+  edit:
+    "*": deny
+    "docs/**": allow
+  bash:
+    "*": deny
+    "git status*": allow
+    "git log*": allow
+    "git diff*": allow
+    "git diff*--output*": deny
+    "git show*": allow
+  task:
+    "*": deny
+    explorador: allow
+    desarrollador: allow
+    revisor: allow
+  skill:
+    "*": deny
+    opencode: allow
+    report: allow
 ---
 
 # Orquestador de El Duende

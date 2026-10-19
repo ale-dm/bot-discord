@@ -3,37 +3,25 @@ description: "Explorador read-only de El Duende: mapea el estado actual del proy
 mode: all
 color: "#4ecdc4"
 steps: 16
-permissions:
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "git status *"
-    effect: allow
-  - action: shell
-    resource: "git log *"
-    effect: allow
-  - action: shell
-    resource: "git diff *"
-    effect: allow
-  - action: shell
-    resource: "git show *"
-    effect: allow
-  - action: shell
-    resource: "git branch *"
-    effect: allow
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "*"
-    effect: deny
-  - action: skill
-    resource: "estandar-tests"
-    effect: allow
+permission:
+  edit: deny
+  bash:
+    "*": deny
+    "git status*": allow
+    "git log*": allow
+    "git diff*": allow
+    "git diff*--output*": deny
+    "git show*": allow
+    "git branch": allow
+    "git branch -a": allow
+    "git branch -r": allow
+    "git branch -v*": allow
+    "git branch --list*": allow
+    "git branch --show-current": allow
+  task: deny
+  skill:
+    "*": deny
+    estandar-tests: allow
 ---
 
 # Explorador de El Duende
