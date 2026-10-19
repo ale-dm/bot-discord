@@ -5,7 +5,18 @@ const js = require("@eslint/js");
 const globals = require("globals");
 
 module.exports = [
-    { ignores: ["node_modules/", "data/", "logs/", "models/", "vosk/.venv/", "coverage/"] },
+    {
+        ignores: [
+            "node_modules/",
+            "data/",
+            "logs/",
+            "models/",
+            "vosk/.venv/",
+            "coverage/",
+            // Plantillas de skills: contienen placeholders y se copian a tests/.
+            ".opencode/skills/**/templates/",
+        ],
+    },
     js.configs.recommended,
     {
         files: ["**/*.js"],
