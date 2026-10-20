@@ -13,6 +13,7 @@ lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02
 | [T-04](#t-04-comprobar-en-discord-los-refactors-de-tamaño-y-el-resumen-del-ranking) | Comprobar en Discord los refactors de tamaño (#278 a #281, #286), la eliminación de `/ia` y el ranking con resumen (#285) | 🔴 Alta |
 | [T-06](#t-06-probar-en-discord-las-fases-1-a-12-del-plan-restante) | Probar en Discord lo hecho en las fases 1 a 12 del plan restante. ✅ Probado por el usuario y liberado a `main` (fases 1-12, #496/#497 y voz #499/#500); issues cerradas | ✅ Hecha |
 | [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
+| [T-07](#t-07-probar-en-discord-los-equipos-favoritos) | Probar en Discord los equipos favoritos y su aviso por DM (#530) | 🟡 Media |
 
 ---
 
@@ -555,3 +556,15 @@ Lo que cambia en cada fase, para probarlo a mano antes de cerrar sus issues. Ord
 - [x] 🔔 Alertas: apagar una categoría y probar; poner un canal de respaldo, cerrar los DMs al bot y provocar una alerta.
 - [x] `/mensaje usuario cuando:` con una hora a 10 minutos: llega con margen de 5 min; cancelar otro desde ✉️ Mensajes; apagar el bot pasada la hora y arrancarlo → llega con el aviso.
 - [x] ⚙️ Config Global → 🛠️ Modo mantenimiento: con otra cuenta no admin, comandos y botones dan el mensaje; con admin todo sigue; apagarlo.
+
+---
+
+## T-07 Probar en Discord los equipos favoritos
+
+Issue #530. Se prueba con los partidos que ya haya sincronizados el bot; no hace falta esperar a que salga uno nuevo.
+
+- [ ] `/favoritos seguir equipo:Betis` confirma el equipo y, si tiene un partido próximo, lo menciona. Repetirlo dice que ya lo sigues.
+- [ ] `/favoritos lista` enseña el equipo y sus próximos partidos con la hora y las cuotas 1X2.
+- [ ] En el siguiente refresco de cuotas (`[APUESTAS]`/log de la Odds API, o `/juegos` → ⚽ Apuestas para forzarlo), llega **un DM** con los partidos nuevos del equipo (o varios si hay muchos), sin repetirse en el siguiente refresco.
+- [ ] `/avisos` → ⭐ **Equipos favoritos** → apagarlo. Con otro partido nuevo (o borrando su fila de `equipos_favoritos_avisos` en una BD de pruebas) no llega el DM.
+- [ ] `/favoritos dejar equipo:Betis` lo quita y `/favoritos lista` vuelve a explicar cómo empezar.

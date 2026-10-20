@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Equipos favoritos y aviso de partidos (migración 071, 2026-10-20)
+
+- **071** crea `equipos_favoritos` (los equipos que sigue cada persona, con su nombre normalizado) y
+  `equipos_favoritos_avisos` (los partidos ya avisados, para no repetir el DM). No hay que copiar ni rellenar nada: el
+  catálogo sale de los partidos que ya sincroniza el bot y el comando `/favoritos` se registra al arrancar.
+
 ### Primera actualización a la versión con migraciones (2026-09-24)
 
 Los apodos del Duende ya no están en el código sino en la BD. Para no perderlos, **antes de arrancar

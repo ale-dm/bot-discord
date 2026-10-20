@@ -133,6 +133,8 @@ describe("el panel /avisos", () => {
         const p = buildAvisos(U);
         expect(ids(p)).toEqual([...avisosDm.TIPOS.map((t) => `avisos_t_${t.id}`), "avisos_nm"]);
         expect(p.components.every((f) => f.components.length <= 5)).toBe(true);
+        // Discord admite como mucho 5 filas por mensaje: con 24 tipos + no molestar ya vamos justos.
+        expect(p.components.length).toBeLessThanOrEqual(5);
         expect(p.embeds[0].toJSON().description).toContain("⚪ 🥷 **Robos**");
         expect(p.embeds[0].toJSON().description).toContain("🟢 🎞️ **Wrapped mensual**");
     });
