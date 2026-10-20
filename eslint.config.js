@@ -14,7 +14,7 @@ module.exports = [
             "vosk/.venv/",
             "coverage/",
             // Plantillas de skills: contienen placeholders y se copian a tests/.
-            ".opencode/skills/**/templates/",
+            ".claude/skills/**/templates/",
         ],
     },
     js.configs.recommended,
