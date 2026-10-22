@@ -177,6 +177,10 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
               new ActionRowBuilder().addComponents(
                   new ButtonBuilder().setCustomId("dinero_negocios").setLabel("🏪 Negocios").setStyle(ButtonStyle.Secondary),
                   new ButtonBuilder().setCustomId("dinero_limite").setLabel("🛡️ Límite de pérdidas").setStyle(ButtonStyle.Secondary),
+                  // 🛡️ Seguro antirrobo (#526): comprar o renovar la protección contra /robar.
+                  new ButtonBuilder().setCustomId("dinero_seguro").setLabel("🛡️ Seguro antirrobo").setStyle(ButtonStyle.Secondary),
+                  // 📈 Depósito a plazo (#518): guardar dinero del banco con interés.
+                  new ButtonBuilder().setCustomId("dinero_deposito").setLabel("📈 Depósito").setStyle(ButtonStyle.Secondary),
                   // 🙈 Ocultar mi economía a los demás (#377): el botón dice lo que hará.
                   new ButtonBuilder()
                       .setCustomId(`dinero_privada_${privacidad.oculta(viewerId) ? 0 : 1}`)
@@ -234,7 +238,14 @@ function buildMovimientos(viewerId, targetId, tipo = "todo", pagina = 0) {
         .setCustomId(`dinero_filtro_${targetId}`)
         .setPlaceholder("Filtrar por tipo")
         .addOptions(
-            [["todo", "📋 Todo"], ...Object.entries(dinero.TIPOS)].map(([value, label]) => ({
+            // Discord admite 25 opciones por selector: "todo" + los tipos, sin el cajón "otro" (sus movimientos salen en Todo).
+            // Si algún día hay más tipos reales, esto necesita paginación.
+            [
+                ["todo", "📋 Todo"],
+                ...Object.entries(dinero.TIPOS)
+                    .filter(([clave]) => clave !== "otro")
+                    .slice(0, 24),
+            ].map(([value, label]) => ({
                 label,
                 value,
                 default: value === tipo,

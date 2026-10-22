@@ -11,6 +11,7 @@
 const db = require("../core/db");
 const dinero = require("./dinero");
 const xpSystem = require("./xpSystem");
+const seguroAntirrobo = require("./seguroAntirrobo");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("Robar");
@@ -77,11 +78,12 @@ function entre(min, max) {
 
 /**
  * `candado` y `trampa`: el nombre del objeto de la víctima que se ha usado en este intento (si alguno).
+ * `seguro`: "fallo" si el 🛡️ seguro antirrobo ha hecho fallar el golpe, "reducido" si se ha llevado la mitad, null si no hay.
  * @returns {
  *   { ok: false, reason: "cooldown", retrySeconds: number } |
  *   { ok: false, reason: "victima-pobre" } |
- *   { ok: true, exito: true, cantidad: number, candado: string|null, trampa: null } |
- *   { ok: true, exito: false, multa: number, candado: string|null, trampa: string|null }
+ *   { ok: true, exito: true, cantidad: number, candado: string|null, trampa: null, seguro: string|null } |
+ *   { ok: true, exito: false, multa: number, candado: string|null, trampa: string|null, seguro: string|null }
  * }
  */
 function robar(guildId, ladronId, victimaId) {
@@ -96,8 +98,21 @@ function robar(guildId, ladronId, victimaId) {
     // 🔒 El candado se gasta con el intento, salga bien o mal.
     if (antirrobo) gastar(antirrobo);
     const probabilidad = Math.max(0, PROB_EXITO - (antirrobo ? antirrobo.valor / 100 : 0));
-    const exito = Math.random() < probabilidad;
+    let exito = Math.random() < probabilidad;
     const candado = antirrobo?.nombre || null;
+
+    // 🛡️ Seguro antirrobo (#526): si el golpe iba a salir bien, puede hacerlo fallar o reducir el botín.
+    // Se tira solo cuando el robo había salido bien, para no gastar azar en los que ya fallaban.
+    const seguro = exito ? seguroAntirrobo.proteccion(victimaId) : null;
+    let motivoSeguro = null;
+    if (exito && seguro) {
+        if (Math.random() < seguro.probFallo) {
+            exito = false;
+            motivoSeguro = "fallo";
+        } else {
+            motivoSeguro = "reducido";
+        }
+    }
 
     if (!exito) {
         // 💣 La trampa solo salta (y se gasta) si el robo falla.
@@ -109,34 +124,42 @@ function robar(guildId, ladronId, victimaId) {
         }
         log.info(
             `${ladronId} falló robando a ${victimaId}${multa > 0 ? ` (multa ${multa})` : ""}` +
-                `${candado ? ` · candado "${candado}"` : ""}${trampa ? ` · trampa "${trampa.nombre}"` : ""}`,
+                `${candado ? ` · candado "${candado}"` : ""}${trampa ? ` · trampa "${trampa.nombre}"` : ""}` +
+                `${motivoSeguro ? " · seguro" : ""}`,
         );
-        return { ok: true, exito: false, multa, candado, trampa: trampa?.nombre || null };
+        return { ok: true, exito: false, multa, candado, trampa: trampa?.nombre || null, seguro: motivoSeguro };
     }
 
     const nivel = xpSystem.getProfile(guildId, ladronId).nivel || 0;
-    const cantidad = Math.min(entre(BASE_MIN, BASE_MAX) + nivel * BONUS_POR_NIVEL, dinero.efectivo(victimaId));
+    let cantidad = Math.min(entre(BASE_MIN, BASE_MAX) + nivel * BONUS_POR_NIVEL, dinero.efectivo(victimaId));
+    if (motivoSeguro === "reducido") cantidad = Math.max(1, Math.floor(cantidad * seguro.reduccion));
     dinero.cobrar(victimaId, cantidad);
     dinero.apuntar(victimaId, "robo", "Te han robado", -cantidad);
     dinero.pagarNegro(ladronId, cantidad);
     dinero.apuntar(ladronId, "robo", "Robo a alguien", cantidad);
-    log.info(`${ladronId} robó ${cantidad} (dinero negro) a ${victimaId}${candado ? ` (a pesar del candado "${candado}")` : ""}`);
-    return { ok: true, exito: true, cantidad, candado, trampa: null };
+    log.info(
+        `${ladronId} robó ${cantidad} (dinero negro) a ${victimaId}${candado ? ` (a pesar del candado "${candado}")` : ""}` +
+            `${motivoSeguro ? " · seguro" : ""}`,
+    );
+    return { ok: true, exito: true, cantidad, candado, trampa: null, seguro: motivoSeguro };
 }
 
 /**
  * El DM que recibe la víctima de un intento de robo (#432), o null si no hay nada que contarle (un robo fallido en el que
- * no saltó ningún objeto suyo). Dice lo que ha pasado y la cantidad, pero nunca quién ha sido el ladrón.
+ * no saltó ningún objeto suyo). Dice lo que ha pasado y la cantidad, pero nunca quién ha sido el ladrón. Si el 🛡️ seguro
+ * antirrobo (#526) ha entrado en juego, se lo cuenta solo a ella.
  */
 function textoAvisoVictima(r) {
     if (!r?.ok) return null;
     const candado = r.candado ? ` Tu 🔒 **${r.candado}** se ha gastado en el intento.` : "";
-    if (r.exito) return `🥷 Alguien te ha robado **${r.cantidad.toLocaleString("es")}** 🪙 en efectivo.${candado}`;
-    if (!r.candado && !r.trampa) return null;
+    const seguro = r.seguro === "reducido" ? " Tu 🛡️ seguro antirrobo ha reducido el golpe a la mitad." : "";
+    if (r.exito) return `🥷 Alguien te ha robado **${r.cantidad.toLocaleString("es")}** 🪙 en efectivo.${candado}${seguro}`;
+    const frenado = r.seguro === "fallo" ? " Tu 🛡️ seguro antirrobo ha hecho que el golpe fallara." : "";
+    if (!r.candado && !r.trampa && !frenado) return null;
     const trampa = r.trampa
         ? ` Tu 💣 **${r.trampa}** ha saltado${r.multa > 0 ? `: ha pagado una multa de **${r.multa.toLocaleString("es")}** 🪙` : ""}.`
         : "";
-    return `🛡️ Alguien ha intentado robarte y le ha salido mal.${candado}${trampa}`;
+    return `🛡️ Alguien ha intentado robarte y le ha salido mal.${candado}${trampa}${frenado}`;
 }
 
 module.exports = { robar, textoAvisoVictima, efectoProteccion, proteccionesDe, COOLDOWN_SEC, MIN_VICTIMA, PROB_EXITO };

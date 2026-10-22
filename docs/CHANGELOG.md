@@ -2,6 +2,47 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-22 (sorteos programados)
+
+- **🎁 Sorteos** (#541): un admin los crea en **Config Global → 🎁 Sorteos**, en dos pasos (canal, premio y duración; luego ganadores y requisitos). Premio de **dinero** (se reparte) u **objeto** del catálogo (si es único, un solo ganador), de **1 a 5 ganadores**, duración de 1 a 168 h y requisitos de **rol** o **nivel**.
+- **🎟️ Entrar y salir** desde el botón del mensaje, con el contador de participantes; `/sorteos` lista los activos. Al vencer, el bot elige al azar entre quienes siguen cumpliendo los requisitos (se comprueban al entrar y otra vez al cerrar), reparte el premio, edita el mensaje con 🏆 y avisa por DM.
+- **🛑 Cancelar** desde el panel: el mensaje se actualiza y queda en Auditoría (`sorteos.crear` y `sorteos.cancelar`).
+- **🗃️ Migración 074**: `sorteos`, `sorteos_participantes` y `sorteos_ganadores`; el cierre es idempotente y sobrevive a un reinicio.
+- **⏱️ Tarea cada minuto** que cierra los vencidos y reparte; no se paga dos veces.
+- **🧪 Tests**: `tests/sorteos.test.js` (17 tests) cubre creación de dinero y objeto, validaciones, participantes, reparto exacto, cierre idempotente, objeto único, requisitos, `/sorteos`, botón de entrar, avisos y panel admin con sus dos pasos.
+- **📚 Documentación**: `FUNCIONALIDADES.md`, `DEPLOY.md` (migración 074) y `TAREAS.md` (T-11).
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.953 tests).
+
+## 2026-10-22 (autoroles)
+
+- **🎭 `/autoroles`** (#539): menú de roles que cada persona se pone y se quita; ✅ marca los que ya tiene y en un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Hasta 10 roles con botones y, si hay más, un desplegable (máximo 20).
+- **⚙️ Config Global → 🎭 Autoroles**: añadir y quitar roles con etiqueta, emoji y grupo, auditado en `autoroles.lista`. Se comprueba que el rol exista, no lo gestione una integración y esté por debajo del bot.
+- **🛠️ Mantenimiento y jerarquía**: con el modo mantenimiento activo no se cambia ningún rol; si falta «Gestionar roles» o el rol está por encima del bot, se explica en privado.
+- **🔍 Auditoría**: cada cambio de una persona queda como `autoroles.toggle` (puesto/quitado, rol y grupo).
+- **🧪 Tests**: `tests/autoroles.test.js` (15 tests) cubre la lista, el panel con botones y desplegable, ponerse/QUITARSE, grupo exclusivo, mantenimiento, jerarquía, permisos, selección y panel admin.
+- **📚 Documentación**: `FUNCIONALIDADES.md` (comando y Config Global) y `TAREAS.md` (T-10).
+- **✅ Verificación**: `npm run check` en verde (230 suites, 2.936 tests).
+
+## 2026-10-22 (depósito a plazo)
+
+- **📈 `/perfil` → 💰 Economía → Depósito** (#518): dinero del **banco** a **7, 30 o 90 días** con un interés del **1 %, 3 % o 6 %** (configurable). Mientras dura no se puede gastar; al vencer vuelve **solo** al banco con el interés y llega un DM. Cancelarlo antes devuelve el principal y pierde el interés. Un depósito activo por persona, de 1.000 a 100.000 🪙 (configurable).
+- **⚙️ Config Global → 🛡️ Economía → ✏️ Editar depósito**: mínimo, máximo e interés de cada plazo, auditado. Nuevas claves `economia.deposito_*`.
+- **🗃️ Migración 073**: `depositos_plazo`, con índice único parcial para que solo haya uno activo por persona.
+- **⏱️ Tarea cada 5 minutos**: paga los vencidos (principal + interés) y avisa por DM; no se puede apagar porque es un movimiento de dinero. También se procesan al abrir la pantalla, sin esperar al chequeo.
+- **🧪 Tests**: `tests/depositoPlazo.test.js` (16 tests) cubre apertura, interés por plazo, banco frente a efectivo, mínimos y máximos, un solo activo, cancelación, vencimiento idempotente, DM (también con los DMs cerrados), pantalla y ajustes del panel admin.
+- **📚 Documentación**: `FUNCIONALIDADES.md`, `DEPLOY.md` (migración 073) y `TAREAS.md` (T-09).
+- **✅ Verificación**: `npm run check` en verde (229 suites, 2.921 tests).
+
+## 2026-10-22 (seguro antirrobo)
+
+- **🛡️ `/perfil` → 💰 Economía → Seguro antirrobo** (#526): prima configurable (**2.000 🪙** por defecto) por **24 h**. Mientras está activo, los robos contra ti fallan el **60 %** de las veces y, si aciertan, se llevan **la mitad**. Renovar extiende desde el vencimiento, con **1 h** de cooldown y un tope de **7 días**; cobra del dinero gastable (🥷 negro primero y luego 💵 efectivo).
+- **🥷 `/robar`**: el seguro no se gasta con el robo y el ladrón nunca sabe que existe; la víctima lo ve en su DM. Si el seguro hace fallar el golpe, la multa y la trampa funcionan como en un fallo normal.
+- **⚙️ Config Global → 🛡️ Economía**: prima, duración, cooldown y tope, auditado. Nuevas claves `economia.seguro_*`.
+- **🗃️ Migración 072**: `seguros_antirrobo` (persona, inicio, vencimiento y última compra).
+- **🧪 Tests**: `tests/seguroAntirrobo.test.js` (19 tests) cubre compra, dinero negro, saldo, cooldown, renovación, tope, caducidad, ajustes por servidor, protección en `/robar` y DM, pantalla de `/perfil` y modal del panel admin. El filtro de Movimientos deja fuera el cajón «otro» para no pasar de las 25 opciones de Discord.
+- **📚 Documentación**: `FUNCIONALIDADES.md` (tabla de Economía y `/robar`), `DEPLOY.md` (migración 072) y `TAREAS.md` (T-08).
+- **✅ Verificación**: `npm run check` en verde (228 suites, 2.905 tests).
+
 ## 2026-10-22 (tests sin el .env real)
 
 - **🧪 `tests/setupEnv.js`**: `jest.mock("dotenv")` anula `dotenv.config()` en los tests, así que no cargan el `.env` local ni las claves reales de Discord, Gemini o Tautulli; se comportan como en CI.

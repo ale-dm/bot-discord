@@ -568,3 +568,45 @@ Issue #530. Se prueba con los partidos que ya haya sincronizados el bot; no hace
 - [ ] En el siguiente refresco de cuotas (`[APUESTAS]`/log de la Odds API, o `/juegos` → ⚽ Apuestas para forzarlo), llega **un DM** con los partidos nuevos del equipo (o varios si hay muchos), sin repetirse en el siguiente refresco.
 - [ ] `/avisos` → ⭐ **Equipos favoritos** → apagarlo. Con otro partido nuevo (o borrando su fila de `equipos_favoritos_avisos` en una BD de pruebas) no llega el DM.
 - [ ] `/favoritos dejar equipo:Betis` lo quita y `/favoritos lista` vuelve a explicar cómo empezar.
+
+## T-08 Probar en Discord el seguro antirrobo
+
+Issue #526. Con dos cuentas de prueba en el mismo servidor (una víctima y un ladrón) y el cooldown de `/robar` de 2 h.
+
+- [ ] `/perfil` → 💰 Economía → 🛡️ **Seguro antirrobo** enseña la prima, la duración y los límites; al comprarlo descuenta el importe del dinero gastable y muestra hasta cuándo está activo.
+- [ ] Con el seguro activo, `/robar` contra esa persona unas cuantas veces: unas falla (multa normal, sin mencionar el seguro) y otras roba la mitad de lo habitual. El ladrón nunca ve el seguro; la víctima sí lo lee en su DM.
+- [ ] Intentar comprarlo dos veces seguidas: la segunda avisa del cooldown. Renovar tras la hora extiende desde el vencimiento, y no deja pasar del tope de días.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → ✏️ Editar seguro: cambiar prima y duración, guardar, y comprobar que `/perfil` ya enseña los valores nuevos; el cambio queda en Auditoría.
+- [ ] Dejar vencer el seguro (`UPDATE seguros_antirrobo SET vencimiento = ... WHERE userId = ...` en una BD de pruebas) y comprobar que `/robar` vuelve a comportarse como siempre.
+
+## T-09 Probar en Discord el depósito a plazo
+
+Issue #518. Con una cuenta con dinero en el banco y otra sin él.
+
+- [ ] `/perfil` → 💰 Economía → 📈 **Depósito** enseña los tres plazos con su interés y el dinero que hay en el banco. Sin banco suficiente, los botones salen desactivados.
+- [ ] Abrir un depósito a 7 días: el importe sale del banco (no del efectivo), la pantalla muestra el interés y la fecha de vencimiento, y en Movimientos aparece 🏦 Banco.
+- [ ] Intentar abrir otro: avisa de que ya hay uno activo. Cancelar el primero: vuelve el principal al banco, sin interés, y el depósito desaparece.
+- [ ] Abrir uno a 7 días y adelantar su vencimiento en una BD de pruebas; antes de 5 minutos (o al abrir 📈 Depósito) vuelve al banco con el interés y llega un DM. No se paga dos veces.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → ✏️ Editar depósito: cambiar mínimo, máximo e intereses; se ven en `/perfil` y queda en Auditoría.
+
+## T-10 Probar en Discord los autoroles
+
+Issue #539. Con roles de prueba por debajo del rol del bot (y uno por encima, para el caso malo).
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎭 Autoroles → ➕ Añadir rol: elegir un rol, poner etiqueta y emoji, y guardar. Aparece en la lista.
+- [ ] `/autoroles` muestra el rol con ✅/▫️ según lo tenga quien mira; al pulsarlo se lo pone y al volver a pulsarlo se lo quita (la respuesta se actualiza en el sitio).
+- [ ] Con dos roles del mismo grupo (por ejemplo, colores), ponerse uno quita el otro.
+- [ ] Intentar añadir un rol por encima del bot o gestionado por una integración: lo rechaza con el motivo.
+- [ ] Activar el modo mantenimiento: `/autoroles` avisa y no cambia roles.
+- [ ] Cada cambio queda en `/paneladmin` → 🩺 Sistema → Auditoría (acción `autoroles.toggle`).
+
+## T-11 Probar en Discord los sorteos programados
+
+Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎁 Sorteos → ➕ Nuevo sorteo: elegir canal, premio en dinero y duración; publicar sin requisitos. El mensaje aparece en el canal con el botón 🎟️.
+- [ ] Con otra cuenta, pulsar el botón: responde en privado que está dentro y el contador del mensaje sube; volver a pulsarlo lo saca.
+- [ ] Crear otro con requisito de rol y nivel: quien no los cumple recibe el motivo y no entra.
+- [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
+- [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
+- [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.

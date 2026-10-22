@@ -137,7 +137,7 @@ test("sin ser admin no se puede usar", async () => {
     expect(i.update).not.toHaveBeenCalled();
 });
 
-test("quedan 30 comandos, sin los de admin sueltos", () => {
+test("quedan 32 comandos, sin los de admin sueltos", () => {
     const nombres = [];
     const walk = (d) =>
         fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
@@ -149,6 +149,7 @@ test("quedan 30 comandos, sin los de admin sueltos", () => {
     for (const viejo of ["panel", "pagarapuestas", "objeto", "diagnostico", "ttcl-diagnostico"]) expect(nombres).not.toContain(viejo);
     expect(nombres.sort()).toEqual(
         [
+            "autoroles",
             "avisos",
             "ayuda",
             "bola8",
@@ -175,6 +176,7 @@ test("quedan 30 comandos, sin los de admin sueltos", () => {
             "resumen",
             "robar",
             "sonidos",
+            "sorteos",
             "sugerencia",
             "tienda",
             "trabajar",

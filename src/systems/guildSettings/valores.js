@@ -79,6 +79,19 @@ function nodoEconomia(flat) {
             recuperacion_pct: flat["tienda.recuperacion_pct"],
             tope_pct: flat["tienda.tope_pct"],
         },
+        // 🛡️ Seguro antirrobo (#526): prima, duración, cooldown entre compras y tope por delante.
+        economia: {
+            seguro_precio: flat["economia.seguro_precio"],
+            seguro_horas: flat["economia.seguro_horas"],
+            seguro_cooldown_h: flat["economia.seguro_cooldown_h"],
+            seguro_tope_dias: flat["economia.seguro_tope_dias"],
+            // 📈 Depósito a plazo (#518): mínimo, máximo y el interés de cada plazo (7, 30 y 90 días).
+            deposito_min: flat["economia.deposito_min"],
+            deposito_max: flat["economia.deposito_max"],
+            deposito_pct_7: flat["economia.deposito_pct_7"],
+            deposito_pct_30: flat["economia.deposito_pct_30"],
+            deposito_pct_90: flat["economia.deposito_pct_90"],
+        },
     };
 }
 
@@ -146,6 +159,7 @@ function nodoOtros(flat) {
         avisos: { cumple_channel_id: flat["avisos.cumple_channel_id"] },
         bienvenida: { canal_id: flat["bienvenida.canal_id"], texto: flat["bienvenida.texto"] },
         sugerencias: { canal_id: flat["sugerencias.canal_id"] },
+        autoroles: { lista: flat["autoroles.lista"] },
         sonidos: {
             apagado: flat["sonidos.apagado"],
             silencio_desde: flat["sonidos.silencio_desde"],
