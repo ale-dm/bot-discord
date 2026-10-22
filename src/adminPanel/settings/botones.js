@@ -3,6 +3,7 @@ const adminAudit = require("../../systems/adminAudit");
 const { guardarAuditado } = require("./guardar");
 const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
 const { buildEconomiaPanel, abrirModalSeguro, abrirModalDeposito } = require("./economia");
+const { buildAutorolesPanel, abrirModalAnadir, abrirModalQuitar } = require("./autoroles");
 
 // Las horas de 0 a 23 (Madrid) en un desplegable.
 const HORAS = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, value: String(h) }));
@@ -318,6 +319,19 @@ async function accionEconomiaDeposito(interaction, id, guildId) {
     return abrirModalDeposito(interaction, guildId);
 }
 
+async function accionAutoroles(interaction, id, guildId) {
+    await interaction.update(buildAutorolesPanel(guildId));
+    return true;
+}
+
+async function accionAutorolesAdd(interaction, id, guildId) {
+    return abrirModalAnadir(interaction, guildId);
+}
+
+async function accionAutorolesRemove(interaction, id, guildId) {
+    return abrirModalQuitar(interaction, guildId);
+}
+
 const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_eventos", accionEventos],
     ["paneladmin_cfg_eventos_xp", accionEventosXp],
@@ -332,6 +346,9 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_economia", accionEconomia],
     ["paneladmin_cfg_economia_seguro_edit", accionEconomiaSeguro],
     ["paneladmin_cfg_economia_deposito_edit", accionEconomiaDeposito],
+    ["paneladmin_cfg_autoroles", accionAutoroles],
+    ["paneladmin_cfg_autoroles_add", accionAutorolesAdd],
+    ["paneladmin_cfg_autoroles_remove", accionAutorolesRemove],
     ["paneladmin_cfg_acl", accionAcl],
     ["paneladmin_cfg_logros", accionLogros],
     ["paneladmin_cfg_duende_edit", accionDuendeEdit],

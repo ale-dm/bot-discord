@@ -33,11 +33,12 @@ function valoresDe(modal) {
     return campos;
 }
 
-test("cada botón de ajustes responde: o cambia la vista o abre un formulario", async () => {
+test("cada botón de ajustes responde: cambia la vista, abre un formulario o avisa", async () => {
     for (const id of ACCIONES_BOTON.keys()) {
         const i = interaccion(id);
         expect(await handleSettingsButton(i)).toBe(true);
-        expect(i.update.mock.calls.length + i.showModal.mock.calls.length).toBe(1);
+        // Quitar un autorol sin ninguno configurado contesta en privado, sin abrir formulario.
+        expect(i.update.mock.calls.length + i.showModal.mock.calls.length + i.reply.mock.calls.length).toBe(1);
     }
 });
 

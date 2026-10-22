@@ -588,3 +588,14 @@ Issue #518. Con una cuenta con dinero en el banco y otra sin él.
 - [ ] Intentar abrir otro: avisa de que ya hay uno activo. Cancelar el primero: vuelve el principal al banco, sin interés, y el depósito desaparece.
 - [ ] Abrir uno a 7 días y adelantar su vencimiento en una BD de pruebas; antes de 5 minutos (o al abrir 📈 Depósito) vuelve al banco con el interés y llega un DM. No se paga dos veces.
 - [ ] `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → ✏️ Editar depósito: cambiar mínimo, máximo e intereses; se ven en `/perfil` y queda en Auditoría.
+
+## T-10 Probar en Discord los autoroles
+
+Issue #539. Con roles de prueba por debajo del rol del bot (y uno por encima, para el caso malo).
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎭 Autoroles → ➕ Añadir rol: elegir un rol, poner etiqueta y emoji, y guardar. Aparece en la lista.
+- [ ] `/autoroles` muestra el rol con ✅/▫️ según lo tenga quien mira; al pulsarlo se lo pone y al volver a pulsarlo se lo quita (la respuesta se actualiza en el sitio).
+- [ ] Con dos roles del mismo grupo (por ejemplo, colores), ponerse uno quita el otro.
+- [ ] Intentar añadir un rol por encima del bot o gestionado por una integración: lo rechaza con el motivo.
+- [ ] Activar el modo mantenimiento: `/autoroles` avisa y no cambia roles.
+- [ ] Cada cambio queda en `/paneladmin` → 🩺 Sistema → Auditoría (acción `autoroles.toggle`).
