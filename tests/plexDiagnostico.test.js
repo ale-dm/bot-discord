@@ -271,7 +271,7 @@ describe("npm run plex:check (el script, en otro proceso)", () => {
             delete env.TAUTULLI_URL;
             delete env.TAUTULLI_API_KEY;
             delete env.DB_PATH;
-            execFile(process.execPath, [script, ...args], { env, timeout: 60000 }, (error, stdout) =>
+            execFile(process.execPath, [script, ...args], { env, cwd: dir, timeout: 60000 }, (error, stdout) =>
                 resolve({ codigo: error ? error.code : 0, salida: stdout }),
             );
         });

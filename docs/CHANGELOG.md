@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-22 (tests sin el .env real)
+
+- **🧪 `tests/setupEnv.js`**: `jest.mock("dotenv")` anula `dotenv.config()` en los tests, así que no cargan el `.env` local ni las claves reales de Discord, Gemini o Tautulli; se comportan como en CI.
+- **🧪 `tests/plexDiagnostico.test.js`**: el proceso hijo de `npm run plex:check` arranca con `cwd` en la carpeta temporal del test, así que tampoco lee el `.env` del repositorio.
+- Antes, con `.env` local fallaban 26 tests (Tautulli real, `GOOGLE_API_KEY` recargada y el aviso de «falta Tautulli»); ahora pasan las 227 suites y los 2886 tests.
+- Sin cambios de código ni migraciones. Verificación: `npm run check` en verde.
+
 ## 2026-10-21 (plantilla de ideas)
 
 - **📝 Plantilla de ideas** (`.github/ISSUE_TEMPLATE/feature-idea.md`): esfuerzo, qué es, comportamiento, detalles técnicos orientativos, criterios de aceptación y decisiones abiertas. El issue nace con el label `feature-idea`.
