@@ -18,6 +18,8 @@ function buildAvisos(userId) {
                 "\n\nPulsa un botón para encender o apagar ese aviso. Vale para todos los servidores. " +
                 "Las alertas de administración no se pueden apagar desde aquí.",
         );
+    // Ojo: con 24 tipos + «no molestar» ya son 25 botones (5 filas, el máximo de Discord). Al añadir otro tipo hay
+    // que paginar o agrupar el panel; si no, Discord rechaza el mensaje (50035).
     const botones = e.tipos.map((t) =>
         new ButtonBuilder()
             .setCustomId(`avisos_t_${t.id}`)

@@ -2,6 +2,30 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-22 (tests sin el .env real)
+
+- **🧪 `tests/setupEnv.js`**: `jest.mock("dotenv")` anula `dotenv.config()` en los tests, así que no cargan el `.env` local ni las claves reales de Discord, Gemini o Tautulli; se comportan como en CI.
+- **🧪 `tests/plexDiagnostico.test.js`**: el proceso hijo de `npm run plex:check` arranca con `cwd` en la carpeta temporal del test, así que tampoco lee el `.env` del repositorio.
+- Antes, con `.env` local fallaban 26 tests (Tautulli real, `GOOGLE_API_KEY` recargada y el aviso de «falta Tautulli»); ahora pasan las 227 suites y los 2886 tests.
+- Sin cambios de código ni migraciones. Verificación: `npm run check` en verde.
+
+## 2026-10-21 (plantilla de ideas)
+
+- **📝 Plantilla de ideas** (`.github/ISSUE_TEMPLATE/feature-idea.md`): esfuerzo, qué es, comportamiento, detalles técnicos orientativos, criterios de aceptación y decisiones abiertas. El issue nace con el label `feature-idea`.
+- **📚 `CONTRIBUTING.md`**: el formato común de una idea y la regla de cerrar la que ya está implementada con un enlace al commit o al PR, sin reescribirla.
+- Sin cambios de código ni migraciones. Verificación: `npm run format:check` en verde.
+
+## 2026-10-20 (equipos favoritos y aviso de partidos)
+
+- **⭐ `/favoritos`** (#530): `seguir equipo:…`, `dejar equipo:…` y `lista`. Hasta **10 equipos por persona**, globales para la cuenta (sin `guildId`), con autocompletado y respuestas privadas. El catálogo sale de los partidos que ya sincroniza el bot (las siete competiciones de ⚽ Apuestas), así que no se llama a la Odds API.
+- **📅 Próximos partidos** en el panel: equipos seguidos y sus partidos abiertos futuros, ordenados por hora, con la competición y las cuotas 1X2.
+- **🔔 Aviso por DM**: al guardar cuotas nuevas (`alRefrescarCuotas`), un DM por persona con los partidos nuevos de sus equipos (troceado si hay tantos que no caben en 2000 caracteres), con hora de Discord y cuotas. Se marca antes de enviar, así que cada partido se avisa una sola vez aunque el DM falle; un fallo transitorio se reintenta y los DMs cerrados no. No avisa de partidos empezados y no gasta créditos extra. No duplica el recordatorio de partidos a los que has apostado.
+- **🔕 Tipo `equipo_favorito`** en `/avisos` (⭐ Equipos favoritos): se apaga como los demás avisos y respeta «no molestar».
+- **🗄️ Migración 071**: `equipos_favoritos` (equipo por usuario y nombre normalizado) y `equipos_favoritos_avisos` (partidos ya avisados).
+- **🧪 Tests**: `tests/equiposFavoritos.test.js` (15 tests) cubre seguir/dejar, normalización, duplicados, límite, ambigüedad, catálogo, próximos partidos, panel, DM agrupado, no repetición, avisos apagados y fallo de envío; `/favoritos` ya son 30 comandos en `tests/parte8Admin.test.js`.
+- **📄 Documentación**: `FUNCIONALIDADES.md` (sección 9 y lista de comandos), `TAREAS.md` (T-07) y `DEPLOY.md` (migración 071).
+- **✅ Verificación**: `npm run lint` y `npm run format:check` en verde. `npx jest tests/equiposFavoritos.test.js tests/avisosDm.test.js tests/parte8Admin.test.js tests/migrations.test.js --runInBand`: 49 tests pasados. La suite completa local falla solo por el entorno: `plexDiagnostico.test.js` y `plexTrofeosPaneles.test.js` (Tautulli real, 502/timeout), `imagenComandoCobertura.test.js` (el `.env` local vuelve a cargar `GOOGLE_API_KEY`) y `xpMensajeRendimiento.test.js` (pasa con `CI=true`). En CI no hay `.env`, así que esas comprobaciones de entorno no aplican; el check del PR lo confirmará.
+
 ## 2026-10-19 (agentes y skills también en Claude Code)
 
 - **🧩 Skills en `.claude/skills/`** (antes en `.opencode/skills/`): OpenCode y Claude Code (la terminal o la app de Claude) leen esa carpeta, así que las 14 skills sirven en los dos con una sola copia. En Claude Code se cargan solas cuando la tarea encaja con su `description`.

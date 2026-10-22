@@ -758,6 +758,14 @@ sin canal de resultados no se publica).
 y cuánto ganarías (uno solo con todos tus partidos de esa media hora, y una sola vez por apuesta). Se activa o
 desactiva y se cambian los minutos en `/paneladmin` → ⚽ Apuestas → ⏰ Recordatorio.
 
+**⭐ Equipos favoritos (`/favoritos`)**: sigue hasta **10 equipos** con `seguir equipo:…`, déjalos con `dejar equipo:…`
+y consulta los que tienes y sus próximos partidos con `lista`. Es global para tu cuenta, como las apuestas. El catálogo
+sale de los partidos que ya ha sincronizado el bot (las siete competiciones de ⚽ Apuestas), así que no gasta créditos
+de la Odds API. Cuando aparezca un partido de un equipo que sigues, te llega **un DM** (o varios si hay muchos partidos)
+con la competición, la hora (`<t:…:f>` y `<t:…:R>`) y las cuotas 1X2; se avisa una sola vez por partido y el aviso se
+apaga en `/avisos` (⭐ Equipos favoritos). El aviso sale al **actualizarse las cuotas** (al abrir ⚽ Apuestas, la quiniela o retos, y con las
+apuestas en directo); no hay una consulta periódica propia para no gastar créditos de la Odds API.
+
 La API solo da resultados de los **últimos 3 días**: un partido (o una quiniela con partidos) que empezó hace
 más y sigue sin resultado se marca como caducado y **se devuelve lo apostado** (con aviso por DM).
 
@@ -994,7 +1002,8 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto`, `/duende`, `/plex`, `/sonidos` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
-| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/favoritos` | ⭐ `seguir equipo:…`, `dejar equipo:…` y `lista`: hasta 10 equipos por persona, con sus próximos partidos y cuotas. Aviso por DM cuando aparece un partido suyo, apagable en `/avisos` (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
 | `/recordar` | ⏰ `nuevo cuando texto` («18:30», «mañana 09:00», «en 45 min»; hoy o mañana, hasta 24 h; texto de hasta 200 caracteres) y `lista` (con botón de borrar). Hasta 10 pendientes; el DM llega a su hora y, con los DMs cerrados, se pierde |
 | `/cumpleaños` | 🎂 `fecha dia mes`, `ver` (los próximos 5) y `borrar`. El bot felicita en el canal elegido desde las 09:00 (Madrid); el 29 de febrero se celebra el 28 los años no bisiestos |

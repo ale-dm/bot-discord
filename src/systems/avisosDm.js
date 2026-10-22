@@ -18,6 +18,12 @@ const TIPOS = [
         detalle: "Los domingos, si tienes logros completados sin reclamar",
     },
     { id: "recordatorio_partido", emoji: "⏰", nombre: "Recordatorio de partido", detalle: "Antes de un partido al que has apostado" },
+    {
+        id: "equipo_favorito",
+        emoji: "⭐",
+        nombre: "Equipos favoritos",
+        detalle: "Cuando aparece un partido de un equipo que sigues en /favoritos",
+    },
     { id: "apuesta_cobrada", emoji: "🏆", nombre: "Apuesta cobrada", detalle: "Cuando ganas o te devuelven una apuesta" },
     {
         id: "pase_recompensas",

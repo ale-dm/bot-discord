@@ -9,3 +9,5 @@ process.env.LOG_DIR = path.join(os.tmpdir(), "el-duende-test-logs");
 process.env.DATA_DIR = path.join(os.tmpdir(), "el-duende-test-data");
 // Sin salida por consola durante los tests (los logs siguen yendo a LOG_DIR).
 process.env.LOG_CONSOLE_LEVEL = "off";
+// Los tests no cargan el .env real, igual que en CI: ni secretos ni servicios reales.
+jest.mock("dotenv", () => ({ config: () => ({ parsed: {} }), configDotenv: () => ({ parsed: {} }), parse: () => ({}) }));
