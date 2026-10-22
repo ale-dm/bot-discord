@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-21 (plantilla de ideas)
+
+- **📝 Plantilla de ideas** (`.github/ISSUE_TEMPLATE/feature-idea.md`): esfuerzo, qué es, comportamiento, detalles técnicos orientativos, criterios de aceptación y decisiones abiertas. El issue nace con el label `feature-idea`.
+- **📚 `CONTRIBUTING.md`**: el formato común de una idea y la regla de cerrar la que ya está implementada con un enlace al commit o al PR, sin reescribirla.
+- Sin cambios de código ni migraciones. Verificación: `npm run format:check` en verde.
+
 ## 2026-10-20 (equipos favoritos y aviso de partidos)
 
 - **⭐ `/favoritos`** (#530): `seguir equipo:…`, `dejar equipo:…` y `lista`. Hasta **10 equipos por persona**, globales para la cuenta (sin `guildId`), con autocompletado y respuestas privadas. El catálogo sale de los partidos que ya sincroniza el bot (las siete competiciones de ⚽ Apuestas), así que no se llama a la Odds API.
