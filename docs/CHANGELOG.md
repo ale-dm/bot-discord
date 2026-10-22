@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-21 (plantilla de ideas)
+
+- **📝 Plantilla de ideas** (`.github/ISSUE_TEMPLATE/feature-idea.md`): esfuerzo, qué es, comportamiento, detalles técnicos orientativos, criterios de aceptación y decisiones abiertas. El issue nace con el label `feature-idea`.
+- **📚 `CONTRIBUTING.md`**: el formato común de una idea y la regla de cerrar la que ya está implementada con un enlace al commit o al PR, sin reescribirla.
+- Sin cambios de código ni migraciones. Verificación: `npm run format:check` en verde.
+
 ## 2026-10-19 (agentes y skills también en Claude Code)
 
 - **🧩 Skills en `.claude/skills/`** (antes en `.opencode/skills/`): OpenCode y Claude Code (la terminal o la app de Claude) leen esa carpeta, así que las 14 skills sirven en los dos con una sola copia. En Claude Code se cargan solas cuando la tarea encaja con su `description`.
