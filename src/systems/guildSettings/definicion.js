@@ -49,6 +49,11 @@ const DEFAULT_FLAT = {
     "tienda.recuperacion_pct": 5,
     "tienda.tope_pct": 100,
 
+    "economia.seguro_precio": 2000,
+    "economia.seguro_horas": 24,
+    "economia.seguro_cooldown_h": 1,
+    "economia.seguro_tope_dias": 7,
+
     "logros.enabled": true,
     "logros.notify_channel_id": "",
     "logros.reward_multiplier": 1,
@@ -156,6 +161,11 @@ const KEY_TYPES = {
     "tienda.subida_pct": "number",
     "tienda.recuperacion_pct": "number",
     "tienda.tope_pct": "number",
+
+    "economia.seguro_precio": "number",
+    "economia.seguro_horas": "number",
+    "economia.seguro_cooldown_h": "number",
+    "economia.seguro_tope_dias": "number",
 
     "logros.enabled": "boolean",
     "logros.notify_channel_id": "string",

@@ -568,3 +568,13 @@ Issue #530. Se prueba con los partidos que ya haya sincronizados el bot; no hace
 - [ ] En el siguiente refresco de cuotas (`[APUESTAS]`/log de la Odds API, o `/juegos` → ⚽ Apuestas para forzarlo), llega **un DM** con los partidos nuevos del equipo (o varios si hay muchos), sin repetirse en el siguiente refresco.
 - [ ] `/avisos` → ⭐ **Equipos favoritos** → apagarlo. Con otro partido nuevo (o borrando su fila de `equipos_favoritos_avisos` en una BD de pruebas) no llega el DM.
 - [ ] `/favoritos dejar equipo:Betis` lo quita y `/favoritos lista` vuelve a explicar cómo empezar.
+
+## T-08 Probar en Discord el seguro antirrobo
+
+Issue #526. Con dos cuentas de prueba en el mismo servidor (una víctima y un ladrón) y el cooldown de `/robar` de 2 h.
+
+- [ ] `/perfil` → 💰 Economía → 🛡️ **Seguro antirrobo** enseña la prima, la duración y los límites; al comprarlo descuenta el importe del dinero gastable y muestra hasta cuándo está activo.
+- [ ] Con el seguro activo, `/robar` contra esa persona unas cuantas veces: unas falla (multa normal, sin mencionar el seguro) y otras roba la mitad de lo habitual. El ladrón nunca ve el seguro; la víctima sí lo lee en su DM.
+- [ ] Intentar comprarlo dos veces seguidas: la segunda avisa del cooldown. Renovar tras la hora extiende desde el vencimiento, y no deja pasar del tope de días.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → ✏️ Editar seguro: cambiar prima y duración, guardar, y comprobar que `/perfil` ya enseña los valores nuevos; el cambio queda en Auditoría.
+- [ ] Dejar vencer el seguro (`UPDATE seguros_antirrobo SET vencimiento = ... WHERE userId = ...` en una BD de pruebas) y comprobar que `/robar` vuelve a comportarse como siempre.

@@ -79,6 +79,13 @@ function nodoEconomia(flat) {
             recuperacion_pct: flat["tienda.recuperacion_pct"],
             tope_pct: flat["tienda.tope_pct"],
         },
+        // 🛡️ Seguro antirrobo (#526): prima, duración, cooldown entre compras y tope por delante.
+        economia: {
+            seguro_precio: flat["economia.seguro_precio"],
+            seguro_horas: flat["economia.seguro_horas"],
+            seguro_cooldown_h: flat["economia.seguro_cooldown_h"],
+            seguro_tope_dias: flat["economia.seguro_tope_dias"],
+        },
     };
 }
 

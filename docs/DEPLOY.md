@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Seguro antirrobo (migración 072, 2026-10-22)
+
+- **072** crea `seguros_antirrobo` (quién lo tiene, desde cuándo, hasta cuándo y cuándo lo compró). No hay que rellenar
+  nada: la prima y la duración salen de **Config Global → 🛡️ Economía**, con 2.000 🪙 y 24 h por defecto.
+
 ### Equipos favoritos y aviso de partidos (migración 071, 2026-10-20)
 
 - **071** crea `equipos_favoritos` (los equipos que sigue cada persona, con su nombre normalizado) y

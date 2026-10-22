@@ -98,6 +98,8 @@ function filasConfigHome(guildId) {
             .setCustomId("paneladmin_cfg_mantenimiento_msg")
             .setLabel("✏️ Mensaje de mantenimiento")
             .setStyle(ButtonStyle.Secondary),
+        // 🛡️ Economía (#526): seguro antirrobo y sus ajustes.
+        new ButtonBuilder().setCustomId("paneladmin_cfg_economia").setLabel("🛡️ Economía").setStyle(ButtonStyle.Success),
     );
     return [row1, row2, row3];
 }
