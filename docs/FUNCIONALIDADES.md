@@ -458,6 +458,7 @@ es único para todo el bot (no es por servidor).
 | 💸 Transferir | Eliges a quién (selector de personas) y la cantidad; va de tu efectivo al suyo |
 | 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, robos, admin |
 | 🛡️ Límite de pérdidas | Un tope **que te pones tú** de lo que pierdes (netas, casino y apuestas) por día o por semana, en hora de Madrid. Con el tope alcanzado, o si una apuesta lo pasaría, el casino y las apuestas no te dejan jugar hasta el periodo siguiente. Bajarlo vale al momento; **subirlo o quitarlo tarda 24 h**. Migración 061 |
+| 🛡️ Seguro antirrobo | Prima de **2.000 🪙** por **24 h** (configurable en el panel): mientras está activo, los robos contra ti fallan el 60 % de las veces y, si aciertan, se llevan **la mitad**. Renovar extiende desde el vencimiento, con 1 h de cooldown y un tope de 7 días por delante. Cobra del dinero gastable (🥷 negro primero y luego 💵 efectivo). Migración 072 |
 
 **💼 `/trabajar`**: a diferencia del diario, se puede usar cada 30 min (`TRABAJAR_COOLDOWN_SEC`) — exige estar
 activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJAR_BASE_MIN`/`MAX`) más 2 por cada
@@ -481,6 +482,10 @@ robarle (si no llega, no se gasta el intento ni el cooldown). 65 % de probabilid
   - 💣 **Trampa para ladrones** (100 🪙, efecto `trampa:3`): si el robo falla, la multa se multiplica por 3. Se gasta
     solo cuando salta.
   El ladrón se entera en el mensaje de `/robar` ("🔒 Ana tenía **Candado**…", "💣 ¡Ha saltado su **Trampa**…").
+- **🛡️ Seguro antirrobo** (F-EC-19, #526): se compra en `/perfil` → 💰 Economía (y se ajusta en
+  `/paneladmin` → Config Global → 🛡️ Economía). Mientras está activo, un robo que iba a salir bien tiene un
+  **60 %** de fallar del todo (el ladrón ve un fallo normal, paga su multa y no sabe por qué) y, si no falla, se
+  lleva **la mitad**. No se gasta con el robo: dura lo que dura la prima. La víctima sí lo ve en su DM.
 
 Donde se gasta (selectores de importes del casino, confirmación de la tienda, compra de cripto) se ve el efectivo
 y el banco, y si tienes algo en el banco sale **💵 Sacar del banco**: después de sacar, la pantalla se vuelve a

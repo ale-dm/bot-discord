@@ -23,6 +23,7 @@ const TIPOS = {
     apuestas: "⚽ Apuestas",
     retos: "⚔️ Retos",
     tienda: "🛒 Tienda",
+    seguro: "🛡️ Seguro",
     cripto: "📈 Cripto",
     banco: "🏦 Banco",
     transferencia: "💸 Transferencias",

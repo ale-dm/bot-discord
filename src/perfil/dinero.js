@@ -16,6 +16,8 @@ const panelCasino = require("../paneles/casino");
 const panelTienda = require("../paneles/tienda");
 const panelCripto = require("../paneles/cripto");
 const panelNegocios = require("../paneles/negocios");
+const panelSeguro = require("../paneles/seguroAntirrobo");
+const seguroAntirrobo = require("../systems/seguroAntirrobo");
 const panelLimite = require("../paneles/limitePerdidas");
 const limitePerdidas = require("../systems/limitePerdidas");
 const { createLogger } = require("../core/logger");
@@ -112,10 +114,31 @@ async function guardarLimite(interaction) {
     return interaction.isFromMessage?.() ? interaction.update(payload) : interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
 }
 
+// 🛡️ Seguro antirrobo (#526): comprar o renovar y repintar la pantalla con el resultado.
+function comprarSeguro(interaction) {
+    const r = seguroAntirrobo.comprar(interaction.user.id, interaction.guildId);
+    let aviso;
+    if (r.ok) {
+        const hasta = Math.floor(r.vencimiento / 1000);
+        aviso = `${r.extendido ? "🔁 Seguro renovado" : "✅ Seguro activo"} hasta <t:${hasta}:f>: te ha costado **${r.precio.toLocaleString("es")}** 🪙.`;
+        log.info(`${interaction.user.tag}: ${r.extendido ? "renovó" : "compró"} el seguro antirrobo (${r.precio})`);
+    } else if (r.motivo === "cooldown") {
+        aviso = `⏳ Acabas de comprarlo. Podrás renovarlo dentro de ${Math.ceil(r.retrySeconds / 60)} min.`;
+    } else if (r.motivo === "tope") {
+        aviso = `🛡️ Ya tienes el máximo de seguro por delante (${Math.floor(r.restanteMs / seguroAntirrobo.DIA_MS)} días).`;
+    } else {
+        aviso = `❌ No te llega el dinero gastable para la prima de **${r.cfg.precio.toLocaleString("es")}** 🪙.`;
+    }
+    return interaction.update(panelSeguro.buildSeguro(interaction.user.id, interaction.guildId, aviso));
+}
+
 // Los botones de dinero_*, en orden: el primero cuyo customId encaja se atiende. Cada caso llama a su caso de uso (systems/dinero,
 // prestamos, negocios) o pinta su pantalla (paneles/economia, negocios); aquí no hay reglas (#476).
 const RUTAS_BOTON = [
     ["dinero_panel", async (i) => i.update(await economiaPropia(i))],
+    // 🛡️ Seguro antirrobo (#526).
+    ["dinero_seguro", async (i) => i.update(panelSeguro.buildSeguro(i.user.id, i.guildId))],
+    ["dinero_seguro_comprar", comprarSeguro],
     // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
     ["dinero_prestamo_devolver", devolverPrestamo],
     ["dinero_transferir", async (i) => i.update(economia.buildElegirDestinatario(i.user.id))],
