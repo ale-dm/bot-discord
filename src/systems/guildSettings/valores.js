@@ -159,6 +159,7 @@ function nodoOtros(flat) {
         avisos: { cumple_channel_id: flat["avisos.cumple_channel_id"] },
         bienvenida: { canal_id: flat["bienvenida.canal_id"], texto: flat["bienvenida.texto"] },
         sugerencias: { canal_id: flat["sugerencias.canal_id"] },
+        autoroles: { lista: flat["autoroles.lista"] },
         sonidos: {
             apagado: flat["sonidos.apagado"],
             silencio_desde: flat["sonidos.silencio_desde"],

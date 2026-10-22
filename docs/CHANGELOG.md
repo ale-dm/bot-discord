@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-22 (autoroles)
+
+- **🎭 `/autoroles`** (#539): menú de roles que cada persona se pone y se quita; ✅ marca los que ya tiene y en un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Hasta 10 roles con botones y, si hay más, un desplegable (máximo 20).
+- **⚙️ Config Global → 🎭 Autoroles**: añadir y quitar roles con etiqueta, emoji y grupo, auditado en `autoroles.lista`. Se comprueba que el rol exista, no lo gestione una integración y esté por debajo del bot.
+- **🛠️ Mantenimiento y jerarquía**: con el modo mantenimiento activo no se cambia ningún rol; si falta «Gestionar roles» o el rol está por encima del bot, se explica en privado.
+- **🔍 Auditoría**: cada cambio de una persona queda como `autoroles.toggle` (puesto/quitado, rol y grupo).
+- **🧪 Tests**: `tests/autoroles.test.js` (15 tests) cubre la lista, el panel con botones y desplegable, ponerse/QUITARSE, grupo exclusivo, mantenimiento, jerarquía, permisos, selección y panel admin.
+- **📚 Documentación**: `FUNCIONALIDADES.md` (comando y Config Global) y `TAREAS.md` (T-10).
+- **✅ Verificación**: `npm run check` en verde (230 suites, 2.936 tests).
+
 ## 2026-10-22 (depósito a plazo)
 
 - **📈 `/perfil` → 💰 Economía → Depósito** (#518): dinero del **banco** a **7, 30 o 90 días** con un interés del **1 %, 3 % o 6 %** (configurable). Mientras dura no se puede gastar; al vencer vuelve **solo** al banco con el interés y llega un DM. Cancelarlo antes devuelve el principal y pierde el interés. Un depósito activo por persona, de 1.000 a 100.000 🪙 (configurable).

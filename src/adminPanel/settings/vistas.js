@@ -100,6 +100,8 @@ function filasConfigHome(guildId) {
             .setStyle(ButtonStyle.Secondary),
         // 🛡️ Economía (#526): seguro antirrobo y sus ajustes.
         new ButtonBuilder().setCustomId("paneladmin_cfg_economia").setLabel("🛡️ Economía").setStyle(ButtonStyle.Success),
+        // 🎭 Autoroles (#539): el menú de roles que se pone la gente.
+        new ButtonBuilder().setCustomId("paneladmin_cfg_autoroles").setLabel("🎭 Autoroles").setStyle(ButtonStyle.Success),
     );
     return [row1, row2, row3];
 }

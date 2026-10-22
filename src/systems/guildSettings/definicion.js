@@ -100,6 +100,7 @@ const DEFAULT_FLAT = {
     "bienvenida.canal_id": "",
     "bienvenida.texto": "",
     "sugerencias.canal_id": "",
+    "autoroles.lista": "",
 
     "sonidos.apagado": false,
     "sonidos.silencio_desde": "",
@@ -218,6 +219,7 @@ const KEY_TYPES = {
     "bienvenida.canal_id": "string",
     "bienvenida.texto": "string",
     "sugerencias.canal_id": "string",
+    "autoroles.lista": "string",
     "sonidos.apagado": "boolean",
     "sonidos.silencio_desde": "string",
     "sonidos.silencio_hasta": "string",
