@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Sorteos programados (migración 074, 2026-10-22)
+
+- **074** crea `sorteos`, `sorteos_participantes` y `sorteos_ganadores`. Los sorteos activos sobreviven a un reinicio:
+  el cron los cierra al minuto siguiente y reparte el premio. No hay que rellenar nada.
+
 ### Depósito a plazo (migración 073, 2026-10-22)
 
 - **073** crea `depositos_plazo` (importe, interés, plazo, vencimiento y estado) con un índice único para que cada

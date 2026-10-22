@@ -599,3 +599,14 @@ Issue #539. Con roles de prueba por debajo del rol del bot (y uno por encima, pa
 - [ ] Intentar añadir un rol por encima del bot o gestionado por una integración: lo rechaza con el motivo.
 - [ ] Activar el modo mantenimiento: `/autoroles` avisa y no cambia roles.
 - [ ] Cada cambio queda en `/paneladmin` → 🩺 Sistema → Auditoría (acción `autoroles.toggle`).
+
+## T-11 Probar en Discord los sorteos programados
+
+Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 🎁 Sorteos → ➕ Nuevo sorteo: elegir canal, premio en dinero y duración; publicar sin requisitos. El mensaje aparece en el canal con el botón 🎟️.
+- [ ] Con otra cuenta, pulsar el botón: responde en privado que está dentro y el contador del mensaje sube; volver a pulsarlo lo saca.
+- [ ] Crear otro con requisito de rol y nivel: quien no los cumple recibe el motivo y no entra.
+- [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
+- [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
+- [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.

@@ -2,6 +2,17 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-22 (sorteos programados)
+
+- **🎁 Sorteos** (#541): un admin los crea en **Config Global → 🎁 Sorteos**, en dos pasos (canal, premio y duración; luego ganadores y requisitos). Premio de **dinero** (se reparte) u **objeto** del catálogo (si es único, un solo ganador), de **1 a 5 ganadores**, duración de 1 a 168 h y requisitos de **rol** o **nivel**.
+- **🎟️ Entrar y salir** desde el botón del mensaje, con el contador de participantes; `/sorteos` lista los activos. Al vencer, el bot elige al azar entre quienes siguen cumpliendo los requisitos (se comprueban al entrar y otra vez al cerrar), reparte el premio, edita el mensaje con 🏆 y avisa por DM.
+- **🛑 Cancelar** desde el panel: el mensaje se actualiza y queda en Auditoría (`sorteos.crear` y `sorteos.cancelar`).
+- **🗃️ Migración 074**: `sorteos`, `sorteos_participantes` y `sorteos_ganadores`; el cierre es idempotente y sobrevive a un reinicio.
+- **⏱️ Tarea cada minuto** que cierra los vencidos y reparte; no se paga dos veces.
+- **🧪 Tests**: `tests/sorteos.test.js` (17 tests) cubre creación de dinero y objeto, validaciones, participantes, reparto exacto, cierre idempotente, objeto único, requisitos, `/sorteos`, botón de entrar, avisos y panel admin con sus dos pasos.
+- **📚 Documentación**: `FUNCIONALIDADES.md`, `DEPLOY.md` (migración 074) y `TAREAS.md` (T-11).
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.953 tests).
+
 ## 2026-10-22 (autoroles)
 
 - **🎭 `/autoroles`** (#539): menú de roles que cada persona se pone y se quita; ✅ marca los que ya tiene y en un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Hasta 10 roles con botones y, si hay más, un desplegable (máximo 20).

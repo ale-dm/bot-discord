@@ -102,6 +102,8 @@ function filasConfigHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_cfg_economia").setLabel("🛡️ Economía").setStyle(ButtonStyle.Success),
         // 🎭 Autoroles (#539): el menú de roles que se pone la gente.
         new ButtonBuilder().setCustomId("paneladmin_cfg_autoroles").setLabel("🎭 Autoroles").setStyle(ButtonStyle.Success),
+        // 🎁 Sorteos (#541): crear, ver y cancelar sorteos.
+        new ButtonBuilder().setCustomId("paneladmin_cfg_sorteos").setLabel("🎁 Sorteos").setStyle(ButtonStyle.Success),
     );
     return [row1, row2, row3];
 }
