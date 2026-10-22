@@ -459,12 +459,15 @@ es único para todo el bot (no es por servidor).
 | 📜 Movimientos | Tu historial con páginas y un filtro por tipo: casino, apuestas, tienda, cripto, banco, transferencias, logros, diario, trabajo, objetos, impuesto, robos, admin |
 | 🛡️ Límite de pérdidas | Un tope **que te pones tú** de lo que pierdes (netas, casino y apuestas) por día o por semana, en hora de Madrid. Con el tope alcanzado, o si una apuesta lo pasaría, el casino y las apuestas no te dejan jugar hasta el periodo siguiente. Bajarlo vale al momento; **subirlo o quitarlo tarda 24 h**. Migración 061 |
 | 🛡️ Seguro antirrobo | Prima de **2.000 🪙** por **24 h** (configurable en el panel): mientras está activo, los robos contra ti fallan el 60 % de las veces y, si aciertan, se llevan **la mitad**. Renovar extiende desde el vencimiento, con 1 h de cooldown y un tope de 7 días por delante. Cobra del dinero gastable (🥷 negro primero y luego 💵 efectivo). Migración 072 |
+| 📈 Depósito | Guarda dinero del **banco** a 7, 30 o 90 días: paga un 1 %, 3 % o 6 % al vencer (configurable). Al vencer vuelve solo al banco con el interés y llega un DM; cancelarlo antes devuelve el principal y pierde el interés. Un depósito activo por persona. Migración 073 |
 
 **💼 `/trabajar`**: a diferencia del diario, se puede usar cada 30 min (`TRABAJAR_COOLDOWN_SEC`) — exige estar
 activo, no es gratis una vez al día. Da entre 20 y 50 monedas al azar (`TRABAJAR_BASE_MIN`/`MAX`) más 2 por cada
 nivel que tengas (`TRABAJAR_BONUS_NIVEL`), y un 12 % de las veces (`TRABAJAR_PROB_FALLO`) no da nada. El Duende
 escribe con Gemini, cada vez, en qué has "trabajado" (con tu personalidad y tu perfil si tienes uno) — no es una
 frase fija de una lista. Queda en Movimientos como 💼 Trabajo.
+
+**📈 Depósito a plazo** (F-EC-13, #518): desde `/perfil` → 💰 Economía → 📈 Depósito. Se guarda dinero del **banco** (no del efectivo) a 7, 30 o 90 días: paga un **1 %**, **3 %** o **6 %** según el plazo (configurable). Mientras dura no se puede gastar; al vencer vuelve **solo** al banco con el interés y llega un DM. Cancelarlo antes devuelve el principal y pierde el interés. Solo un depósito activo por persona; de 1.000 a 100.000 🪙 (configurable). Queda en Movimientos como 🏦 Banco.
 
 **🥷 `/robar @persona`** (F-EC-06b): cooldown de **2 horas, global** (da igual el servidor — el dinero ya es
 global, así que el cooldown también). La víctima necesita al menos 150 de efectivo para que merezca la pena

@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Depósito a plazo (migración 073, 2026-10-22)
+
+- **073** crea `depositos_plazo` (importe, interés, plazo, vencimiento y estado) con un índice único para que cada
+  persona tenga como mucho uno activo. Se ajusta en **Config Global → 🛡️ Economía → ✏️ Editar depósito** (mínimo,
+  máximo e interés de 7, 30 y 90 días). Los depósitos vencidos se pagan solos cada 5 minutos.
+
 ### Seguro antirrobo (migración 072, 2026-10-22)
 
 - **072** crea `seguros_antirrobo` (quién lo tiene, desde cuándo, hasta cuándo y cuándo lo compró). No hay que rellenar

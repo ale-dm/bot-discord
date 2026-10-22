@@ -85,6 +85,12 @@ function nodoEconomia(flat) {
             seguro_horas: flat["economia.seguro_horas"],
             seguro_cooldown_h: flat["economia.seguro_cooldown_h"],
             seguro_tope_dias: flat["economia.seguro_tope_dias"],
+            // 📈 Depósito a plazo (#518): mínimo, máximo y el interés de cada plazo (7, 30 y 90 días).
+            deposito_min: flat["economia.deposito_min"],
+            deposito_max: flat["economia.deposito_max"],
+            deposito_pct_7: flat["economia.deposito_pct_7"],
+            deposito_pct_30: flat["economia.deposito_pct_30"],
+            deposito_pct_90: flat["economia.deposito_pct_90"],
         },
     };
 }

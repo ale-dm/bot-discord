@@ -2,7 +2,7 @@ const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { guardarAuditado } = require("./guardar");
 const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
-const { buildEconomiaPanel, abrirModalSeguro } = require("./economia");
+const { buildEconomiaPanel, abrirModalSeguro, abrirModalDeposito } = require("./economia");
 
 // Las horas de 0 a 23 (Madrid) en un desplegable.
 const HORAS = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, value: String(h) }));
@@ -314,6 +314,10 @@ async function accionEconomiaSeguro(interaction, id, guildId) {
     return abrirModalSeguro(interaction, guildId);
 }
 
+async function accionEconomiaDeposito(interaction, id, guildId) {
+    return abrirModalDeposito(interaction, guildId);
+}
+
 const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_eventos", accionEventos],
     ["paneladmin_cfg_eventos_xp", accionEventosXp],
@@ -327,6 +331,7 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_tienda", accionTienda],
     ["paneladmin_cfg_economia", accionEconomia],
     ["paneladmin_cfg_economia_seguro_edit", accionEconomiaSeguro],
+    ["paneladmin_cfg_economia_deposito_edit", accionEconomiaDeposito],
     ["paneladmin_cfg_acl", accionAcl],
     ["paneladmin_cfg_logros", accionLogros],
     ["paneladmin_cfg_duende_edit", accionDuendeEdit],

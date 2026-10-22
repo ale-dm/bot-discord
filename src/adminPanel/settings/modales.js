@@ -10,7 +10,7 @@ const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { guardarAuditado } = require("./guardar");
 const { buildDuendePanel, buildEventosPanel } = require("./vistas");
-const { guardarSeguro } = require("./economia");
+const { guardarSeguro, guardarDeposito } = require("./economia");
 
 async function modalDuende(interaction, id, guildId) {
     const modeloAntes = guildSettings.getSettings(guildId).duende.model;
@@ -278,6 +278,7 @@ const ACCIONES_MODAL = new Map([
     ["paneladmin_cfg_casino_esperas_modal", modalCasinoEsperas],
     ["paneladmin_cfg_tienda_modal", modalTienda],
     ["paneladmin_cfg_economia_seguro_modal", guardarSeguro],
+    ["paneladmin_cfg_economia_deposito_modal", guardarDeposito],
     ["paneladmin_cfg_acl_modal", modalAcl],
     ["paneladmin_cfg_logros_modal", modalLogros],
     ["paneladmin_cfg_eventos_xp_modal", modalEventosXp],

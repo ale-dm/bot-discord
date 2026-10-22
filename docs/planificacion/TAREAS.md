@@ -578,3 +578,13 @@ Issue #526. Con dos cuentas de prueba en el mismo servidor (una víctima y un la
 - [ ] Intentar comprarlo dos veces seguidas: la segunda avisa del cooldown. Renovar tras la hora extiende desde el vencimiento, y no deja pasar del tope de días.
 - [ ] `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → ✏️ Editar seguro: cambiar prima y duración, guardar, y comprobar que `/perfil` ya enseña los valores nuevos; el cambio queda en Auditoría.
 - [ ] Dejar vencer el seguro (`UPDATE seguros_antirrobo SET vencimiento = ... WHERE userId = ...` en una BD de pruebas) y comprobar que `/robar` vuelve a comportarse como siempre.
+
+## T-09 Probar en Discord el depósito a plazo
+
+Issue #518. Con una cuenta con dinero en el banco y otra sin él.
+
+- [ ] `/perfil` → 💰 Economía → 📈 **Depósito** enseña los tres plazos con su interés y el dinero que hay en el banco. Sin banco suficiente, los botones salen desactivados.
+- [ ] Abrir un depósito a 7 días: el importe sale del banco (no del efectivo), la pantalla muestra el interés y la fecha de vencimiento, y en Movimientos aparece 🏦 Banco.
+- [ ] Intentar abrir otro: avisa de que ya hay uno activo. Cancelar el primero: vuelve el principal al banco, sin interés, y el depósito desaparece.
+- [ ] Abrir uno a 7 días y adelantar su vencimiento en una BD de pruebas; antes de 5 minutos (o al abrir 📈 Depósito) vuelve al banco con el interés y llega un DM. No se paga dos veces.
+- [ ] `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → ✏️ Editar depósito: cambiar mínimo, máximo e intereses; se ven en `/perfil` y queda en Auditoría.

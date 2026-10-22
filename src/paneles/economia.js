@@ -179,6 +179,8 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
                   new ButtonBuilder().setCustomId("dinero_limite").setLabel("🛡️ Límite de pérdidas").setStyle(ButtonStyle.Secondary),
                   // 🛡️ Seguro antirrobo (#526): comprar o renovar la protección contra /robar.
                   new ButtonBuilder().setCustomId("dinero_seguro").setLabel("🛡️ Seguro antirrobo").setStyle(ButtonStyle.Secondary),
+                  // 📈 Depósito a plazo (#518): guardar dinero del banco con interés.
+                  new ButtonBuilder().setCustomId("dinero_deposito").setLabel("📈 Depósito").setStyle(ButtonStyle.Secondary),
                   // 🙈 Ocultar mi economía a los demás (#377): el botón dice lo que hará.
                   new ButtonBuilder()
                       .setCustomId(`dinero_privada_${privacidad.oculta(viewerId) ? 0 : 1}`)

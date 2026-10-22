@@ -18,6 +18,9 @@ const panelCripto = require("../paneles/cripto");
 const panelNegocios = require("../paneles/negocios");
 const panelSeguro = require("../paneles/seguroAntirrobo");
 const seguroAntirrobo = require("../systems/seguroAntirrobo");
+const panelDeposito = require("../paneles/deposito");
+const depositos = require("../systems/depositos");
+const depositosEnvios = require("../discord/envios/depositos");
 const panelLimite = require("../paneles/limitePerdidas");
 const limitePerdidas = require("../systems/limitePerdidas");
 const { createLogger } = require("../core/logger");
@@ -132,6 +135,59 @@ function comprarSeguro(interaction) {
     return interaction.update(panelSeguro.buildSeguro(interaction.user.id, interaction.guildId, aviso));
 }
 
+// 📈 Depósito a plazo (#518): abre la pantalla, el formulario de importe, la confirmación y la cancelación.
+async function abrirDeposito(interaction, aviso = null) {
+    if (interaction.client) await depositosEnvios.procesarYAvisar(interaction.client);
+    return interaction.update(panelDeposito.buildDeposito(interaction.user.id, interaction.guildId, aviso));
+}
+
+function abrirModalDeposito(interaction) {
+    const dias = Number(interaction.customId.replace("dinero_deposito_abrir_", ""));
+    return interaction.showModal(
+        economia.modalCantidad(`dinero_deposito_modal_${dias}`, `📈 Depósito a ${dias} días`, dinero.banco(interaction.user.id)),
+    );
+}
+
+function confirmarCancelarDeposito(interaction) {
+    return interaction.update(panelDeposito.buildConfirmar(interaction.user.id, interaction.guildId));
+}
+
+async function cancelarDeposito(interaction) {
+    const r = depositos.cancelar(interaction.user.id);
+    let aviso;
+    if (r.ok) {
+        aviso = `✅ Depósito cancelado: vuelven **${r.deposito.importe.toLocaleString("es")}** 🪙 al banco, sin intereses.`;
+        log.info(`${interaction.user.tag}: canceló su depósito de ${r.deposito.importe} a ${r.deposito.dias} días`);
+    } else if (r.motivo === "vencido") {
+        aviso = "⏳ El depósito ya ha vencido: vuelve solo al banco con el interés.";
+    } else {
+        aviso = "❌ No tienes ningún depósito activo.";
+    }
+    if (interaction.client) await depositosEnvios.procesarYAvisar(interaction.client);
+    return interaction.update(panelDeposito.buildDeposito(interaction.user.id, interaction.guildId, aviso));
+}
+
+function abrirDepositoModal(interaction, cantidad) {
+    const dias = Number(interaction.customId.replace("dinero_deposito_modal_", ""));
+    const r = depositos.crear(interaction.user.id, interaction.guildId, cantidad, dias);
+    let aviso;
+    if (r.ok) {
+        const d = r.deposito;
+        aviso = `✅ Depósito abierto: **${d.importe.toLocaleString("es")}** 🪙 a ${d.dias} días; al vencer vuelven **${(d.importe + d.interes).toLocaleString("es")}** 🪙.`;
+        log.info(`${interaction.user.tag}: abrió un depósito de ${d.importe} a ${d.dias} días`);
+    } else if (r.motivo === "activo") {
+        aviso = "❌ Ya tienes un depósito activo: cancélalo o espera a que venza.";
+    } else if (r.motivo === "plazo") {
+        aviso = "❌ El plazo tiene que ser de 7, 30 o 90 días.";
+    } else if (r.motivo === "importe") {
+        const cfg = depositos.config(interaction.guildId);
+        aviso = `❌ El importe va de **${cfg.min.toLocaleString("es")}** a **${cfg.max.toLocaleString("es")}** 🪙.`;
+    } else {
+        aviso = "❌ No tienes tanto dinero en el banco: el depósito sale del banco, no del efectivo.";
+    }
+    return interaction.update(panelDeposito.buildDeposito(interaction.user.id, interaction.guildId, aviso));
+}
+
 // Los botones de dinero_*, en orden: el primero cuyo customId encaja se atiende. Cada caso llama a su caso de uso (systems/dinero,
 // prestamos, negocios) o pinta su pantalla (paneles/economia, negocios); aquí no hay reglas (#476).
 const RUTAS_BOTON = [
@@ -139,6 +195,11 @@ const RUTAS_BOTON = [
     // 🛡️ Seguro antirrobo (#526).
     ["dinero_seguro", async (i) => i.update(panelSeguro.buildSeguro(i.user.id, i.guildId))],
     ["dinero_seguro_comprar", comprarSeguro],
+    // 📈 Depósito a plazo (#518).
+    ["dinero_deposito", abrirDeposito],
+    [(id) => id.startsWith("dinero_deposito_abrir_"), abrirModalDeposito],
+    ["dinero_deposito_cancelar", confirmarCancelarDeposito],
+    ["dinero_deposito_confirmar", cancelarDeposito],
     // 🧙 Devolver el préstamo del Duende (F-DU-03), todo lo que falta, del efectivo.
     ["dinero_prestamo_devolver", devolverPrestamo],
     ["dinero_transferir", async (i) => i.update(economia.buildElegirDestinatario(i.user.id))],
@@ -223,6 +284,7 @@ module.exports = {
         const cantidad = importeElegido(interaction.fields);
         let r;
         let volver = null;
+        if (id.startsWith("dinero_deposito_modal_")) return abrirDepositoModal(interaction, cantidad);
         if (id === "dinero_modal_depositar_negocio") {
             const r2 = negocios.depositar(userId, interaction.guildId, cantidad);
             if (!r2.ok) return interaction.reply({ content: r2.mensaje, flags: MessageFlags.Ephemeral });
