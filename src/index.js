@@ -40,6 +40,8 @@ require("./systems/patrimonio").usarResolutorDeRoles((guildId, userId) => [
 ]);
 // 🔔 Las alertas de cuota (#345) se miran cada vez que se guardan cuotas nuevas.
 require("./services/oddsApi").alRefrescarCuotas(() => require("./systems/apuestas/alertasCuota").comprobar(client));
+// ⭐ Los equipos favoritos (#530) se avisan al aparecer partidos nuevos, con las cuotas que ya se han guardado.
+require("./services/oddsApi").alRefrescarCuotas(() => require("./systems/apuestas/favoritos").avisarPartidos(client));
 require("./systems/sonidos/eventos").conectar({ sonidos: require("./systems/sonidos"), presencia: require("./systems/presencia") });
 
 const cripto = require("./systems/cripto/mercado");
