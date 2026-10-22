@@ -53,6 +53,11 @@ const DEFAULT_FLAT = {
     "economia.seguro_horas": 24,
     "economia.seguro_cooldown_h": 1,
     "economia.seguro_tope_dias": 7,
+    "economia.deposito_min": 1000,
+    "economia.deposito_max": 100000,
+    "economia.deposito_pct_7": 1,
+    "economia.deposito_pct_30": 3,
+    "economia.deposito_pct_90": 6,
 
     "logros.enabled": true,
     "logros.notify_channel_id": "",
@@ -166,6 +171,11 @@ const KEY_TYPES = {
     "economia.seguro_horas": "number",
     "economia.seguro_cooldown_h": "number",
     "economia.seguro_tope_dias": "number",
+    "economia.deposito_min": "number",
+    "economia.deposito_max": "number",
+    "economia.deposito_pct_7": "number",
+    "economia.deposito_pct_30": "number",
+    "economia.deposito_pct_90": "number",
 
     "logros.enabled": "boolean",
     "logros.notify_channel_id": "string",

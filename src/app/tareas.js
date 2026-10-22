@@ -48,6 +48,7 @@ const recordatorios = require("../systems/apuestas/recordatorios");
 const retos = require("../juegos/retos/retos");
 const duende = require("../juegos/retos/duende");
 const negocios = require("../systems/negocios");
+const avisarDepositos = require("../discord/envios/depositos").procesarYAvisar;
 const eventos = require("../systems/cripto/eventos");
 const patrimonio = require("../systems/patrimonio");
 const encuesta = require("../commands/general/encuesta");
@@ -263,6 +264,7 @@ function programarRetosYEconomia(client) {
     cron.schedule("*/5 * * * *", () => runJob("Negocios y blanqueo", () => negocios.revisar()), {
         noOverlap: true,
     });
+    cron.schedule("*/5 * * * *", () => runJob("Depósitos a plazo", () => avisarDepositos(client)), { noOverlap: true });
     // 💹 Evento diario de TTCL (±5 %, a una hora aleatoria del día): aplica el del día y avisa por DM a quien lo tiene.
     cron.schedule("*/5 * * * *", () => runJob("Evento de TTCL", () => eventos.revisarYAvisar(client)), {
         noOverlap: true,

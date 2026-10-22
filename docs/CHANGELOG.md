@@ -2,6 +2,16 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-22 (depósito a plazo)
+
+- **📈 `/perfil` → 💰 Economía → Depósito** (#518): dinero del **banco** a **7, 30 o 90 días** con un interés del **1 %, 3 % o 6 %** (configurable). Mientras dura no se puede gastar; al vencer vuelve **solo** al banco con el interés y llega un DM. Cancelarlo antes devuelve el principal y pierde el interés. Un depósito activo por persona, de 1.000 a 100.000 🪙 (configurable).
+- **⚙️ Config Global → 🛡️ Economía → ✏️ Editar depósito**: mínimo, máximo e interés de cada plazo, auditado. Nuevas claves `economia.deposito_*`.
+- **🗃️ Migración 073**: `depositos_plazo`, con índice único parcial para que solo haya uno activo por persona.
+- **⏱️ Tarea cada 5 minutos**: paga los vencidos (principal + interés) y avisa por DM; no se puede apagar porque es un movimiento de dinero. También se procesan al abrir la pantalla, sin esperar al chequeo.
+- **🧪 Tests**: `tests/depositoPlazo.test.js` (16 tests) cubre apertura, interés por plazo, banco frente a efectivo, mínimos y máximos, un solo activo, cancelación, vencimiento idempotente, DM (también con los DMs cerrados), pantalla y ajustes del panel admin.
+- **📚 Documentación**: `FUNCIONALIDADES.md`, `DEPLOY.md` (migración 073) y `TAREAS.md` (T-09).
+- **✅ Verificación**: `npm run check` en verde (229 suites, 2.921 tests).
+
 ## 2026-10-22 (seguro antirrobo)
 
 - **🛡️ `/perfil` → 💰 Economía → Seguro antirrobo** (#526): prima configurable (**2.000 🪙** por defecto) por **24 h**. Mientras está activo, los robos contra ti fallan el **60 %** de las veces y, si aciertan, se llevan **la mitad**. Renovar extiende desde el vencimiento, con **1 h** de cooldown y un tope de **7 días**; cobra del dinero gastable (🥷 negro primero y luego 💵 efectivo).
