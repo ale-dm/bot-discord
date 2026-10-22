@@ -128,3 +128,18 @@ progreso / Hecho. Luego *Add item* → *Add from repository* → filtrar por `la
 Viven en [Issues con label `feature-idea`](https://github.com/ale-dm/bot-discord/issues?q=is%3Aopen+label%3Afeature-idea),
 no en un markdown. Labels: categoría (`apuestas`, `duende-ia`, `plex-seerr`, `economia`, `administracion`) y esfuerzo
 (`esfuerzo-S`/`M`/`L`). `prioridad` marca las que más aportan con menos trabajo.
+
+### Formato de una idea
+
+Todas las ideas siguen la misma plantilla (`.github/ISSUE_TEMPLATE/feature-idea.md`), para poder compararlas y
+priorizarlas sin abrir cada una:
+
+- **Esfuerzo:** S, M o L, el mismo del label.
+- **Qué es:** una o dos frases.
+- **Comportamiento:** qué ve y puede hacer el usuario, caso por caso.
+- **Detalles técnicos (orientativo):** dónde encaja y qué reutiliza; no es un diseño cerrado.
+- **Criterios de aceptación:** lista de comprobación.
+- **Decisiones abiertas:** lo que falta por decidir, en preguntas.
+
+No se repiten el título ni las etiquetas en el cuerpo. Si una idea ya está implementada, se comenta con el enlace al
+commit o al PR y se cierra; no se reescribe.
