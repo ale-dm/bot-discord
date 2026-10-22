@@ -4,6 +4,14 @@ const { guardarAuditado } = require("./guardar");
 const { simpleModal, modalConCampos, SI_NO_NUMERICO } = require("../common");
 const { buildEconomiaPanel, abrirModalSeguro, abrirModalDeposito } = require("./economia");
 const { buildAutorolesPanel, abrirModalAnadir, abrirModalQuitar } = require("./autoroles");
+const {
+    accionSorteos,
+    accionSorteosNew,
+    accionSorteosReq,
+    accionSorteosOk,
+    accionSorteosCancel,
+    accionSorteosCancelarUno,
+} = require("./sorteosAcciones");
 
 // Las horas de 0 a 23 (Madrid) en un desplegable.
 const HORAS = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, value: String(h) }));
@@ -349,6 +357,11 @@ const ACCIONES_BOTON = new Map([
     ["paneladmin_cfg_autoroles", accionAutoroles],
     ["paneladmin_cfg_autoroles_add", accionAutorolesAdd],
     ["paneladmin_cfg_autoroles_remove", accionAutorolesRemove],
+    ["paneladmin_cfg_sorteos", accionSorteos],
+    ["paneladmin_cfg_sorteos_new", accionSorteosNew],
+    ["paneladmin_cfg_sorteos_draft_req", accionSorteosReq],
+    ["paneladmin_cfg_sorteos_draft_ok", accionSorteosOk],
+    ["paneladmin_cfg_sorteos_draft_cancel", accionSorteosCancel],
     ["paneladmin_cfg_acl", accionAcl],
     ["paneladmin_cfg_logros", accionLogros],
     ["paneladmin_cfg_duende_edit", accionDuendeEdit],
@@ -372,6 +385,10 @@ async function handleSettingsButton(interaction) {
     const guildId = interaction.guildId;
     const accion = ACCIONES_BOTON.get(id);
     if (accion) return accion(interaction, id, guildId);
+    // Botones con id dinámico: cancelar un sorteo concreto (#541).
+    if (id.startsWith("paneladmin_cfg_sorteos_cancel_")) {
+        return accionSorteosCancelarUno(interaction, id, guildId, Number(id.replace("paneladmin_cfg_sorteos_cancel_", "")));
+    }
     return false;
 }
 
