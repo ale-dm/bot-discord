@@ -54,7 +54,7 @@ function mensajeResena(pedido) {
 }
 
 /** El formulario: la nota ya marcada (la de la estrella pulsada o la que tuviera), la opinión, spoilers y me gusta. */
-function formularioResena(pedido, resena = null, notaElegida = null) {
+function formularioResena(pedido, resena = null, notaElegida = null, customId = null) {
     const nota = Number(notaElegida || resena?.nota || 6);
     const radio = new RadioGroupBuilder()
         .setCustomId("nota")
@@ -64,7 +64,7 @@ function formularioResena(pedido, resena = null, notaElegida = null) {
     if (resena?.texto) texto.setValue(resena.texto.slice(0, 500));
 
     return new ModalBuilder()
-        .setCustomId(`plex_modal_resena_${pedido.id}`)
+        .setCustomId(customId || `plex_modal_resena_${pedido.id}`)
         .setTitle(`⭐ ${pedido.titulo}`.slice(0, 45))
         .addComponents(
             new LabelBuilder().setLabel("Tu nota").setRadioGroupComponent(radio),

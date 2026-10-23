@@ -31,9 +31,12 @@ const claveDe = ({ tipo, titulo, anio, temporada }) => (tipo === "movie" ? clave
 /** Nota válida: entero de 1 a 10 (medias estrellas). */
 const notaValida = (nota) => Number.isInteger(nota) && nota >= NOTA_MIN && nota <= NOTA_MAX;
 
-/** Texto de la reseña: recortado, sin vacíos y como mucho 500 caracteres. */
+/** Texto de la reseña: sin menciones masivas ni enlaces, recortado y como mucho 500 caracteres. */
 function textoDe(texto) {
-    const t = String(texto ?? "").trim();
+    const t = String(texto ?? "")
+        .replace(/@(everyone|here)/gi, "")
+        .replace(/https?:\/\/\S+/gi, "")
+        .trim();
     return t ? t.slice(0, MAX_TEXTO) : null;
 }
 

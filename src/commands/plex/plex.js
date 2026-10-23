@@ -94,8 +94,8 @@ module.exports = {
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
 
-        // ⭐ Reseñas: los botones del DM (#566).
-        if (id.startsWith("plex_resena_")) return resenas.handleButton(interaction);
+        // ⭐ Reseñas: el DM (#566) y la pantalla de /plex (#567).
+        if (id.startsWith("plex_resena_") || id.startsWith("plex_resenas_")) return resenas.handleButton(client, interaction);
 
         // 🎬 Sesión de cine: el mensaje de la sesión (público) con sus botones.
         if (id.startsWith("cine_")) return handleCineBoton(interaction, id);
