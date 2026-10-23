@@ -6,6 +6,7 @@ const plexResenas = require("../src/systems/plexResenas");
 const avisosDm = require("../src/systems/avisosDm");
 const { pantallaResenas, pantallaTitulo } = require("../src/paneles/plexResenas");
 const { handleButton, handleModal } = require("../src/commands/plex/resenas");
+const plexCmd = require("../src/commands/plex/plex");
 
 const G = "guild-resenas-pantalla";
 const CLAVE = plexResenas.clavePeli("Dune: Parte dos", 2024);
@@ -91,6 +92,13 @@ describe("los botones", () => {
         reply: jest.fn(async () => {}),
         deferReply: jest.fn(async () => {}),
         editReply: jest.fn(async () => {}),
+    });
+
+    test("el botón ⭐ Reseñas del panel de /plex abre la pantalla (customId exacto)", async () => {
+        const i = interaccion("plex_resenas", "u1");
+        await plexCmd.handleButton({}, i);
+        expect(i.update).toHaveBeenCalledTimes(1);
+        expect(i.update.mock.calls[0][0].embeds[0].toJSON().title).toContain("Reseñas");
     });
 
     test("Ver abre la ficha y Ocultar cambia la privacidad", async () => {

@@ -144,7 +144,8 @@ async function handleModal(interaction) {
 }
 
 async function handleButton(client, interaction) {
-    if (interaction.customId.startsWith("plex_resenas_")) return handlePantalla(client, interaction);
+    if (interaction.customId === "plex_resenas" || interaction.customId.startsWith("plex_resenas_"))
+        return handlePantalla(client, interaction);
     return handleDm(interaction);
 }
 
