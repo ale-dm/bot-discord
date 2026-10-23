@@ -128,15 +128,31 @@ describe("el panel /avisos", () => {
     const ids = (p) => p.components.flatMap((f) => f.toJSON().components.map((c) => c.custom_id));
     const interaccion = (customId) => ({ customId, user: { id: U }, update: jest.fn(async () => {}), reply: jest.fn(async () => {}) });
 
-    test("muestra un botón por tipo más no molestar, con su estado, en filas de cinco como mucho", () => {
+    test("muestra los avisos en un desplegable y no molestar, sin pasarse de filas", () => {
         avisosDm.fijar(U, "robo", false);
         const p = buildAvisos(U);
-        expect(ids(p)).toEqual([...avisosDm.TIPOS.map((t) => `avisos_t_${t.id}`), "avisos_nm"]);
+        expect(ids(p)).toEqual(["avisos_sel", "avisos_nm"]);
+        const filas = p.components.map((f) => f.toJSON().components);
+        expect(filas[0][0].options.map((o) => o.value)).toEqual(avisosDm.TIPOS.map((t) => t.id));
         expect(p.components.every((f) => f.components.length <= 5)).toBe(true);
-        // Discord admite como mucho 5 filas por mensaje: con 24 tipos + no molestar ya vamos justos.
         expect(p.components.length).toBeLessThanOrEqual(5);
         expect(p.embeds[0].toJSON().description).toContain("⚪ 🥷 **Robos**");
         expect(p.embeds[0].toJSON().description).toContain("🟢 🎞️ **Wrapped mensual**");
+    });
+
+    test("elegir un aviso en el desplegable lo cambia y repinta", async () => {
+        const i = {
+            customId: "avisos_sel",
+            values: ["wrapped"],
+            user: { id: U },
+            update: jest.fn(async () => {}),
+            reply: jest.fn(async () => {}),
+        };
+        await avisosCmd.handleSelect({}, i);
+        expect(avisosDm.activo(U, "wrapped")).toBe(false);
+        await avisosCmd.handleSelect({}, i);
+        expect(avisosDm.activo(U, "wrapped")).toBe(true);
+        expect(i.update).toHaveBeenCalledTimes(2);
     });
 
     test("pulsar un botón cambia la preferencia y repinta; surte efecto en el siguiente envío", async () => {

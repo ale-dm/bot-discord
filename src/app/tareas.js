@@ -103,8 +103,7 @@ function programarBasicas(client) {
 }
 
 function programarNovedadesPlex(client) {
-    // Novedades de Plex y, después (para que el "Nuevo en Plex" salga antes), el aviso a quien lo pidió en Seerr. Al
-    // final, el historial de Plex para los logros (la primera vez importa el historial entero: puede tardar).
+    // Novedades → Seerr → series → «quiero ver» → historial → reseñas: en ese orden (el «Nuevo en Plex» sale primero).
     cron.schedule(
         "*/30 * * * *",
         async () => {
@@ -116,6 +115,7 @@ function programarNovedadesPlex(client) {
             await runJob("Historial y logros de Plex", () => plexHistorial.sincronizarTodos(client), {
                 slowMs: 120_000,
             });
+            await runJob("Reseñas de Plex", () => require("../discord/envios/resenas").avisarPendientes(client));
         },
         { noOverlap: true },
     );

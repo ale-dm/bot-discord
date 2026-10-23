@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (DM de reseñas de Plex)
+
+- **⭐ DM**: cuando alguien termina una película (visto o ≥ 90 %) y la función está activada, le llega un DM con **10 botones de media estrella** y «Ahora no». Al pulsar se abre el formulario con la nota, ❤️ me gusta, ⚠️ spoilers y la opinión; el DM queda con ✏️ Cambiar y 🗑️ Borrar. Un aviso por título, tope diario y respeta `/avisos`.
+- **🔔 `/avisos`**: el panel pasa a un desplegable (25 tipos + no molestar) para no pasarse de las 5 filas de Discord.
+- **✅ Verificación**: `npm run check` en verde (233 suites, 2.973 tests).
+
 ## 2026-10-23 (núcleo de reseñas de Plex)
 
 - **⭐ Reseñas**: núcleo en `systems/plexResenas`: guardar, cambiar y borrar la nota (medias estrellas, de 1 a 10) y el texto, media y votos por título, histograma, mejor valoradas con mínimo de votos, últimas y ranking de valoradores. Solo se puede valorar lo visto según Tautulli.
