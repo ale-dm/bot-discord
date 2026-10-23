@@ -74,6 +74,11 @@ const DEFAULT_FLAT = {
     "plex.rol_gordos_1": "",
     "plex.rol_gordos_5": "",
     "plex.rol_gordos_10": "",
+    "plex.resenas_activo": false,
+    "plex.resenas_max_dia": 5,
+    "plex.resenas_min_votos": 3,
+    "plex.resenas_desde": 0,
+    "plex.resenas_canal": "",
 
     "seerr.url": "",
     "seerr.api_key": "",
@@ -193,6 +198,11 @@ const KEY_TYPES = {
     "plex.rol_gordos_1": "string",
     "plex.rol_gordos_5": "string",
     "plex.rol_gordos_10": "string",
+    "plex.resenas_activo": "boolean",
+    "plex.resenas_max_dia": "number",
+    "plex.resenas_min_votos": "number",
+    "plex.resenas_desde": "number",
+    "plex.resenas_canal": "string",
 
     "seerr.url": "string",
     "seerr.api_key": "string",

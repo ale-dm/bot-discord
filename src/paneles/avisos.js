@@ -1,8 +1,7 @@
-// 🔔 Panel de /avisos (#431): un interruptor por cada tipo de DM del bot y "no molestar". Se pinta con el estado de
-// systems/avisosDm.js; los botones son avisos_t_{tipo} (interruptor de un tipo) y avisos_nm (no molestar).
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+// 🔔 Panel de /avisos (#431): un desplegable con todos los tipos de DM y un botón de «no molestar». Se pinta con el
+// estado de systems/avisosDm.js. Con más de 25 tipos habría que paginar; el desplegable admite 25.
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const avisosDm = require("../systems/avisosDm");
-const { trozos } = require("./filas");
 
 function buildAvisos(userId) {
     const e = avisosDm.estado(userId);
@@ -15,26 +14,29 @@ function buildAvisos(userId) {
                 ? "🌙 **No molestar está activado:** no te mando ningún aviso, aunque tengas los interruptores encendidos.\n\n"
                 : "") +
                 lineas.join("\n") +
-                "\n\nPulsa un botón para encender o apagar ese aviso. Vale para todos los servidores. " +
+                "\n\nElige un aviso en el desplegable para encenderlo o apagarlo. Vale para todos los servidores. " +
                 "Las alertas de administración no se pueden apagar desde aquí.",
         );
-    // Ojo: con 24 tipos + «no molestar» ya son 25 botones (5 filas, el máximo de Discord). Al añadir otro tipo hay
-    // que paginar o agrupar el panel; si no, Discord rechaza el mensaje (50035).
-    const botones = e.tipos.map((t) =>
-        new ButtonBuilder()
-            .setCustomId(`avisos_t_${t.id}`)
-            .setLabel(t.nombre)
-            .setEmoji(t.emoji)
-            .setStyle(t.activo ? ButtonStyle.Success : ButtonStyle.Secondary),
-    );
-    botones.push(
+    const select = new StringSelectMenuBuilder()
+        .setCustomId("avisos_sel")
+        .setPlaceholder("Enciende o apaga un aviso")
+        .addOptions(
+            e.tipos.map((t) => ({
+                label: t.nombre,
+                value: t.id,
+                emoji: t.emoji,
+                description: t.detalle.slice(0, 100),
+            })),
+        );
+    const filaSelect = new ActionRowBuilder().addComponents(select);
+    const filaNm = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId("avisos_nm")
             .setLabel(e.noMolestar ? "Quitar no molestar" : "No molestar")
             .setEmoji("🌙")
             .setStyle(e.noMolestar ? ButtonStyle.Danger : ButtonStyle.Primary),
     );
-    return { embeds: [embed], components: trozos(botones).map((g) => new ActionRowBuilder().addComponents(...g)) };
+    return { embeds: [embed], components: [filaSelect, filaNm] };
 }
 
 module.exports = { buildAvisos };

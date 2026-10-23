@@ -26,6 +26,7 @@ const { pantallaRecomendaciones } = require("../../paneles/recomendar");
 const { pantallaPlex } = require("../../paneles/plex");
 const { pantallaSeries, pantallaQuieroVer, pantallaResultados } = require("../../paneles/plexAvisos");
 const plexAvisos = require("../../systems/plexAvisos");
+const resenas = require("./resenas");
 const seerrClient = require("../../services/seerrClient");
 const perfilPaneles = require("../../paneles/perfil");
 const { efimero } = require("../../discord/respuestas");
@@ -92,6 +93,9 @@ module.exports = {
         const id = interaction.customId;
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
+
+        // ⭐ Reseñas: el DM (#566) y la pantalla de /plex (#567).
+        if (id.startsWith("plex_resena_") || id.startsWith("plex_resenas_")) return resenas.handleButton(client, interaction);
 
         // 🎬 Sesión de cine: el mensaje de la sesión (público) con sus botones.
         if (id.startsWith("cine_")) return handleCineBoton(interaction, id);
@@ -170,6 +174,8 @@ module.exports = {
     },
 
     async handleModal(client, interaction) {
+        // ⭐ El formulario de la reseña (#566).
+        if (interaction.customId.startsWith("plex_modal_resena_")) return resenas.handleModal(interaction);
         if (interaction.customId === "plex_modal_quiero") return buscarParaQuieroVer(interaction);
         if (interaction.customId !== "plex_modal_cine") return;
         const peli = interaction.fields.getTextInputValue("peli").trim();

@@ -2,6 +2,36 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (pantalla y moderación de reseñas)
+
+- **⭐ Pantalla**: `/plex` → ⭐ Reseñas con 📝 Mías, 🆕 Últimas y 🏆 Mejor valoradas, paginadas, y la ficha de cada título con media, votos, histograma, reseñas (los spoilers, tapados) y tu nota. Se puntúa y se edita desde la ficha.
+- **🚩 Moderación**: reportar avisa a los admins por DM; un admin puede borrar reseñas ajenas (queda en la auditoría); 🙈 Ocultar mis reseñas las saca de medias, rankings y listas. El texto se guarda sin menciones masivas ni enlaces.
+- **✅ Verificación**: `npm run check` en verde (234 suites, 2.982 tests).
+
+## 2026-10-23 (DM de reseñas de Plex)
+
+- **⭐ DM**: cuando alguien termina una película (visto o ≥ 90 %) y la función está activada, le llega un DM con **10 botones de media estrella** y «Ahora no». Al pulsar se abre el formulario con la nota, ❤️ me gusta, ⚠️ spoilers y la opinión; el DM queda con ✏️ Cambiar y 🗑️ Borrar. Un aviso por título, tope diario y respeta `/avisos`.
+- **🔔 `/avisos`**: el panel pasa a un desplegable (25 tipos + no molestar) para no pasarse de las 5 filas de Discord.
+- **✅ Verificación**: `npm run check` en verde (233 suites, 2.973 tests).
+
+## 2026-10-23 (núcleo de reseñas de Plex)
+
+- **⭐ Reseñas**: núcleo en `systems/plexResenas`: guardar, cambiar y borrar la nota (medias estrellas, de 1 a 10) y el texto, media y votos por título, histograma, mejor valoradas con mínimo de votos, últimas y ranking de valoradores. Solo se puede valorar lo visto según Tautulli.
+- **🔒 Privacidad**: `plex_preferencias.ocultar_resenas` saca a quien lo activa de medias, rankings y listas públicas (sus reseñas las sigue viendo).
+- **🗃️ Migración 075**: `plex_resenas` y `plex_resenas_pedidas` (el DM llega en #566).
+- **✅ Verificación**: `npm run check` en verde (232 suites, 2.964 tests).
+
+## 2026-10-23 (historial de Plex)
+
+- **🍿 Historial**: las reproducciones de las últimas **48 h** se refrescan con lo que diga Tautulli en cada sincronización. Antes, `INSERT OR IGNORE` dejaba una película copiada a medias incompleta para siempre, aunque se terminara; ahora `porcentaje`, `visto` y `segundos` se actualizan. Es el prerrequisito de las reseñas (#564).
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.955 tests).
+
+## 2026-10-23 (roadmap y reseñas de Plex)
+
+- **📋 Project**: el trabajo abierto vive en el Project **El Duende**, con vistas 🏃 Sprint, 🎯 Ahora, 👥 Equipo, 📋 Backlog, ⭐ Reseñas, 🐛 Bugs y ✅ Hecho. Campos de fase, prioridad P0–P3, puntos, sprint semanal y asignación. `CONTRIBUTING.md` explica cómo asignarse y avanzar.
+- **📝 Diseño**: `docs/planificacion/diseno/resenas-plex.md`, el «Letterboxd» de Plex: DM al terminar, estrellas de media en media, opinión, spoilers y moderación. Partido en 13 issues (#564–#576) bajo la épica #536.
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.953 tests).
+
 ## 2026-10-22 (sorteos programados)
 
 - **🎁 Sorteos** (#541): un admin los crea en **Config Global → 🎁 Sorteos**, en dos pasos (canal, premio y duración; luego ganadores y requisitos). Premio de **dinero** (se reparte) u **objeto** del catálogo (si es único, un solo ganador), de **1 a 5 ganadores**, duración de 1 a 168 h y requisitos de **rol** o **nivel**.

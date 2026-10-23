@@ -23,6 +23,8 @@ const MAX_PAGINAS = 500;
 const TIPOS = new Set(["movie", "episode"]);
 // Lo que cuenta como "ver algo de madrugada": empezar entre las 3 y las 6 (hora de Madrid) y verlo al menos 10 min.
 const NOCHE = { desde: 3, hasta: 6, minSegundos: 10 * 60 };
+// Una reproducción copiada a medias se refresca con lo que diga Tautulli si empezó hace menos de esto (#564).
+const REFRESCO = 48 * 3600;
 
 /** Cada estadística y el evento de logros al que va (todos con metric "max": el valor es el total actual). */
 const EVENTOS = {
@@ -86,7 +88,15 @@ async function sincronizar(guildId) {
          VALUES (@guildId, @id, @tautulliUserId, @tipo, @rating_key, @serie_key, @titulo, @serie, @temporada, @episodio, @anio, @inicio,
                  @segundos, @porcentaje, @visto)`,
     );
+    // Una fila que ya estaba y empezó hace menos de 48 h se actualiza: Tautulli puede dar por terminada una
+    // reproducción que se copió a medias (o al revés). Las viejas no se tocan.
+    const refrescar = db.prepare(
+        `UPDATE plex_reproducciones SET porcentaje = @porcentaje, visto = @visto, segundos = @segundos
+         WHERE guildId = @guildId AND id = @id AND inicio >= @corte`,
+    );
+    const corte = Math.floor(Date.now() / 1000) - REFRESCO;
     let nuevas = 0;
+    let refrescadas = 0;
     let leidas = 0;
     let ultimo = sincronizacion?.ultimo_inicio || 0;
     const t0 = Date.now();
@@ -97,7 +107,13 @@ async function sincronizar(guildId) {
             for (const r of filas) {
                 const f = fila(guildId, r);
                 if (!f) continue;
-                nuevas += insertar.run(f).changes;
+                const cambios = insertar.run(f).changes;
+                nuevas += cambios;
+                if (!cambios && f.inicio >= corte) {
+                    const { guildId: g, id, porcentaje, visto, segundos } = f;
+                    refrescar.run({ guildId: g, id, porcentaje, visto, segundos, corte });
+                    refrescadas++;
+                }
                 if (f.inicio > ultimo) ultimo = f.inicio;
             }
         })();
@@ -108,7 +124,7 @@ async function sincronizar(guildId) {
          ON CONFLICT(guildId) DO UPDATE SET ultimo_inicio = excluded.ultimo_inicio, ultima_sync = excluded.ultima_sync`,
     ).run(guildId, ultimo, Date.now());
     (nuevas ? log.info : log.debug)(
-        `Historial de ${guildId}: ${nuevas} reproducciones nuevas de ${leidas} leídas${sincronizacion ? "" : " (primera importación)"} · ${Date.now() - t0} ms`,
+        `Historial de ${guildId}: ${nuevas} reproducciones nuevas de ${leidas} leídas${refrescadas ? `, ${refrescadas} actualizadas` : ""}${sincronizacion ? "" : " (primera importación)"} · ${Date.now() - t0} ms`,
     );
     return { nuevas, leidas, primera: !sincronizacion };
 }
