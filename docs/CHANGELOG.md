@@ -7,6 +7,12 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 - **🍿 Historial**: las reproducciones de las últimas **48 h** se refrescan con lo que diga Tautulli en cada sincronización. Antes, `INSERT OR IGNORE` dejaba una película copiada a medias incompleta para siempre, aunque se terminara; ahora `porcentaje`, `visto` y `segundos` se actualizan. Es el prerrequisito de las reseñas (#564).
 - **✅ Verificación**: `npm run check` en verde (231 suites, 2.955 tests).
 
+## 2026-10-23 (roadmap y reseñas de Plex)
+
+- **📋 Project**: el trabajo abierto vive en el Project **El Duende**, con vistas 🏃 Sprint, 🎯 Ahora, 👥 Equipo, 📋 Backlog, ⭐ Reseñas, 🐛 Bugs y ✅ Hecho. Campos de fase, prioridad P0–P3, puntos, sprint semanal y asignación. `CONTRIBUTING.md` explica cómo asignarse y avanzar.
+- **📝 Diseño**: `docs/planificacion/diseno/resenas-plex.md`, el «Letterboxd» de Plex: DM al terminar, estrellas de media en media, opinión, spoilers y moderación. Partido en 13 issues (#564–#576) bajo la épica #536.
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.953 tests).
+
 ## 2026-10-22 (sorteos programados)
 
 - **🎁 Sorteos** (#541): un admin los crea en **Config Global → 🎁 Sorteos**, en dos pasos (canal, premio y duración; luego ganadores y requisitos). Premio de **dinero** (se reparte) u **objeto** del catálogo (si es único, un solo ganador), de **1 a 5 ganadores**, duración de 1 a 168 h y requisitos de **rol** o **nivel**.
