@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (arreglos: botón de reseñas y estrenos de Seerr)
+
+- **⭐ Reseñas**: el botón ⭐ Reseñas del panel de `/plex` (`plex_resenas`) no llegaba al manejador de reseñas y daba error; ahora abre la pantalla.
+- **🗓️ Estrenos**: Seerr rechazaba el filtro de fechas en `/discover/*/upcoming` (`Unknown query parameter 'firstAirDateGte'`); se piden `/discover/movies` y `/discover/tv`, que sí lo admiten.
+- **✅ Verificación**: `npm run check` en verde (234 suites, 2.984 tests).
+
 ## 2026-10-23 (pantalla y moderación de reseñas)
 
 - **⭐ Pantalla**: `/plex` → ⭐ Reseñas con 📝 Mías, 🆕 Últimas y 🏆 Mejor valoradas, paginadas, y la ficha de cada título con media, votos, histograma, reseñas (los spoilers, tapados) y tu nota. Se puntúa y se edita desde la ficha.

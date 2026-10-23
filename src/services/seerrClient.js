@@ -257,15 +257,16 @@ async function cancelarPeticion(guildId, requestId) {
 }
 
 /**
- * Estrenos entre dos días «AAAA-MM-DD» (#299): lo que Seerr da en «próximamente» (películas y series), con póster y fecha, de la
- * fecha más próxima a la más lejana. { tmdbId, mediaType, titulo, fecha, poster, estadoCodigo }.
+ * Estrenos entre dos días «AAAA-MM-DD» (#299): películas y series que Seerr descubre en esas fechas, con póster y fecha, de la
+ * fecha más próxima a la más lejana. { tmdbId, mediaType, titulo, fecha, poster, estadoCodigo }. Usa /discover/movies y
+ * /discover/tv, que admiten filtro de fechas; los «/upcoming» solo aceptan page y language y rechazan el resto.
  */
 async function getEstrenos(guildId, desde, hasta) {
     const peticiones = [
-        call(guildId, "get", "/discover/movies/upcoming", {
+        call(guildId, "get", "/discover/movies", {
             params: { page: 1, language: "es", primaryReleaseDateGte: desde, primaryReleaseDateLte: hasta },
         }),
-        call(guildId, "get", "/discover/tv/upcoming", {
+        call(guildId, "get", "/discover/tv", {
             params: { page: 1, language: "es", firstAirDateGte: desde, firstAirDateLte: hasta },
         }),
     ];
