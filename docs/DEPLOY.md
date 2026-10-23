@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Reseñas de Plex (migración 075, 2026-10-23)
+
+- **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar
+  nada. Los avisos por DM nacen apagados (`plex.resenas_activo`); se activarán cuando lleguen el DM (#566) y su panel
+  (#571).
+
 ### Sorteos programados (migración 074, 2026-10-22)
 
 - **074** crea `sorteos`, `sorteos_participantes` y `sorteos_ganadores`. Los sorteos activos sobreviven a un reinicio:
