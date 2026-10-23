@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (historial de Plex)
+
+- **🍿 Historial**: las reproducciones de las últimas **48 h** se refrescan con lo que diga Tautulli en cada sincronización. Antes, `INSERT OR IGNORE` dejaba una película copiada a medias incompleta para siempre, aunque se terminara; ahora `porcentaje`, `visto` y `segundos` se actualizan. Es el prerrequisito de las reseñas (#564).
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.955 tests).
+
 ## 2026-10-22 (sorteos programados)
 
 - **🎁 Sorteos** (#541): un admin los crea en **Config Global → 🎁 Sorteos**, en dos pasos (canal, premio y duración; luego ganadores y requisitos). Premio de **dinero** (se reparte) u **objeto** del catálogo (si es único, un solo ganador), de **1 a 5 ganadores**, duración de 1 a 168 h y requisitos de **rol** o **nivel**.

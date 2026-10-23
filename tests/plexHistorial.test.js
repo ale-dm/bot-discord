@@ -13,6 +13,7 @@ jest.mock("../src/services/tautulliClient", () => ({
     getStreamData: jest.fn(async () => null),
 }));
 const tautulli = require("../src/services/tautulliClient");
+const db = require("../src/core/db");
 const guildSettings = require("../src/systems/guildSettings");
 const plexLinks = require("../src/systems/plexLinks");
 const achievements = require("../src/systems/achievementsSystem");
@@ -84,6 +85,33 @@ describe("copia del historial", () => {
         expect(r2).toMatchObject({ nuevas: 1, primera: false });
         expect(tautulli.getHistoryPage.mock.calls[0][1].after).toBe("2026-07-01");
         expect(plexHistorial.estado(G2).reproducciones).toBe(plexHistorial.PAGINA + 4);
+    });
+});
+
+describe("refresco de las últimas 48 h (#564)", () => {
+    const G3 = "guild-refresco";
+    const ahora = () => Math.floor(Date.now() / 1000);
+    const guardada = (id) =>
+        db.prepare("SELECT porcentaje, visto, segundos FROM plex_reproducciones WHERE guildId = ? AND id = ?").get(G3, id);
+
+    test("una reproducción copiada a medias se actualiza cuando Tautulli la da por terminada", async () => {
+        const fila = pelicula(7, "r1", ahora() - 3600, 1200, { watched_status: 0, percent_complete: 40 });
+        historial([fila]);
+        expect((await plexHistorial.sincronizar(G3)).nuevas).toBe(1);
+        expect(guardada(fila.row_id)).toEqual({ porcentaje: 40, visto: 0, segundos: 1200 });
+
+        historial([{ ...fila, watched_status: 1, percent_complete: 100, play_duration: 7200 }]);
+        expect((await plexHistorial.sincronizar(G3)).nuevas).toBe(0);
+        expect(guardada(fila.row_id)).toEqual({ porcentaje: 100, visto: 1, segundos: 7200 });
+    });
+
+    test("una fila de hace más de 48 h no se toca", async () => {
+        const fila = pelicula(7, "r2", ahora() - 72 * 3600, 1200, { watched_status: 0, percent_complete: 40 });
+        historial([fila]);
+        await plexHistorial.sincronizar(G3);
+        historial([{ ...fila, watched_status: 1, percent_complete: 100, play_duration: 7200 }]);
+        await plexHistorial.sincronizar(G3);
+        expect(guardada(fila.row_id)).toEqual({ porcentaje: 40, visto: 0, segundos: 1200 });
     });
 });
 
