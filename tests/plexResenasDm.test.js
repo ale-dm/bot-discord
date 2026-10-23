@@ -128,7 +128,7 @@ describe("el envío y los botones", () => {
     test("otra persona no puede tocar la reseña", async () => {
         const p = db.prepare("SELECT * FROM plex_resenas_pedidas ORDER BY id DESC LIMIT 1").get();
         const reply = jest.fn(async () => {});
-        await handleButton({ customId: `plex_resena_no_${p.id}`, user: { id: "otro" }, reply });
+        await handleButton({}, { customId: `plex_resena_no_${p.id}`, user: { id: "otro" }, reply });
         expect(reply).toHaveBeenCalled();
     });
 

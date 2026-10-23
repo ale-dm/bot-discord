@@ -15,6 +15,7 @@ function pantallaPlex(guildId, userId) {
                 "🎯 **Para ti**: qué ver a partir de lo que ya has visto.\n" +
                 "🎞️ **Wrapped**: el resumen del mes pasado (y, con un botón, el del año).\n" +
                 "🏅 **Mi Plex**: tus horas, tus trofeos y tus logros de Plex.\n" +
+                "⭐ **Reseñas**: puntúa lo que ves, mira la media del servidor y lo que opinan los demás.\n" +
                 "📺 **Series**: sigue series y te aviso por DM de los episodios nuevos.\n" +
                 "📝 **Quiero ver**: apunta lo que quieres ver y te aviso cuando llegue a Plex.\n" +
                 "📡 **Ahora**: qué se está viendo en este momento.\n" +
@@ -37,7 +38,10 @@ function pantallaPlex(guildId, userId) {
         new ButtonBuilder().setCustomId("plexx_campeones").setLabel("🏆 Campeones").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("plexx_pedidos").setLabel("📥 Mis pedidos").setStyle(ButtonStyle.Secondary),
     );
-    return { content: "", embeds: [embed], components: [fila, avisos] };
+    const resenas = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("plex_resenas").setLabel("⭐ Reseñas").setStyle(ButtonStyle.Primary),
+    );
+    return { content: "", embeds: [embed], components: [fila, avisos, resenas] };
 }
 
 module.exports = { pantallaPlex };

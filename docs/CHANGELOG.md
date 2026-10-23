@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (pantalla y moderación de reseñas)
+
+- **⭐ Pantalla**: `/plex` → ⭐ Reseñas con 📝 Mías, 🆕 Últimas y 🏆 Mejor valoradas, paginadas, y la ficha de cada título con media, votos, histograma, reseñas (los spoilers, tapados) y tu nota. Se puntúa y se edita desde la ficha.
+- **🚩 Moderación**: reportar avisa a los admins por DM; un admin puede borrar reseñas ajenas (queda en la auditoría); 🙈 Ocultar mis reseñas las saca de medias, rankings y listas. El texto se guarda sin menciones masivas ni enlaces.
+- **✅ Verificación**: `npm run check` en verde (234 suites, 2.982 tests).
+
 ## 2026-10-23 (DM de reseñas de Plex)
 
 - **⭐ DM**: cuando alguien termina una película (visto o ≥ 90 %) y la función está activada, le llega un DM con **10 botones de media estrella** y «Ahora no». Al pulsar se abre el formulario con la nota, ❤️ me gusta, ⚠️ spoilers y la opinión; el DM queda con ✏️ Cambiar y 🗑️ Borrar. Un aviso por título, tope diario y respeta `/avisos`.
