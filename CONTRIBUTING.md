@@ -28,8 +28,8 @@ capas»), pueden compartir rama y PR: entonces el nombre los cubre todos (`refac
 (p. ej. `feature/12-liga-pronosticos` para el issue #12). Los cambios solo de documentación, que no cierran ninguna
 idea, pueden ir como `docs/algo-corto`. Así se ve de un vistazo a qué idea corresponde sin abrir GitHub.
 
-**Antes de empezar algo nuevo** — asígnate el issue en GitHub (o muévelo a "En progreso" en el Project board) para
-que el otro no empiece lo mismo, y parte siempre de `developer` al día:
+**Antes de empezar algo nuevo** — asígnate el issue y ponlo **En curso** en el
+[Project](#el-project-asignarse-y-avanzar) para que el otro no empiece lo mismo, y parte siempre de `developer` al día:
 
 ```
 git checkout developer
@@ -119,9 +119,70 @@ Cada PR contra `main` o `developer` corre `npm run check` (`.github/workflows/te
   persona).
 - Sin force-push ni borrado de ramas; las conversaciones de review hay que resolverlas antes de mergear.
 
-**Pendiente**: el **Project board** (pestaña *Projects* → *New project* → plantilla *Board*). No se puede crear con la
-API (`gh` de aquí no trae el comando `project`), hay que darle una vez a mano. Columnas sugeridas: Por hacer / En
-progreso / Hecho. Luego *Add item* → *Add from repository* → filtrar por `label:feature-idea`.
+## El Project: asignarse y avanzar
+
+El trabajo abierto vive en [El Duende](https://github.com/users/ale-dm/projects/1). No es una lista plana: son vistas
+con filtros y campos, y lo cerrado se queda en las issues.
+
+| Vista | Qué es |
+|---|---|
+| **🏃 Sprint** | Lo del sprint en curso (`sprint:@current`). Es la que se abre por defecto |
+| **🎯 Ahora** | Lo de prioridad Ahora, aunque no tenga sprint |
+| **👥 Equipo** | Todo lo abierto con persona, puntos y sprint |
+| **📋 Backlog** | Lo demás, con su fase y su área |
+| **⭐ Reseñas** | El plan de Plex completo, de la fase 0 a la 4 |
+| **🐛 Bugs** / **✅ Hecho** | Lo que está roto y el historial |
+
+**Campos**: `Fase` (0 prerrequisitos → 4 opcional), `Área`, `Puntos` (1, 2, 3, 5, 8), `Prioridad`
+(P0 ahora · P1 siguiente · P2 después · P3 algún día), `Sprint` (semanas de lunes a domingo) y `Épica`.
+
+El tamaño va **solo en `Puntos`**: la etiqueta `esfuerzo-S/M/L` se queda como filtro rápido en las issues (S ≤ 2,
+M 3–5, L 8), pero no se duplica en el Project.
+
+**Prioridad**: P0 es lo que se hace ya y entra en el sprint en curso; P1 es lo siguiente; P2 tiene sentido pero no
+ahora; P3 está aparcado. Cuando algo sube a P0, se le pone sprint.
+
+**Al empezar algo**:
+
+1. Asígnatelo en `Assignees`.
+2. Comprueba que tiene **Sprint** y **Puntos**; si no, ponlos antes de empezar.
+3. Estado → **En curso**.
+
+**Al abrir el PR**: Estado → **En revisión**. **Al mergear**: Estado → **Hecho** (y cierra el issue a mano, ver
+[Pull requests](#pull-requests)).
+
+Los puntos no son horas: sirven para comparar el tamaño de dos issues y saber cuánto entra en un sprint. Si algo no
+cabe en un sprint, se parte en dos issues. Los sprints son de una semana, de lunes a domingo; si un sprint se queda
+corto o largo, se mueven las issues al siguiente, no se cambia la duración.
+
+> La **agrupación** de una vista (por estado, por persona) se cambia con `⋯` → **Agrupar por**, y GitHub la recuerda.
+> La API no permite fijarla al crear la vista, por eso las vistas son tablas: con las columnas de persona, puntos y
+> sprint se ve lo mismo y se puede ordenar.
+
+## Releases y versiones
+
+- Versión `vMAJOR.MINOR.PATCH`: **MAJOR** cuando cambia algo que rompe datos o configuración (migración que no se
+  puede deshacer, variable nueva obligatoria), **MINOR** una tanda de funcionalidad, **PATCH** arreglos.
+- Cada release sale de `main` y sus notas son la entrada del [CHANGELOG](docs/CHANGELOG.md):
+
+  ```
+  git checkout main
+  git pull origin main
+  git tag -a v1.0.0 -m "v1.0.0 — Reseñas de Plex"
+  git push origin v1.0.0
+  gh release create v1.0.0 --title "v1.0.0 — Reseñas de Plex" --notes-file docs/CHANGELOG.md
+  ```
+
+- El **milestone** del repo agrupa lo que entra en una release (`v1.0 — Reseñas de Plex`, con su fecha). Al publicar
+  la release se cierra el milestone.
+- Todavía no hay ningún tag: el primero será `v1.0.0` cuando las reseñas estén en `main`.
+
+## Quién aporta qué
+
+- **👥 Equipo** en el Project: quién tiene qué, cuántos puntos y en qué sprint.
+- **Insights → Contributors** y **Pulse** en el repo: commits, líneas y PRs por persona y por semana.
+- **El icono de gráfica del Project**: burn-up del sprint y velocidad por sprint (lo calcula GitHub, no hay que
+  mantenerlo).
 
 ## Ideas de funcionalidad
 
