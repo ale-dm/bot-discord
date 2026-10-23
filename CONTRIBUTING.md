@@ -175,7 +175,8 @@ corto o largo, se mueven las issues al siguiente, no se cambia la duración.
 
 - El **milestone** del repo agrupa lo que entra en una release (`v1.0 — Reseñas de Plex`, con su fecha). Al publicar
   la release se cierra el milestone.
-- Todavía no hay ningún tag: el primero será `v1.0.0` cuando las reseñas estén en `main`.
+- El primer tag ya está: **`v1.0.0`** (2026-10-23), la base sobre `main`. La siguiente release será `v1.1.0` con las
+  reseñas de Plex.
 
 ## Quién aporta qué
 
