@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (núcleo de reseñas de Plex)
+
+- **⭐ Reseñas**: núcleo en `systems/plexResenas`: guardar, cambiar y borrar la nota (medias estrellas, de 1 a 10) y el texto, media y votos por título, histograma, mejor valoradas con mínimo de votos, últimas y ranking de valoradores. Solo se puede valorar lo visto según Tautulli.
+- **🔒 Privacidad**: `plex_preferencias.ocultar_resenas` saca a quien lo activa de medias, rankings y listas públicas (sus reseñas las sigue viendo).
+- **🗃️ Migración 075**: `plex_resenas` y `plex_resenas_pedidas` (el DM llega en #566).
+- **✅ Verificación**: `npm run check` en verde (232 suites, 2.964 tests).
+
 ## 2026-10-23 (historial de Plex)
 
 - **🍿 Historial**: las reproducciones de las últimas **48 h** se refrescan con lo que diga Tautulli en cada sincronización. Antes, `INSERT OR IGNORE` dejaba una película copiada a medias incompleta para siempre, aunque se terminara; ahora `porcentaje`, `visto` y `segundos` se actualizan. Es el prerrequisito de las reseñas (#564).

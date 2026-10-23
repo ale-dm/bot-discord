@@ -1,0 +1,45 @@
+// 🍿 Reseñas de Plex: claves estables, notas en medias estrellas y texto. La lógica está en systems/plexResenas/.
+const { normalizar, clavePelicula } = require("../plexFichas");
+
+const MAX_TEXTO = 500;
+const NOTA_MIN = 1;
+const NOTA_MAX = 10;
+const TIPOS = new Set(["movie", "show"]);
+
+/** 1..10 medias estrellas → "½", "★", "★½" … "★★★★★". */
+function estrellasTexto(nota) {
+    const n = Math.max(0, Math.min(NOTA_MAX, Number(nota) || 0));
+    const llenas = Math.floor(n / 2);
+    return `${"★".repeat(llenas)}${n % 2 ? "½" : ""}` || "½";
+}
+
+/** La clave estable de una película: `peli:<titulo normalizado>|<anio>`. */
+const clavePeli = (titulo, anio) => `peli:${clavePelicula(titulo, anio)}`;
+
+/** La clave de una serie o, con `temporada`, de una temporada: `serie:<titulo>[|t<n>]`. */
+const claveSerie = (titulo, temporada = null) => `serie:${normalizar(titulo)}${temporada ? `|t${Number(temporada)}` : ""}`;
+
+/** La clave a partir de lo que llega (tipo, título, año y, en series, temporada). */
+const claveDe = ({ tipo, titulo, anio, temporada }) => (tipo === "movie" ? clavePeli(titulo, anio) : claveSerie(titulo, temporada));
+
+/** Nota válida: entero de 1 a 10 (medias estrellas). */
+const notaValida = (nota) => Number.isInteger(nota) && nota >= NOTA_MIN && nota <= NOTA_MAX;
+
+/** Texto de la reseña: recortado, sin vacíos y como mucho 500 caracteres. */
+function textoDe(texto) {
+    const t = String(texto ?? "").trim();
+    return t ? t.slice(0, MAX_TEXTO) : null;
+}
+
+module.exports = {
+    MAX_TEXTO,
+    NOTA_MIN,
+    NOTA_MAX,
+    TIPOS,
+    estrellasTexto,
+    clavePeli,
+    claveSerie,
+    claveDe,
+    notaValida,
+    textoDe,
+};
