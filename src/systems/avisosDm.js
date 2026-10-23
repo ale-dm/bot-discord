@@ -48,6 +48,12 @@ const TIPOS = [
     { id: "plex_series", emoji: "📺", nombre: "Series seguidas", detalle: "Episodios nuevos de las series que sigues" },
     { id: "plex_quiero_ver", emoji: "🍿", nombre: "Quiero ver", detalle: "Cuando llega a Plex algo de tu lista" },
     {
+        id: "plex_resenas",
+        emoji: "⭐",
+        nombre: "Reseñas de Plex",
+        detalle: "El DM para puntuar lo que terminas de ver",
+    },
+    {
         id: "tienda_deseos",
         emoji: "⭐",
         nombre: "Lista de deseos",

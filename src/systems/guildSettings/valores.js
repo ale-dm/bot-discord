@@ -114,6 +114,11 @@ function nodoPlexYLogros(flat) {
             rol_gordos_1: flat["plex.rol_gordos_1"],
             rol_gordos_5: flat["plex.rol_gordos_5"],
             rol_gordos_10: flat["plex.rol_gordos_10"],
+            resenas_activo: flat["plex.resenas_activo"],
+            resenas_max_dia: flat["plex.resenas_max_dia"],
+            resenas_min_votos: flat["plex.resenas_min_votos"],
+            resenas_desde: flat["plex.resenas_desde"],
+            resenas_canal: flat["plex.resenas_canal"],
         },
         seerr: {
             url: flat["seerr.url"],

@@ -19,6 +19,12 @@ const clavePeli = (titulo, anio) => `peli:${clavePelicula(titulo, anio)}`;
 /** La clave de una serie o, con `temporada`, de una temporada: `serie:<titulo>[|t<n>]`. */
 const claveSerie = (titulo, temporada = null) => `serie:${normalizar(titulo)}${temporada ? `|t${Number(temporada)}` : ""}`;
 
+/** El año de una clave de película (`peli:<titulo>|2024`), o null. */
+function anioDeClave(clave) {
+    const m = /\|(\d{4})$/.exec(String(clave || ""));
+    return m ? Number(m[1]) : null;
+}
+
 /** La clave a partir de lo que llega (tipo, título, año y, en series, temporada). */
 const claveDe = ({ tipo, titulo, anio, temporada }) => (tipo === "movie" ? clavePeli(titulo, anio) : claveSerie(titulo, temporada));
 
@@ -42,4 +48,5 @@ module.exports = {
     claveDe,
     notaValida,
     textoDe,
+    anioDeClave,
 };
