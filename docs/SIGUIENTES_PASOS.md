@@ -12,10 +12,11 @@ issues en GitHub con la etiqueta `feature-idea` ([FEATURES](planificacion/FEATUR
 - El [plan de las issues](planificacion/PLAN_ISSUES.md) está **terminado**: las 185 issues están cerradas. La última en
   caer ha sido la **fase 2**, los tres refactors de arquitectura: **#472** (`systems/` sin embeds ni Discord), **#474**
   (reglas de los juegos separadas de sus manejadores) y **#475** (herramientas del Duende con dependencias inyectadas).
-- Última release a `main`: la fase 2 de refactor (#505, #506, #507), sobre la voz de `/conectar` (#499, #500) y los
-  tests deterministas (#501), tras las fases 1-12 del plan restante (#496, #497). Todo en el [CHANGELOG](CHANGELOG.md).
-- Migraciones: hasta la `070_admin_extras`. La siguiente es la `071`.
-- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2857 tests en 225 suites. Los tests usan una
+- Última release: **`v1.0.0`** (2026-10-23), la primera etiquetada, sobre `main`. Antes, la fase 2 de refactor (#505,
+  #506, #507), la voz de `/conectar` (#499, #500) y los tests deterministas (#501). Todo en el
+  [CHANGELOG](CHANGELOG.md) y en las [releases](https://github.com/ale-dm/bot-discord/releases).
+- Migraciones: hasta la `074_sorteos`. La siguiente es la `075`.
+- `npm run check` (ESLint con límites de tamaño, Prettier y Jest) en verde: 2955 tests en 231 suites. Los tests usan una
   BD en memoria y no tocan Discord, Odds API, Tautulli, Seerr, TMDB ni Gemini.
 - No hay errores abiertos ([ERRORES](planificacion/ERRORES.md)). La deuda técnica no tiene filas abiertas
   ([DEUDA_TECNICA](planificacion/DEUDA_TECNICA.md)); lo pendiente está en issues.
@@ -81,7 +82,7 @@ Al partir un fichero, la fachada conserva los nombres que ya usaba el resto del 
 
 ## 6. Recetas
 
-- **Una migración nueva**: el siguiente número libre (hoy el `071`) en `src/core/migrations`, con `up(db)`. Nunca editar
+- **Una migración nueva**: el siguiente número libre (hoy el `075`) en `src/core/migrations`, con `up(db)`. Nunca editar
   una que ya se haya aplicado en producción. En `tests/plexImportacion.test.js` el número de migraciones se cuenta solo
   (`runMigrations(bd)`), así que no hay que tocarlo.
 - **Un comando nuevo**: el módulo en `src/commands/…`, con `data` y `run`, y su nombre en la lista de
