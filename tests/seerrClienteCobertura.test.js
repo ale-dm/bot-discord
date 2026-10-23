@@ -362,3 +362,29 @@ describe("canales permitidos", () => {
         expect(seerr.isChannelAllowed(G, "c-3")).toBe(true);
     });
 });
+
+describe("estrenos", () => {
+    test("pide /discover con filtro de fechas (no /upcoming, que lo rechaza) y ordena por fecha", async () => {
+        conRespuestas({
+            "get /discover/movies": (o) => {
+                expect(o.params).toMatchObject({ primaryReleaseDateGte: "2026-10-19", primaryReleaseDateLte: "2026-10-25" });
+                return respuesta(200, { results: [{ id: 1, title: "Peli", releaseDate: "2026-10-24", posterPath: "/p.jpg" }] });
+            },
+            "get /discover/tv": (o) => {
+                expect(o.params).toMatchObject({ firstAirDateGte: "2026-10-19", firstAirDateLte: "2026-10-25" });
+                return respuesta(200, {
+                    results: [
+                        { id: 2, name: "Serie", firstAirDate: "2026-10-20" },
+                        { id: 3, name: "Fuera", firstAirDate: "2026-11-30" },
+                    ],
+                });
+            },
+        });
+        const estrenos = await seerr.getEstrenos(G, "2026-10-19", "2026-10-25");
+        expect(estrenos.map((e) => [e.titulo, e.mediaType, e.fecha])).toEqual([
+            ["Serie", "tv", "2026-10-20"],
+            ["Peli", "movie", "2026-10-24"],
+        ]);
+        expect(estrenos[1].poster).toBe("https://image.tmdb.org/t/p/w342/p.jpg");
+    });
+});
