@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-23 (historial de Plex)
+
+- **🍿 Historial**: las reproducciones de las últimas **48 h** se refrescan con lo que diga Tautulli en cada sincronización. Antes, `INSERT OR IGNORE` dejaba una película copiada a medias incompleta para siempre, aunque se terminara; ahora `porcentaje`, `visto` y `segundos` se actualizan. Es el prerrequisito de las reseñas (#564).
+- **✅ Verificación**: `npm run check` en verde (231 suites, 2.955 tests).
+
 ## 2026-10-23 (roadmap y reseñas de Plex)
 
 - **📋 Project**: el trabajo abierto vive en el Project **El Duende**, con vistas 🏃 Sprint, 🎯 Ahora, 👥 Equipo, 📋 Backlog, ⭐ Reseñas, 🐛 Bugs y ✅ Hecho. Campos de fase, prioridad P0–P3, puntos, sprint semanal y asignación. `CONTRIBUTING.md` explica cómo asignarse y avanzar.
