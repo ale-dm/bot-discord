@@ -146,6 +146,26 @@ controla el admin y es un grupo cerrado y pequeño): nueva sección
   ofrece si hay series ese año (la imagen es de series). El mensaje está en `paneles/plexMiCine.js`; la pantalla es la de
   `/plex`, que es efímera. Sin migración.
 
+- 🎲 Ruleta de películas (#576): botón `plex_ruleta` en la fila de navegación de `/plex` → ⭐ Reseñas (la de vistas ya
+  tiene 5). La tirada está en `systems/plexRuleta.js` (`tirar`, sin Discord y con `azar` inyectable) y sale **solo de la
+  BD**, sin llamadas a Tautulli por tirada: las películas de `plex_fichas` con `encontrada = 1` (las que ya tienen ficha y
+  las que el repaso de la biblioteca con `get_library_media_info` ha apuntado y aún no la tienen; estas, sin géneros, solo
+  salen sin filtro de género), una vez por título y año (`clavePelicula`: la copia 4K no cuenta aparte). Lo visto es lo de
+  `plex_reproducciones` con `visto = 1` del `tautulliUserId` de `plexLinks`, por `rating_key` o por título y año (otra
+  copia de la misma película), el mismo criterio que `plexResenas.haVisto`: lo que la ruleta propone nunca se puede
+  reseñar todavía, así que ⭐ Puntuar va desactivado. Filtros: género (el id es `slug(canonico(g))`, así «Horror» y
+  «Terror» son el mismo), década y duración máxima; los menús (`plex_sel_ruleta_<campo>_…`) solo ofrecen las opciones con
+  algo sin ver con los otros filtros, como mucho 24 más «todos». 🎬 Otra (`plex_ruleta_otra_…`) excluye la que había en
+  pantalla; si es la única, lo dice y se desactiva. Los filtros y la película en pantalla viajan en el `customId`
+  (`<genero>_<decada>_<duracion>_<rating_key>`, `paneles/plexRuleta.js` → `estadoId`/`leerEstado`). 📝 Quiero ver
+  (`plex_ruleta_quiero_…`) usa `plexAvisos.apuntarDePlex`: la misma tabla `plex_quiero_ver` con el id de TMDB de la ficha,
+  sin preguntar a Seerr y ya con `disponible_en` (está en Plex, así que no llega el DM de «ya ha llegado»); sin id de TMDB
+  en la ficha el botón va desactivado. **Duración**: `get_library_media_info` no la da, así que sale de la ficha:
+  `fichaPelicula` guarda en `plex_fichas.duracion` (migración 078) el `duration` de `get_metadata` (ms) redondeado a
+  minutos, o null si no lo trae. Las fichas pedidas antes de la 078 no la tienen hasta que se refrescan
+  (`REFRESCAR_PELICULA`: cada ficha de película, al cumplir 30 días; 📼 Sincronizar no adelanta las más recientes). Con un máximo elegido, lo que no tiene duración no pasa el filtro
+  (`plexRuleta.cumple`), y el menú de duración solo sale cuando alguna película sin ver la tiene.
+
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de
   usuario de Tautulli, sacado de `getUsers()` — igual que el buscador de
