@@ -141,3 +141,22 @@ describe("media, rankings y privacidad", () => {
         expect(embed.fields[3].value).toBe("Nadie todavía.");
     });
 });
+
+describe("reseñas públicas para el Duende (#570)", () => {
+    test("las de una persona y los títulos que se llaman igual no sacan lo oculto", () => {
+        expect(
+            plexResenas
+                .publicasDe(G, "u1")
+                .map((r) => r.titulo)
+                .sort(),
+        ).toEqual(["Dune: Parte dos", "Otra película"]);
+        expect(plexResenas.titulosLlamados(G, "dune: parte DOS").map((t) => t.anio)).toEqual([2024]);
+
+        plexResenas.setOculto(G, "u1", true);
+        expect(plexResenas.publicasDe(G, "u1")).toEqual([]);
+        // Dune sigue existiendo por la reseña pública de u2; «Otra película» ya no, porque solo la escribió u1.
+        expect(plexResenas.titulosLlamados(G, "Otra película")).toEqual([]);
+        expect(plexResenas.titulosLlamados(G, "Dune: Parte dos")).toHaveLength(1);
+        plexResenas.setOculto(G, "u1", false);
+    });
+});
