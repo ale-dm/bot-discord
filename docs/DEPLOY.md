@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Estadísticas del servidor (migración 083, 2026-10-24)
+
+- **083** crea `estadisticas_diarias` (mensajes y XP por día), la rellena con la XP de `xp_diaria` (dos semanas) y añade un
+  índice en `historial(fecha)`. Puede tardar unos segundos si el historial es grande. Las gráficas de mensajes empiezan
+  vacías: se cuentan desde este despliegue.
+
 ### Reseñas de Plex (migración 075, 2026-10-23)
 
 - **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar

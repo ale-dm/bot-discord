@@ -2,6 +2,7 @@
 // diario (#352) y los logros de XP en un solo día (#383). Se guardan dos semanas: hace falta la semana anterior entera para la clasificación semanal (#391).
 const db = require("../../core/db");
 const { sumarDias } = require("../../core/zonaMadrid");
+const estadisticas = require("../estadisticas");
 
 const DIAS_CONSERVADOS = 14;
 
@@ -16,6 +17,8 @@ function sumar(guildId, userId, dia, xp) {
         `INSERT INTO xp_diaria (guildId, userId, dia, xp) VALUES (?, ?, ?, ?)
          ON CONFLICT(guildId, userId, dia) DO UPDATE SET xp = xp + excluded.xp`,
     ).run(guildId, userId, dia, xp);
+    // 📊 La XP del servidor por día, que no se borra a las dos semanas (#538).
+    estadisticas.contar(guildId, "xp", xp);
     return xpDeHoy(guildId, userId, dia);
 }
 

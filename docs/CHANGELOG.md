@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (panel de estadísticas del servidor, #538)
+
+- **⚙️ Config Global → 📊 Estadísticas**: gráfica de barras (ECharts → PNG, el mismo renderizador de `/cripto`) de mensajes, XP, economía neta, dinero apostado u horas de Plex en 7, 30 o 90 días, con total, media, mejor día y variación respecto al periodo anterior. Caché de 5 minutos por métrica y rango con 🔄 Actualizar deshabilitado mientras dura. Auditoría `consulta.estadisticas` al abrirlo.
+- **Datos nuevos**: el bot no guardaba los mensajes por día y `xp_diaria` se borra a las dos semanas; ahora se cuentan en `estadisticas_diarias` (los mensajes desde este despliegue; la XP arranca con lo que quedaba en `xp_diaria`). Índice nuevo en `historial(fecha)` para las consultas por rango.
+- **Migración 083**. **✅ Verificación**: tests de contadores, series por día de Madrid de cada métrica, resumen y variación, formateo de la gráfica sin renderizar, la migración, el índice y el panel con su caché; `npm run check` en verde.
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).

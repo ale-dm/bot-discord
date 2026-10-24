@@ -610,3 +610,13 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-19 Probar en Discord las estadísticas del servidor
+
+Issue #538. Tras un día de uso con el bot nuevo.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 📊 Estadísticas: sale la gráfica de mensajes de 7 días, con total, media, mejor día y variación.
+- [ ] Cambiar a 30 y 90 días y a cada métrica del desplegable: la gráfica y los números cambian y el botón del rango actual queda marcado.
+- [ ] 🔄 Actualizar está deshabilitado los primeros 5 minutos y luego recalcula.
+- [ ] Con 90 días de economía el panel responde sin que el bot se quede colgado.
+- [ ] Con una cuenta sin admin no se puede abrir; en 🧾 Auditoría aparece quién lo abrió (`consulta.estadisticas`).

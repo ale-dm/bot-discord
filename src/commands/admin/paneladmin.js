@@ -38,6 +38,7 @@ const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = r
 const { handlePaseButton, handlePaseModal, handlePaseStringSelect, handlePaseChannelSelect } = require("../../adminPanel/pase");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
+const { handleEstadisticasButton, handleEstadisticasSelect } = require("../../adminPanel/estadisticas");
 
 /**
  * Un manejador de componentes del panel. Solo para admins. Si `antes` devuelve true, ya está resuelto. Si no, prueba
@@ -80,6 +81,7 @@ module.exports = {
                 "paneladmin_sonidos_",
                 "paneladmin_pase_tope_sel",
                 "paneladmin_com_",
+                "paneladmin_stats_",
             ],
             method: "handleStringSelect",
         },
@@ -152,6 +154,7 @@ module.exports = {
             handleComunidadButton,
             handleSonidosButton,
             handlePaseButton,
+            handleEstadisticasButton,
         ],
         async (client, interaction) => {
             if (interaction.customId !== "paneladmin_home") return false;
@@ -205,6 +208,7 @@ module.exports = {
         handleSonidosStringSelect,
         handlePaseStringSelect,
         handleComunidadStringSelect,
+        handleEstadisticasSelect,
         handleLevelsStringSelect,
     ]),
 };
