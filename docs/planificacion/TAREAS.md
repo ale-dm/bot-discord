@@ -610,3 +610,15 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-14 Probar en Discord ambos marcan y doble oportunidad
+
+Issue #532. Con `ODDS_MERCADOS_EXTRA=btts,double_chance` en `.env` y créditos de la Odds API.
+
+- [ ] Tras actualizar las cuotas, en el log aparece «Mercados adicionales de …: N partidos».
+- [ ] La ficha de un partido con esas cuotas muestra una fila con ⚽ Ambos marcan: Sí/No y 🔀 Doble oportunidad 1X/12/X2, y la leyenda.
+- [ ] Un partido sin esas cuotas se ve como antes.
+- [ ] Apostar a «Doble oportunidad: X2»: se cobra una vez y sale en 🧾 Mis jugadas con su nombre completo.
+- [ ] Sumar «Ambos marcan: Sí» a una combinada con otro partido.
+- [ ] Con un partido ya empezado (y `ODDS_DIRECTO=1`), los botones nuevos no salen y no se puede apostar.
+- [ ] Al liquidar, comprobar el pago con un empate (1X y X2 cobran, 12 no).
