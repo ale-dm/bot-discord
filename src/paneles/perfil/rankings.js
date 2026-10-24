@@ -4,6 +4,8 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelect
 const xp = require("../../systems/xpSystem");
 const achievements = require("../../systems/achievementsSystem");
 const plexRankings = require("../../systems/plexRankings");
+const plexResenas = require("../../systems/plexResenas");
+const guildSettings = require("../../systems/guildSettings");
 const rankingApuestas = require("../../systems/apuestas/ranking");
 const { duracion } = require("../../systems/plexRankingSemanal");
 const { filaPestanasPerfil } = require("../pestanasPerfil");
@@ -18,6 +20,7 @@ const RANKINGS = {
     logros: "🏅 Logros",
     ttcl: "💎 TTCL",
     plex: "🍿 Plex",
+    valoraciones: "⭐ Valoraciones",
     apuestas: "⚽ Apostadores",
     rachas: "🔥 Rachas",
     semana: "📅 Esta semana",
@@ -78,6 +81,37 @@ function embedRankingPlex(guildId) {
         .setFooter({ text: "Solo quien tiene Plex vinculado. Quien oculta sus logros de Plex no sale en los de logros." });
 }
 
+/**
+ * ⭐ Valoraciones de Plex (#569): mejor valoradas (con el mínimo de votos del servidor), quién más valora y quién da la
+ * media más alta (😇) y la más baja (😈). Solo reseñas públicas: quien las oculta no sale.
+ */
+function embedRankingValoraciones(guildId) {
+    const minVotos = Number(guildSettings.getSettings(guildId).plex.resenas_min_votos) || 3;
+    const numero = (n) => n.toLocaleString("es", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const lista = (l, formato) => l.map((x, i) => `${MEDALLAS[i]} ${formato(x)}`).join("\n") || "Nadie todavía.";
+    const generosos = plexResenas.generosidad(guildId, { orden: "DESC", minVotos });
+    const criticos = plexResenas.generosidad(guildId, { orden: "ASC", minVotos });
+    return new EmbedBuilder()
+        .setTitle("⭐ Valoraciones de Plex")
+        .addFields(
+            {
+                name: "🏆 Mejor valoradas",
+                value: lista(
+                    plexResenas.mejores(guildId, { minVotos, limite: 5 }),
+                    (m) => `**${m.titulo}** — ${numero(m.media)} · ${m.votos} votos`,
+                ),
+            },
+            {
+                name: "✍️ Quién más valora",
+                value: lista(plexResenas.rankingValoradores(guildId, { limite: 5 }), (v) => `<@${v.userId}> — ${v.n} reseñas`),
+            },
+            { name: "😇 Más generoso", value: lista(generosos, (g) => `<@${g.userId}> — media ${numero(g.media)}`), inline: true },
+            { name: "😈 Más crítico", value: lista(criticos, (c) => `<@${c.userId}> — media ${numero(c.media)}`), inline: true },
+        )
+        .setFooter({ text: `Solo reseñas públicas · mínimo ${minVotos} votos` })
+        .setColor(0xe5a00d);
+}
+
 /** El embed de los rankings que no van con páginas (todos menos el de nivel), o null si el tipo es el de nivel. */
 function embedRankingFijo(guild, tipo, viewerId) {
     if (tipo === "riqueza") {
@@ -110,6 +144,7 @@ function embedRankingFijo(guild, tipo, viewerId) {
             .setColor(0x9b59b6);
     }
     if (tipo === "plex") return embedRankingPlex(guild.id);
+    if (tipo === "valoraciones") return embedRankingValoraciones(guild.id);
     if (tipo === "apuestas") return embedRankingApuestas();
     if (tipo === "rachas") return embedRankingRachas(guild.id, viewerId);
     if (tipo === "semana") return semana.embedEstaSemana(guild.id);
@@ -148,4 +183,4 @@ async function buildRankings(guild, ownerId, targetId, tipo = "nivel", page = 0)
     return { content: "", embeds: [embed], components };
 }
 
-module.exports = { RANKINGS, embedRankingApuestas, embedRankingPlex, buildRankings };
+module.exports = { RANKINGS, embedRankingApuestas, embedRankingPlex, embedRankingValoraciones, buildRankings };

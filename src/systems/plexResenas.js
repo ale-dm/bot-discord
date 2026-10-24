@@ -2,7 +2,7 @@
 // Partido en systems/plexResenas/; esta fachada reexporta lo que usa el resto.
 const { MAX_TEXTO, NOTA_MIN, NOTA_MAX, TIPOS, estrellasTexto, clavePeli, claveSerie, claveDe, notaValida } = require("./plexResenas/base");
 const { guardar, borrar, de, haVisto } = require("./plexResenas/guardar");
-const { resumen, titulo, deUsuario, mejores, ultimas, rankingValoradores } = require("./plexResenas/consultas");
+const { resumen, titulo, deUsuario, mejores, ultimas, rankingValoradores, generosidad } = require("./plexResenas/consultas");
 const { oculto, setOculto } = require("./plexResenas/privacidad");
 
 module.exports = {
@@ -25,6 +25,7 @@ module.exports = {
     mejores,
     ultimas,
     rankingValoradores,
+    generosidad,
     oculto,
     setOculto,
 };

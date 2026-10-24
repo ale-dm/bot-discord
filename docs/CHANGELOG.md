@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (rankings de valoraciones de Plex, #569)
+
+- **⭐ Valoraciones**: nuevo ranking en 🏆 Rankings (`/perfil`) con las mejor valoradas (mínimo de votos del servidor), quién más valora, y quién da la media más alta (😇) y la más baja (😈). Quien oculta sus reseñas no sale.
+- **Consulta**: `generosidad()` en `systems/plexResenas/consultas.js`, con el mismo filtro de privacidad que el resto de consultas públicas.
+- **✅ Verificación**: tests de la consulta (mínimo de votos, orden y reseñas ocultas) y del embed; `npm run check` en verde.
+
 ## 2026-10-23 (arreglos: botón de reseñas y estrenos de Seerr)
 
 - **⭐ Reseñas**: el botón ⭐ Reseñas del panel de `/plex` (`plex_resenas`) no llegaba al manejador de reseñas y daba error; ahora abre la pantalla.
