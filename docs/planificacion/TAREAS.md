@@ -17,6 +17,7 @@ lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02
 | [T-12](#t-12-probar-en-discord-la-guardia-del-duende) | Probar en Discord la guardia del Duende en un canal de voz (#553) | 🟡 Media |
 | [T-14](#t-14-probar-en-discord-mi-cine) | Probar en Discord 📊 Mi cine en `/plex` → ⭐ Reseñas (#574) | 🟡 Media |
 | [T-15](#t-15-probar-en-discord-la-ruleta-de-películas) | Probar en Discord la 🎲 Ruleta de películas en `/plex` → ⭐ Reseñas (#576) | 🟡 Media |
+| [T-16](#t-16-probar-en-discord-los-tickets-de-soporte) | Probar en Discord los tickets de soporte (#537) | 🟡 Media |
 
 ---
 
@@ -668,3 +669,23 @@ Issue #576. Con una cuenta vinculada a Plex que haya visto algunas películas, y
 - [ ] 📝 Quiero ver: la ficha dice «apuntada» y el botón pasa a ✅ En tu lista; en `/plex` → 📝 Quiero ver sale con «ya está en Plex» y no llega ningún DM de aviso.
 - [ ] Con la cuenta sin vincular: 🎲 Ruleta explica que falta vincular Plex y solo ofrece ⬅️ Reseñas.
 - [ ] ⬅️ Reseñas vuelve a la lista de tus reseñas.
+
+## T-16 Probar en Discord los tickets de soporte
+
+Issue #537. Con un canal de texto para los tickets, otro para las transcripciones, un rol de staff y dos cuentas (una sin
+el rol ni permisos de admin).
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 📣 Comunidad → 🎫 Tickets: sin configurar dice lo que falta y 📤 Publicar panel sale deshabilitado. Elegir canal, rol y canal de transcripciones: «✅ Guardado» y queda en Auditoría (`tickets.config`, familia 🎫 Tickets).
+- [ ] Quitar al bot «Crear hilos privados» en el canal de tickets y guardar otra vez: avisa de lo que le falta; 📤 Publicar panel no publica y dice por qué. Devolver el permiso.
+- [ ] 🏷️ Categorías: poner «Duda», «Reporte» y «Apelación» (una por línea) y guardar; vaciarlo deja solo «General».
+- [ ] 📤 Publicar panel: el panel 🎫 Soporte aparece en el canal de tickets con el botón 🎫 Abrir ticket (enlace en el aviso y fila `tickets.publicar` en Auditoría).
+- [ ] Con la cuenta sin rol: 🎫 Abrir ticket → formulario con las categorías → enviar. Se crea un hilo privado con su nombre, la cuenta está dentro, el rol de staff recibe la mención y el resto del servidor no ve el hilo.
+- [ ] El staff entra en el hilo (por la mención) y contesta; el autor ve la respuesta.
+- [ ] Con el ticket abierto, volver a pulsar 🎫 Abrir ticket: responde que ya tienes uno y enlaza el hilo.
+- [ ] Otra cuenta sin rol que no es el autor pulsa 🔒 Cerrar ticket en ese hilo (si consigue verlo): «Solo quien abrió el ticket o el staff».
+- [ ] El autor pulsa 🔒 Cerrar ticket → Cancelar: sigue abierto. Otra vez → ✅ Sí, cerrar: el hilo recibe el aviso con mención al staff, el botón queda desactivado y el hilo bloqueado y archivado.
+- [ ] En el canal de transcripciones sale el registro (abierto por, cerrado por, fechas, duración, mensajes) con `ticket-N.txt`, y el .txt tiene toda la conversación en orden con la hora de Madrid.
+- [ ] Justo después, el autor pulsa 🎫 Abrir ticket: le dice que espere (unos 60 minutos). Pasada la hora, puede abrir otro.
+- [ ] Abrir otro y cerrarlo desde la cuenta del staff: el aviso de cierre no menciona al rol.
+- [ ] Borrar a mano el hilo de un ticket abierto y volver a pulsar 🎫 Abrir ticket: deja abrir uno nuevo.
+- [ ] Quitar al bot «Adjuntar archivos» en el canal de transcripciones y cerrar un ticket: se cierra igual y avisa de que no pudo guardar la transcripción.
