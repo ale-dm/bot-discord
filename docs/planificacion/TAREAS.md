@@ -610,3 +610,14 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-20 Probar en Discord el cash-out
+
+Issue #529. Con apuestas a partidos con cuotas recién actualizadas (abrir la lista de partidos las refresca).
+
+- [ ] /juegos → 📋 Mis jugadas → ⏳ En juego: sale el menú 💸 Retirar ya con el valor de cada apuesta.
+- [ ] Elegir una: la confirmación enseña el valor y hasta qué hora vale. Confirmar: llega al efectivo y en Movimientos sale «Cash-out: …».
+- [ ] Esperar más de 60 s y confirmar: dice que caducó y enseña el valor nuevo.
+- [ ] La apuesta retirada ya no sale en ⏳ En juego y en 📋 Resueltas sale «💸 Retirada (+N)». Al liquidar el partido no se paga otra vez.
+- [ ] Una combinada con una pata ya fallada no sale en el menú.
+- [ ] Una apuesta a marcador exacto no se puede retirar.
