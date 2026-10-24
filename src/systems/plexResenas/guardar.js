@@ -39,7 +39,8 @@ function de(guildId, userId, clave) {
 }
 
 /**
- * Guarda o cambia la reseña de una persona. @returns {{ ok: true, resena: object } | { ok: false, motivo: string }}
+ * Guarda o cambia la reseña de una persona. `nueva` dice si no tenía reseña de ese título (el feed solo publica esas, #573).
+ * @returns {{ ok: true, resena: object, nueva: boolean } | { ok: false, motivo: string }}
  */
 function guardar(guildId, userId, datos) {
     const { tipo, titulo, anio, temporada, nota, texto, spoilers = false, meGusta = false } = datos || {};
@@ -50,6 +51,7 @@ function guardar(guildId, userId, datos) {
 
     const clave = claveDe({ tipo, titulo, anio, temporada });
     const tituloGuardado = etiquetaTemporada(String(titulo).trim(), tipo === "show" ? temporada : null);
+    const nueva = !de(guildId, userId, clave);
     const t = ahora();
     db.prepare(
         `INSERT INTO plex_resenas
@@ -72,7 +74,7 @@ function guardar(guildId, userId, datos) {
         t,
         t,
     );
-    return { ok: true, resena: de(guildId, userId, clave) };
+    return { ok: true, resena: de(guildId, userId, clave), nueva };
 }
 
 /** Borra la reseña de una persona en un título. @returns {boolean} si había algo que borrar */
