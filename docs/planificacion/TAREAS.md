@@ -14,6 +14,7 @@ lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02
 | [T-06](#t-06-probar-en-discord-las-fases-1-a-12-del-plan-restante) | Probar en Discord lo hecho en las fases 1 a 12 del plan restante. ✅ Probado por el usuario y liberado a `main` (fases 1-12, #496/#497 y voz #499/#500); issues cerradas | ✅ Hecha |
 | [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
 | [T-07](#t-07-probar-en-discord-los-equipos-favoritos) | Probar en Discord los equipos favoritos y su aviso por DM (#530) | 🟡 Media |
+| [T-12](#t-12-probar-en-discord-la-guardia-del-duende) | Probar en Discord la guardia del Duende en un canal de voz (#553) | 🟡 Media |
 
 ---
 
@@ -610,3 +611,18 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-12 Probar en Discord la guardia del Duende
+
+Issue #553. Con un canal de voz de pruebas y dos cuentas (una sin permisos de admin).
+
+- [ ] Desde un canal de voz, `/duende` → 🛡️ Guardia: el bot entra a tu canal y el panel enseña «De guardia» con el canal, quién la puso y desde cuándo.
+- [ ] Sin estar en voz, pulsar 🛡️ Guardia: se abre el formulario con solo canales de voz; cerrarlo sin elegir no conecta; elegir uno conecta ahí.
+- [ ] En un canal sin permiso de Hablar para el bot: el panel avisa de que faltan permisos y no entra.
+- [ ] Con la guardia puesta, `/sonidos` y `/tts` suenan en ese canal; `/conectar` (con y sin canal o minutos) avisa de que está de guardia y no la toca; `/conversación` responde que está de guardia y la guardia sigue.
+- [ ] Con la otra cuenta, `/duende`: los botones 🛡️ Guardia y 🚪 Dejar la guardia salen deshabilitados.
+- [ ] Esperar más de 2 horas: el bot sigue en el canal.
+- [ ] Reiniciar el contenedor: el bot vuelve al mismo canal (y en el log, `Guardias al arrancar: 1 recuperadas`).
+- [ ] Borrar el canal (o quitar el permiso de Conectar) y reiniciar: no entra y el log avisa de que descarta la guardia.
+- [ ] Desconectar al bot a mano desde Discord: la guardia se acaba y al reiniciar no vuelve.
+- [ ] 🚪 Dejar la guardia (quien la puso o un admin): se sale al momento y al reiniciar no vuelve.
