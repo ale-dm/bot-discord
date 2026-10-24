@@ -1,4 +1,5 @@
-// ⭐ Pantalla de reseñas de /plex (#567): las listas (mías, últimas, mejores) y la ficha de un título. Solo payloads.
+// ⭐ Pantalla de reseñas de /plex (#567): las listas (mías, últimas, mejores), la ficha de un título y el botón de la
+// 🎲 Ruleta (#576, su pantalla en paneles/plexRuleta.js). Solo payloads.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const plexResenas = require("../systems/plexResenas");
 const guildSettings = require("../systems/guildSettings");
@@ -85,7 +86,11 @@ function pantallaResenas(guildId, userId, vista = "mias", pagina = 0, aviso = ""
                 .setDisabled(p >= total - 1),
         );
     }
-    nav.push(new ButtonBuilder().setCustomId("plex_resenas_inicio").setLabel("⬅️ Plex").setStyle(ButtonStyle.Secondary));
+    // 🎲 Ruleta (#576): la primera fila ya está llena, así que va aquí (como mucho 4 botones en esta fila).
+    nav.push(
+        new ButtonBuilder().setCustomId("plex_ruleta").setLabel("🎲 Ruleta").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("plex_resenas_inicio").setLabel("⬅️ Plex").setStyle(ButtonStyle.Secondary),
+    );
     filas.push(new ActionRowBuilder().addComponents(nav));
     return { content: "", embeds: [embed], components: filas };
 }

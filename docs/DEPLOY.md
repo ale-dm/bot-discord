@@ -63,6 +63,15 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
   «Enviar mensajes», «Insertar enlaces» y «Adjuntar archivos». Si el rol de staff no es mencionable, también «Mencionar
   @everyone, @here y todos los roles» (si no, mete a mano en el hilo a los del staff que conozca).
 
+### Duración de las películas de Plex (migración 078, 2026-10-24)
+
+- **078** añade `plex_fichas.duracion` (minutos; vacía hasta que se sabe), para el filtro de duración máxima de la
+  🎲 Ruleta de `/plex` → ⭐ Reseñas (#576). No hay que rellenar nada: las fichas nuevas la guardan al pedirse
+  (`get_metadata`) y las que ya había, cuando se refrescan: cada ficha de película se vuelve a pedir cuando tiene más de
+  30 días, así que en un mes como mucho estarán todas (📼 Sincronizar en `/paneladmin` → 🎬 Plex solo adelanta la cola,
+  no refresca las de menos de 30 días). Mientras ninguna película la tenga, el menú de duración no sale. Si 077 llega después, se
+  aplica igual (el orden de llegada no importa).
+
 ### Guardia del Duende (migración 076, 2026-10-24)
 
 - **076** crea `guardia_voz` (servidor, canal, quién la puso y fecha). No hay que rellenar nada. Al arrancar, el bot vuelve

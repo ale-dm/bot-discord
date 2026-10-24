@@ -176,6 +176,19 @@ describe("fichas", () => {
         });
     });
 
+    test("de una película guarda la duración en minutos (redondeada) si get_metadata la trae", async () => {
+        const g = nuevoGuild();
+        biblioteca([
+            { rating_key: "larga", title: "Larga", year: 2001 },
+            { rating_key: "sin", title: "Sin", year: 2001 },
+        ]);
+        // 8.130.000 ms = 135,5 min → 136; la otra no trae duration.
+        tautulli.getMetadata.mockImplementation(async (_g, key) => (key === "larga" ? { ...meta(key), duration: "8130000" } : meta(key)));
+        await plexFichas.actualizar(g, { presupuesto: 100 });
+        expect(fila(g, "larga").duracion).toBe(136);
+        expect(fila(g, "sin").duracion).toBeNull();
+    });
+
     test("de una serie: temporadas con sus episodios, sin especiales, temporadas vacías ni episodios 0", async () => {
         const g = nuevoGuild();
         reproduccion(g, { tipo: "episode", serie_key: "show", serie: "La serie", temporada: 1, episodio: 1 });
