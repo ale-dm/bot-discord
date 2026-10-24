@@ -102,6 +102,7 @@ module.exports = {
                 "paneladmin_plex_novedades_channel_select",
                 "paneladmin_plex_channel_add_select",
                 "paneladmin_plex_ranking_canal_select",
+                "paneladmin_plex_resenas_canal_select",
                 "paneladmin_seerr_channel_add_select",
                 "paneladmin_apu_canal_select",
                 "paneladmin_semanal_canal_select",

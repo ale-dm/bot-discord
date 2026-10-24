@@ -6,6 +6,7 @@ const guildSettings = require("../../systems/guildSettings");
 const avisosDm = require("../../systems/avisosDm");
 const { logAdminAction } = require("../../systems/adminAudit");
 const { formularioResena, filaEditar } = require("../../discord/mensajes/resena");
+const { publicarResena } = require("../../discord/envios/resenaFeed");
 const { pantallaResenas, pantallaTitulo, esAdmin } = require("../../paneles/plexResenas");
 const { pantallaPlex } = require("../../paneles/plex");
 const { efimero } = require("../../discord/respuestas");
@@ -118,7 +119,9 @@ async function guardarTitulo(interaction) {
         meGusta: interaction.fields.getCheckbox("megusta"),
     });
     if (!r.ok) return interaction.reply(efimero({ content: `❌ ${r.motivo}` }));
-    return interaction.update(pantallaTitulo(guildId, user.id, clave, "✅ Guardada."));
+    await interaction.update(pantallaTitulo(guildId, user.id, clave, "✅ Guardada."));
+    // 📣 Después de contestar: el feed (#573) no hace esperar a quien reseña y, si falla, la reseña ya está guardada.
+    await publicarResena(interaction.client, guildId, r);
 }
 
 async function handleModal(interaction) {
@@ -142,7 +145,8 @@ async function handleModal(interaction) {
     pedidos.marcar(pedido.id, "puntuada");
     const texto = `✅ Reseñada ${plexResenas.estrellasTexto(nota)}`;
     if (interaction.message) await interaction.message.edit({ content: texto, embeds: [], components: [filaEditar(pedido)] });
-    return interaction.reply(efimero({ content: "✅ Guardada." }));
+    await interaction.reply(efimero({ content: "✅ Guardada." }));
+    await publicarResena(interaction.client, pedido.guildId, r);
 }
 
 async function handleButton(client, interaction) {

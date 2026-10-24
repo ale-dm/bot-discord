@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (feed de reseñas de Plex en un canal, #573)
+
+- **📣 Feed de reseñas**: con un canal en `plex.resenas_canal` (apagado por defecto), cada reseña nueva sale allí justo después de guardarla, desde el DM o desde la ficha de `/plex` → ⭐ Reseñas: título, nota en estrellas, un extracto de 300 caracteres y el autor mencionado sin aviso (`allowedMentions: { parse: [] }`). Las de spoilers salen sin texto, con «⚠️ contiene spoilers».
+- **🔁 Una sola vez**: `plexResenas.guardar()` devuelve `nueva` (no había reseña de esa persona en ese título) y solo esas se publican; cambiar una reseña no la republica. Sin migración: borrarla y escribirla de nuevo cuenta como nueva, y lo reseñado sin canal no se publica después.
+- **🙈 Privacidad**: no salen las reseñas ocultas (`plex_resenas.oculto`) ni las de quien oculta las suyas (`plex_preferencias.ocultar_resenas`).
+- **🧩 Capas**: la decisión en `systems/plexResenas/feed.js`, el mensaje en `discord/mensajes/resenaFeed.js` y el envío best-effort en `discord/envios/resenaFeed.js` (un canal borrado, de otro servidor o sin permisos se registra y la reseña queda guardada).
+- **⭐ Panel admin**: en `/paneladmin` → 🎬 Plex → ⭐ Reseñas, selector del canal del feed y 🚫 Quitar canal del feed, con auditoría `plex.resenas.canal` (`{ antes, ahora }`).
+- **✅ Verificación**: `tests/plexResenasFeed.test.js` (mensaje, spoilers, extracto, sin canal, edición, ocultas, envío desde la ficha y el DM, canal ajeno o caído, y el control del panel con y sin permisos y por el enrutador). Sin migraciones. `npm run check` en verde (240 suites, 3066 tests).
+
 ## 2026-10-24 (guardia del Duende en un canal de voz, #553)
 
 - **🛡️ Guardia en `/duende`**: el bot entra al canal de voz de quien pulsa (o al que elija en un formulario con un selector de canales de voz) y se queda indefinidamente, sin temporizador. **🚪 Dejar la guardia** se sale al momento; solo quien la puso o un admin pueden dejarla o moverla (el resto ve los botones deshabilitados y se comprueba también al pulsar). El panel enseña el canal, quién la puso y desde cuándo.

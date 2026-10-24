@@ -113,7 +113,21 @@ controla el admin y es un grupo cerrado y pequeño): nueva sección
 - ⭐ Reseñas (`src/adminPanel/plex/resenas.js`): activar o desactivar los avisos por DM (al activar, `plex.resenas_desde`
   es ahora: sin backfill), el tope diario y el mínimo de votos (con rango y auditoría), los contadores (todas las reseñas,
   también las ocultas, y los avisos sin respuesta) y 🗑️ Borrar una reseña: se busca por título (y año), se elige a la
-  persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación.
+  persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación. También el canal del feed
+  (`paneladmin_plex_resenas_canal_select`, enrutado por id exacto en `paneladmin.js`) y 🚫 Quitar canal del feed, con
+  la auditoría `plex.resenas.canal` (`{ antes, ahora }`).
+
+- 📣 Feed de reseñas (#573): con `plex.resenas_canal` (vacío = no se publica), cada reseña nueva sale en ese canal justo
+  después de guardarla, desde el formulario del DM o el de la ficha (`commands/plex/resenas.js`, tras contestar a la
+  interacción). Qué se publica lo decide `systems/plexResenas/feed.js` (`aPublicar`): solo si `guardar()` devuelve
+  `nueva: true` (no había reseña de esa persona en ese título), no está oculta (`plex_resenas.oculto`) y la persona no
+  oculta las suyas (`plex_preferencias.ocultar_resenas`). El mensaje (`discord/mensajes/resenaFeed.js`) lleva título,
+  estrellas, un extracto de 300 caracteres y el autor con `allowedMentions: { parse: [] }`; con spoilers, ningún texto,
+  solo «⚠️ contiene spoilers». El envío (`discord/envios/resenaFeed.js`) es best-effort: un canal borrado, de otro
+  servidor, que no es de texto o sin permisos se registra en el log y la reseña queda guardada. **Sin migración**: una
+  edición no se republica porque `guardar()` sabe si la fila ya existía; no se recuerda lo publicado aparte, así que
+  borrar una reseña y escribirla de nuevo cuenta como nueva, y lo reseñado sin canal (o con el envío fallido) no se
+  publica más tarde (sin backfill ni reintentos).
 
 - Reseñas de series (#572): `systems/plexResenas/series.js` reutiliza `plexTrofeos.datosUsuario` (con `rango` desde la
   activación) para saber qué temporadas y series están terminadas. Una temporada guarda su clave `serie:<titulo>|t<n>` y

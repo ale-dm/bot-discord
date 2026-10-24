@@ -626,3 +626,15 @@ Issue #553. Con un canal de voz de pruebas y dos cuentas (una sin permisos de ad
 - [ ] Borrar el canal (o quitar el permiso de Conectar) y reiniciar: no entra y el log avisa de que descarta la guardia.
 - [ ] Desconectar al bot a mano desde Discord: la guardia se acaba y al reiniciar no vuelve.
 - [ ] 🚪 Dejar la guardia (quien la puso o un admin): se sale al momento y al reiniciar no vuelve.
+
+## T-13 Probar en Discord el feed de reseñas
+
+Issue #573. Con un canal de texto de pruebas y dos cuentas vinculadas a Plex que hayan terminado alguna película.
+
+- [ ] `/paneladmin` → 🎬 Plex → ⭐ Reseñas: sin canal, la pantalla dice «sin canal» y 🚫 Quitar canal del feed sale deshabilitado. Elegir el canal en el selector: la pantalla lo enseña y queda en Auditoría (`plex.resenas.canal`).
+- [ ] Reseñar una película (desde el DM o desde la ficha de `/plex` → ⭐ Reseñas): en el canal sale el título, las estrellas, el extracto y la mención del autor, sin que le llegue aviso.
+- [ ] Cambiar esa misma reseña: no sale otro mensaje.
+- [ ] Reseñar con «Contiene spoilers» marcado: sale «⚠️ contiene spoilers» y nada del texto.
+- [ ] Con la otra cuenta, ocultar sus reseñas en `/plex` → ⭐ Reseñas y reseñar algo: no sale nada en el canal.
+- [ ] 🚫 Quitar canal del feed y reseñar otra: no se publica; queda en Auditoría.
+- [ ] Borrar el canal del feed (o quitar al bot el permiso de enviar) y reseñar: la reseña se guarda y el log avisa.
