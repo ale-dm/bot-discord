@@ -1,7 +1,8 @@
 // 🍿 Guardar, cambiar y borrar una reseña. Solo se puede valorar lo que la persona ha visto según el historial.
 const db = require("../../core/db");
 const plexLinks = require("../plexLinks");
-const { claveDe, notaValida, textoDe, TIPOS } = require("./base");
+const { claveDe, notaValida, textoDe, TIPOS, etiquetaTemporada } = require("./base");
+const series = require("./series");
 
 const ahora = () => Math.floor(Date.now() / 1000);
 
@@ -14,13 +15,14 @@ const normalizarFila = (r) => ({
 });
 
 /**
- * ¿Ha visto ese título? Las películas se comparan por título y año (como los trofeos); las series llegan con la fase 3
- * (#572), así que de momento solo se pueden valorar películas.
+ * ¿Ha visto ese título? Las películas se comparan por título y año (como los trofeos). Una serie cuenta si la persona la
+ * ha terminado: la temporada entera (con `temporada`) o la serie completa (#572).
  */
-function haVisto(guildId, userId, { tipo, titulo, anio }) {
-    if (tipo !== "movie") return false;
+function haVisto(guildId, userId, { tipo, titulo, anio, temporada = null }) {
     const link = plexLinks.getLinkByDiscordId(guildId, String(userId));
     if (!link) return false;
+    if (tipo === "show") return series.haTerminado(guildId, link.tautulliUserId, { titulo, temporada });
+    if (tipo !== "movie") return false;
     const filas = db
         .prepare("SELECT titulo, anio FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND tipo = 'movie' AND visto = 1")
         .all(guildId, String(link.tautulliUserId));
@@ -44,9 +46,10 @@ function guardar(guildId, userId, datos) {
     if (!TIPOS.has(tipo)) return { ok: false, motivo: "Eso no es una película ni una serie." };
     if (!String(titulo || "").trim()) return { ok: false, motivo: "Falta el título." };
     if (!notaValida(Number(nota))) return { ok: false, motivo: "La nota va de ½ a 5 estrellas, en medias." };
-    if (!haVisto(guildId, userId, { tipo, titulo, anio })) return { ok: false, motivo: "Solo puedes valorar lo que has visto." };
+    if (!haVisto(guildId, userId, { tipo, titulo, anio, temporada })) return { ok: false, motivo: "Solo puedes valorar lo que has visto." };
 
     const clave = claveDe({ tipo, titulo, anio, temporada });
+    const tituloGuardado = etiquetaTemporada(String(titulo).trim(), tipo === "show" ? temporada : null);
     const t = ahora();
     db.prepare(
         `INSERT INTO plex_resenas
@@ -60,7 +63,7 @@ function guardar(guildId, userId, datos) {
         String(userId),
         clave,
         tipo,
-        String(titulo).trim().slice(0, 200),
+        tituloGuardado.slice(0, 200),
         anio ?? null,
         Number(nota),
         textoDe(texto),

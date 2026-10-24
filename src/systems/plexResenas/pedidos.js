@@ -5,6 +5,7 @@ const guildSettings = require("../guildSettings");
 const plexLinks = require("../plexLinks");
 const avisosDm = require("../avisosDm");
 const { clavePeli, anioDeClave } = require("./base");
+const series = require("./series");
 
 const MAX_DIA = 5;
 const VENTANA = 24 * 3600;
@@ -54,6 +55,13 @@ function pendientes(guildId, { ahora = Math.floor(Date.now() / 1000), limite = 1
             const clave = clavePeli(f.titulo, f.anio);
             if (yaResenada.get(guildId, link.discordUserId, clave) || yaPedida.get(guildId, link.discordUserId, clave)) continue;
             salida.push({ guildId, userId: link.discordUserId, clave, titulo: f.titulo, anio: f.anio });
+            puestos++;
+        }
+        // Las series terminadas desde que se activó (una temporada o la serie entera): mismo tope y misma deduplicación.
+        for (const t of series.terminadasDe(guildId, link.tautulliUserId, { desde })) {
+            if (puestos >= quedan || salida.length >= limite) break;
+            if (yaResenada.get(guildId, link.discordUserId, t.clave) || yaPedida.get(guildId, link.discordUserId, t.clave)) continue;
+            salida.push({ guildId, userId: link.discordUserId, clave: t.clave, titulo: t.titulo, anio: t.anio });
             puestos++;
         }
     }

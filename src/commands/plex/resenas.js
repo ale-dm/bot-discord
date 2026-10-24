@@ -109,8 +109,9 @@ async function guardarTitulo(interaction) {
     if (!base) return interaction.reply(efimero({ content: "❌ No encuentro ese título." }));
     const r = plexResenas.guardar(guildId, user.id, {
         tipo: clave.startsWith("serie:") ? "show" : "movie",
-        titulo: base.titulo,
+        titulo: plexResenas.tituloBase(base.titulo),
         anio: base.anio,
+        temporada: plexResenas.temporadaDeClave(clave),
         nota: Number(interaction.fields.getRadioGroup("nota")),
         texto: interaction.fields.getTextInputValue("texto") || "",
         spoilers: interaction.fields.getCheckbox("spoilers"),
@@ -128,9 +129,10 @@ async function handleModal(interaction) {
     if (!pedido || String(pedido.userId) !== String(interaction.user.id)) return noEsTuya(interaction);
     const nota = Number(interaction.fields.getRadioGroup("nota"));
     const r = plexResenas.guardar(pedido.guildId, interaction.user.id, {
-        tipo: "movie",
+        tipo: pedido.clave.startsWith("serie:") ? "show" : "movie",
         titulo: pedido.titulo,
         anio: pedido.anio,
+        temporada: plexResenas.temporadaDeClave(pedido.clave),
         nota,
         texto: interaction.fields.getTextInputValue("texto") || "",
         spoilers: interaction.fields.getCheckbox("spoilers"),

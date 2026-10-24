@@ -115,6 +115,10 @@ controla el admin y es un grupo cerrado y pequeño): nueva sección
   también las ocultas, y los avisos sin respuesta) y 🗑️ Borrar una reseña: se busca por título (y año), se elige a la
   persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación.
 
+- Reseñas de series (#572): `systems/plexResenas/series.js` reutiliza `plexTrofeos.datosUsuario` (con `rango` desde la
+  activación) para saber qué temporadas y series están terminadas. Una temporada guarda su clave `serie:<titulo>|t<n>` y
+  el título visible `Serie · temporada N`; la serie entera, `serie:<titulo>`. Un episodio suelto no cuenta.
+
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de
   usuario de Tautulli, sacado de `getUsers()` — igual que el buscador de
