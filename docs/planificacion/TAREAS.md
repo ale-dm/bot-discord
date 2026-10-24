@@ -16,6 +16,7 @@ lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02
 | [T-07](#t-07-probar-en-discord-los-equipos-favoritos) | Probar en Discord los equipos favoritos y su aviso por DM (#530) | 🟡 Media |
 | [T-12](#t-12-probar-en-discord-la-guardia-del-duende) | Probar en Discord la guardia del Duende en un canal de voz (#553) | 🟡 Media |
 | [T-14](#t-14-probar-en-discord-mi-cine) | Probar en Discord 📊 Mi cine en `/plex` → ⭐ Reseñas (#574) | 🟡 Media |
+| [T-15](#t-15-probar-en-discord-la-ruleta-de-películas) | Probar en Discord la 🎲 Ruleta de películas en `/plex` → ⭐ Reseñas (#576) | 🟡 Media |
 
 ---
 
@@ -650,4 +651,20 @@ Issue #574. Con una cuenta vinculada a Plex que tenga reseñas e historial, y ot
 - [ ] Con otra cuenta, ocultar sus reseñas (🙈 Ocultar) y volver a Mi cine: la media del servidor cambia y ya no cuenta las suyas.
 - [ ] 🖼️ Imagen del año: llega aparte, solo para ti, la imagen del Wrapped con tus series del año. Sin series este año, el botón no sale.
 - [ ] Con la cuenta sin vincular: Mi cine solo enseña las reseñas y explica que falta vincular Plex.
+- [ ] ⬅️ Reseñas vuelve a la lista de tus reseñas.
+
+## T-15 Probar en Discord la ruleta de películas
+
+Issue #576. Con una cuenta vinculada a Plex que haya visto algunas películas, y otra sin vincular.
+
+- [ ] `/plex` → ⭐ Reseñas: la primera fila sigue con 5 botones y 🎲 Ruleta sale en la última fila, junto a ⬅️ Plex.
+- [ ] Pulsar 🎲 Ruleta: sale la ficha de una película que **no has visto** (comprobar con tu historial de Plex), con géneros, director, biblioteca y, si tiene reseñas, la media del servidor.
+- [ ] ⭐ Puntuar al verla sale desactivado y el pie explica que se puntúa al verla.
+- [ ] 🎬 Otra varias veces: nunca repite la que había en pantalla y nunca propone algo ya visto.
+- [ ] Elegir un género en el menú: la película es de ese género. Elegir una década: es de esa década. «Cualquier género» / «Cualquier década» quitan el filtro.
+- [ ] Tras desplegar (migración 078), cuando se hayan pedido o refrescado fichas de películas (las nuevas, o las de más de 30 días; en el log de Plex): sale el menú ⏱️ Duración máxima; elegir «Hasta 2 h»: la película dura 2 h o menos (comprobarlo en Plex).
+- [ ] Combinar filtros hasta que no quede nada: dice «No queda ninguna…» y 🧹 Quitar filtros vuelve a tirar sin filtros.
+- [ ] Con un género que solo tenga una película sin ver: 🎬 Otra sale desactivado y dice que es la única.
+- [ ] 📝 Quiero ver: la ficha dice «apuntada» y el botón pasa a ✅ En tu lista; en `/plex` → 📝 Quiero ver sale con «ya está en Plex» y no llega ningún DM de aviso.
+- [ ] Con la cuenta sin vincular: 🎲 Ruleta explica que falta vincular Plex y solo ofrece ⬅️ Reseñas.
 - [ ] ⬅️ Reseñas vuelve a la lista de tus reseñas.
