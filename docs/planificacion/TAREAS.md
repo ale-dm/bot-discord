@@ -15,6 +15,7 @@ lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02
 | [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
 | [T-07](#t-07-probar-en-discord-los-equipos-favoritos) | Probar en Discord los equipos favoritos y su aviso por DM (#530) | 🟡 Media |
 | [T-12](#t-12-probar-en-discord-la-guardia-del-duende) | Probar en Discord la guardia del Duende en un canal de voz (#553) | 🟡 Media |
+| [T-14](#t-14-probar-en-discord-mi-cine) | Probar en Discord 📊 Mi cine en `/plex` → ⭐ Reseñas (#574) | 🟡 Media |
 
 ---
 
@@ -638,3 +639,15 @@ Issue #573. Con un canal de texto de pruebas y dos cuentas vinculadas a Plex que
 - [ ] Con la otra cuenta, ocultar sus reseñas en `/plex` → ⭐ Reseñas y reseñar algo: no sale nada en el canal.
 - [ ] 🚫 Quitar canal del feed y reseñar otra: no se publica; queda en Auditoría.
 - [ ] Borrar el canal del feed (o quitar al bot el permiso de enviar) y reseñar: la reseña se guarda y el log avisa.
+
+## T-14 Probar en Discord Mi cine
+
+Issue #574. Con una cuenta vinculada a Plex que tenga reseñas e historial, y otra sin vincular.
+
+- [ ] `/plex` → ⭐ Reseñas: la primera fila tiene 5 botones, el último 📊 Mi cine.
+- [ ] Pulsar 📊 Mi cine: la pantalla (solo la ves tú) enseña tus reseñas (cuántas, la media que das y la del servidor), tu película mejor y peor valorada, el género y la década que más ves, tu racha actual y la mejor frente a la media del servidor, y «Tu 2026 hasta hoy».
+- [ ] Comprobar a mano un par de cifras con la BD o con lo que recuerdas (número de reseñas, mejor película, horas del año).
+- [ ] Con otra cuenta, ocultar sus reseñas (🙈 Ocultar) y volver a Mi cine: la media del servidor cambia y ya no cuenta las suyas.
+- [ ] 🖼️ Imagen del año: llega aparte, solo para ti, la imagen del Wrapped con tus series del año. Sin series este año, el botón no sale.
+- [ ] Con la cuenta sin vincular: Mi cine solo enseña las reseñas y explica que falta vincular Plex.
+- [ ] ⬅️ Reseñas vuelve a la lista de tus reseñas.

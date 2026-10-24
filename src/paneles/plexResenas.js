@@ -29,7 +29,7 @@ function linea(item, vista) {
     return `${plexResenas.estrellasTexto(item.nota)} ${titulo}${autor}${texto}`;
 }
 
-/** La fila de vistas (y el interruptor de privacidad). */
+/** La fila de vistas, el interruptor de privacidad y 📊 Mi cine (#574): 5 botones, el máximo de una fila. */
 function filaVistas(vista, oculto) {
     const estilo = (v) => (v === vista ? ButtonStyle.Primary : ButtonStyle.Secondary);
     return new ActionRowBuilder().addComponents(
@@ -40,6 +40,7 @@ function filaVistas(vista, oculto) {
             .setCustomId("plex_resenas_ocultar")
             .setLabel(oculto ? "👁️ Enseñar" : "🙈 Ocultar")
             .setStyle(oculto ? ButtonStyle.Danger : ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("plex_resenas_cine").setLabel("📊 Mi cine").setStyle(ButtonStyle.Secondary),
     );
 }
 
