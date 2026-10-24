@@ -610,3 +610,16 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-15 Probar en Discord los roles temporales
+
+Issue #543. Con un rol de pruebas por debajo del bot y otra cuenta.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → ⏳ Roles temporales → ➕ Dar rol temporal: elegir persona, rol, 1 día y aviso «Sí». El rol aparece al momento y llega el DM.
+- [ ] La lista muestra persona, rol, quién lo dio y cuándo vence.
+- [ ] Elegirlo → 🔁 Renovar 2 días: el vencimiento pasa a 3 días desde el principio.
+- [ ] ➖ Quitar ya → ✅ Sí: el rol desaparece, llega el DM y la lista queda vacía.
+- [ ] Intentar dar un rol de una integración o por encima del bot: explica el motivo y no lo da.
+- [ ] Dar uno de 1 día, apagar el bot, adelantar `vence` en una BD de pruebas y arrancar: el rol se quita al arrancar.
+- [ ] Borrar el rol en Discord: su asignación desaparece de la lista.
+- [ ] 🧾 Auditoría → filtro ⏳ Roles temporales: están todos los cambios.

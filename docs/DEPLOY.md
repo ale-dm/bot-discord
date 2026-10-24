@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Roles temporales (migración 079, 2026-10-24)
+
+- **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
+  que se den estén por debajo del suyo. Al arrancar quita los que vencieron mientras estaba apagado.
+
 ### Reseñas de Plex (migración 075, 2026-10-23)
 
 - **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar

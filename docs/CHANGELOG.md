@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (roles temporales, #543)
+
+- **⏳ Roles temporales** en `/paneladmin` → ⚙️ Config Global: dar un rol de 1 a 365 días (7 por defecto) con DM opcional al darlo y al quitarlo, lista de activos (persona, rol, quién lo dio y cuándo vence), 🔁 renovar desde el vencimiento (o desde ahora si ya venció; tope de 365 días) y ➖ quitar antes de tiempo con confirmación.
+- **Vencimiento automático**: cada minuto y al arrancar (lo que venció con el bot apagado). Comprueba jerarquía y permisos antes de dar o quitar, no toca roles de integraciones y, si el rol se borra, cancela sus asignaciones (evento `roleDelete`).
+- **Auditoría**: `roles.temporal_dar`, `roles.temporal_renovar`, `roles.temporal_quitar`, `roles.temporal_vencer` y `roles.temporal_cancelar`, con su familia en el filtro de 🧾 Auditoría.
+- **Tareas**: sorteos, depósitos a plazo y roles temporales se programan ahora en `src/app/tareasPorMinuto.js` (`tareas.js` estaba en el límite de 400 líneas). Mismos horarios.
+- **Migración 079** (`roles_temporales`). **✅ Verificación**: tests de duración, asignar, renovar, quitar, vencer, reinicio, jerarquía y permisos, rol borrado, DM y panel con y sin admin; `npm run check` en verde.
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).
