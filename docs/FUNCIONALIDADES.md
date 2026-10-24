@@ -447,6 +447,8 @@ sale en los de logros.
 
 **El Duende y las reseñas**: si le preguntas por lo que opina el servidor («¿qué os pareció Dune 2?», «¿qué ha valorado Ana?», «¿cuál es la mejor valorada?»), responde con las reseñas públicas de `/plex` → ⭐ Reseñas. El texto de una reseña con spoilers no lo cuenta: te dice que la tiene.
 
+**📊 Mi cine**: en `/plex` → ⭐ Reseñas, tus estadísticas de cine, solo para ti: cuántas reseñas has escrito (películas y series o temporadas), la media que das frente a la del servidor (solo con las reseñas públicas: las que oculta cada uno no cuentan), tu película mejor y peor valorada, el género y la década que más ves (películas y series vistas, una vez por título, con las fichas de Plex), tu racha de días seguidos viendo algo (la actual y la mejor) frente a la media de la mejor racha del servidor (sin contar a quien oculta sus logros de Plex) y el resumen de tu año hasta hoy: reseñas, horas, películas, episodios, tus series más vistas y la mejor racha del año. Con 🖼️ **Imagen del año**, la misma imagen del 🎞️ Wrapped con tus series del año en curso (solo si has visto alguna). Sin la cuenta de Plex vinculada solo salen tus reseñas.
+
 **⭐ Valoraciones de Plex**: las mejor valoradas (con un mínimo de reseñas, el que ponga el admin en `plex.resenas_min_votos`,
 3 por defecto), quién más valora, y quién da la media más alta (😇) y la más baja (😈). Solo reseñas públicas: quien las oculta
 no sale.

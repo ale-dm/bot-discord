@@ -133,6 +133,19 @@ controla el admin y es un grupo cerrado y pequeño): nueva sección
   activación) para saber qué temporadas y series están terminadas. Una temporada guarda su clave `serie:<titulo>|t<n>` y
   el título visible `Serie · temporada N`; la serie entera, `serie:<titulo>`. Un episodio suelto no cuenta.
 
+- 📊 Mi cine (#574): botón `plex_resenas_cine` en la fila de vistas de `/plex` → ⭐ Reseñas (5 botones, el máximo).
+  Las cifras las calcula `systems/plexResenas/miCine.js` (`calcular`, sin Discord y con `deps` inyectables) a partir de
+  la BD: las reseñas propias (`deUsuario`, también las ocultas, porque son suyas), la media del servidor con
+  `mediaPublica` (`consultas.js`, el mismo filtro `PUBLICAS`: no cuentan las reseñas ocultas ni las de quien oculta las
+  suyas), el género y la década con `plexTrofeos.datosUsuario` (películas como en los trofeos y, además, las series con
+  algún episodio visto, una vez por título), la racha con `datosVistos.diasVistos` (la actual llega hasta hoy o ayer; la
+  mejor, `rachaMasLarga`) y la media del servidor con `mejorRacha` de cada vinculado que haya visto algo, sin quien oculta
+  sus logros (`plex_preferencias.ocultar`). El año es el **en curso** (hora de Madrid, del 1 de enero a hoy): reseñas por
+  `creado_en` y horas, películas, episodios y series con `plexWrapped.resumenPersonal`. 🖼️ Imagen del año
+  (`plex_resenas_cine_imagen`) reutiliza `plexWrapped.graficoPersonal` con ese periodo y la manda aparte, efímera; solo se
+  ofrece si hay series ese año (la imagen es de series). El mensaje está en `paneles/plexMiCine.js`; la pantalla es la de
+  `/plex`, que es efímera. Sin migración.
+
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de
   usuario de Tautulli, sacado de `getUsers()` — igual que el buscador de

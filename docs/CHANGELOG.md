@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (Mi cine: diario y estadísticas personales de Plex, #574)
+
+- **📊 Mi cine**: botón nuevo en `/plex` → ⭐ Reseñas (la fila de vistas llega a 5 botones). Privado, como todo `/plex`: tus reseñas (cuántas, de películas y de series o temporadas, y la media que das frente a la del servidor), tu película mejor y peor valorada (con empate, la que tiene ❤️ y la más reciente; con todas iguales no hay peor), el **género y la década** que más ves (películas y series vistas, una vez por título, con las fichas de Plex), tu **racha** de días seguidos viendo algo (la actual y la mejor) frente a la media del servidor y **tu año hasta hoy** (reseñas del año, horas, películas, episodios, series más vistas y mejor racha del año).
+- **🖼️ Imagen del año**: reutiliza la imagen del 🎞️ Wrapped (`plexWrapped.graficoPersonal`) con el periodo del año en curso y la manda aparte, efímera. Solo se ofrece si has visto series ese año.
+- **🙈 Privacidad**: la media del servidor usa el filtro `PUBLICAS` (nueva `mediaPublica` en `systems/plexResenas/consultas.js`): no cuentan las reseñas ocultas ni las de quien oculta las suyas. La media de racha del servidor no cuenta a quien oculta sus logros de Plex.
+- **🧩 Capas**: los cálculos en `systems/plexResenas/miCine.js` (sin Discord, `deps` inyectables), reutilizando `plexTrofeos.datosUsuario`, `mejorRacha`, `rachaMasLarga` y la nueva `datosVistos.diasVistos` (`mejorRacha` la usa ahora por dentro); la pantalla en `paneles/plexMiCine.js`; los botones `plex_resenas_cine` y `plex_resenas_cine_imagen` en `commands/plex/resenas.js`.
+- **✅ Verificación**: `tests/plexMiCine.test.js` (recuento y media, mejor y peor, media pública sin ocultas, género y década con empates, racha actual, mejor y del servidor, año en curso en hora de Madrid, sin vincular, imagen del año, pantalla y botones). Sin migraciones. `npm run check` en verde (241 suites, 3087 tests).
+
 ## 2026-10-24 (feed de reseñas de Plex en un canal, #573)
 
 - **📣 Feed de reseñas**: con un canal en `plex.resenas_canal` (apagado por defecto), cada reseña nueva sale allí justo después de guardarla, desde el DM o desde la ficha de `/plex` → ⭐ Reseñas: título, nota en estrellas, un extracto de 300 caracteres y el autor mencionado sin aviso (`allowedMentions: { parse: [] }`). Las de spoilers salen sin texto, con «⚠️ contiene spoilers».
