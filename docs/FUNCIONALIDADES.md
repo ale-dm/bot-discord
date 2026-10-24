@@ -410,7 +410,7 @@ actual, resaltada). Sustituye a `/nivel`, `/logros` y `/banco`:
 | 💰 Economía | Efectivo, banco y total, lo ganado y perdido en el casino, la cartera cripto valorada y los objetos. En tu perfil, con 🏦 Ingresar · 💵 Sacar · 💸 Transferir · 📜 Movimientos (ver [Dinero](#7-economía-banco-tienda-e-inventario)) |
 | 🎲 Juegos | Abre `/juegos` (casino, apuestas, retos, mis jugadas y stats) |
 | 🏅 Logros | Ver [Logros](#5-logros) |
-| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⚽ Apostadores · 🔥 Rachas · 📅 Esta semana · 🗓️ Semanas · 🏦 Patrimonio neto |
+| 🏆 Rankings | Uno a la vez, con un menú: 📈 Nivel (con páginas) · 💰 Riqueza (efectivo + banco) · 🎰 Casino · 🏅 Logros · 💎 TTCL · 🍿 Plex · ⭐ Valoraciones · ⚽ Apostadores · 🔥 Rachas · 📅 Esta semana · 🗓️ Semanas · 🏦 Patrimonio neto |
 
 **🍿 Plex** (desde 👤 Perfil, o `/perfil seccion:🍿 Plex`; no es una pestaña más porque una fila de botones de Discord
 admite cinco): horas, películas y episodios vistos; series terminadas (y cuántas de anime); logros de Plex X/Y; 🎰 Gordos
@@ -422,6 +422,10 @@ Con un botón a 🏅 Logros filtrado por Plex. La de quien oculta sus logros de 
 **🍿 Rankings de Plex**: los 5 primeros en logros de Plex, 🎰 Gordos del Plex, políglota (logros de idioma) y horas
 (este mes, desde el día 1 en hora de Madrid, y de siempre). Solo los vinculados; quien oculta sus logros de Plex no
 sale en los de logros.
+
+**⭐ Valoraciones de Plex**: las mejor valoradas (con un mínimo de reseñas, el que ponga el admin en `plex.resenas_min_votos`,
+3 por defecto), quién más valora, y quién da la media más alta (😇) y la más baja (😈). Solo reseñas públicas: quien las oculta
+no sale.
 
 **⚽ Ranking de apostadores**: los 10 con más beneficio en apuestas (partidos y quinielas ya resueltos, como en 📊
 Stats), con su % de acierto y su mejor racha de partidos ganados seguidos (estos dos, solo de los partidos). Hacen

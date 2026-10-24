@@ -81,4 +81,18 @@ function rankingValoradores(guildId, { limite = 5 } = {}) {
         .all(guildId, limite);
 }
 
-module.exports = { resumen, titulo, deUsuario, mejores, ultimas, rankingValoradores };
+/** Quién da la media más alta (`orden` DESC, 😇 generoso) o la más baja (ASC, 😈 crítico), con un mínimo de reseñas. */
+function generosidad(guildId, { orden = "DESC", minVotos = 3, limite = 5 } = {}) {
+    const sentido = orden === "ASC" ? "ASC" : "DESC";
+    return db
+        .prepare(
+            `SELECT r.userId, ROUND(AVG(r.nota) / 2, 1) AS media, COUNT(*) AS n
+             FROM plex_resenas r ${JOIN_PREF}
+             WHERE r.guildId = ? AND ${PUBLICAS}
+             GROUP BY r.userId HAVING COUNT(*) >= ?
+             ORDER BY media ${sentido}, n DESC, r.userId ASC LIMIT ?`,
+        )
+        .all(guildId, Math.max(1, Number(minVotos) || 1), limite);
+}
+
+module.exports = { resumen, titulo, deUsuario, mejores, ultimas, rankingValoradores, generosidad };
