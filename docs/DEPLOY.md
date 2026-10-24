@@ -53,6 +53,16 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Tickets de soporte (migración 077, 2026-10-24)
+
+- **077** crea `tickets` (autor, categoría, asunto, hilo, mensaje de bienvenida, estado, fechas de apertura y cierre y quién lo
+  cerró) con un índice único parcial que impide dos tickets abiertos de la misma persona. No hay que rellenar nada.
+- Para usarlo: `/paneladmin` → ⚙️ Config Global → 📣 Comunidad → 🎫 Tickets → elegir canal de tickets, rol de staff y canal de
+  transcripciones, y 📤 Publicar panel. En el canal de tickets el bot necesita «Ver canal», «Enviar mensajes», «Insertar
+  enlaces», «Crear hilos privados», «Enviar mensajes en hilos» y «Gestionar hilos»; en el de transcripciones, «Ver canal»,
+  «Enviar mensajes», «Insertar enlaces» y «Adjuntar archivos». Si el rol de staff no es mencionable, también «Mencionar
+  @everyone, @here y todos los roles» (si no, mete a mano en el hilo a los del staff que conozca).
+
 ### Guardia del Duende (migración 076, 2026-10-24)
 
 - **076** crea `guardia_voz` (servidor, canal, quién la puso y fecha). No hay que rellenar nada. Al arrancar, el bot vuelve
