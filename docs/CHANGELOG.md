@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (el Duende y las reseñas de Plex, #570)
+
+- **🍿 El Duende lee las reseñas**: nueva herramienta `consultar_resenas_plex` (solo en los canales permitidos para Plex): las reseñas de una persona, la media y las reseñas de un título (`anio` si hay varios), o las mejor valoradas.
+- **Privacidad**: solo reseñas públicas; quien oculta las suyas no sale, ni siquiera para decir que las tiene. El texto de una reseña con spoilers no se cuenta.
+- **Nombres**: una persona se resuelve por nombre contra miembros reales del servidor, nunca con un id del modelo.
+- **✅ Verificación**: tests del ejecutor con dobles inyectados y de las consultas contra la base de datos de pruebas.
+
 ## 2026-10-24 (rankings de valoraciones de Plex, #569)
 
 - **⭐ Valoraciones**: nuevo ranking en 🏆 Rankings (`/perfil`) con las mejor valoradas (mínimo de votos del servidor), quién más valora, y quién da la media más alta (😇) y la más baja (😈). Quien oculta sus reseñas no sale.

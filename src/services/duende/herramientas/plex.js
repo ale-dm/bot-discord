@@ -2,6 +2,9 @@ const { Type: SchemaType } = require("@google/genai");
 const tautulliClient = require("../../tautulliClient");
 const { periodoADias, formatFecha, formatHoras, summarizeWatchHistory, resolverPersonaVinculada } = require("./base");
 const { consultarTrofeosPlex } = require("./plexTrofeos");
+const plexResenas = require("../../../systems/plexResenas");
+const guildSettings = require("../../../systems/guildSettings");
+const { resolveNameToDiscordId } = require("../../../systems/duende/personas");
 
 // Separadas de las generales porque estas se filtran por canal (ver isChannelAllowed
 // más abajo): en canales no permitidos, ni siquiera se le declaran a Gemini.
@@ -58,6 +61,22 @@ const DUENDE_PLEX_TOOL_DECLARATIONS = [
                 },
             },
             required: ["persona"],
+        },
+    },
+    {
+        name: "consultar_resenas_plex",
+        description:
+            "Consulta las reseñas de Plex del servidor (solo las públicas). Con persona: lo que ha valorado esa persona. Con titulo: la media, los votos y las reseñas de ese título (con anio si hay varios con el mismo nombre). Sin nada: las mejor valoradas. Si una reseña tiene spoilers, no cuentes su texto: di que la tiene.",
+        parameters: {
+            type: SchemaType.OBJECT,
+            properties: {
+                persona: {
+                    type: SchemaType.STRING,
+                    description: "Nombre o apodo de quien escribió las reseñas, tal cual se ha usado en el mensaje",
+                },
+                titulo: { type: SchemaType.STRING, description: "Título de la película o serie, tal cual se ha usado en el mensaje" },
+                anio: { type: SchemaType.NUMBER, description: "Año del título, si hay varios con el mismo nombre" },
+            },
         },
     },
     {
@@ -167,7 +186,51 @@ const REALES_PLEX = {
     summarizeWatchHistory,
     resolverPersonaVinculada,
     consultarTrofeosPlex,
+    plexResenas,
+    resolveNameToDiscordId,
+    minVotosResenas: (guildId) => Number(guildSettings.getSettings(guildId).plex.resenas_min_votos) || 3,
 };
+
+/** Una reseña para el Duende. El texto de una reseña con spoilers no sale: solo se dice que la tiene. */
+function resenaParaDuende(r, autor) {
+    return {
+        de: autor,
+        media: r.nota / 2,
+        me_gusta: r.meGusta,
+        spoilers: r.spoilers,
+        texto: r.spoilers ? "(tiene spoilers: el texto no se cuenta)" : r.texto || null,
+    };
+}
+
+/** El nombre con el que sale quien escribió una reseña: su apodo en el servidor, o «alguien». */
+function autorDe(ctx, userId) {
+    return ctx.guild?.members?.cache?.get(userId)?.displayName || "alguien";
+}
+
+/** Las reseñas públicas de una persona. Si no tiene ninguna (o las oculta), lo dice sin dar más detalles. */
+function resenasDePersona(persona, ctx, d) {
+    if (!ctx.guild) return { error: "Solo disponible en servidores." };
+    const discordId = d.resolveNameToDiscordId(persona, ctx.guild);
+    if (!discordId) return { error: `No identifico a "${persona}" entre los miembros del server.` };
+    const resenas = d.plexResenas.publicasDe(ctx.guildId, discordId);
+    if (!resenas.length) return { persona, sin_resenas: true };
+    return { persona, resenas: resenas.map((r) => resenaParaDuende(r, persona)) };
+}
+
+/** La ficha de un título con reseñas públicas: media, votos y reseñas. Si hay varios años, la que más votos tiene. */
+function resenasDeTitulo({ titulo, anio }, ctx, d) {
+    const coincidencias = d.plexResenas.titulosLlamados(ctx.guildId, titulo).filter((t) => !anio || Number(anio) === t.anio);
+    if (!coincidencias.length) return { error: `No hay reseñas públicas de «${titulo}» en el servidor.` };
+    const fichas = coincidencias.map((t) => ({ ...t, ...d.plexResenas.titulo(ctx.guildId, t.clave, { limite: 5 }) }));
+    const ficha = fichas.reduce((a, b) => (b.votos > a.votos ? b : a));
+    return {
+        titulo: ficha.titulo,
+        anio: ficha.anio,
+        media: ficha.media,
+        votos: ficha.votos,
+        resenas: ficha.resenas.map((r) => resenaParaDuende(r, autorDe(ctx, r.userId))),
+    };
+}
 
 const DUENDE_PLEX_EXECUTORS = {
     async consultar_actividad_plex(args, ctx, d = REALES_PLEX) {
@@ -317,6 +380,14 @@ const DUENDE_PLEX_EXECUTORS = {
             dia_mas_activo: diaMasActivo,
             hora_mas_activa: horaMasActiva ? `${horaMasActiva}:00` : null,
         };
+    },
+    /** ⭐ Reseñas de Plex (#570): de una persona, de un título o las mejor valoradas. Solo lectura y solo públicas. */
+    consultar_resenas_plex(args, ctx, d = REALES_PLEX) {
+        if (!ctx.guildId) return { error: "Solo disponible en servidores." };
+        if (args?.persona) return resenasDePersona(args.persona, ctx, d);
+        if (args?.titulo) return resenasDeTitulo(args, ctx, d);
+        const mejores = d.plexResenas.mejores(ctx.guildId, { minVotos: d.minVotosResenas(ctx.guildId), limite: 5 });
+        return { mejores_valoradas: mejores.map((m) => ({ titulo: m.titulo, anio: m.anio, media: m.media, votos: m.votos })) };
     },
     consultar_trofeos_plex: (args, ctx, d = REALES_PLEX) => d.consultarTrofeosPlex(args, ctx),
 };
