@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (calendario de eventos, #540)
+
+- **📅 `/calendario`** (comando nuevo, privado): lo programado por semanas o por meses con ◀ ▶, agrupado por día (hora de Madrid) y con la hora en timestamp de Discord. Junta sesiones de cine (con enlace), cumpleaños, partidos de las competiciones elegidas, el cierre de las quinielas abiertas y los eventos de los admins. Sin eventos, lo explica; con muchos, no pasa del límite del embed.
+- **⚙️ Config Global → 📅 Calendario**: canal fijo y minutos de los recordatorios, competiciones y eventos propios (crear y borrar), auditados (`calendario.crear`, `calendario.borrar`, `calendario.ajustes`).
+- **Recordatorios**: cada minuto (`src/app/tareasCalendario.js`, programado al arrancar), una sola vez por evento aunque el bot se reinicie; si el envío falla, se reintenta.
+- **Migración 082** (`calendario_eventos`, `calendario_recordatorios`) y ajustes `calendario.*`. **✅ Verificación**: tests de rangos con cambio de hora, agregación, orden, límites, eventos manuales, recordatorios, vista, `/calendario` y panel; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).

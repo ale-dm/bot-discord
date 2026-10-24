@@ -22,6 +22,7 @@ const FAMILIAS = {
     backup: "💾 Copias",
     tarea: "🕒 Tareas",
     mantenimiento: "🛠️ Mantenimiento",
+    calendario: "📅 Calendario",
 };
 
 function buildAuditPayload(guildId, page = 0, pageSize = 10, familia = null) {

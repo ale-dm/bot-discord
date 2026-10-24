@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Calendario de eventos (migración 082, 2026-10-24)
+
+- **082** crea `calendario_eventos` y `calendario_recordatorios`. No hay que rellenar nada. Comando nuevo **`/calendario`**:
+  hay que volver a registrar los comandos. Los recordatorios no salen hasta elegir canal en ⚙️ Config Global → 📅 Calendario.
+
 ### Reseñas de Plex (migración 075, 2026-10-23)
 
 - **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar

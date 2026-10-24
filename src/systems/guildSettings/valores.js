@@ -197,8 +197,18 @@ function nodoOtros(flat) {
     };
 }
 
+/** 📅 Calendario (#540): `calendario.*` sin el prefijo. */
+const nodoCalendario = (flat) => ({
+    calendario: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("calendario."))
+            .map(([clave, valor]) => [clave.slice("calendario.".length), valor]),
+    ),
+});
+
 function flattenToNested(flat) {
     return {
+        ...nodoCalendario(flat),
         duende: nodoDuende(flat),
         ...nodoEconomia(flat),
         ...nodoPlexYLogros(flat),

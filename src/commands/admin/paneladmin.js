@@ -38,6 +38,7 @@ const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = r
 const { handlePaseButton, handlePaseModal, handlePaseStringSelect, handlePaseChannelSelect } = require("../../adminPanel/pase");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
+const { handleCalendarioButton, handleCalendarioModal, handleCalendarioSelect } = require("../../adminPanel/calendario");
 
 /**
  * Un manejador de componentes del panel. Solo para admins. Si `antes` devuelve true, ya está resuelto. Si no, prueba
@@ -80,6 +81,7 @@ module.exports = {
                 "paneladmin_sonidos_",
                 "paneladmin_pase_tope_sel",
                 "paneladmin_com_",
+                "paneladmin_cal_",
             ],
             method: "handleStringSelect",
         },
@@ -152,6 +154,7 @@ module.exports = {
             handleComunidadButton,
             handleSonidosButton,
             handlePaseButton,
+            handleCalendarioButton,
         ],
         async (client, interaction) => {
             if (interaction.customId !== "paneladmin_home") return false;
@@ -176,6 +179,7 @@ module.exports = {
         handleImpuestosModal,
         handleClasificacionModal,
         handleComunidadModal,
+        handleCalendarioModal,
     ]),
 
     handleUserSelect: manejador("handleUserSelect", "Error al procesar selector.", [
@@ -205,6 +209,7 @@ module.exports = {
         handleSonidosStringSelect,
         handlePaseStringSelect,
         handleComunidadStringSelect,
+        handleCalendarioSelect,
         handleLevelsStringSelect,
     ]),
 };
