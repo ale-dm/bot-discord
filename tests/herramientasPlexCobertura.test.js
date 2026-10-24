@@ -59,9 +59,9 @@ afterEach(() => {
 });
 
 describe("declaraciones para Gemini", () => {
-    test("declara doce herramientas de Plex, cada una con nombre y parámetros", () => {
+    test("declara trece herramientas de Plex, cada una con nombre y parámetros", () => {
         expect(DUENDE_PLEX_TOOL_DECLARATIONS.map((d) => d.name).sort()).toEqual(Object.keys(DUENDE_PLEX_EXECUTORS).sort());
-        expect(DUENDE_PLEX_TOOL_DECLARATIONS).toHaveLength(12);
+        expect(DUENDE_PLEX_TOOL_DECLARATIONS).toHaveLength(13);
         for (const d of DUENDE_PLEX_TOOL_DECLARATIONS) {
             expect(d.description.length).toBeGreaterThan(20);
             expect(d.parameters).toBeDefined();

@@ -11,7 +11,7 @@ const {
     TextInputStyle,
     CheckboxBuilder,
 } = require("discord.js");
-const { estrellasTexto } = require("../../systems/plexResenas");
+const { estrellasTexto, temporadaDeClave } = require("../../systems/plexResenas");
 
 const NOTAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -25,12 +25,13 @@ function filaEditar(pedido) {
 
 /** El DM: título, año y las 10 medias estrellas en dos filas, más «Ahora no». */
 function mensajeResena(pedido) {
+    const temporada = temporadaDeClave(pedido.clave);
+    const lo = temporada
+        ? `la temporada ${temporada} de **${pedido.titulo}**`
+        : `**${pedido.titulo}**${pedido.anio ? ` (${pedido.anio})` : ""}`;
     const embed = new EmbedBuilder()
         .setTitle("🍿 ¿Qué te ha parecido?")
-        .setDescription(
-            `Has terminado **${pedido.titulo}**${pedido.anio ? ` (${pedido.anio})` : ""}.\n\n` +
-                "Elige tu nota: de ½ a ★★★★★. Después puedes escribir tu opinión.",
-        )
+        .setDescription(`Has terminado ${lo}.\n\n` + "Elige tu nota: de ½ a ★★★★★. Después puedes escribir tu opinión.")
         .setColor(0xe5a00d);
     const filas = [];
     for (let i = 0; i < NOTAS.length; i += 5) {

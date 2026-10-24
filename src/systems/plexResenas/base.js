@@ -28,6 +28,18 @@ function anioDeClave(clave) {
 /** La clave a partir de lo que llega (tipo, título, año y, en series, temporada). */
 const claveDe = ({ tipo, titulo, anio, temporada }) => (tipo === "movie" ? clavePeli(titulo, anio) : claveSerie(titulo, temporada));
 
+/** La temporada de una clave de serie (`serie:<titulo>|t<n>`), o null si es la serie entera o una película. */
+const temporadaDeClave = (clave) => {
+    const m = /\|t(\d+)$/.exec(String(clave || ""));
+    return m ? Number(m[1]) : null;
+};
+
+/** El título que se guarda y se ve: una temporada lleva «· temporada N» detrás (la clave no cambia). */
+const etiquetaTemporada = (titulo, temporada) => (temporada ? `${titulo} · temporada ${temporada}` : titulo);
+
+/** Quita el «· temporada N» de un título guardado: el que se usa para volver a guardar la reseña. */
+const tituloBase = (guardado) => String(guardado || "").replace(/ · temporada \d+$/, "");
+
 /** Nota válida: entero de 1 a 10 (medias estrellas). */
 const notaValida = (nota) => Number.isInteger(nota) && nota >= NOTA_MIN && nota <= NOTA_MAX;
 
@@ -52,4 +64,7 @@ module.exports = {
     notaValida,
     textoDe,
     anioDeClave,
+    temporadaDeClave,
+    etiquetaTemporada,
+    tituloBase,
 };

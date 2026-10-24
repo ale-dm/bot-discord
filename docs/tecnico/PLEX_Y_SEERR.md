@@ -110,6 +110,15 @@ CREATE TABLE plex_links (
 controla el admin y es un grupo cerrado y pequeño): nueva sección
 "🎬 Plex" en `/paneladmin`, con:
 
+- ⭐ Reseñas (`src/adminPanel/plex/resenas.js`): activar o desactivar los avisos por DM (al activar, `plex.resenas_desde`
+  es ahora: sin backfill), el tope diario y el mínimo de votos (con rango y auditoría), los contadores (todas las reseñas,
+  también las ocultas, y los avisos sin respuesta) y 🗑️ Borrar una reseña: se busca por título (y año), se elige a la
+  persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación.
+
+- Reseñas de series (#572): `systems/plexResenas/series.js` reutiliza `plexTrofeos.datosUsuario` (con `rango` desde la
+  activación) para saber qué temporadas y series están terminadas. Una temporada guarda su clave `serie:<titulo>|t<n>` y
+  el título visible `Serie · temporada N`; la serie entera, `serie:<titulo>`. Un episodio suelto no cuenta.
+
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de
   usuario de Tautulli, sacado de `getUsers()` — igual que el buscador de
@@ -150,6 +159,7 @@ Diseñadas para que sea fácil añadir más sin tocar el resto (mismo patrón
 | `consultar_bibliotecas_plex` | Nº de items por biblioteca (pelis, series, anime, música...) | — |
 | `consultar_patron_visionado` | Qué día de la semana y a qué hora se ve más Plex en el server | `periodo` |
 | `consultar_trofeos_plex` | Logros y trofeos de Plex del bot: los de alguien (con rareza y dificultad), quién tiene el de una serie, saga o director (`plexTrofeos.buscar`), o quién tiene más (`plexRankings`). Respeta a quien oculta los suyos | `persona`, `titulo` (los dos opcionales) |
+| `consultar_resenas_plex` | Reseñas de Plex del servidor, solo las públicas: las de una persona (sin texto de las que tienen spoilers), la media y las reseñas de un título (`anio` si hay varios con el mismo nombre), o las mejor valoradas si no se pasa nada. Quien oculta las suyas no sale | `persona`, `titulo`, `anio` (todos opcionales) |
 
 Todas de solo lectura — coherente con el mismo criterio que ya se aplicó a
 las herramientas de nivel/saldo/logros (primero demostrar que funcionan

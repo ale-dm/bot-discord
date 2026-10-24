@@ -2,6 +2,31 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (reseñas de series y temporadas, #572)
+
+- **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).
+- **Guardar**: una temporada se guarda como `Serie · temporada N` (la clave es `serie:<titulo>|t<n>`), así se ve bien en todas las pantallas sin migración.
+- **✅ Verificación**: tests de la detección (temporada, serie entera, episodio suelto, rango desde la activación), del guardado, del texto del DM y de que cada temporada se pregunta una sola vez; `npm run check` en verde.
+
+## 2026-10-24 (panel admin de reseñas de Plex, #571)
+
+- **⭐ Reseñas en `/paneladmin` → 🎬 Plex**: activar o desactivar los avisos por DM (al activar, lo que se vio antes no se pregunta), tope diario y mínimo de votos con rango y auditoría, contadores que cuadran con la BD y 🗑️ Borrar una reseña (también oculta) con confirmación.
+- **Auditoría**: `plex.resenas.activo`, `plex.resenas.max_dia`, `plex.resenas.min_votos` y `plex.resena_borrar`.
+- **✅ Verificación**: tests del panel a través del enrutador (con y sin permisos, validación, confirmación y auditoría); `npm run check` en verde.
+
+## 2026-10-24 (el Duende y las reseñas de Plex, #570)
+
+- **🍿 El Duende lee las reseñas**: nueva herramienta `consultar_resenas_plex` (solo en los canales permitidos para Plex): las reseñas de una persona, la media y las reseñas de un título (`anio` si hay varios), o las mejor valoradas.
+- **Privacidad**: solo reseñas públicas; quien oculta las suyas no sale, ni siquiera para decir que las tiene. El texto de una reseña con spoilers no se cuenta.
+- **Nombres**: una persona se resuelve por nombre contra miembros reales del servidor, nunca con un id del modelo.
+- **✅ Verificación**: tests del ejecutor con dobles inyectados y de las consultas contra la base de datos de pruebas.
+
+## 2026-10-24 (rankings de valoraciones de Plex, #569)
+
+- **⭐ Valoraciones**: nuevo ranking en 🏆 Rankings (`/perfil`) con las mejor valoradas (mínimo de votos del servidor), quién más valora, y quién da la media más alta (😇) y la más baja (😈). Quien oculta sus reseñas no sale.
+- **Consulta**: `generosidad()` en `systems/plexResenas/consultas.js`, con el mismo filtro de privacidad que el resto de consultas públicas.
+- **✅ Verificación**: tests de la consulta (mínimo de votos, orden y reseñas ocultas) y del embed; `npm run check` en verde.
+
 ## 2026-10-23 (arreglos: botón de reseñas y estrenos de Seerr)
 
 - **⭐ Reseñas**: el botón ⭐ Reseñas del panel de `/plex` (`plex_resenas`) no llegaba al manejador de reseñas y daba error; ahora abre la pantalla.

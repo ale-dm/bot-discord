@@ -118,4 +118,45 @@ describe("media, rankings y privacidad", () => {
             { userId: "u2", n: 1 },
         ]);
     });
+
+    test("quién da la media más alta y la más baja, con un mínimo de reseñas y sin las ocultas", () => {
+        // u1 tiene 2 reseñas (8 y 5) y u2 una (9): con mínimo 2 solo sale u1.
+        expect(plexResenas.generosidad(G, { minVotos: 2 }).map((g) => g.userId)).toEqual(["u1"]);
+        expect(plexResenas.generosidad(G, { minVotos: 1, orden: "DESC" }).map((g) => g.userId)).toEqual(["u2", "u1"]);
+        expect(plexResenas.generosidad(G, { minVotos: 1, orden: "ASC" }).map((g) => g.userId)).toEqual(["u1", "u2"]);
+
+        plexResenas.setOculto(G, "u2", true);
+        expect(plexResenas.generosidad(G, { minVotos: 1 }).map((g) => g.userId)).toEqual(["u1"]);
+        plexResenas.setOculto(G, "u2", false);
+    });
+
+    test("⭐ Valoraciones tiene sus cuatro bloques y aplica el mínimo de votos del servidor", () => {
+        const { embedRankingValoraciones } = require("../src/paneles/perfil/rankings");
+        const embed = embedRankingValoraciones(G).toJSON();
+        expect(embed.fields.map((f) => f.name)).toEqual(["🏆 Mejor valoradas", "✍️ Quién más valora", "😇 Más generoso", "😈 Más crítico"]);
+        // Con el mínimo por defecto (3 votos) nadie tiene reseñas suficientes para medias, pero sí sale quién más valora.
+        expect(embed.fields[0].value).toBe("Nadie todavía.");
+        expect(embed.fields[1].value).toContain("<@u1>");
+        expect(embed.fields[2].value).toBe("Nadie todavía.");
+        expect(embed.fields[3].value).toBe("Nadie todavía.");
+    });
+});
+
+describe("reseñas públicas para el Duende (#570)", () => {
+    test("las de una persona y los títulos que se llaman igual no sacan lo oculto", () => {
+        expect(
+            plexResenas
+                .publicasDe(G, "u1")
+                .map((r) => r.titulo)
+                .sort(),
+        ).toEqual(["Dune: Parte dos", "Otra película"]);
+        expect(plexResenas.titulosLlamados(G, "dune: parte DOS").map((t) => t.anio)).toEqual([2024]);
+
+        plexResenas.setOculto(G, "u1", true);
+        expect(plexResenas.publicasDe(G, "u1")).toEqual([]);
+        // Dune sigue existiendo por la reseña pública de u2; «Otra película» ya no, porque solo la escribió u1.
+        expect(plexResenas.titulosLlamados(G, "Otra película")).toEqual([]);
+        expect(plexResenas.titulosLlamados(G, "Dune: Parte dos")).toHaveLength(1);
+        plexResenas.setOculto(G, "u1", false);
+    });
 });
