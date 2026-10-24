@@ -423,6 +423,8 @@ Con un botón a 🏅 Logros filtrado por Plex. La de quien oculta sus logros de 
 (este mes, desde el día 1 en hora de Madrid, y de siempre). Solo los vinculados; quien oculta sus logros de Plex no
 sale en los de logros.
 
+**Reseñas de series**: cuando terminas una temporada te llega el DM «Has terminado la temporada N de X», y cuando terminas la serie entera, otro «Has terminado X». Solo cuenta lo que ves desde que el admin activa los avisos, y un episodio suelto no genera ninguno. Con la misma nota de media estrella y las mismas opiniones y topes que las películas.
+
 **El Duende y las reseñas**: si le preguntas por lo que opina el servidor («¿qué os pareció Dune 2?», «¿qué ha valorado Ana?», «¿cuál es la mejor valorada?»), responde con las reseñas públicas de `/plex` → ⭐ Reseñas. El texto de una reseña con spoilers no lo cuenta: te dice que la tiene.
 
 **⭐ Valoraciones de Plex**: las mejor valoradas (con un mínimo de reseñas, el que ponga el admin en `plex.resenas_min_votos`,

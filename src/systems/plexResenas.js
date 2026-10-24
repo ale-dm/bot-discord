@@ -1,6 +1,19 @@
 // 🍿 Reseñas de Plex: el núcleo (guardar, media, rankings y privacidad). Las pantallas y el DM llegan en #566 y #567.
 // Partido en systems/plexResenas/; esta fachada reexporta lo que usa el resto.
-const { MAX_TEXTO, NOTA_MIN, NOTA_MAX, TIPOS, estrellasTexto, clavePeli, claveSerie, claveDe, notaValida } = require("./plexResenas/base");
+const {
+    MAX_TEXTO,
+    NOTA_MIN,
+    NOTA_MAX,
+    TIPOS,
+    estrellasTexto,
+    clavePeli,
+    claveSerie,
+    claveDe,
+    notaValida,
+    temporadaDeClave,
+    etiquetaTemporada,
+    tituloBase,
+} = require("./plexResenas/base");
 const { guardar, borrar, de, haVisto } = require("./plexResenas/guardar");
 const {
     resumen,
@@ -27,6 +40,9 @@ module.exports = {
     claveSerie,
     claveDe,
     notaValida,
+    temporadaDeClave,
+    etiquetaTemporada,
+    tituloBase,
     guardar,
     borrar,
     de,

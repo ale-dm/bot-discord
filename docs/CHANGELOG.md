@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (reseñas de series y temporadas, #572)
+
+- **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).
+- **Guardar**: una temporada se guarda como `Serie · temporada N` (la clave es `serie:<titulo>|t<n>`), así se ve bien en todas las pantallas sin migración.
+- **✅ Verificación**: tests de la detección (temporada, serie entera, episodio suelto, rango desde la activación), del guardado, del texto del DM y de que cada temporada se pregunta una sola vez; `npm run check` en verde.
+
 ## 2026-10-24 (panel admin de reseñas de Plex, #571)
 
 - **⭐ Reseñas en `/paneladmin` → 🎬 Plex**: activar o desactivar los avisos por DM (al activar, lo que se vio antes no se pregunta), tope diario y mínimo de votos con rango y auditoría, contadores que cuadran con la BD y 🗑️ Borrar una reseña (también oculta) con confirmación.
