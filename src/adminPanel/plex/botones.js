@@ -18,6 +18,7 @@ const adminAudit = require("../../systems/adminAudit");
 const { simpleModal, modalConCampos } = require("../common");
 const { paginaDeLista, filaPaginas, paginaDeId } = require("../../paneles/menuPaginado");
 const { log, buildPlexHome, buildPlexTrofeos, buildRolesGordos, buildDiagnosticoIdiomas, buildRankingSemanal } = require("./vistas");
+const resenas = require("./resenas");
 
 async function accionHome(interaction, id, guildId) {
     await interaction.update(buildPlexHome(guildId));
@@ -346,6 +347,7 @@ const ACCIONES_BOTON = new Map([
 async function handlePlexButton(interaction) {
     const id = interaction.customId;
     const guildId = interaction.guildId;
+    if (id.startsWith(resenas.PREFIJO)) return resenas.handleResenasButton(interaction);
     const accion = ACCIONES_BOTON.get(id);
     if (accion) return accion(interaction, id, guildId);
     const pagina = paginaDeId(PREFIJO_TROFEO_BORRAR, id);

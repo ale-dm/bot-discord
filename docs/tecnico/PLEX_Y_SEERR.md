@@ -110,6 +110,11 @@ CREATE TABLE plex_links (
 controla el admin y es un grupo cerrado y pequeño): nueva sección
 "🎬 Plex" en `/paneladmin`, con:
 
+- ⭐ Reseñas (`src/adminPanel/plex/resenas.js`): activar o desactivar los avisos por DM (al activar, `plex.resenas_desde`
+  es ahora: sin backfill), el tope diario y el mínimo de votos (con rango y auditoría), los contadores (todas las reseñas,
+  también las ocultas, y los avisos sin respuesta) y 🗑️ Borrar una reseña: se busca por título (y año), se elige a la
+  persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación.
+
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de
   usuario de Tautulli, sacado de `getUsers()` — igual que el buscador de

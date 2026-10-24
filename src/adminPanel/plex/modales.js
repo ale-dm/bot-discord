@@ -9,6 +9,7 @@ const guildSettings = require("../../systems/guildSettings");
 const { canalElegido, opcionElegida } = require("../common");
 const adminAudit = require("../../systems/adminAudit");
 const { log } = require("./vistas");
+const resenas = require("./resenas");
 
 async function modalImportacion(interaction) {
     const texto = interaction.fields.getTextInputValue("pct").trim().replace(/%$/, "").trim();
@@ -144,6 +145,7 @@ const ACCIONES_MODAL = new Map([
 ]);
 
 async function handlePlexModal(interaction) {
+    if (interaction.customId.startsWith(resenas.PREFIJO)) return resenas.handleResenasModal(interaction);
     const accion = ACCIONES_MODAL.get(interaction.customId);
     if (accion) return accion(interaction);
     if (!interaction.customId.startsWith("paneladmin_plex_link_modal_")) return false;

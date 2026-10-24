@@ -77,6 +77,7 @@ function buildPlexHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_plex_channel_add").setLabel("📺 Permitir canal").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_plex_channel_remove").setLabel("➖ Quitar canal").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId("paneladmin_plex_channel_clear").setLabel("🧹 Sin restricción").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("paneladmin_plex_resenas").setLabel("⭐ Reseñas").setStyle(ButtonStyle.Primary),
     );
 
     return { embeds: [embed], components: [row1, row2, row3, navRow()] };

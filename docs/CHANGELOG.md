@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (panel admin de reseñas de Plex, #571)
+
+- **⭐ Reseñas en `/paneladmin` → 🎬 Plex**: activar o desactivar los avisos por DM (al activar, lo que se vio antes no se pregunta), tope diario y mínimo de votos con rango y auditoría, contadores que cuadran con la BD y 🗑️ Borrar una reseña (también oculta) con confirmación.
+- **Auditoría**: `plex.resenas.activo`, `plex.resenas.max_dia`, `plex.resenas.min_votos` y `plex.resena_borrar`.
+- **✅ Verificación**: tests del panel a través del enrutador (con y sin permisos, validación, confirmación y auditoría); `npm run check` en verde.
+
 ## 2026-10-24 (el Duende y las reseñas de Plex, #570)
 
 - **🍿 El Duende lee las reseñas**: nueva herramienta `consultar_resenas_plex` (solo en los canales permitidos para Plex): las reseñas de una persona, la media y las reseñas de un título (`anio` si hay varios), o las mejor valoradas.
