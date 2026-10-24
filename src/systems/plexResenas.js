@@ -12,6 +12,8 @@ const {
     ultimas,
     rankingValoradores,
     generosidad,
+    todasDelTitulo,
+    resumenAdmin,
 } = require("./plexResenas/consultas");
 const { oculto, setOculto } = require("./plexResenas/privacidad");
 
@@ -38,6 +40,8 @@ module.exports = {
     ultimas,
     rankingValoradores,
     generosidad,
+    todasDelTitulo,
+    resumenAdmin,
     oculto,
     setOculto,
 };

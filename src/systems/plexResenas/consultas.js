@@ -117,4 +117,46 @@ function generosidad(guildId, { orden = "DESC", minVotos = 3, limite = 5 } = {})
         .all(guildId, Math.max(1, Number(minVotos) || 1), limite);
 }
 
-module.exports = { resumen, titulo, deUsuario, publicasDe, titulosLlamados, mejores, ultimas, rankingValoradores, generosidad };
+/**
+ * Las reseñas de un título con ese nombre, también las ocultas: para moderar (el panel admin). `anio` filtra si se da.
+ * @returns {Array<object>} filas normalizadas (con `oculto`)
+ */
+function todasDelTitulo(guildId, texto, anio = null) {
+    const buscado = normalizar(texto);
+    return db
+        .prepare("SELECT * FROM plex_resenas WHERE guildId = ?")
+        .all(guildId)
+        .map(normalizarFila)
+        .filter((r) => normalizar(r.titulo) === buscado && (!anio || r.anio === Number(anio)));
+}
+
+/**
+ * Los números del panel admin de reseñas, sobre todas las reseñas del servidor (también las ocultas) y los avisos
+ * que esperan respuesta. Son los mismos que sale al contar en la BD.
+ */
+function resumenAdmin(guildId) {
+    const total = db
+        .prepare("SELECT COUNT(*) AS total, COALESCE(SUM(oculto), 0) AS ocultas, AVG(nota) AS nota FROM plex_resenas WHERE guildId = ?")
+        .get(guildId);
+    const pendientes = db.prepare("SELECT COUNT(*) AS n FROM plex_resenas_pedidas WHERE guildId = ? AND decision IS NULL").get(guildId).n;
+    return {
+        total: total.total,
+        ocultas: total.ocultas,
+        media: total.nota === null ? null : Math.round((total.nota / 2) * 10) / 10,
+        pendientes,
+    };
+}
+
+module.exports = {
+    resumen,
+    titulo,
+    deUsuario,
+    publicasDe,
+    titulosLlamados,
+    mejores,
+    ultimas,
+    rankingValoradores,
+    generosidad,
+    todasDelTitulo,
+    resumenAdmin,
+};

@@ -7,6 +7,7 @@ const guildSettings = require("../../systems/guildSettings");
 const adminAudit = require("../../systems/adminAudit");
 const { modalConCampos } = require("../common");
 const { log, buildRolesGordos, buildRankingSemanal } = require("./vistas");
+const resenas = require("./resenas");
 
 async function handlePlexChannelSelect(interaction) {
     if (interaction.customId === "paneladmin_plex_ranking_canal_select") {
@@ -126,6 +127,7 @@ async function handlePlexRoleSelect(interaction) {
 }
 
 async function handlePlexStringSelect(interaction) {
+    if (interaction.customId.startsWith(resenas.PREFIJO)) return resenas.handleResenasPick(interaction);
     if (interaction.customId === "paneladmin_plex_trofeo_borrar_select") {
         const id = interaction.values[0];
         const ok = plexTrofeos.borrar(interaction.guildId, id);
