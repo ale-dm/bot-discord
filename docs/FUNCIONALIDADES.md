@@ -41,7 +41,7 @@ El Duende es un bot de Discord para un grupo de amigos (un único servidor). Com
 
 Casi todo se hace desde **ocho paneles** con pestañas y botones, enlazados entre sí: `/perfil` (perfil, economía,
 juegos, logros y rankings), `/juegos` (casino, apuestas, retos, mis jugadas y stats), `/tienda` (catálogo, inventario y
-compras), `/cripto`, `/duende` (hablar, recuerdos y personalidad), `/plex` (sesión de cine, recomendaciones, Wrapped y
+compras), `/cripto`, `/duende` (hablar, recuerdos, personalidad y guardia), `/plex` (sesión de cine, recomendaciones, Wrapped y
 perfil de Plex), `/sonidos` y, para admins, `/paneladmin`. `/ayuda` explica cada parte y tiene botones para abrirlas.
 
 **Público o privado:** de momento los paneles y las partidas son **públicos** (los ve todo el canal), pero solo quien
@@ -131,6 +131,24 @@ nunca permiten mirar datos de otro (el usuario sale del contexto de Discord, no 
 | `recuerda usuario* nota*` | Guarda una nota sobre alguien (máx. 15 notas por persona, 200 caracteres cada una). Respuesta privada | Sobre uno mismo; un admin, sobre cualquiera |
 | `olvida usuario*` | Borra las notas guardadas con `recuerda` (no el perfil base escrito a mano) | La propia persona, o un admin para cualquiera |
 | `personas` | Lo que recuerda de ti; a un admin, de todos. Respuesta privada | Todos |
+
+### 🛡️ Guardia (`/duende` → 🛡️ Guardia, #553)
+
+El botón **🛡️ Guardia** del panel de `/duende` hace que el bot entre al canal de voz en el que estás y **se quede
+indefinidamente**, sin temporizador. Si no estás en ningún canal de voz, se abre un formulario para elegirlo (solo canales
+de voz); si lo cierras sin elegir, no se conecta. Si le faltan permisos de Conectar o Hablar, lo dice en el panel.
+
+- Usa la misma conexión que `/conectar`, así que `/sonidos`, `/tts` y el Duende por voz suenan ahí. Si había una presencia
+  de `/conectar`, la guardia la sustituye.
+- Mientras dura, `/conectar` no la sustituye, ni la renueva, ni la cierra: avisa de que el bot está de guardia. `/conversación`
+  no empieza («estoy de guardia y ahora mismo no puedo hablar») y la guardia sigue.
+- El panel enseña en qué canal está, quién la puso y desde cuándo. **🚪 Dejar la guardia** se sale en el momento. Solo
+  quien la puso y los admins pueden dejarla o moverla a otro canal (pulsando 🛡️ Guardia desde el canal nuevo); el resto ve
+  los botones deshabilitados, y el bot lo comprueba también al pulsar.
+- Sobrevive a los reinicios: al arrancar vuelve al mismo canal. Si el canal ya no existe o faltan permisos, se descarta
+  (queda en el log). Si Discord echa al bot del canal o la conexión se cierra, la guardia se da por terminada.
+
+Migración 076: `guardia_voz`. Tests: `tests/guardia.test.js`, `tests/guardiaPanel.test.js`.
 
 ---
 
@@ -1069,7 +1087,8 @@ admin. En el **horario de silencio** (o con los sonidos apagados) no suena nada 
 `/conectar` hace que el bot **entre a un canal de voz y se quede 30 minutos**, para que `/sonidos` suene sin entrar y salir
 cada vez. Elige el canal con la opción *canal* (por defecto, el tuyo). Sin canal, si ya está conectado, se sale. Si Discord
 lo echa, se olvida. No se sale a mitad de un sonido ni de una conversación con el Duende: espera a que acaben. No
-sustituye a la conexión mientras suena algo. Una sola conexión por servidor.
+sustituye a la conexión mientras suena algo. Una sola conexión por servidor. Si el bot está **de guardia** (`/duende` →
+🛡️ Guardia), `/conectar` no hace nada y lo avisa: ni la sustituye, ni la renueva, ni la cierra.
 
 **Los sonidos los sube y los borra un admin en `/paneladmin` → 🔊 Sonidos**: un formulario con el nombre (hasta 32 caracteres,
 único en el servidor) y el archivo (mp3, ogg o wav, hasta 1 MB). Borrar es elegirlo en un menú. **✏️ Editar** permite

@@ -1,4 +1,4 @@
-// Panel de /duende (F-DU-06, #113): 💬 Hablar, 🧠 Recuerdos y 🎭 Personalidad; los admins gestionan además las
+// Panel de /duende (F-DU-06, #113): 💬 Hablar, 🧠 Recuerdos, 🎭 Personalidad y 🛡️ Guardia (#553); los admins gestionan además las
 // personalidades. Solo construye embeds y botones: los datos están en systems/duende (perfiles) y la lógica de cada
 // botón, en commands/duende/duende.
 const {
@@ -24,11 +24,31 @@ function opcionesPersonalidades(personalidades, actual) {
     }));
 }
 
-function buildInicio({ esAdmin, personalidad }) {
+// 🛡️ Guardia (#553): sin guardia, cualquiera la pone; con guardia, solo quien la puso o un admin la mueve o la deja
+// (el resto ve los botones deshabilitados). Caben en la primera fila: como mucho 5 botones.
+function botonesGuardia(guardia) {
+    const poner = new ButtonBuilder().setCustomId("duendepanel_guardia").setLabel("🛡️ Guardia").setStyle(ButtonStyle.Secondary);
+    if (!guardia) return [poner];
+    return [
+        poner.setDisabled(!guardia.puedeGestionar),
+        new ButtonBuilder()
+            .setCustomId("duendepanel_guardia_dejar")
+            .setLabel("🚪 Dejar la guardia")
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(!guardia.puedeGestionar),
+    ];
+}
+
+const textoGuardia = (g) =>
+    `En **${g.canalNombre}** desde <t:${Math.floor(g.desde / 1000)}:R>, la puso <@${g.porUserId}>. Me quedo hasta que la dejen.`;
+
+/** El inicio del panel. `guardia`: la guardia activa ({ canalNombre, porUserId, desde, puedeGestionar }) o null. */
+function buildInicio({ esAdmin, personalidad, guardia = null }) {
     const embed = new EmbedBuilder()
         .setTitle("🤖 El Duende")
         .setDescription(
             "Habla con él, mira lo que recuerda de ti y cambia su personalidad en este canal." +
+                "\n🛡️ Con **Guardia** se queda en tu canal de voz hasta que lo saques." +
                 (esAdmin ? "\n\n⚙️ Como admin, también puedes añadir o quitar personalidades." : ""),
         )
         .addFields({
@@ -36,12 +56,14 @@ function buildInicio({ esAdmin, personalidad }) {
             value: personalidad ? personalidad.title || personalidad.id : "La de por defecto",
         })
         .setColor(0x8e44ad);
+    if (guardia) embed.addFields({ name: "🛡️ De guardia", value: textoGuardia(guardia) });
 
     const filas = [
         new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId("duendepanel_hablar").setLabel("💬 Hablar").setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId("duendepanel_recuerdos").setLabel("🧠 Recuerdos").setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId("duendepanel_personalidad").setLabel("🎭 Personalidad").setStyle(ButtonStyle.Secondary),
+            ...botonesGuardia(guardia),
         ),
     ];
     if (esAdmin) {
@@ -52,7 +74,7 @@ function buildInicio({ esAdmin, personalidad }) {
             ),
         );
     }
-    return { content: "", embeds: [embed], components: filas };
+    return { content: "", embeds: [embed], components: filas, allowedMentions: { parse: [] } };
 }
 
 /** Lo que el Duende recuerda de `objetivo` (un usuario de Discord). Los admins pueden elegir a otra persona. */

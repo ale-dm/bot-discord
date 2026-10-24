@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Guardia del Duende (migración 076, 2026-10-24)
+
+- **076** crea `guardia_voz` (servidor, canal, quién la puso y fecha). No hay que rellenar nada. Al arrancar, el bot vuelve
+  a los canales de guardia guardados; en el log sale `[Guardia] Guardias al arrancar: N recuperadas, M descartadas` (y un
+  aviso por cada una descartada porque el canal ya no existe o faltan permisos).
+
 ### Reseñas de Plex (migración 075, 2026-10-23)
 
 - **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar

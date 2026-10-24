@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (guardia del Duende en un canal de voz, #553)
+
+- **🛡️ Guardia en `/duende`**: el bot entra al canal de voz de quien pulsa (o al que elija en un formulario con un selector de canales de voz) y se queda indefinidamente, sin temporizador. **🚪 Dejar la guardia** se sale al momento; solo quien la puso o un admin pueden dejarla o moverla (el resto ve los botones deshabilitados y se comprueba también al pulsar). El panel enseña el canal, quién la puso y desde cuándo.
+- **🔌 Misma conexión que `/conectar`**: la guardia es una presencia de `systems/presencia.js` con `guardia: { porUserId, desde }` y sin salida automática, así que `/sonidos`, `/tts` y el Duende por voz la reutilizan. Sustituye a una presencia de `/conectar`; `/conectar` no la sustituye, ni la renueva, ni la cierra (avisa), y `/conversación` no empieza mientras dura.
+- **💾 Sobrevive a los reinicios**: tabla `guardia_voz` (migración 076); al arrancar (`systems/guardia.js` → `recuperarAlArrancar`) vuelve al mismo canal, y si el canal ya no existe o faltan permisos descarta el registro y lo deja en el log. Si Discord echa al bot (y no se recupera en 5 s) o la conexión se destruye, la guardia se acaba y se borra su registro; al apagar el bot, no.
+- **✅ Verificación**: `tests/guardia.test.js` (poner, permisos, sin caducidad, persistencia y recuperación al arrancar, descarte, `/conectar` y `/conversación`, limpieza al destruirse la conexión) y `tests/guardiaPanel.test.js` (botones, formulario, estado y restricciones). Migración 076. `npm run check` en verde (239 suites, 3045 tests).
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).
