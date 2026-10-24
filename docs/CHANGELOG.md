@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (avisos y strikes de moderación, #542)
+
+- **`/avisar usuario motivo`** (comando nuevo, staff): le llega un DM al avisado con el motivo, suma un strike y se apunta en el canal de log de moderación. Pueden usarlo quienes tengan Moderar miembros, los admins y el rol de staff configurado.
+- **Strikes**: caducan a los 90 días (ajustable) sin borrarse del historial. Al cruzar 3, 5, 7 y 10 (ajustables) se manda a los admins de las alertas la medida sugerida (aviso serio, silenciar 24 h, expulsión o ban). **El bot no sanciona nunca.**
+- **⚙️ Config Global → ⚠️ Moderación**: rol de staff y canal de log, umbrales y caducidad, quién tiene strikes vigentes, historial de una persona, retirar uno o limpiarlos con confirmación.
+- **Auditoría**: `moderacion.aviso`, `moderacion.retirar`, `moderacion.limpiar`, `moderacion.ajustes` y `moderacion.staff`, con su familia en el filtro.
+- **Migración 080** (`strikes`) y ajustes `moderacion.*`. **✅ Verificación**: tests de permisos, acumulación, caducidad, umbrales, retirar, limpiar, `/avisar` (DM, log, admins, DM cerrado) y el panel con y sin admin; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).

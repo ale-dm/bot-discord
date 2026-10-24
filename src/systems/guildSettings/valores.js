@@ -197,8 +197,18 @@ function nodoOtros(flat) {
     };
 }
 
+/** ⚠️ Moderación (#542): `moderacion.*` sin el prefijo. */
+const nodoModeracion = (flat) => ({
+    moderacion: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("moderacion."))
+            .map(([clave, valor]) => [clave.slice("moderacion.".length), valor]),
+    ),
+});
+
 function flattenToNested(flat) {
     return {
+        ...nodoModeracion(flat),
         duende: nodoDuende(flat),
         ...nodoEconomia(flat),
         ...nodoPlexYLogros(flat),

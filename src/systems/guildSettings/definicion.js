@@ -276,4 +276,20 @@ for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_PASE)) {
     KEY_TYPES[clave] = tipo;
 }
 
+// ⚠️ Avisos y strikes de moderación (#542): el rol de staff que puede avisar (además de quien tenga Moderar miembros), el canal
+// donde se apunta cada aviso, cuántos días cuenta un strike y a partir de cuántos se sugiere cada medida (nunca se aplica sola).
+const AJUSTES_MODERACION = {
+    "moderacion.staff_rol": ["", "string"],
+    "moderacion.canal_log": ["", "string"],
+    "moderacion.caducidad_dias": [90, "number"],
+    "moderacion.umbral_aviso": [3, "number"],
+    "moderacion.umbral_mute": [5, "number"],
+    "moderacion.umbral_expulsion": [7, "number"],
+    "moderacion.umbral_ban": [10, "number"],
+};
+for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_MODERACION)) {
+    DEFAULT_FLAT[clave] = valor;
+    KEY_TYPES[clave] = tipo;
+}
+
 module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };
