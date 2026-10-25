@@ -66,7 +66,8 @@ function crear({ userId, matchId, eleccion, objetivo, direccion }, ahora = Date.
 }
 
 const COLUMNAS_PARTIDO =
-    "p.home_team, p.away_team, p.start_time, p.estado, p.deporte, p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.total_linea, p.cuota_casa, p.cuota_fuera, p.hcap_linea";
+    "p.home_team, p.away_team, p.start_time, p.estado, p.deporte, p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.total_linea, p.cuota_casa, p.cuota_fuera, p.hcap_linea, " +
+    "p.cuota_ambos_si, p.cuota_ambos_no, p.cuota_dc_1x, p.cuota_dc_12, p.cuota_dc_x2";
 
 /** Las alertas activas de una persona con su partido, la cuota de ahora y el nombre de la elección; el partido más próximo primero. */
 function activasDe(userId) {
