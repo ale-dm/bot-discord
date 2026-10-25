@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (calendario de eventos, #540)
+
+- **📅 `/calendario`** (comando nuevo, privado): lo programado por semanas o por meses con ◀ ▶, agrupado por día (hora de Madrid) y con la hora en timestamp de Discord. Junta sesiones de cine (con enlace), cumpleaños, partidos de las competiciones elegidas, el cierre de las quinielas abiertas y los eventos de los admins. Sin eventos, lo explica; con muchos, no pasa del límite del embed.
+- **⚙️ Config Global → 📅 Calendario**: canal fijo y minutos de los recordatorios, competiciones y eventos propios (crear y borrar), auditados (`calendario.crear`, `calendario.borrar`, `calendario.ajustes`).
+- **Recordatorios**: cada minuto (`src/app/tareasCalendario.js`, programado al arrancar), una sola vez por evento aunque el bot se reinicie; si el envío falla, se reintenta.
+- **Migración 082** (`calendario_eventos`, `calendario_recordatorios`) y ajustes `calendario.*`. **✅ Verificación**: tests de rangos con cambio de hora, agregación, orden, límites, eventos manuales, recordatorios, vista, `/calendario` y panel; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
 ## 2026-10-24 (avisos y strikes de moderación, #542)
 
 - **`/avisar usuario motivo`** (comando nuevo, staff): le llega un DM al avisado con el motivo, suma un strike y se apunta en el canal de log de moderación. Pueden usarlo quienes tengan Moderar miembros, los admins y el rol de staff configurado.

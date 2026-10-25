@@ -217,8 +217,18 @@ const nodoModeracion = (flat) => ({
     ),
 });
 
+/** 📅 Calendario (#540): `calendario.*` sin el prefijo. */
+const nodoCalendario = (flat) => ({
+    calendario: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("calendario."))
+            .map(([clave, valor]) => [clave.slice("calendario.".length), valor]),
+    ),
+});
+
 function flattenToNested(flat) {
     return {
+        ...nodoCalendario(flat),
         ...nodoModeracion(flat),
         duende: nodoDuende(flat),
         ...nodoEconomia(flat),

@@ -301,4 +301,16 @@ for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_MODERACION)) {
     KEY_TYPES[clave] = tipo;
 }
 
+// 📅 Calendario (#540): el canal fijo de los recordatorios, cuántos minutos antes avisan (0 = sin recordatorios) y qué
+// competiciones de apuestas salen en el calendario (claves de la Odds API separadas por comas).
+const AJUSTES_CALENDARIO = {
+    "calendario.canal": ["", "string"],
+    "calendario.recordatorio_min": [60, "number"],
+    "calendario.competiciones": ["laliga", "string"],
+};
+for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_CALENDARIO)) {
+    DEFAULT_FLAT[clave] = valor;
+    KEY_TYPES[clave] = tipo;
+}
+
 module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };

@@ -736,3 +736,15 @@ Issue #542. Con una cuenta de staff (sin ser admin) y otra normal.
 - [ ] 🔎 Consultar a esa persona: salen los tres avisos con motivo, quién y cuándo; retirar uno y limpiar el resto con confirmación.
 - [ ] 📏 Umbrales y caducidad: poner umbrales desordenados da error; unos válidos se guardan.
 - [ ] 🧾 Auditoría → filtro ⚠️ Moderación: están todos los cambios.
+
+## T-20 Probar en Discord el calendario
+
+Issue #540. Con alguna sesión de cine, un cumpleaños guardado y partidos sincronizados.
+
+- [ ] `/calendario`: sale la semana actual agrupada por día, con las horas en tu zona; la sesión de cine enlaza a su mensaje.
+- [ ] ◀ ▶ cambia de semana; 🗓️ Por meses enseña el mes y navega por meses. Una semana vacía lo explica.
+- [ ] El desplegable enseña el detalle de un evento con la fecha completa y la cuenta atrás.
+- [ ] `/paneladmin` → ⚙️ Config Global → 📅 Calendario → ➕ Añadir evento con una fecha en 10 minutos: aparece en `/calendario`.
+- [ ] ⚙️ Ajustes: canal de pruebas y 15 minutos. A los 5 minutos del evento llega un solo recordatorio al canal.
+- [ ] Reiniciar el bot antes de que empiece: no se repite el recordatorio.
+- [ ] Borrar el evento desde el desplegable: desaparece del calendario y queda en 🧾 Auditoría.
