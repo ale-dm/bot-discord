@@ -48,6 +48,7 @@ function embedPartido(partido, badgeHome, badgeAway) {
                     .botonesDisponibles(partido)
                     .map((b) => `${b.etiqueta}: cuota \`${mercados.cuotaDe(partido, b.eleccion)}\`\n`)
                     .join("") +
+                (mercados.tieneDoble(partido) ? `-# ${mercados.LEYENDA_DOBLE}\n` : "") +
                 "\nPulsa un botón para elegir tu apuesta.",
         )
         .setColor(0xf1c40f);
@@ -72,24 +73,31 @@ function filasPartido(partido, match_id) {
             .setCustomId(`apuesta_exacto_${match_id}`)
             .setLabel(`🎯 Marcador exacto (×${marcadorExacto.PREMIO})`)
             .setStyle(ButtonStyle.Secondary),
+        // 🔁 Exchange (#533): apostar contra otros jugadores en el libro de este partido.
+        new ButtonBuilder().setCustomId(`exchange_ver_${match_id}`).setLabel("🔁 Exchange").setStyle(ButtonStyle.Secondary),
     );
 
     // Mercados de goles y de hándicap, si la API dio su cuota para este partido (una fila aparte).
     const filas = [row];
+    const boton = (b) =>
+        new ButtonBuilder()
+            .setCustomId(`apuesta_mercado_${b.eleccion}_${match_id}`)
+            .setLabel(b.etiqueta.slice(0, 80))
+            .setStyle(ButtonStyle.Secondary);
+    const extras = mercados.botonesExtra(partido);
+    const deExtras = new Set(extras.map((b) => b.eleccion));
     const botonesMercado = mercados
         .botonesDisponibles(partido)
-        .map((b) =>
-            new ButtonBuilder()
-                .setCustomId(`apuesta_mercado_${b.eleccion}_${match_id}`)
-                .setLabel(b.etiqueta.slice(0, 80))
-                .setStyle(ButtonStyle.Secondary),
-        );
+        .filter((b) => !deExtras.has(b.eleccion))
+        .map(boton);
     // 🔔 Alerta de cuota (#345): con los mercados, en su fila; si no hay mercados, en una propia.
     const botonAlerta = new ButtonBuilder()
         .setCustomId(`apuesta_alerta_${match_id}`)
         .setLabel("🔔 Alerta de cuota")
         .setStyle(ButtonStyle.Secondary);
     filas.push(new ActionRowBuilder().addComponents([...botonesMercado, botonAlerta]));
+    // ⚽ Ambos marcan y 🔀 doble oportunidad (#532): en su propia fila (2 + 3 botones) y solo si la API dio sus cuotas.
+    if (extras.length) filas.push(new ActionRowBuilder().addComponents(extras.map(boton)));
     // 🧩 Sumar a mi combinada: el mismo partido con la elección que se quiera (una pata por partido).
     const opciones = [
         partido.cuota_home && { value: "home", label: `🏠 ${partido.home_team} · cuota ${partido.cuota_home}` },

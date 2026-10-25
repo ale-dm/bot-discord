@@ -202,6 +202,31 @@ async function anadirQuieroVer(guildId, userId, mediaType, tmdbId) {
     return { ok: true, titulo };
 }
 
+/** ¿Está ya en su lista? */
+function enQuieroVer(guildId, userId, mediaType, tmdbId) {
+    return Boolean(
+        db
+            .prepare("SELECT 1 FROM plex_quiero_ver WHERE guildId = ? AND userId = ? AND media_type = ? AND tmdb_id = ?")
+            .get(guildId, String(userId), mediaType, Number(tmdbId)),
+    );
+}
+
+/**
+ * Apunta una película que ya está en Plex (🎲 Ruleta, #576). No se pregunta a Seerr: sale de las fichas de Plex (con su
+ * id de TMDB). Se guarda ya como disponible, así sale «ya está en Plex» en la lista y no llega el DM de que ha llegado.
+ */
+function apuntarDePlex(guildId, userId, { tmdbId, titulo, anio = null }) {
+    if (!(Number(tmdbId) > 0)) return { ok: false, motivo: "La ficha de Plex de esa película no trae su id de TMDB: no se puede apuntar." };
+    if (enQuieroVer(guildId, userId, "movie", tmdbId)) return { ok: false, motivo: `**${titulo}** ya está en tu lista.` };
+    if (quieroVer(guildId, userId).length >= MAX_QUIERO_VER)
+        return { ok: false, motivo: `Tu lista ya tiene ${MAX_QUIERO_VER} títulos, que es el máximo. Quita alguno antes.` };
+    const ahora = ahoraS();
+    db.prepare(
+        "INSERT INTO plex_quiero_ver (guildId, userId, media_type, tmdb_id, titulo, anio, creado_en, disponible_en) VALUES (?, ?, 'movie', ?, ?, ?, ?, ?)",
+    ).run(guildId, String(userId), Number(tmdbId), String(titulo).slice(0, 200), anio ? String(anio) : null, ahora, ahora);
+    return { ok: true, titulo };
+}
+
 function quitarQuieroVer(guildId, userId, mediaType, tmdbId) {
     return (
         db
@@ -271,6 +296,8 @@ module.exports = {
     avisarSeries,
     quieroVer,
     anadirQuieroVer,
+    enQuieroVer,
+    apuntarDePlex,
     quitarQuieroVer,
     haLlegado,
     avisarQuieroVer,

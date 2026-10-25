@@ -69,7 +69,13 @@ test("el detalle del partido tiene el botón y abre un formulario con los goles 
     const payload = detalle.reply.mock.calls[0][0];
     expect(payload.embeds[0].data.description).toMatch(/Marcador exacto\*\*: premio fijo de `×8`/);
     const botones = payload.components[0].toJSON().components;
-    expect(botones.map((b) => b.custom_id)).toEqual(["apuesta_home_mx-1", "apuesta_draw_mx-1", "apuesta_away_mx-1", "apuesta_exacto_mx-1"]);
+    expect(botones.map((b) => b.custom_id)).toEqual([
+        "apuesta_home_mx-1",
+        "apuesta_draw_mx-1",
+        "apuesta_away_mx-1",
+        "apuesta_exacto_mx-1",
+        "exchange_ver_mx-1",
+    ]);
 
     const boton = interaccion({ customId: "apuesta_exacto_mx-1" });
     await apuestas.handleButton(null, boton);

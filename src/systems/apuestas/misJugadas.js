@@ -10,9 +10,10 @@ function partidosDe(userId, { pendientes = true, limite = 10 } = {}) {
     return db
         .prepare(
             `SELECT a.*, p.home_team, p.away_team, p.start_time, p.estado, p.resultado,
-                    p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.cuota_casa, p.cuota_fuera
+                    p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.cuota_casa, p.cuota_fuera,
+                    p.cuota_ambos_si, p.cuota_ambos_no, p.cuota_dc_1x, p.cuota_dc_12, p.cuota_dc_x2
              FROM apuestas_usuario a JOIN apuestas_partidos p ON a.match_id = p.match_id
-             WHERE a.user_id = ? AND p.estado ${pendientes ? "= 'abierto'" : "!= 'abierto'"}
+             WHERE a.user_id = ? AND ${pendientes ? "p.estado = 'abierto' AND a.pagado = 0" : "(p.estado != 'abierto' OR a.retirada_en IS NOT NULL)"}
              ORDER BY p.start_time ${pendientes ? "ASC" : "DESC"} LIMIT ?`,
         )
         .all(userId, limite);
@@ -95,14 +96,17 @@ function quinielaDe(userId, quinielaId) {
 
 // Las columnas de cada tipo de apuesta. estadisticas (una persona) y estadisticasDeTodos (todas a la vez) las usan las
 // dos, para que el ranking no pueda dar cifras distintas de 📊 Stats.
+// Una retirada (cash-out, #529) cuenta como resuelta aunque el partido siga abierto: lo cobrado va en `premio`.
+const RESUELTA = "(p.estado = 'finalizado' OR a.retirada_en IS NOT NULL)";
+const EN_JUEGO = "(p.estado = 'abierto' AND a.retirada_en IS NULL)";
 const COLUMNAS_PARTIDOS = `COUNT(*) AS total,
-                SUM(CASE WHEN p.estado = 'finalizado' AND a.premio > 0 THEN 1 ELSE 0 END) AS ganadas,
-                SUM(CASE WHEN p.estado = 'finalizado' AND a.premio = 0 THEN 1 ELSE 0 END) AS perdidas,
-                SUM(CASE WHEN p.estado = 'abierto' THEN 1 ELSE 0 END) AS pendientes,
+                SUM(CASE WHEN ${RESUELTA} AND a.premio > 0 THEN 1 ELSE 0 END) AS ganadas,
+                SUM(CASE WHEN ${RESUELTA} AND a.premio = 0 THEN 1 ELSE 0 END) AS perdidas,
+                SUM(CASE WHEN ${EN_JUEGO} THEN 1 ELSE 0 END) AS pendientes,
                 -- Las liquidadas antes de guardar el premio (premio NULL) no se sabe si se ganaron.
-                COALESCE(SUM(CASE WHEN p.estado = 'finalizado' AND a.premio IS NOT NULL THEN a.cantidad ELSE 0 END), 0) AS apostado,
-                COALESCE(SUM(CASE WHEN p.estado = 'finalizado' THEN COALESCE(a.premio, 0) ELSE 0 END), 0) AS ganado,
-                COALESCE(SUM(CASE WHEN p.estado = 'abierto' THEN a.cantidad ELSE 0 END), 0) AS enJuego`;
+                COALESCE(SUM(CASE WHEN ${RESUELTA} AND a.premio IS NOT NULL THEN a.cantidad ELSE 0 END), 0) AS apostado,
+                COALESCE(SUM(CASE WHEN ${RESUELTA} THEN COALESCE(a.premio, 0) ELSE 0 END), 0) AS ganado,
+                COALESCE(SUM(CASE WHEN ${EN_JUEGO} THEN a.cantidad ELSE 0 END), 0) AS enJuego`;
 const COLUMNAS_QUINIELAS = `COUNT(*) AS total,
                 SUM(CASE WHEN q.estado = 'cerrada' AND qa.premio > 0 THEN 1 ELSE 0 END) AS ganadas,
                 SUM(CASE WHEN q.estado = 'abierta' THEN 1 ELSE 0 END) AS pendientes,
@@ -181,7 +185,7 @@ function cartera(userId, ahora = Date.now()) {
     const pendientes = db
         .prepare(
             `SELECT a.match_id, a.eleccion, a.cantidad, a.cuota FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
-             WHERE a.user_id = ? AND p.estado = 'abierto'`,
+             WHERE a.user_id = ? AND p.estado = 'abierto' AND a.retirada_en IS NULL`,
         )
         .all(userId);
     const porPartido = new Map();
@@ -200,7 +204,7 @@ function cartera(userId, ahora = Date.now()) {
     const partidosMes = db
         .prepare(
             `SELECT a.cantidad, a.premio, p.start_time AS fecha FROM apuestas_usuario a JOIN apuestas_partidos p ON p.match_id = a.match_id
-             WHERE a.user_id = ? AND p.estado = 'finalizado' AND a.premio IS NOT NULL AND p.start_time >= ?`,
+             WHERE a.user_id = ? AND (p.estado = 'finalizado' OR a.retirada_en IS NOT NULL) AND a.premio IS NOT NULL AND p.start_time >= ?`,
         )
         .all(userId, desde)
         .filter((r) => mesDe(r.fecha) === mes);

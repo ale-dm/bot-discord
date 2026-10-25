@@ -5,6 +5,8 @@ const dinero = require("../../dinero");
 const retos = require("../../retos");
 const mercados = require("../mercados");
 const combinadas = require("../combinadas");
+const sistemas = require("../sistemas");
+const exchange = require("../exchange");
 const pase = require("../../pase/pase");
 const { logInfo, logDebug } = require("../../../core/logger");
 const { deporteValido, resultadoDeScore } = require("../../../services/oddsApi");
@@ -23,6 +25,10 @@ async function liquidarPartidosSueltos({ corte, limite, resumen, scoresDe, orige
           AND (EXISTS (SELECT 1 FROM apuestas_usuario a WHERE a.match_id = apuestas_partidos.match_id AND a.pagado = 0)
                OR EXISTS (SELECT 1 FROM combinada_patas pa JOIN combinadas c ON c.id = pa.combinada_id
                           WHERE pa.match_id = apuestas_partidos.match_id AND pa.resultado = 'pendiente' AND c.estado = 'abierta')
+               OR EXISTS (SELECT 1 FROM sistema_patas sp JOIN sistemas s ON s.id = sp.sistema_id
+                          WHERE sp.match_id = apuestas_partidos.match_id AND sp.resultado = 'pendiente' AND s.estado = 'abierta')
+               OR EXISTS (SELECT 1 FROM exchange_ordenes eo WHERE eo.match_id = apuestas_partidos.match_id
+                          AND eo.estado IN ('abierta', 'parcial', 'casada'))
                OR EXISTS (SELECT 1 FROM retos r WHERE r.match_id = apuestas_partidos.match_id AND r.estado IN ('pendiente', 'en_juego')))
     `,
         )
@@ -67,6 +73,10 @@ function cerrarPartidoEnTransaccion(partido, resultado, marcador, resumen) {
     for (const ap of apuestas) liquidarApuesta(ap, partido, resultado, marcador, resumen, cierre);
     // Combinadas con una pata en este partido: una pata fallida pierde el boleto; con todas acertadas, se paga.
     resumen.pagos.push(...combinadas.resolverPartido(partido.match_id, resultado, marcador));
+    // 🎛️ Sistemas (#534): sus patas en este partido; los que ya no tienen nada pendiente pagan sus combinaciones acertadas.
+    resumen.pagos.push(...sistemas.resolverPartido(partido.match_id, resultado, marcador));
+    // 🔁 Exchange (#533): cada cruce paga a quien gana, menos su comisión.
+    resumen.pagos.push(...exchange.resolverPartido(partido.match_id, resultado));
     anotarRetos(partido, resultado, marcador, resumen);
     return cierre;
 }

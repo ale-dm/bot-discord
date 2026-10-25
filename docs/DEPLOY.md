@@ -53,6 +53,76 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Exchange de apuestas (migración 086, 2026-10-25)
+
+- **086** crea `exchange_ordenes` y `exchange_cruces`. No hay que rellenar nada. Una tarea nueva cada minuto devuelve lo no
+  cruzado de los partidos que empiezan.
+
+### Apuestas de sistema (migración 085, 2026-10-25)
+
+- **085** crea `sistemas`, `sistema_patas` y `sistema_combinaciones`. No hay que rellenar nada.
+
+### Cash-out anticipado (migración 084, 2026-10-24)
+
+- **084** añade `apuestas_partidos.cuotas_ts`, `apuestas_usuario.retirada_en` y `combinadas.retirada_en`. No hay que
+  rellenar nada: los partidos ya guardados no ofrecen retirada hasta que se vuelvan a pedir sus cuotas. Para retirar en
+  directo hace falta `ODDS_DIRECTO=1` (las cuotas en juego se refrescan cada 10 minutos).
+
+### Calendario de eventos (migración 082, 2026-10-24)
+
+- **082** crea `calendario_eventos` y `calendario_recordatorios`. No hay que rellenar nada. Comando nuevo **`/calendario`**:
+  hay que volver a registrar los comandos. Los recordatorios no salen hasta elegir canal en ⚙️ Config Global → 📅 Calendario.
+
+### Avisos y strikes de moderación (migración 080, 2026-10-24)
+
+- **080** crea `strikes`. No hay que rellenar nada. Comando nuevo **`/avisar`**: hay que volver a registrar los comandos en
+  Discord al desplegar. Para que lleguen los avisos de umbral, los admins tienen que estar en `alertas.admin_ids`
+  (🩺 Sistema → alertas).
+
+### Estadísticas del servidor (migración 083, 2026-10-24)
+
+- **083** crea `estadisticas_diarias` (mensajes y XP por día), la rellena con la XP de `xp_diaria` (dos semanas) y añade un
+  índice en `historial(fecha)`. Puede tardar unos segundos si el historial es grande. Las gráficas de mensajes empiezan
+  vacías: se cuentan desde este despliegue.
+
+### Roles temporales (migración 079, 2026-10-24)
+
+- **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
+  que se den estén por debajo del suyo. Al arrancar quita los que vencieron mientras estaba apagado.
+
+### Ambos marcan y doble oportunidad (migración 087, 2026-10-24)
+
+- **087** añade a `apuestas_partidos` las cuotas `cuota_ambos_si`, `cuota_ambos_no`, `cuota_dc_1x`, `cuota_dc_12`,
+  `cuota_dc_x2` y `extras_ts`. No hay que rellenar nada.
+- Los mercados nacen **apagados**. Para activarlos, en `.env`: `ODDS_MERCADOS_EXTRA=btts,double_chance`. Cuesta 1 crédito
+  por mercado y partido: con los valores por defecto (10 partidos, cada 6 horas) son hasta 20 créditos por competición y
+  actualización de cuotas. Ajustar `ODDS_EXTRA_MAX` y `ODDS_EXTRA_MINUTOS` al plan de la Odds API.
+
+### Tickets de soporte (migración 077, 2026-10-24)
+
+- **077** crea `tickets` (autor, categoría, asunto, hilo, mensaje de bienvenida, estado, fechas de apertura y cierre y quién lo
+  cerró) con un índice único parcial que impide dos tickets abiertos de la misma persona. No hay que rellenar nada.
+- Para usarlo: `/paneladmin` → ⚙️ Config Global → 📣 Comunidad → 🎫 Tickets → elegir canal de tickets, rol de staff y canal de
+  transcripciones, y 📤 Publicar panel. En el canal de tickets el bot necesita «Ver canal», «Enviar mensajes», «Insertar
+  enlaces», «Crear hilos privados», «Enviar mensajes en hilos» y «Gestionar hilos»; en el de transcripciones, «Ver canal»,
+  «Enviar mensajes», «Insertar enlaces» y «Adjuntar archivos». Si el rol de staff no es mencionable, también «Mencionar
+  @everyone, @here y todos los roles» (si no, mete a mano en el hilo a los del staff que conozca).
+
+### Duración de las películas de Plex (migración 078, 2026-10-24)
+
+- **078** añade `plex_fichas.duracion` (minutos; vacía hasta que se sabe), para el filtro de duración máxima de la
+  🎲 Ruleta de `/plex` → ⭐ Reseñas (#576). No hay que rellenar nada: las fichas nuevas la guardan al pedirse
+  (`get_metadata`) y las que ya había, cuando se refrescan: cada ficha de película se vuelve a pedir cuando tiene más de
+  30 días, así que en un mes como mucho estarán todas (📼 Sincronizar en `/paneladmin` → 🎬 Plex solo adelanta la cola,
+  no refresca las de menos de 30 días). Mientras ninguna película la tenga, el menú de duración no sale. Si 077 llega después, se
+  aplica igual (el orden de llegada no importa).
+
+### Guardia del Duende (migración 076, 2026-10-24)
+
+- **076** crea `guardia_voz` (servidor, canal, quién la puso y fecha). No hay que rellenar nada. Al arrancar, el bot vuelve
+  a los canales de guardia guardados; en el log sale `[Guardia] Guardias al arrancar: N recuperadas, M descartadas` (y un
+  aviso por cada una descartada porque el canal ya no existe o faltan permisos).
+
 ### Reseñas de Plex (migración 075, 2026-10-23)
 
 - **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar

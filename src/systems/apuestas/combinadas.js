@@ -8,6 +8,7 @@ const dinero = require("../dinero");
 const limites = require("./limites");
 const mercados = require("./mercados");
 const directo = require("./directo");
+const { COLUMNAS_PARTIDO } = require("./apostar");
 const { logInfo } = require("../../core/logger");
 
 const MIN_PATAS = 2;
@@ -56,11 +57,7 @@ function borrador(userId) {
  * @returns {{ ok: boolean, mensaje: string }}
  */
 function sumar(userId, matchId, eleccion) {
-    const partido = db
-        .prepare(
-            "SELECT id, match_id, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away, estado, deporte, resultado, cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea FROM apuestas_partidos WHERE match_id = ?",
-        )
-        .get(String(matchId));
+    const partido = db.prepare(`SELECT ${COLUMNAS_PARTIDO} FROM apuestas_partidos WHERE match_id = ?`).get(String(matchId));
     const cuota = cuotaDeEleccion(partido, eleccion);
     if (!cuota) return { ok: false, mensaje: "❌ Ese partido ya ha empezado o no tiene cuota para esa elección." };
     const actual = borrador(userId);
@@ -213,6 +210,7 @@ module.exports = {
     MAX_APUESTA,
     cuotaTotal,
     premioDe,
+    cuotaDeEleccion,
 
     borrador,
     sumar,

@@ -105,7 +105,14 @@ function filasConfigHome(guildId) {
         // 🎁 Sorteos (#541): crear, ver y cancelar sorteos.
         new ButtonBuilder().setCustomId("paneladmin_cfg_sorteos").setLabel("🎁 Sorteos").setStyle(ButtonStyle.Success),
     );
-    return [row1, row2, row3];
+    // Moderación y staff: ⏳ Roles temporales (#543), 📊 Estadísticas del servidor (#538), ⚠️ Moderación (#542), 📅 Calendario (#540).
+    const row4 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("paneladmin_rtemp_home").setLabel("⏳ Roles temporales").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_stats_home").setLabel("📊 Estadísticas").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_mod_home").setLabel("⚠️ Moderación").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_cal_home").setLabel("📅 Calendario").setStyle(ButtonStyle.Primary),
+    );
+    return [row1, row2, row3, row4];
 }
 
 function buildConfigHome(guildId) {

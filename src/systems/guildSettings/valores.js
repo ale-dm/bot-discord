@@ -141,6 +141,16 @@ function nodoPase(flat) {
     };
 }
 
+/** Los tickets de soporte (#537): canal de los hilos, rol de staff, canal de transcripciones y categorías. */
+function nodoTickets(flat) {
+    return {
+        canal_id: flat["tickets.canal_id"],
+        rol_staff: flat["tickets.rol_staff"],
+        canal_logs: flat["tickets.canal_logs"],
+        categorias: flat["tickets.categorias"],
+    };
+}
+
 function nodoOtros(flat) {
     return {
         pase: nodoPase(flat),
@@ -164,6 +174,7 @@ function nodoOtros(flat) {
         avisos: { cumple_channel_id: flat["avisos.cumple_channel_id"] },
         bienvenida: { canal_id: flat["bienvenida.canal_id"], texto: flat["bienvenida.texto"] },
         sugerencias: { canal_id: flat["sugerencias.canal_id"] },
+        tickets: nodoTickets(flat),
         autoroles: { lista: flat["autoroles.lista"] },
         sonidos: {
             apagado: flat["sonidos.apagado"],
@@ -197,8 +208,28 @@ function nodoOtros(flat) {
     };
 }
 
+/** ⚠️ Moderación (#542): `moderacion.*` sin el prefijo. */
+const nodoModeracion = (flat) => ({
+    moderacion: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("moderacion."))
+            .map(([clave, valor]) => [clave.slice("moderacion.".length), valor]),
+    ),
+});
+
+/** 📅 Calendario (#540): `calendario.*` sin el prefijo. */
+const nodoCalendario = (flat) => ({
+    calendario: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("calendario."))
+            .map(([clave, valor]) => [clave.slice("calendario.".length), valor]),
+    ),
+});
+
 function flattenToNested(flat) {
     return {
+        ...nodoCalendario(flat),
+        ...nodoModeracion(flat),
         duende: nodoDuende(flat),
         ...nodoEconomia(flat),
         ...nodoPlexYLogros(flat),

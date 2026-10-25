@@ -9,8 +9,8 @@ const db = require("../core/db");
 const upsertPartido = () =>
     db.prepare(`
         INSERT INTO apuestas_partidos (match_id, deporte, home_team, away_team, start_time, cuota_home, cuota_draw, cuota_away,
-            cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            cuota_mas, cuota_menos, total_linea, cuota_casa, cuota_fuera, hcap_linea, cuotas_ts)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(match_id) DO UPDATE SET
             start_time = excluded.start_time,
             cuota_home = COALESCE(excluded.cuota_home, cuota_home),
@@ -21,13 +21,15 @@ const upsertPartido = () =>
             total_linea = COALESCE(excluded.total_linea, total_linea),
             cuota_casa = COALESCE(excluded.cuota_casa, cuota_casa),
             cuota_fuera = COALESCE(excluded.cuota_fuera, cuota_fuera),
-            hcap_linea = COALESCE(excluded.hcap_linea, hcap_linea)
+            hcap_linea = COALESCE(excluded.hcap_linea, hcap_linea),
+            cuotas_ts = excluded.cuotas_ts
         WHERE apuestas_partidos.estado = 'abierto'
     `);
 
 /** Guarda los partidos ya traducidos: cada uno es { m: partido de la API, c: cuotas 1/X/2, x: cuotas de los demás mercados }. */
 function guardarPartidos(deporteKey, partidos) {
     const stmt = upsertPartido();
+    const ahora = Date.now(); // 💸 cuándo se guardaron estas cuotas: el cash-out (#529) no usa cuotas viejas
     // Lo mismo en las quinielas: con la hora antigua, un partido aplazado bloqueaba la quiniela
     // antes de tiempo (o la caducaba) aunque aún no se hubiera jugado.
     const horaQuiniela = db.prepare("UPDATE quiniela_partidos SET start_time = ? WHERE match_id = ? AND resultado_final IS NULL");
@@ -48,6 +50,7 @@ function guardarPartidos(deporteKey, partidos) {
                 x.cuota_casa,
                 x.cuota_fuera,
                 x.hcap_linea,
+                ahora,
             );
             horaQuiniela.run(m.commence_time, m.id);
         }
@@ -61,4 +64,30 @@ const deportesEnJuego = (isoAhora, isoDesde) =>
         .all(isoAhora, isoDesde)
         .map((r) => r.deporte);
 
-module.exports = { guardarPartidos, deportesEnJuego };
+/**
+ * Partidos abiertos de una competición que empiezan entre `desdeIso` y `hastaIso` y cuyos mercados adicionales (#532)
+ * no se han pedido desde `antesDeMs`: los primeros que empiezan, hasta `limite`.
+ */
+const partidosSinExtras = (deporteKey, { desdeIso, hastaIso, antesDeMs, limite }) =>
+    db
+        .prepare(
+            `SELECT match_id, home_team, away_team FROM apuestas_partidos
+             WHERE deporte = ? AND estado = 'abierto' AND start_time > ? AND start_time <= ?
+               AND (extras_ts IS NULL OR extras_ts < ?)
+             ORDER BY start_time, id LIMIT ?`,
+        )
+        .all(deporteKey, desdeIso, hastaIso, antesDeMs, limite);
+
+/**
+ * Guarda las cuotas de ambos marcan y doble oportunidad de un partido abierto, y cuándo se pidieron. Lo que la API no da
+ * queda a null (el mercado deja de ofrecerse): una cuota vieja de un mercado retirado no debe seguir a la venta.
+ */
+function guardarMercadosExtra(matchId, x, ts) {
+    db.prepare(
+        `UPDATE apuestas_partidos SET cuota_ambos_si = ?, cuota_ambos_no = ?, cuota_dc_1x = ?, cuota_dc_12 = ?, cuota_dc_x2 = ?,
+             extras_ts = ?
+         WHERE match_id = ? AND estado = 'abierto'`,
+    ).run(x.cuota_ambos_si, x.cuota_ambos_no, x.cuota_dc_1x, x.cuota_dc_12, x.cuota_dc_x2, ts, matchId);
+}
+
+module.exports = { guardarPartidos, deportesEnJuego, partidosSinExtras, guardarMercadosExtra };

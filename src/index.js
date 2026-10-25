@@ -121,6 +121,12 @@ client.once("clientReady", async () => {
     log.info(`Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
     programarTareas(client);
     latencias.iniciarLog();
+    // 🛡️ Las guardias de voz (#553) vuelven a su canal tras un reinicio; si el canal ya no está, se descartan.
+    runJob("Guardias de voz (arranque)", () => require("./systems/guardia").recuperarAlArrancar(client));
+    // 📅 Recordatorios del calendario (#540), cada minuto.
+    require("./app/tareasCalendario").programarCalendario(client);
+    // 🔁 Exchange (#533): lo no cruzado de los partidos que empiezan se devuelve (cada minuto).
+    require("./app/tareasExchange").programarExchange();
 
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
     // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia
@@ -176,6 +182,14 @@ client.on("guildCreate", (g) => gwLog.info(`Añadido a un servidor: ${g.name} ($
 // 👋 Bienvenida a quien entra al servidor (#435): en el canal configurado; los bots no generan mensaje.
 client.on("guildMemberAdd", (member) => {
     bienvenida.enviarBienvenida(member).catch((e) => gwLog.warn(`Error dando la bienvenida a ${member.id}:`, e));
+});
+// ⏳ Un rol borrado cancela sus roles temporales activos (#543).
+client.on("roleDelete", (role) => {
+    try {
+        require("./discord/envios/rolesTemporales").alBorrarRol(role.guild.id, role.id);
+    } catch (e) {
+        log.warn(`No se pudieron cancelar los roles temporales del rol borrado ${role.id}: ${e.message}`);
+    }
 });
 client.on("guildDelete", (g) => gwLog.warn(`Expulsado o eliminado de un servidor: ${g.name ?? "?"} (${g.id})`));
 client.rest.on("rateLimited", (info) =>
@@ -292,6 +306,8 @@ async function shutdown(motivo, exitCode) {
     log.info(`Apagando El Duende (${motivo})...`);
     // Por si algo se cuelga cerrando: el proceso muere igualmente a los 5 s.
     setTimeout(() => process.exit(exitCode), 5000).unref();
+    // Cerrar Discord cierra la voz: las guardias siguen guardadas para el siguiente arranque.
+    require("./systems/guardia").apagando();
     try {
         await client.destroy();
     } catch (e) {

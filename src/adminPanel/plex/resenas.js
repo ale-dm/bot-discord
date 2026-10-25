@@ -1,8 +1,17 @@
 // ⭐ Reseñas de Plex en /paneladmin → 🎬 Plex (#571): activar los avisos por DM, el tope diario, el mínimo de votos de los
-// rankings y borrar una reseña (también una oculta) con confirmación y auditoría. Los botones, modales y selectores de
+// rankings, el canal del feed de reseñas (#573) y borrar una reseña (también una oculta) con confirmación y auditoría. Los botones, modales y selectores de
 // `paneladmin_plex_resenas…` llegan desde botones.js, modales.js y selects.js.
 const crypto = require("crypto");
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, StringSelectMenuBuilder } = require("discord.js");
+const {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelSelectMenuBuilder,
+    ChannelType,
+    EmbedBuilder,
+    MessageFlags,
+    StringSelectMenuBuilder,
+} = require("discord.js");
 const plexResenas = require("../../systems/plexResenas");
 const pedidos = require("../../systems/plexResenas/pedidos");
 const guildSettings = require("../../systems/guildSettings");
@@ -45,7 +54,8 @@ function buildResenasAdmin(guildId) {
         .setDescription(
             `Avisos por DM: **${activo ? "activados" : "desactivados"}**${activo ? "" : " (no se manda ninguno)"}\n` +
                 `Tope diario por persona: **${Number(plex.resenas_max_dia) || pedidos.MAX_DIA}**\n` +
-                `Mínimo de votos para los rankings: **${Number(plex.resenas_min_votos) || 3}**\n\n` +
+                `Mínimo de votos para los rankings: **${Number(plex.resenas_min_votos) || 3}**\n` +
+                `Feed de reseñas: ${plex.resenas_canal ? `<#${plex.resenas_canal}>` : "**sin canal** (no se publica ninguna)"}\n\n` +
                 `Reseñas: **${cuenta.total}** (${cuenta.ocultas} ocultas) · media **${cuenta.media === null ? "sin reseñas" : numero(cuenta.media)}**\n` +
                 `Avisos esperando respuesta: **${cuenta.pendientes}**`,
         )
@@ -60,11 +70,24 @@ function buildResenasAdmin(guildId) {
         new ButtonBuilder().setCustomId(`${PREFIJO}_min_votos`).setLabel("🔢 Mínimo de votos").setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId(`${PREFIJO}_borrar`).setLabel("🗑️ Borrar reseña").setStyle(ButtonStyle.Danger),
     );
+    const canal = new ActionRowBuilder().addComponents(
+        new ChannelSelectMenuBuilder()
+            .setCustomId(`${PREFIJO}_canal_select`)
+            .setPlaceholder("📣 Canal del feed de reseñas")
+            .setMinValues(1)
+            .setMaxValues(1)
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+    );
     const nav = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(PREFIJO).setLabel("🔄 Refrescar").setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId(`${PREFIJO}_canal_quitar`)
+            .setLabel("🚫 Quitar canal del feed")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(!plex.resenas_canal),
         new ButtonBuilder().setCustomId("paneladmin_plex_home").setLabel("◀ Plex").setStyle(ButtonStyle.Secondary),
     );
-    return { embeds: [embed], components: [fila1, nav] };
+    return { embeds: [embed], components: [fila1, canal, nav], allowedMentions: { parse: [] } };
 }
 
 /** Activa o desactiva los avisos. Al activar, `desde` es ahora: lo que la gente vio antes no se le pregunta (sin backfill). */
@@ -79,6 +102,21 @@ async function alternarAvisos(interaction, guildId) {
         details.desde = desde;
     }
     adminAudit.logAdminAction({ guildId, actorId: interaction.user.id, action: "plex.resenas.activo", details });
+    await interaction.update(buildResenasAdmin(guildId));
+    return true;
+}
+
+/** Pone (o quita, con "") el canal del feed de reseñas y lo deja en la auditoría con el antes y el después. */
+async function cambiarCanal(interaction, canalId) {
+    const guildId = interaction.guildId;
+    const antes = guildSettings.getSettings(guildId).plex.resenas_canal || null;
+    guildSettings.setSetting(guildId, "plex.resenas_canal", canalId);
+    adminAudit.logAdminAction({
+        guildId,
+        actorId: interaction.user.id,
+        action: "plex.resenas.canal",
+        details: { antes, ahora: canalId || null },
+    });
     await interaction.update(buildResenasAdmin(guildId));
     return true;
 }
@@ -229,6 +267,7 @@ async function handleResenasButton(interaction) {
         );
         return true;
     }
+    if (id === `${PREFIJO}_canal_quitar`) return cambiarCanal(interaction, "");
     if (id.startsWith(`${PREFIJO}_si_`)) return confirmarBorrado(interaction, id.slice(`${PREFIJO}_si_`.length));
     if (id === `${PREFIJO}_no`) {
         await interaction.update({ content: "Cancelado.", embeds: [], components: [] });
@@ -261,4 +300,12 @@ async function handleResenasPick(interaction) {
     return elegirParaBorrar(interaction, interaction.values[0]);
 }
 
-module.exports = { PREFIJO, buildResenasAdmin, handleResenasButton, handleResenasModal, handleResenasPick };
+/** El selector de canal del feed (#573). */
+async function handleResenasCanal(interaction) {
+    if (interaction.customId !== `${PREFIJO}_canal_select`) return false;
+    const canalId = interaction.values?.[0];
+    if (!canalId) return false;
+    return cambiarCanal(interaction, String(canalId));
+}
+
+module.exports = { PREFIJO, buildResenasAdmin, handleResenasButton, handleResenasModal, handleResenasPick, handleResenasCanal };

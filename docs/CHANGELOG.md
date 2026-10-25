@@ -2,6 +2,110 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-25 (exchange de apuestas entre jugadores, #533)
+
+- **🔁 Exchange** en la ficha del partido: libro privado por resultado y cuota, **➕ A favor** (publicar orden con lo apostado retenido) y **🤝 En contra** (cruzar el libro: cuota más baja primero y, a igual cuota, la más antigua; cruces parciales; riesgo retenido). Solo órdenes a favor en esta versión.
+- **Comisión** del 2 % de la ganancia neta, la paga quien gana; se enseña en la confirmación.
+- **📋 Mis órdenes** con estados (sin cruzar, en parte, cruzada, cancelada, liquidada) y cancelar lo no cruzado. Al empezar el partido, lo no cruzado se devuelve solo cada minuto (`src/app/tareasExchange.js`).
+- **Liquidación**: con el mismo resultado que el resto de apuestas, una sola vez por cruce; sin resultado, cada parte recupera lo suyo.
+- **Límites**: 10 % del capital por orden, 25 % por partido y 100.000 en total.
+- **Migración 086** (`exchange_ordenes`, `exchange_cruces`). **✅ Verificación**: tests de reglas, límites, motor de cruces (prioridad, parciales, propias), cancelación, cierre al empezar, liquidación (gana cada parte, comisión, sin doble pago, sin resultado, de punta a punta) e interfaz; `npm run check` en verde.
+
+## 2026-10-25 (apuestas de sistema, #534)
+
+- **🎛️ Sistema** en el boleto de la combinada: con 3, 4 o 5 partidos se juegan las combinaciones parciales 2 de 3, 3 de 4 o 3 de 5. Importe por combinación, coste total (máximo 50.000) enseñado antes de confirmar junto al retorno máximo y cuántos partidos se pueden fallar. Se cobra una vez y se guardan las patas y cada subcombinación.
+- **Liquidación**: cada combinación acertada paga importe × sus cuotas (redondeo por combinación); un partido caducado cuenta con cuota 1,00; si se caducan todos, se devuelve el coste. Los partidos con solo patas de sistema también se consultan a la API.
+- **📋 Mis jugadas**: sistemas en juego y resueltos con cada partido y cada combinación.
+- **Migración 085** (`sistemas`, `sistema_patas`, `sistema_combinaciones`). **✅ Verificación**: tests del generador, el coste, los límites, el cobro, la liquidación parcial, total, nula, con anuladas y todas anuladas, el redondeo, la doble liquidación, de punta a punta con la API simulada, el boleto y Mis jugadas; `npm run check` en verde.
+
+## 2026-10-24 (cash-out anticipado, #529)
+
+- **💸 Retirar ya** en 📋 Mis jugadas → ⏳ En juego: cobra ahora una apuesta a un partido o una combinada que siguen en juego (también en directo). Valor = lo apostado × cuota original ÷ cuota actual − 8 % de margen, con tope de 1.000.000. En combinadas, solo si ninguna pata ha fallado; las acertadas cuentan con cuota 1.
+- **Sin cuota no hay oferta**: mercado suspendido, marcador exacto, partido cerrado, otra línea o cuotas de hace más de 30 minutos (se guarda `cuotas_ts` al recibir cuotas de la API).
+- **Bloqueo de 60 s**: al confirmar se recalcula; si caducó o la cuota se movió más de un 10 %, enseña la oferta nueva sin cobrar. Cobro único en una transacción (`retirada_en`), historial «Cash-out: …» y la liquidación ya no la toca.
+- **Mis jugadas y estadísticas**: la retirada sale de ⏳ En juego, aparece en 📋 Resueltas como «💸 Retirada (+N)» y cuenta como resuelta con lo cobrado.
+- **Migración 084**. **✅ Verificación**: tests del valor, cuándo hay cuota, bloqueo, movimiento de cuota, doble confirmación, liquidación posterior, combinadas, botones y estadísticas; `npm run check` en verde.
+
+## 2026-10-24 (calendario de eventos, #540)
+
+- **📅 `/calendario`** (comando nuevo, privado): lo programado por semanas o por meses con ◀ ▶, agrupado por día (hora de Madrid) y con la hora en timestamp de Discord. Junta sesiones de cine (con enlace), cumpleaños, partidos de las competiciones elegidas, el cierre de las quinielas abiertas y los eventos de los admins. Sin eventos, lo explica; con muchos, no pasa del límite del embed.
+- **⚙️ Config Global → 📅 Calendario**: canal fijo y minutos de los recordatorios, competiciones y eventos propios (crear y borrar), auditados (`calendario.crear`, `calendario.borrar`, `calendario.ajustes`).
+- **Recordatorios**: cada minuto (`src/app/tareasCalendario.js`, programado al arrancar), una sola vez por evento aunque el bot se reinicie; si el envío falla, se reintenta.
+- **Migración 082** (`calendario_eventos`, `calendario_recordatorios`) y ajustes `calendario.*`. **✅ Verificación**: tests de rangos con cambio de hora, agregación, orden, límites, eventos manuales, recordatorios, vista, `/calendario` y panel; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
+## 2026-10-24 (avisos y strikes de moderación, #542)
+
+- **`/avisar usuario motivo`** (comando nuevo, staff): le llega un DM al avisado con el motivo, suma un strike y se apunta en el canal de log de moderación. Pueden usarlo quienes tengan Moderar miembros, los admins y el rol de staff configurado.
+- **Strikes**: caducan a los 90 días (ajustable) sin borrarse del historial. Al cruzar 3, 5, 7 y 10 (ajustables) se manda a los admins de las alertas la medida sugerida (aviso serio, silenciar 24 h, expulsión o ban). **El bot no sanciona nunca.**
+- **⚙️ Config Global → ⚠️ Moderación**: rol de staff y canal de log, umbrales y caducidad, quién tiene strikes vigentes, historial de una persona, retirar uno o limpiarlos con confirmación.
+- **Auditoría**: `moderacion.aviso`, `moderacion.retirar`, `moderacion.limpiar`, `moderacion.ajustes` y `moderacion.staff`, con su familia en el filtro.
+- **Migración 080** (`strikes`) y ajustes `moderacion.*`. **✅ Verificación**: tests de permisos, acumulación, caducidad, umbrales, retirar, limpiar, `/avisar` (DM, log, admins, DM cerrado) y el panel con y sin admin; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
+## 2026-10-24 (panel de estadísticas del servidor, #538)
+
+- **⚙️ Config Global → 📊 Estadísticas**: gráfica de barras (ECharts → PNG, el mismo renderizador de `/cripto`) de mensajes, XP, economía neta, dinero apostado u horas de Plex en 7, 30 o 90 días, con total, media, mejor día y variación respecto al periodo anterior. Caché de 5 minutos por métrica y rango con 🔄 Actualizar deshabilitado mientras dura. Auditoría `consulta.estadisticas` al abrirlo.
+- **Datos nuevos**: el bot no guardaba los mensajes por día y `xp_diaria` se borra a las dos semanas; ahora se cuentan en `estadisticas_diarias` (los mensajes desde este despliegue; la XP arranca con lo que quedaba en `xp_diaria`). Índice nuevo en `historial(fecha)` para las consultas por rango.
+- **Migración 083**. **✅ Verificación**: tests de contadores, series por día de Madrid de cada métrica, resumen y variación, formateo de la gráfica sin renderizar, la migración, el índice y el panel con su caché; `npm run check` en verde.
+
+## 2026-10-24 (roles temporales, #543)
+
+- **⏳ Roles temporales** en `/paneladmin` → ⚙️ Config Global: dar un rol de 1 a 365 días (7 por defecto) con DM opcional al darlo y al quitarlo, lista de activos (persona, rol, quién lo dio y cuándo vence), 🔁 renovar desde el vencimiento (o desde ahora si ya venció; tope de 365 días) y ➖ quitar antes de tiempo con confirmación.
+- **Vencimiento automático**: cada minuto y al arrancar (lo que venció con el bot apagado). Comprueba jerarquía y permisos antes de dar o quitar, no toca roles de integraciones y, si el rol se borra, cancela sus asignaciones (evento `roleDelete`).
+- **Auditoría**: `roles.temporal_dar`, `roles.temporal_renovar`, `roles.temporal_quitar`, `roles.temporal_vencer` y `roles.temporal_cancelar`, con su familia en el filtro de 🧾 Auditoría.
+- **Tareas**: sorteos, depósitos a plazo y roles temporales se programan ahora en `src/app/tareasPorMinuto.js` (`tareas.js` estaba en el límite de 400 líneas). Mismos horarios.
+- **Migración 079** (`roles_temporales`). **✅ Verificación**: tests de duración, asignar, renovar, quitar, vencer, reinicio, jerarquía y permisos, rol borrado, DM y panel con y sin admin; `npm run check` en verde.
+
+## 2026-10-24 (mercados ambos marcan y doble oportunidad, #532)
+
+- **⚽ Ambos marcan (Sí/No) y 🔀 doble oportunidad (1X, 12, X2)**: nuevos mercados en la ficha del partido (en su propia fila, con nombre completo y leyenda), en el menú de 🧩 combinada y en 🧾 Mis jugadas. Con empate, 1X y X2 ganan y 12 pierde.
+- **Cuotas del proveedor**: se leen de los mercados adicionales `btts` y `double_chance` de la Odds API, que solo se piden partido a partido. Para no gastar créditos sin querer están **apagados** salvo con `ODDS_MERCADOS_EXTRA=btts,double_chance`, con ventana (`ODDS_EXTRA_HORAS`), tope por pasada (`ODDS_EXTRA_MAX`) y sin repetir un partido hasta `ODDS_EXTRA_MINUTOS`. Un mercado a medias no se ofrece.
+- **Cerrados al empezar**: aunque haya apuestas en directo, estos mercados no se pueden apostar con el partido empezado (sus cuotas no se refrescan en juego).
+- **Arreglo**: el listado de partidos y 🧩 Sumar a mi combinada leen ahora las columnas del partido de una sola lista (`COLUMNAS_PARTIDO`).
+- **Migración 087** (cuotas y `extras_ts` en `apuestas_partidos`). **✅ Verificación**: tests de acierto en victoria local, empate y visitante, lectura de la API, consumo de créditos, ficha, apostar, liquidación sin pagar dos veces y combinadas; `npm run check` en verde.
+
+## 2026-10-24 (tickets de soporte, #537)
+
+- **🎫 Tickets**: en el canal de tickets, el panel público 🎫 Soporte tiene **🎫 Abrir ticket**, que abre un formulario con la **categoría** (las que configura el admin, «General» por defecto) y qué necesitas. Se crea un **hilo privado** no invitable en ese canal, con el autor dentro y una mención al **rol de staff** (si el rol no es mencionable y el bot no puede mencionar a todos, mete a mano en el hilo a los del staff que tenga en caché).
+- **🔒 Cierre con confirmación**: 🔒 Cerrar ticket lo pueden usar el autor y el staff (rol de staff, admins o quien gestiona hilos), comprobado al pulsar y al confirmar. Si lo cierra el autor, el aviso de cierre menciona al staff. Al cerrar, la conversación va en un **`ticket-N.txt`** (hasta 1 MB, recortado si no cabe y diciéndolo) al **canal de transcripciones** con un registro de quién lo abrió, quién lo cerró, cuándo y cuánto duró; el botón queda desactivado y el hilo bloqueado y archivado. Si no se puede mandar la transcripción, el ticket se cierra igual y se avisa del motivo.
+- **🚦 Límites**: **uno abierto por persona** (también con un índice único parcial en la BD, contra dos clics a la vez) y **una hora de espera** tras cerrar. Si el hilo de un ticket abierto se borra a mano, o una apertura se queda sin hilo más de 5 minutos, se da por **perdido** y no bloquea ni cuenta para la espera. Si Discord no deja crear el hilo, el ticket se descarta.
+- **🛡️ Permisos del bot**: antes de crear un ticket y de publicar el panel se comprueba que el bot tiene en el canal de tickets «Ver canal», «Enviar mensajes», «Insertar enlaces», «Crear hilos privados», «Enviar mensajes en hilos» y «Gestionar hilos», y en el de transcripciones «Adjuntar archivos» y compañía; si falta algo, se dice qué y dónde.
+- **⚙️ Panel admin**: `/paneladmin` → ⚙️ Config Global → 📣 Comunidad → **🎫 Tickets** (prefijo `paneladmin_tic_`): ⚙️ Canales y rol, 🏷️ Categorías (una por línea, hasta 10 de 40 caracteres), 📤 Publicar panel y los tickets abiertos. Ajustes nuevos `tickets.canal_id`, `tickets.rol_staff`, `tickets.canal_logs` y `tickets.categorias`; todo se audita (`tickets.config`, `tickets.categorias`, `tickets.publicar`) y hay una familia 🎫 Tickets en el filtro de la Auditoría. `/ayuda` lo explica.
+- **🧩 Capas**: las reglas en `systems/tickets.js` y la transcripción en `systems/ticketsTranscripcion.js` (sin Discord); los mensajes en `paneles/tickets.js`; los botones y el formulario (`ticket_abrir`, `ticket_modal`, `ticket_cerrar_N`, `ticket_confirmar_N`, `ticket_cancelar_N`) en `paneles/ticketsAcciones.js`; los hilos, los permisos y el envío a logs en `discord/envios/tickets.js`; el panel admin en `adminPanel/tickets.js`.
+- **✅ Verificación**: `tests/tickets.test.js` (configuración, categorías, uno abierto, espera, perdidos, cierre y transcripción con su recorte), `tests/ticketsFlujo.test.js` (formulario, hilo privado, aviso al staff, permisos del bot y de quien cierra, confirmación, transcripción a logs y bloqueo del hilo) y `tests/adminTickets.test.js` (panel con y sin admin, ajustes y auditoría, categorías, publicar y permisos). Migración 077. `npm run check` en verde (244 suites, 3131 tests).
+
+## 2026-10-24 (ruleta de películas de Plex, #576)
+
+- **🎲 Ruleta de películas**: botón nuevo en `/plex` → ⭐ Reseñas, en la fila de navegación (la de vistas ya tiene 5 botones). Una película al azar de Plex que **no has visto** (`visto = 1` de tu historial en `plex_reproducciones`, por clave de Plex o por título y año, con tu vínculo de `plexLinks`); sin vínculo, lo explica.
+- **🎭 Filtros**: menús de **género** (los mismos géneros en español e inglés cuentan juntos, como en los trofeos), **década** y **duración máxima** (hasta 1 h 30, 2 h o 2 h 30), que solo ofrecen lo que queda sin ver con los otros filtros; sin nada, 🧹 Quitar filtros. Con un máximo de duración no salen las películas cuya duración no se sabe.
+- **⏱️ Duración en las fichas**: migración 078 (`plex_fichas.duracion`, minutos). `fichaPelicula` guarda el `duration` de `get_metadata` redondeado a minutos (o null si no lo trae). Las fichas que ya había se rellenan cuando se refrescan (cada ficha de película, al cumplir 30 días); mientras ninguna la tenga, el menú de duración no sale.
+- **🃏 La ficha**: géneros, director, biblioteca y la media de las reseñas del servidor; ⭐ Puntuar desactivado (solo se valora lo visto: se puntúa al verla), 📝 **Quiero ver** (nueva `plexAvisos.apuntarDePlex`: la apunta en tu lista de «quiero ver» con el id de TMDB de la ficha, sin preguntar a Seerr y ya como disponible, así no llega el DM de aviso) y 🎬 **Otra**, que nunca repite la anterior (si es la única, lo dice).
+- **🧩 Capas**: la tirada en `systems/plexRuleta.js` (sin Discord, `azar` inyectable), solo con la BD (`plex_fichas`, también las películas que el repaso de la biblioteca ha apuntado y aún no tienen ficha; la copia 4K cuenta una vez): **ninguna llamada a Tautulli por tirada**. La pantalla en `paneles/plexRuleta.js` (filtros y película en pantalla en el `customId`) y los botones y menús `plex_ruleta_*` / `plex_sel_ruleta_*` en `commands/plex/ruleta.js`.
+- **✅ Verificación**: `tests/plexRuleta.test.js` (biblioteca sembrada en BD: nunca lo visto ni otra copia de lo visto, sin vincular, biblioteca vacía, todo visto, filtros de género, década y duración con su menú, la migración 078, 🎬 Otra sin repetir y la única, límites de Discord, Quiero ver sin duplicar y sin Seerr, y sin llamadas a Tautulli) y `tests/plexFichas.test.js` (la ficha guarda la duración). Migración 078. `npm run check` en verde (242 suites, 3125 tests).
+
+## 2026-10-24 (Mi cine: diario y estadísticas personales de Plex, #574)
+
+- **📊 Mi cine**: botón nuevo en `/plex` → ⭐ Reseñas (la fila de vistas llega a 5 botones). Privado, como todo `/plex`: tus reseñas (cuántas, de películas y de series o temporadas, y la media que das frente a la del servidor), tu película mejor y peor valorada (con empate, la que tiene ❤️ y la más reciente; con todas iguales no hay peor), el **género y la década** que más ves (películas y series vistas, una vez por título, con las fichas de Plex), tu **racha** de días seguidos viendo algo (la actual y la mejor) frente a la media del servidor y **tu año hasta hoy** (reseñas del año, horas, películas, episodios, series más vistas y mejor racha del año).
+- **🖼️ Imagen del año**: reutiliza la imagen del 🎞️ Wrapped (`plexWrapped.graficoPersonal`) con el periodo del año en curso y la manda aparte, efímera. Solo se ofrece si has visto series ese año.
+- **🙈 Privacidad**: la media del servidor usa el filtro `PUBLICAS` (nueva `mediaPublica` en `systems/plexResenas/consultas.js`): no cuentan las reseñas ocultas ni las de quien oculta las suyas. La media de racha del servidor no cuenta a quien oculta sus logros de Plex.
+- **🧩 Capas**: los cálculos en `systems/plexResenas/miCine.js` (sin Discord, `deps` inyectables), reutilizando `plexTrofeos.datosUsuario`, `mejorRacha`, `rachaMasLarga` y la nueva `datosVistos.diasVistos` (`mejorRacha` la usa ahora por dentro); la pantalla en `paneles/plexMiCine.js`; los botones `plex_resenas_cine` y `plex_resenas_cine_imagen` en `commands/plex/resenas.js`.
+- **✅ Verificación**: `tests/plexMiCine.test.js` (recuento y media, mejor y peor, media pública sin ocultas, género y década con empates, racha actual, mejor y del servidor, año en curso en hora de Madrid, sin vincular, imagen del año, pantalla y botones). Sin migraciones. `npm run check` en verde (241 suites, 3087 tests).
+
+## 2026-10-24 (feed de reseñas de Plex en un canal, #573)
+
+- **📣 Feed de reseñas**: con un canal en `plex.resenas_canal` (apagado por defecto), cada reseña nueva sale allí justo después de guardarla, desde el DM o desde la ficha de `/plex` → ⭐ Reseñas: título, nota en estrellas, un extracto de 300 caracteres y el autor mencionado sin aviso (`allowedMentions: { parse: [] }`). Las de spoilers salen sin texto, con «⚠️ contiene spoilers».
+- **🔁 Una sola vez**: `plexResenas.guardar()` devuelve `nueva` (no había reseña de esa persona en ese título) y solo esas se publican; cambiar una reseña no la republica. Sin migración: borrarla y escribirla de nuevo cuenta como nueva, y lo reseñado sin canal no se publica después.
+- **🙈 Privacidad**: no salen las reseñas ocultas (`plex_resenas.oculto`) ni las de quien oculta las suyas (`plex_preferencias.ocultar_resenas`).
+- **🧩 Capas**: la decisión en `systems/plexResenas/feed.js`, el mensaje en `discord/mensajes/resenaFeed.js` y el envío best-effort en `discord/envios/resenaFeed.js` (un canal borrado, de otro servidor o sin permisos se registra y la reseña queda guardada).
+- **⭐ Panel admin**: en `/paneladmin` → 🎬 Plex → ⭐ Reseñas, selector del canal del feed y 🚫 Quitar canal del feed, con auditoría `plex.resenas.canal` (`{ antes, ahora }`).
+- **✅ Verificación**: `tests/plexResenasFeed.test.js` (mensaje, spoilers, extracto, sin canal, edición, ocultas, envío desde la ficha y el DM, canal ajeno o caído, y el control del panel con y sin permisos y por el enrutador). Sin migraciones. `npm run check` en verde (240 suites, 3066 tests).
+
+## 2026-10-24 (guardia del Duende en un canal de voz, #553)
+
+- **🛡️ Guardia en `/duende`**: el bot entra al canal de voz de quien pulsa (o al que elija en un formulario con un selector de canales de voz) y se queda indefinidamente, sin temporizador. **🚪 Dejar la guardia** se sale al momento; solo quien la puso o un admin pueden dejarla o moverla (el resto ve los botones deshabilitados y se comprueba también al pulsar). El panel enseña el canal, quién la puso y desde cuándo.
+- **🔌 Misma conexión que `/conectar`**: la guardia es una presencia de `systems/presencia.js` con `guardia: { porUserId, desde }` y sin salida automática, así que `/sonidos`, `/tts` y el Duende por voz la reutilizan. Sustituye a una presencia de `/conectar`; `/conectar` no la sustituye, ni la renueva, ni la cierra (avisa), y `/conversación` no empieza mientras dura.
+- **💾 Sobrevive a los reinicios**: tabla `guardia_voz` (migración 076); al arrancar (`systems/guardia.js` → `recuperarAlArrancar`) vuelve al mismo canal, y si el canal ya no existe o faltan permisos descarta el registro y lo deja en el log. Si Discord echa al bot (y no se recupera en 5 s) o la conexión se destruye, la guardia se acaba y se borra su registro; al apagar el bot, no.
+- **✅ Verificación**: `tests/guardia.test.js` (poner, permisos, sin caducidad, persistencia y recuperación al arrancar, descarte, `/conectar` y `/conversación`, limpieza al destruirse la conexión) y `tests/guardiaPanel.test.js` (botones, formulario, estado y restricciones). Migración 076. `npm run check` en verde (239 suites, 3045 tests).
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).
