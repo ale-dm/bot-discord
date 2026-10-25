@@ -770,3 +770,15 @@ Issue #534. Con tres partidos próximos con cuotas.
 - [ ] En 📋 Mis jugadas → ⏳ En juego sale el sistema con sus partidos y sus 3 combinaciones.
 - [ ] Al liquidar, con un partido fallado, se cobra solo la combinación de los otros dos y sale en 📋 Resueltas.
 - [ ] Con 5 partidos y un importe que haga pasar de 50.000, la confirmación avisa y no deja apostar.
+
+## T-24 Probar en Discord el exchange de apuestas
+
+Issue #533. Con dos cuentas y un partido próximo.
+
+- [ ] En la ficha del partido, 🔁 Exchange abre el libro en privado (vacío al principio).
+- [ ] Cuenta A: ➕ A favor del local @2,5 con 200: la confirmación dice lo que cobra y la comisión; al publicar se le retienen 200 y la orden sale en el libro.
+- [ ] Cuenta B: 🤝 En contra del local hasta 2,5 cubriendo 100: la confirmación dice el riesgo (150); al cruzar se le retiene.
+- [ ] Cuenta A, 📋 Mis órdenes: la orden sale «en parte»; cancelar devuelve los 100 sin cruzar.
+- [ ] Cuenta A no puede cruzar su propia orden.
+- [ ] Al empezar el partido, una orden sin cruzar se devuelve sola.
+- [ ] Al liquidar, quien gana cobra lo suyo y lo del otro menos el 2 % de su ganancia, una sola vez.

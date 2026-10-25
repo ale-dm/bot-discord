@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-25 (exchange de apuestas entre jugadores, #533)
+
+- **🔁 Exchange** en la ficha del partido: libro privado por resultado y cuota, **➕ A favor** (publicar orden con lo apostado retenido) y **🤝 En contra** (cruzar el libro: cuota más baja primero y, a igual cuota, la más antigua; cruces parciales; riesgo retenido). Solo órdenes a favor en esta versión.
+- **Comisión** del 2 % de la ganancia neta, la paga quien gana; se enseña en la confirmación.
+- **📋 Mis órdenes** con estados (sin cruzar, en parte, cruzada, cancelada, liquidada) y cancelar lo no cruzado. Al empezar el partido, lo no cruzado se devuelve solo cada minuto (`src/app/tareasExchange.js`).
+- **Liquidación**: con el mismo resultado que el resto de apuestas, una sola vez por cruce; sin resultado, cada parte recupera lo suyo.
+- **Límites**: 10 % del capital por orden, 25 % por partido y 100.000 en total.
+- **Migración 086** (`exchange_ordenes`, `exchange_cruces`). **✅ Verificación**: tests de reglas, límites, motor de cruces (prioridad, parciales, propias), cancelación, cierre al empezar, liquidación (gana cada parte, comisión, sin doble pago, sin resultado, de punta a punta) e interfaz; `npm run check` en verde.
+
 ## 2026-10-25 (apuestas de sistema, #534)
 
 - **🎛️ Sistema** en el boleto de la combinada: con 3, 4 o 5 partidos se juegan las combinaciones parciales 2 de 3, 3 de 4 o 3 de 5. Importe por combinación, coste total (máximo 50.000) enseñado antes de confirmar junto al retorno máximo y cuántos partidos se pueden fallar. Se cobra una vez y se guardan las patas y cada subcombinación.

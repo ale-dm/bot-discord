@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Exchange de apuestas (migración 086, 2026-10-25)
+
+- **086** crea `exchange_ordenes` y `exchange_cruces`. No hay que rellenar nada. Una tarea nueva cada minuto devuelve lo no
+  cruzado de los partidos que empiezan.
+
 ### Apuestas de sistema (migración 085, 2026-10-25)
 
 - **085** crea `sistemas`, `sistema_patas` y `sistema_combinaciones`. No hay que rellenar nada.
