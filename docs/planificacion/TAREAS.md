@@ -714,3 +714,13 @@ Issue #543. Con un rol de pruebas por debajo del bot y otra cuenta.
 - [ ] Dar uno de 1 día, apagar el bot, adelantar `vence` en una BD de pruebas y arrancar: el rol se quita al arrancar.
 - [ ] Borrar el rol en Discord: su asignación desaparece de la lista.
 - [ ] 🧾 Auditoría → filtro ⏳ Roles temporales: están todos los cambios.
+
+## T-21 Probar en Discord las estadísticas del servidor
+
+Issue #538. Tras un día de uso con el bot nuevo.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 📊 Estadísticas: sale la gráfica de mensajes de 7 días, con total, media, mejor día y variación.
+- [ ] Cambiar a 30 y 90 días y a cada métrica del desplegable: la gráfica y los números cambian y el botón del rango actual queda marcado.
+- [ ] 🔄 Actualizar está deshabilitado los primeros 5 minutos y luego recalcula.
+- [ ] Con 90 días de economía el panel responde sin que el bot se quede colgado.
+- [ ] Con una cuenta sin admin no se puede abrir; en 🧾 Auditoría aparece quién lo abrió (`consulta.estadisticas`).
