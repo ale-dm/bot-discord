@@ -689,3 +689,15 @@ el rol ni permisos de admin).
 - [ ] Abrir otro y cerrarlo desde la cuenta del staff: el aviso de cierre no menciona al rol.
 - [ ] Borrar a mano el hilo de un ticket abierto y volver a pulsar 🎫 Abrir ticket: deja abrir uno nuevo.
 - [ ] Quitar al bot «Adjuntar archivos» en el canal de transcripciones y cerrar un ticket: se cierra igual y avisa de que no pudo guardar la transcripción.
+
+## T-17 Probar en Discord ambos marcan y doble oportunidad
+
+Issue #532. Con `ODDS_MERCADOS_EXTRA=btts,double_chance` en `.env` y créditos de la Odds API.
+
+- [ ] Tras actualizar las cuotas, en el log aparece «Mercados adicionales de …: N partidos».
+- [ ] La ficha de un partido con esas cuotas muestra una fila con ⚽ Ambos marcan: Sí/No y 🔀 Doble oportunidad 1X/12/X2, y la leyenda.
+- [ ] Un partido sin esas cuotas se ve como antes.
+- [ ] Apostar a «Doble oportunidad: X2»: se cobra una vez y sale en 🧾 Mis jugadas con su nombre completo.
+- [ ] Sumar «Ambos marcan: Sí» a una combinada con otro partido.
+- [ ] Con un partido ya empezado (y `ODDS_DIRECTO=1`), los botones nuevos no salen y no se puede apostar.
+- [ ] Al liquidar, comprobar el pago con un empate (1X y X2 cobran, 12 no).
