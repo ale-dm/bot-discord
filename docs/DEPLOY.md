@@ -58,6 +58,12 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
 - **082** crea `calendario_eventos` y `calendario_recordatorios`. No hay que rellenar nada. Comando nuevo **`/calendario`**:
   hay que volver a registrar los comandos. Los recordatorios no salen hasta elegir canal en ⚙️ Config Global → 📅 Calendario.
 
+### Avisos y strikes de moderación (migración 080, 2026-10-24)
+
+- **080** crea `strikes`. No hay que rellenar nada. Comando nuevo **`/avisar`**: hay que volver a registrar los comandos en
+  Discord al desplegar. Para que lleguen los avisos de umbral, los admins tienen que estar en `alertas.admin_ids`
+  (🩺 Sistema → alertas).
+
 ### Estadísticas del servidor (migración 083, 2026-10-24)
 
 - **083** crea `estadisticas_diarias` (mensajes y XP por día), la rellena con la XP de `xp_diaria` (dos semanas) y añade un

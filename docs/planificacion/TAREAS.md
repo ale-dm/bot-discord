@@ -725,6 +725,18 @@ Issue #538. Tras un día de uso con el bot nuevo.
 - [ ] Con 90 días de economía el panel responde sin que el bot se quede colgado.
 - [ ] Con una cuenta sin admin no se puede abrir; en 🧾 Auditoría aparece quién lo abrió (`consulta.estadisticas`).
 
+## T-19 Probar en Discord los avisos y strikes
+
+Issue #542. Con una cuenta de staff (sin ser admin) y otra normal.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → ⚠️ Moderación → 🛡️ Staff y canal: elegir el rol de staff y un canal de log.
+- [ ] Con la cuenta de staff, `/avisar usuario motivo`: el avisado recibe el DM con el motivo y en el canal de log sale la línea (sin notificar a nadie).
+- [ ] Con una cuenta sin permisos, `/avisar` responde que solo el staff puede.
+- [ ] Avisar tres veces a la misma persona: a los admins les llega «Medida sugerida: ⚠️ Aviso serio» y el bot no hace nada más.
+- [ ] 🔎 Consultar a esa persona: salen los tres avisos con motivo, quién y cuándo; retirar uno y limpiar el resto con confirmación.
+- [ ] 📏 Umbrales y caducidad: poner umbrales desordenados da error; unos válidos se guardan.
+- [ ] 🧾 Auditoría → filtro ⚠️ Moderación: están todos los cambios.
+
 ## T-20 Probar en Discord el calendario
 
 Issue #540. Con alguna sesión de cine, un cumpleaños guardado y partidos sincronizados.

@@ -208,6 +208,15 @@ function nodoOtros(flat) {
     };
 }
 
+/** ⚠️ Moderación (#542): `moderacion.*` sin el prefijo. */
+const nodoModeracion = (flat) => ({
+    moderacion: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("moderacion."))
+            .map(([clave, valor]) => [clave.slice("moderacion.".length), valor]),
+    ),
+});
+
 /** 📅 Calendario (#540): `calendario.*` sin el prefijo. */
 const nodoCalendario = (flat) => ({
     calendario: Object.fromEntries(
@@ -220,6 +229,7 @@ const nodoCalendario = (flat) => ({
 function flattenToNested(flat) {
     return {
         ...nodoCalendario(flat),
+        ...nodoModeracion(flat),
         duende: nodoDuende(flat),
         ...nodoEconomia(flat),
         ...nodoPlexYLogros(flat),

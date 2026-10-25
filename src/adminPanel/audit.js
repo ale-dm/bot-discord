@@ -24,6 +24,7 @@ const FAMILIAS = {
     mantenimiento: "🛠️ Mantenimiento",
     tickets: "🎫 Tickets",
     roles: "⏳ Roles temporales",
+    moderacion: "⚠️ Moderación",
     calendario: "📅 Calendario",
 };
 
