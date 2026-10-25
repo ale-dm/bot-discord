@@ -748,3 +748,14 @@ Issue #540. Con alguna sesión de cine, un cumpleaños guardado y partidos sincr
 - [ ] ⚙️ Ajustes: canal de pruebas y 15 minutos. A los 5 minutos del evento llega un solo recordatorio al canal.
 - [ ] Reiniciar el bot antes de que empiece: no se repite el recordatorio.
 - [ ] Borrar el evento desde el desplegable: desaparece del calendario y queda en 🧾 Auditoría.
+
+## T-22 Probar en Discord el cash-out
+
+Issue #529. Con apuestas a partidos con cuotas recién actualizadas (abrir la lista de partidos las refresca).
+
+- [ ] /juegos → 📋 Mis jugadas → ⏳ En juego: sale el menú 💸 Retirar ya con el valor de cada apuesta.
+- [ ] Elegir una: la confirmación enseña el valor y hasta qué hora vale. Confirmar: llega al efectivo y en Movimientos sale «Cash-out: …».
+- [ ] Esperar más de 60 s y confirmar: dice que caducó y enseña el valor nuevo.
+- [ ] La apuesta retirada ya no sale en ⏳ En juego y en 📋 Resueltas sale «💸 Retirada (+N)». Al liquidar el partido no se paga otra vez.
+- [ ] Una combinada con una pata ya fallada no sale en el menú.
+- [ ] Una apuesta a marcador exacto no se puede retirar.

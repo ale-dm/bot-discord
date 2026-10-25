@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (cash-out anticipado, #529)
+
+- **💸 Retirar ya** en 📋 Mis jugadas → ⏳ En juego: cobra ahora una apuesta a un partido o una combinada que siguen en juego (también en directo). Valor = lo apostado × cuota original ÷ cuota actual − 8 % de margen, con tope de 1.000.000. En combinadas, solo si ninguna pata ha fallado; las acertadas cuentan con cuota 1.
+- **Sin cuota no hay oferta**: mercado suspendido, marcador exacto, partido cerrado, otra línea o cuotas de hace más de 30 minutos (se guarda `cuotas_ts` al recibir cuotas de la API).
+- **Bloqueo de 60 s**: al confirmar se recalcula; si caducó o la cuota se movió más de un 10 %, enseña la oferta nueva sin cobrar. Cobro único en una transacción (`retirada_en`), historial «Cash-out: …» y la liquidación ya no la toca.
+- **Mis jugadas y estadísticas**: la retirada sale de ⏳ En juego, aparece en 📋 Resueltas como «💸 Retirada (+N)» y cuenta como resuelta con lo cobrado.
+- **Migración 084**. **✅ Verificación**: tests del valor, cuándo hay cuota, bloqueo, movimiento de cuota, doble confirmación, liquidación posterior, combinadas, botones y estadísticas; `npm run check` en verde.
+
 ## 2026-10-24 (calendario de eventos, #540)
 
 - **📅 `/calendario`** (comando nuevo, privado): lo programado por semanas o por meses con ◀ ▶, agrupado por día (hora de Madrid) y con la hora en timestamp de Discord. Junta sesiones de cine (con enlace), cumpleaños, partidos de las competiciones elegidas, el cierre de las quinielas abiertas y los eventos de los admins. Sin eventos, lo explica; con muchos, no pasa del límite del embed.

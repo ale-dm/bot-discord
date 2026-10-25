@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Cash-out anticipado (migración 084, 2026-10-24)
+
+- **084** añade `apuestas_partidos.cuotas_ts`, `apuestas_usuario.retirada_en` y `combinadas.retirada_en`. No hay que
+  rellenar nada: los partidos ya guardados no ofrecen retirada hasta que se vuelvan a pedir sus cuotas. Para retirar en
+  directo hace falta `ODDS_DIRECTO=1` (las cuotas en juego se refrescan cada 10 minutos).
+
 ### Calendario de eventos (migración 082, 2026-10-24)
 
 - **082** crea `calendario_eventos` y `calendario_recordatorios`. No hay que rellenar nada. Comando nuevo **`/calendario`**:
