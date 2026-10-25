@@ -186,11 +186,16 @@ function rachaMasLarga(dias) {
  * reproducción. Es la mejor de siempre, no la actual: un trofeo de racha ya ganado no se pierde al cortarla (#467).
  */
 function mejorRacha(guildId, tautulliUserId, desde = 0, hasta = Number.MAX_SAFE_INTEGER) {
+    return rachaMasLarga(diasVistos(guildId, tautulliUserId, desde, hasta));
+}
+
+/** Los días (AAAA-MM-DD, hora de Madrid) en los que alguien vio algo en Plex, con repetidos y sin ordenar. */
+function diasVistos(guildId, tautulliUserId, desde = 0, hasta = Number.MAX_SAFE_INTEGER) {
     const { momento } = require("../plexHistorial");
-    const filas = db
+    return db
         .prepare("SELECT inicio FROM plex_reproducciones WHERE guildId = ? AND tautulliUserId = ? AND inicio >= ? AND inicio < ?")
-        .all(guildId, String(tautulliUserId), desde, hasta);
-    return rachaMasLarga(filas.map((f) => momento(f.inicio).dia));
+        .all(guildId, String(tautulliUserId), desde, hasta)
+        .map((f) => momento(f.inicio).dia);
 }
 
 /** Horas, películas y episodios distintos vistos entre dos fechas (unix, s): para los trofeos de admin con fechas. */
@@ -206,4 +211,4 @@ function estadisticasEntre(guildId, tautulliUserId, { desde, hasta }) {
     return { horas: Math.floor(r.segundos / 3600), peliculas: r.peliculas, episodios: r.episodios };
 }
 
-module.exports = { contexto, datosUsuario, estadisticasEntre, rachaMasLarga, mejorRacha };
+module.exports = { contexto, datosUsuario, estadisticasEntre, rachaMasLarga, mejorRacha, diasVistos };

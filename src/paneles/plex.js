@@ -15,7 +15,7 @@ function pantallaPlex(guildId, userId) {
                 "🎯 **Para ti**: qué ver a partir de lo que ya has visto.\n" +
                 "🎞️ **Wrapped**: el resumen del mes pasado (y, con un botón, el del año).\n" +
                 "🏅 **Mi Plex**: tus horas, tus trofeos y tus logros de Plex.\n" +
-                "⭐ **Reseñas**: puntúa lo que ves, mira la media del servidor y lo que opinan los demás.\n" +
+                "⭐ **Reseñas**: puntúa lo que ves, mira la media del servidor y lo que opinan los demás, y 🎲 la ruleta si no sabes qué ver.\n" +
                 "📺 **Series**: sigue series y te aviso por DM de los episodios nuevos.\n" +
                 "📝 **Quiero ver**: apunta lo que quieres ver y te aviso cuando llegue a Plex.\n" +
                 "📡 **Ahora**: qué se está viendo en este momento.\n" +

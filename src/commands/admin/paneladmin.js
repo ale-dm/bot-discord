@@ -38,6 +38,7 @@ const { handleSonidosButton, handleSonidosModal, handleSonidosStringSelect } = r
 const { handlePaseButton, handlePaseModal, handlePaseStringSelect, handlePaseChannelSelect } = require("../../adminPanel/pase");
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
+const { handleTicketsButton, handleTicketsModal } = require("../../adminPanel/tickets");
 
 /**
  * Un manejador de componentes del panel. Solo para admins. Si `antes` devuelve true, ya está resuelto. Si no, prueba
@@ -102,6 +103,7 @@ module.exports = {
                 "paneladmin_plex_novedades_channel_select",
                 "paneladmin_plex_channel_add_select",
                 "paneladmin_plex_ranking_canal_select",
+                "paneladmin_plex_resenas_canal_select",
                 "paneladmin_seerr_channel_add_select",
                 "paneladmin_apu_canal_select",
                 "paneladmin_semanal_canal_select",
@@ -150,6 +152,7 @@ module.exports = {
             handleImpuestosButton,
             handleClasificacionButton,
             handleComunidadButton,
+            handleTicketsButton,
             handleSonidosButton,
             handlePaseButton,
         ],
@@ -176,6 +179,7 @@ module.exports = {
         handleImpuestosModal,
         handleClasificacionModal,
         handleComunidadModal,
+        handleTicketsModal,
     ]),
 
     handleUserSelect: manejador("handleUserSelect", "Error al procesar selector.", [
