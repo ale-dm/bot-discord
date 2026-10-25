@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-25 (elecciones a la presidencia del servidor)
+
+- **🗳️ Elecciones** (`/elecciones` y un panel público que se actualiza solo): 📝 inscripción → 🗳️ primarias (pasan los 4 más votados; empates por orden de inscripción; sin primarias con 4 candidatos o menos) → 📜 programas → 🏛️ generales → 👑 mandato. Cada voto es **🔒 secreto o 📢 público**, a elección de quien vota; uno por persona y fase, cambiable. Votar y presentarse exige 7 días en el servidor.
+- **Programas por DM** al empezar las generales a quien puede votar, con un aviso nuevo en `/avisos` (🗳️ Elecciones). `/avisos` pasa a tener dos desplegables al superar los 25 tipos.
+- **👑 /presidente**: mover, desconectar, silenciar y ensordecer en voz (máx. 30 min, se deshace solo), liberar, y crear y borrar canales en su categoría (máx. 3). Nunca sobre admins, staff, bots, roles más altos ni sí mismo; 5 min de espera por persona; todo auditado y al canal de log de moderación. Al acabar el mandato se quita el rol, se borran sus canales y se deshacen sus castigos.
+- **Panel admin** ⚙️ Config Global → 🗳️ Elecciones: abrir, cerrar ya la fase, cancelar o destituir (con confirmación), volver a publicar el panel y los ajustes `elecciones.*` (canal, rol y categoría, duraciones, límites, reelección y reinicio automático).
+- **Migración 088** (`elecciones`, `elecciones_candidatos`, `elecciones_votos`, `presidencia_canales`, `presidencia_sanciones`, `presidencia_acciones`). **✅ Verificación**: 39 tests nuevos (reglas, fases, votos, programas por DM, rol, poderes y sus protecciones, reversión de castigos, canales y panel admin); `npm run check` en verde (255 suites, 3448 tests).
+
 ## 2026-10-25 (exchange de apuestas entre jugadores, #533)
 
 - **🔁 Exchange** en la ficha del partido: libro privado por resultado y cuota, **➕ A favor** (publicar orden con lo apostado retenido) y **🤝 En contra** (cruzar el libro: cuota más baja primero y, a igual cuota, la más antigua; cruces parciales; riesgo retenido). Solo órdenes a favor en esta versión.

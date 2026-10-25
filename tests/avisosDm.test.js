@@ -131,9 +131,10 @@ describe("el panel /avisos", () => {
     test("muestra los avisos en un desplegable y no molestar, sin pasarse de filas", () => {
         avisosDm.fijar(U, "robo", false);
         const p = buildAvisos(U);
-        expect(ids(p)).toEqual(["avisos_sel", "avisos_nm"]);
+        expect(ids(p)).toEqual(["avisos_sel", "avisos_sel_2", "avisos_nm"]);
         const filas = p.components.map((f) => f.toJSON().components);
-        expect(filas[0][0].options.map((o) => o.value)).toEqual(avisosDm.TIPOS.map((t) => t.id));
+        expect(filas[0][0].options).toHaveLength(25);
+        expect([...filas[0][0].options, ...filas[1][0].options].map((o) => o.value)).toEqual(avisosDm.TIPOS.map((t) => t.id));
         expect(p.components.every((f) => f.components.length <= 5)).toBe(true);
         expect(p.components.length).toBeLessThanOrEqual(5);
         expect(p.embeds[0].toJSON().description).toContain("⚪ 🥷 **Robos**");

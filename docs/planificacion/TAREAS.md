@@ -782,3 +782,19 @@ Issue #533. Con dos cuentas y un partido próximo.
 - [ ] Cuenta A no puede cruzar su propia orden.
 - [ ] Al empezar el partido, una orden sin cruzar se devuelve sola.
 - [ ] Al liquidar, quien gana cobra lo suyo y lo del otro menos el 2 % de su ganancia, una sola vez.
+
+## T-25 Probar en Discord las elecciones a la presidencia
+
+Con 5 cuentas (una admin), un canal para el panel, un rol «Presidente» por debajo del bot y una categoría. En ⏱️ Duraciones,
+pon todas las fases a 0,01 días (unos 15 minutos) y en 🛡️ Límites la antigüedad a 0.
+
+- [ ] /paneladmin → ⚙️ Config Global → 🗳️ Elecciones → 📍 elige canal, rol y categoría; 🗳️ Abrir elecciones publica el panel.
+- [ ] Las 5 cuentas se presentan con 🙋; una se retira con 🚪 y vuelve.
+- [ ] Al cerrar la inscripción (o ⏭️ Cerrar fase ya) empiezan las primarias. Votar en 🔒 secreto no sale en el panel; en 📢 público sí («X → Y»). Cambiar el voto no suma otro.
+- [ ] Al cerrar las primarias se anuncia la clasificación y pasan 4.
+- [ ] Los finalistas escriben el programa con ✍️; al empezar las generales llega un DM con los programas (no a quien lo apagó en /avisos).
+- [ ] Al cerrar las generales se anuncia el presidente y recibe el rol.
+- [ ] /presidente mover, desconectar, silenciar 2 y ensordecer 2 a una cuenta normal funcionan; contra la admin o alguien con el rol de staff, los rechaza. Repetir sobre la misma persona pide esperar.
+- [ ] El silencio se quita solo a los 2 minutos.
+- [ ] /presidente crear-canal crea el canal en la categoría; con el tope lleno lo rechaza; borrar-canal solo borra los suyos.
+- [ ] ⚖️ Destituir (o el fin del mandato) quita el rol, borra sus canales y deshace sus castigos.
