@@ -19,6 +19,9 @@ const etiquetas = (v) =>
 /** Cuándo llegó a Plex (added_at de Tautulli, unix en segundos), o null si no lo dice. */
 const alta = (m) => (Number(m?.added_at) > 0 ? Number(m.added_at) : null);
 
+/** Cuánto dura, en minutos (`duration` de Tautulli viene en ms), o null si no lo dice (para la 🎲 Ruleta, #576). */
+const duracion = (m) => (Number(m?.duration) > 0 ? Math.round(Number(m.duration) / 60000) : null);
+
 /** El id de TMDB de una película, si Tautulli lo da en sus guids ("tmdb://603"). */
 function tmdbDe(m) {
     const guids = [...(Array.isArray(m.guids) ? m.guids : []), m.guid].map((g) => String(g || ""));
@@ -46,7 +49,7 @@ async function fichaPelicula(guildId, key, pedir) {
     db.prepare(
         `UPDATE plex_fichas SET titulo = COALESCE(@titulo, titulo), anio = COALESCE(@anio, anio), section_id = COALESCE(@section_id, section_id),
                 biblioteca = COALESCE(@biblioteca, biblioteca), generos = @generos, directores = @directores, colecciones = @colecciones,
-                tmdb = COALESCE(@tmdb, tmdb), alta = COALESCE(@alta, alta), encontrada = 1, actualizada = @ahora
+                tmdb = COALESCE(@tmdb, tmdb), alta = COALESCE(@alta, alta), duracion = @duracion, encontrada = 1, actualizada = @ahora
          WHERE guildId = @guildId AND rating_key = @key`,
     ).run({
         ...datosComunes(m),
@@ -54,6 +57,7 @@ async function fichaPelicula(guildId, key, pedir) {
         colecciones: JSON.stringify(etiquetas(m.collections)),
         tmdb: tmdbDe(m),
         alta: alta(m),
+        duracion: duracion(m),
         ahora: Date.now(),
         guildId,
         key,

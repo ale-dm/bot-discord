@@ -27,6 +27,7 @@ const { pantallaPlex } = require("../../paneles/plex");
 const { pantallaSeries, pantallaQuieroVer, pantallaResultados } = require("../../paneles/plexAvisos");
 const plexAvisos = require("../../systems/plexAvisos");
 const resenas = require("./resenas");
+const ruleta = require("./ruleta");
 const seerrClient = require("../../services/seerrClient");
 const perfilPaneles = require("../../paneles/perfil");
 const { efimero } = require("../../discord/respuestas");
@@ -97,6 +98,8 @@ module.exports = {
         // ⭐ Reseñas: el DM (#566) y la pantalla de /plex (#567).
         if (id === "plex_resenas" || id.startsWith("plex_resena_") || id.startsWith("plex_resenas_"))
             return resenas.handleButton(client, interaction);
+        // 🎲 Ruleta de películas (#576), desde ⭐ Reseñas.
+        if (id === "plex_ruleta" || id.startsWith("plex_ruleta_")) return ruleta.handleButton(interaction);
 
         // 🎬 Sesión de cine: el mensaje de la sesión (público) con sus botones.
         if (id.startsWith("cine_")) return handleCineBoton(interaction, id);
@@ -140,12 +143,13 @@ module.exports = {
         }
     },
 
-    // Los menús de 📺 Series y 📝 Quiero ver.
+    // Los menús de 📺 Series, 📝 Quiero ver y los filtros de la 🎲 Ruleta.
     async handleSelect(client, interaction) {
         const id = interaction.customId;
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
         const valor = interaction.values[0];
+        if (id.startsWith("plex_sel_ruleta_")) return ruleta.handleSelect(interaction);
 
         if (id === "plex_sel_seguir") {
             const serie = plexAvisos.seriesParaSeguir(guildId, userId).find((s) => String(s.serie_key) === valor);
