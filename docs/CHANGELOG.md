@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-25 (apuestas de sistema, #534)
+
+- **🎛️ Sistema** en el boleto de la combinada: con 3, 4 o 5 partidos se juegan las combinaciones parciales 2 de 3, 3 de 4 o 3 de 5. Importe por combinación, coste total (máximo 50.000) enseñado antes de confirmar junto al retorno máximo y cuántos partidos se pueden fallar. Se cobra una vez y se guardan las patas y cada subcombinación.
+- **Liquidación**: cada combinación acertada paga importe × sus cuotas (redondeo por combinación); un partido caducado cuenta con cuota 1,00; si se caducan todos, se devuelve el coste. Los partidos con solo patas de sistema también se consultan a la API.
+- **📋 Mis jugadas**: sistemas en juego y resueltos con cada partido y cada combinación.
+- **Migración 085** (`sistemas`, `sistema_patas`, `sistema_combinaciones`). **✅ Verificación**: tests del generador, el coste, los límites, el cobro, la liquidación parcial, total, nula, con anuladas y todas anuladas, el redondeo, la doble liquidación, de punta a punta con la API simulada, el boleto y Mis jugadas; `npm run check` en verde.
+
 ## 2026-10-24 (cash-out anticipado, #529)
 
 - **💸 Retirar ya** en 📋 Mis jugadas → ⏳ En juego: cobra ahora una apuesta a un partido o una combinada que siguen en juego (también en directo). Valor = lo apostado × cuota original ÷ cuota actual − 8 % de margen, con tope de 1.000.000. En combinadas, solo si ninguna pata ha fallado; las acertadas cuentan con cuota 1.

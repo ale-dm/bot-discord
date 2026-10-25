@@ -5,6 +5,46 @@ const combinadas = require("../../systems/apuestas/combinadas");
 const { pantallaCombinada } = require("../../paneles/combinada");
 const { efimero } = require("../../discord/respuestas");
 const { filasImporte, importeElegido } = require("../../paneles/importes");
+const sistemas = require("../../systems/apuestas/sistemas");
+const { formularioSistema, confirmarSistema } = require("../../paneles/sistemas");
+
+/** 🎛️ Apuesta de sistema (#534): el formulario, la confirmación con el coste y el cobro. */
+async function botonSistema(interaction, id, userId) {
+    const patas = combinadas.borrador(userId);
+    if (id === "combinada_sistema") {
+        if (!sistemas.tamanosPara(patas.length).length)
+            return interaction.update(pantallaCombinada(userId, "🎛️ Un sistema necesita 3, 4 o 5 partidos en el boleto."));
+        return interaction.showModal(formularioSistema(patas.length));
+    }
+    const [, , k, cantidad] = id.split("_");
+    const r = sistemas.apostar(interaction.guildId, userId, Number(k), Number(cantidad));
+    if (!r.ok) return interaction.update(pantallaCombinada(userId, r.mensaje));
+    return interaction.update(
+        pantallaCombinada(userId, `✅ Sistema ${r.k} de ${r.m} registrado: ${r.combinaciones} combinaciones, ${r.coste} 🪙. ¡Suerte!`),
+    );
+}
+
+/** El formulario del sistema: valida y enseña lo que costaría antes de cobrar. */
+function modalSistema(interaction) {
+    const userId = interaction.user.id;
+    const patas = combinadas.borrador(userId);
+    const k = Number(interaction.fields.getStringSelectValues("tamano", false)?.[0]);
+    const cantidad = importeElegido(interaction.fields);
+    if (!Number.isInteger(cantidad) || cantidad < combinadas.MIN_APUESTA || cantidad > combinadas.MAX_APUESTA)
+        return interaction.reply(
+            efimero(
+                pantallaCombinada(userId, `❌ El importe por combinación va de ${combinadas.MIN_APUESTA} a ${combinadas.MAX_APUESTA}.`),
+            ),
+        );
+    const p = sistemas.presupuesto(
+        patas.map((x) => x.cuota),
+        k,
+        cantidad,
+    );
+    if (!p) return interaction.reply(efimero(pantallaCombinada(userId, "❌ Ese sistema ya no vale para tu boleto.")));
+    const aviso = p.coste > sistemas.MAX_COSTE ? `⚠️ Pasa del coste máximo (${sistemas.MAX_COSTE}): baja el importe.` : "";
+    return interaction.reply(efimero(confirmarSistema(p, cantidad, aviso)));
+}
 
 module.exports = {
     componentHandlers: [
@@ -29,6 +69,7 @@ module.exports = {
         const id = interaction.customId;
         const userId = interaction.user.id;
         if (id === "combinada_ver") return interaction.update(pantallaCombinada(userId));
+        if (id === "combinada_sistema" || id.startsWith("combinada_sistemaok_")) return botonSistema(interaction, id, userId);
         if (id === "combinada_vaciar") {
             combinadas.vaciar(userId);
             return interaction.update(pantallaCombinada(userId, "🗑️ Boleto vaciado."));
@@ -54,6 +95,7 @@ module.exports = {
     },
 
     async handleModal(client, interaction) {
+        if (interaction.customId === "combinada_modal_sistema") return modalSistema(interaction);
         if (interaction.customId !== "combinada_modal_apostar") return;
         const userId = interaction.user.id;
         const cantidad = importeElegido(interaction.fields);

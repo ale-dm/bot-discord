@@ -9,6 +9,8 @@ const alertasCuota = require("../systems/apuestas/alertasCuota");
 const { filasCancelar, buildConfirmarCancelar, buildConfirmarCancelarCombinada } = require("./misJugadasCancelar");
 const { filasCashout, buildConfirmarCashout } = require("./misJugadasCashout");
 const cashout = require("../systems/apuestas/cashout");
+const sistemas = require("../systems/apuestas/sistemas");
+const { textoSistema } = require("./sistemas");
 const mercados = require("../systems/apuestas/mercados");
 const { filaPestanas } = require("./pestanasJuegos");
 
@@ -130,6 +132,10 @@ function vistaActivas(userId, embed) {
         name: `🧩 Combinadas (${combinadas.length})`,
         value: campo(combinadas.map(textoCombinada).join("\n\n") || "Ninguna combinada abierta."),
     });
+    // 🎛️ Sistemas (#534): con cada subcombinación.
+    const enSistema = sistemas.de(userId, { abiertas: true });
+    if (enSistema.length)
+        embed.addFields({ name: `🎛️ Sistemas (${enSistema.length})`, value: campo(enSistema.map(textoSistema).join("\n\n")) });
     const alertas = alertasCuota.activasDe(userId);
     if (alertas.length) {
         embed.addFields({
@@ -166,6 +172,9 @@ function vistaResueltas(userId, embed) {
         name: "🧩 Combinadas (últimas 3)",
         value: campo(combinadas.map(textoCombinada).join("\n\n") || "Ninguna todavía."),
     });
+    const sistemasCerrados = sistemas.de(userId, { abiertas: false });
+    if (sistemasCerrados.length)
+        embed.addFields({ name: "🎛️ Sistemas (últimos 3)", value: campo(sistemasCerrados.map(textoSistema).join("\n\n")) });
     return quinielas[0]?.deporte;
 }
 

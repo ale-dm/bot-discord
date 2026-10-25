@@ -759,3 +759,14 @@ Issue #529. Con apuestas a partidos con cuotas recién actualizadas (abrir la li
 - [ ] La apuesta retirada ya no sale en ⏳ En juego y en 📋 Resueltas sale «💸 Retirada (+N)». Al liquidar el partido no se paga otra vez.
 - [ ] Una combinada con una pata ya fallada no sale en el menú.
 - [ ] Una apuesta a marcador exacto no se puede retirar.
+
+## T-23 Probar en Discord las apuestas de sistema
+
+Issue #534. Con tres partidos próximos con cuotas.
+
+- [ ] Sumar 2 partidos al boleto: 🎛️ Sistema está deshabilitado. Con 3, se activa.
+- [ ] 🎛️ Sistema → «2 de 3» y 100: la confirmación dice 3 combinaciones, coste 300, lo máximo que se cobra y que se puede fallar 1 partido. No se ha cobrado nada todavía.
+- [ ] ✅ Apostar: se cobran 300 una sola vez y el boleto queda vacío.
+- [ ] En 📋 Mis jugadas → ⏳ En juego sale el sistema con sus partidos y sus 3 combinaciones.
+- [ ] Al liquidar, con un partido fallado, se cobra solo la combinación de los otros dos y sale en 📋 Resueltas.
+- [ ] Con 5 partidos y un importe que haga pasar de 50.000, la confirmación avisa y no deja apostar.
