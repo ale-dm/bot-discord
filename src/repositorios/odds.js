@@ -61,4 +61,30 @@ const deportesEnJuego = (isoAhora, isoDesde) =>
         .all(isoAhora, isoDesde)
         .map((r) => r.deporte);
 
-module.exports = { guardarPartidos, deportesEnJuego };
+/**
+ * Partidos abiertos de una competición que empiezan entre `desdeIso` y `hastaIso` y cuyos mercados adicionales (#532)
+ * no se han pedido desde `antesDeMs`: los primeros que empiezan, hasta `limite`.
+ */
+const partidosSinExtras = (deporteKey, { desdeIso, hastaIso, antesDeMs, limite }) =>
+    db
+        .prepare(
+            `SELECT match_id, home_team, away_team FROM apuestas_partidos
+             WHERE deporte = ? AND estado = 'abierto' AND start_time > ? AND start_time <= ?
+               AND (extras_ts IS NULL OR extras_ts < ?)
+             ORDER BY start_time, id LIMIT ?`,
+        )
+        .all(deporteKey, desdeIso, hastaIso, antesDeMs, limite);
+
+/**
+ * Guarda las cuotas de ambos marcan y doble oportunidad de un partido abierto, y cuándo se pidieron. Lo que la API no da
+ * queda a null (el mercado deja de ofrecerse): una cuota vieja de un mercado retirado no debe seguir a la venta.
+ */
+function guardarMercadosExtra(matchId, x, ts) {
+    db.prepare(
+        `UPDATE apuestas_partidos SET cuota_ambos_si = ?, cuota_ambos_no = ?, cuota_dc_1x = ?, cuota_dc_12 = ?, cuota_dc_x2 = ?,
+             extras_ts = ?
+         WHERE match_id = ? AND estado = 'abierto'`,
+    ).run(x.cuota_ambos_si, x.cuota_ambos_no, x.cuota_dc_1x, x.cuota_dc_12, x.cuota_dc_x2, ts, matchId);
+}
+
+module.exports = { guardarPartidos, deportesEnJuego, partidosSinExtras, guardarMercadosExtra };
