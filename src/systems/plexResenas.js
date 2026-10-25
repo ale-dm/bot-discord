@@ -25,6 +25,7 @@ const {
     ultimas,
     rankingValoradores,
     generosidad,
+    mediaPublica,
     todasDelTitulo,
     resumenAdmin,
 } = require("./plexResenas/consultas");
@@ -56,6 +57,7 @@ module.exports = {
     ultimas,
     rankingValoradores,
     generosidad,
+    mediaPublica,
     todasDelTitulo,
     resumenAdmin,
     oculto,

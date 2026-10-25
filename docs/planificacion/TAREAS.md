@@ -14,6 +14,10 @@ lo que queda aquí son el despliegue y los repasos de la lista de casillas (T-02
 | [T-06](#t-06-probar-en-discord-las-fases-1-a-12-del-plan-restante) | Probar en Discord lo hecho en las fases 1 a 12 del plan restante. ✅ Probado por el usuario y liberado a `main` (fases 1-12, #496/#497 y voz #499/#500); issues cerradas | ✅ Hecha |
 | [T-05](#t-05-revisar-modelos-de-gemini-y-dependencias) | Revisar modelos de Gemini (retiradas y `/imagen`) y dependencias desactualizadas (revisión del 2026-10-10) | 🟡 Media |
 | [T-07](#t-07-probar-en-discord-los-equipos-favoritos) | Probar en Discord los equipos favoritos y su aviso por DM (#530) | 🟡 Media |
+| [T-12](#t-12-probar-en-discord-la-guardia-del-duende) | Probar en Discord la guardia del Duende en un canal de voz (#553) | 🟡 Media |
+| [T-14](#t-14-probar-en-discord-mi-cine) | Probar en Discord 📊 Mi cine en `/plex` → ⭐ Reseñas (#574) | 🟡 Media |
+| [T-15](#t-15-probar-en-discord-la-ruleta-de-películas) | Probar en Discord la 🎲 Ruleta de películas en `/plex` → ⭐ Reseñas (#576) | 🟡 Media |
+| [T-16](#t-16-probar-en-discord-los-tickets-de-soporte) | Probar en Discord los tickets de soporte (#537) | 🟡 Media |
 
 ---
 
@@ -611,7 +615,82 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
 
-## T-22 Probar en Discord el exchange de apuestas
+## T-12 Probar en Discord la guardia del Duende
+
+Issue #553. Con un canal de voz de pruebas y dos cuentas (una sin permisos de admin).
+
+- [ ] Desde un canal de voz, `/duende` → 🛡️ Guardia: el bot entra a tu canal y el panel enseña «De guardia» con el canal, quién la puso y desde cuándo.
+- [ ] Sin estar en voz, pulsar 🛡️ Guardia: se abre el formulario con solo canales de voz; cerrarlo sin elegir no conecta; elegir uno conecta ahí.
+- [ ] En un canal sin permiso de Hablar para el bot: el panel avisa de que faltan permisos y no entra.
+- [ ] Con la guardia puesta, `/sonidos` y `/tts` suenan en ese canal; `/conectar` (con y sin canal o minutos) avisa de que está de guardia y no la toca; `/conversación` responde que está de guardia y la guardia sigue.
+- [ ] Con la otra cuenta, `/duende`: los botones 🛡️ Guardia y 🚪 Dejar la guardia salen deshabilitados.
+- [ ] Esperar más de 2 horas: el bot sigue en el canal.
+- [ ] Reiniciar el contenedor: el bot vuelve al mismo canal (y en el log, `Guardias al arrancar: 1 recuperadas`).
+- [ ] Borrar el canal (o quitar el permiso de Conectar) y reiniciar: no entra y el log avisa de que descarta la guardia.
+- [ ] Desconectar al bot a mano desde Discord: la guardia se acaba y al reiniciar no vuelve.
+- [ ] 🚪 Dejar la guardia (quien la puso o un admin): se sale al momento y al reiniciar no vuelve.
+
+## T-13 Probar en Discord el feed de reseñas
+
+Issue #573. Con un canal de texto de pruebas y dos cuentas vinculadas a Plex que hayan terminado alguna película.
+
+- [ ] `/paneladmin` → 🎬 Plex → ⭐ Reseñas: sin canal, la pantalla dice «sin canal» y 🚫 Quitar canal del feed sale deshabilitado. Elegir el canal en el selector: la pantalla lo enseña y queda en Auditoría (`plex.resenas.canal`).
+- [ ] Reseñar una película (desde el DM o desde la ficha de `/plex` → ⭐ Reseñas): en el canal sale el título, las estrellas, el extracto y la mención del autor, sin que le llegue aviso.
+- [ ] Cambiar esa misma reseña: no sale otro mensaje.
+- [ ] Reseñar con «Contiene spoilers» marcado: sale «⚠️ contiene spoilers» y nada del texto.
+- [ ] Con la otra cuenta, ocultar sus reseñas en `/plex` → ⭐ Reseñas y reseñar algo: no sale nada en el canal.
+- [ ] 🚫 Quitar canal del feed y reseñar otra: no se publica; queda en Auditoría.
+- [ ] Borrar el canal del feed (o quitar al bot el permiso de enviar) y reseñar: la reseña se guarda y el log avisa.
+
+## T-14 Probar en Discord Mi cine
+
+Issue #574. Con una cuenta vinculada a Plex que tenga reseñas e historial, y otra sin vincular.
+
+- [ ] `/plex` → ⭐ Reseñas: la primera fila tiene 5 botones, el último 📊 Mi cine.
+- [ ] Pulsar 📊 Mi cine: la pantalla (solo la ves tú) enseña tus reseñas (cuántas, la media que das y la del servidor), tu película mejor y peor valorada, el género y la década que más ves, tu racha actual y la mejor frente a la media del servidor, y «Tu 2026 hasta hoy».
+- [ ] Comprobar a mano un par de cifras con la BD o con lo que recuerdas (número de reseñas, mejor película, horas del año).
+- [ ] Con otra cuenta, ocultar sus reseñas (🙈 Ocultar) y volver a Mi cine: la media del servidor cambia y ya no cuenta las suyas.
+- [ ] 🖼️ Imagen del año: llega aparte, solo para ti, la imagen del Wrapped con tus series del año. Sin series este año, el botón no sale.
+- [ ] Con la cuenta sin vincular: Mi cine solo enseña las reseñas y explica que falta vincular Plex.
+- [ ] ⬅️ Reseñas vuelve a la lista de tus reseñas.
+
+## T-15 Probar en Discord la ruleta de películas
+
+Issue #576. Con una cuenta vinculada a Plex que haya visto algunas películas, y otra sin vincular.
+
+- [ ] `/plex` → ⭐ Reseñas: la primera fila sigue con 5 botones y 🎲 Ruleta sale en la última fila, junto a ⬅️ Plex.
+- [ ] Pulsar 🎲 Ruleta: sale la ficha de una película que **no has visto** (comprobar con tu historial de Plex), con géneros, director, biblioteca y, si tiene reseñas, la media del servidor.
+- [ ] ⭐ Puntuar al verla sale desactivado y el pie explica que se puntúa al verla.
+- [ ] 🎬 Otra varias veces: nunca repite la que había en pantalla y nunca propone algo ya visto.
+- [ ] Elegir un género en el menú: la película es de ese género. Elegir una década: es de esa década. «Cualquier género» / «Cualquier década» quitan el filtro.
+- [ ] Tras desplegar (migración 078), cuando se hayan pedido o refrescado fichas de películas (las nuevas, o las de más de 30 días; en el log de Plex): sale el menú ⏱️ Duración máxima; elegir «Hasta 2 h»: la película dura 2 h o menos (comprobarlo en Plex).
+- [ ] Combinar filtros hasta que no quede nada: dice «No queda ninguna…» y 🧹 Quitar filtros vuelve a tirar sin filtros.
+- [ ] Con un género que solo tenga una película sin ver: 🎬 Otra sale desactivado y dice que es la única.
+- [ ] 📝 Quiero ver: la ficha dice «apuntada» y el botón pasa a ✅ En tu lista; en `/plex` → 📝 Quiero ver sale con «ya está en Plex» y no llega ningún DM de aviso.
+- [ ] Con la cuenta sin vincular: 🎲 Ruleta explica que falta vincular Plex y solo ofrece ⬅️ Reseñas.
+- [ ] ⬅️ Reseñas vuelve a la lista de tus reseñas.
+
+## T-16 Probar en Discord los tickets de soporte
+
+Issue #537. Con un canal de texto para los tickets, otro para las transcripciones, un rol de staff y dos cuentas (una sin
+el rol ni permisos de admin).
+
+- [ ] `/paneladmin` → ⚙️ Config Global → 📣 Comunidad → 🎫 Tickets: sin configurar dice lo que falta y 📤 Publicar panel sale deshabilitado. Elegir canal, rol y canal de transcripciones: «✅ Guardado» y queda en Auditoría (`tickets.config`, familia 🎫 Tickets).
+- [ ] Quitar al bot «Crear hilos privados» en el canal de tickets y guardar otra vez: avisa de lo que le falta; 📤 Publicar panel no publica y dice por qué. Devolver el permiso.
+- [ ] 🏷️ Categorías: poner «Duda», «Reporte» y «Apelación» (una por línea) y guardar; vaciarlo deja solo «General».
+- [ ] 📤 Publicar panel: el panel 🎫 Soporte aparece en el canal de tickets con el botón 🎫 Abrir ticket (enlace en el aviso y fila `tickets.publicar` en Auditoría).
+- [ ] Con la cuenta sin rol: 🎫 Abrir ticket → formulario con las categorías → enviar. Se crea un hilo privado con su nombre, la cuenta está dentro, el rol de staff recibe la mención y el resto del servidor no ve el hilo.
+- [ ] El staff entra en el hilo (por la mención) y contesta; el autor ve la respuesta.
+- [ ] Con el ticket abierto, volver a pulsar 🎫 Abrir ticket: responde que ya tienes uno y enlaza el hilo.
+- [ ] Otra cuenta sin rol que no es el autor pulsa 🔒 Cerrar ticket en ese hilo (si consigue verlo): «Solo quien abrió el ticket o el staff».
+- [ ] El autor pulsa 🔒 Cerrar ticket → Cancelar: sigue abierto. Otra vez → ✅ Sí, cerrar: el hilo recibe el aviso con mención al staff, el botón queda desactivado y el hilo bloqueado y archivado.
+- [ ] En el canal de transcripciones sale el registro (abierto por, cerrado por, fechas, duración, mensajes) con `ticket-N.txt`, y el .txt tiene toda la conversación en orden con la hora de Madrid.
+- [ ] Justo después, el autor pulsa 🎫 Abrir ticket: le dice que espere (unos 60 minutos). Pasada la hora, puede abrir otro.
+- [ ] Abrir otro y cerrarlo desde la cuenta del staff: el aviso de cierre no menciona al rol.
+- [ ] Borrar a mano el hilo de un ticket abierto y volver a pulsar 🎫 Abrir ticket: deja abrir uno nuevo.
+- [ ] Quitar al bot «Adjuntar archivos» en el canal de transcripciones y cerrar un ticket: se cierra igual y avisa de que no pudo guardar la transcripción.
+
+## T-24 Probar en Discord el exchange de apuestas
 
 Issue #533. Con dos cuentas y un partido próximo.
 
