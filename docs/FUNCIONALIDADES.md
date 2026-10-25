@@ -724,6 +724,13 @@ boleto se pierde. Si un partido se caduca sin resultado, la combinada se devuelv
 - El importe cuenta para el tope diario y cobra como las demás apuestas (efectivo y dinero negro).
 - Sale en 📋 Mis jugadas (⏳ En juego y 📋 Resueltas, con cada partido y su elección) y cuenta en 📊 Stats. No se puede
   cancelar una vez apostada, ni se incluye el marcador exacto (su premio es fijo).
+- **🎛️ Sistema** (#534): con 3, 4 o 5 partidos en el boleto, en vez de la combinada se juegan todas sus combinaciones
+  parciales: **2 de 3** (3 combinaciones), **3 de 4** (4) o **3 de 5** (10). El importe es **por combinación**; antes de
+  cobrar se enseñan el coste total (importe × combinaciones, como mucho 50.000), lo que cobrarías si aciertas todos y
+  cuántos partidos puedes fallar. Al liquidar, cada combinación acertada paga su importe × sus cuotas (redondeada una a una)
+  y las falladas no. Un partido sin resultado cuenta con cuota 1,00 y, si se quedan todos sin resultado, se devuelve lo
+  apostado. En 📋 Mis jugadas sale con cada partido (✅ ❌ ➖ ⏳) y cada combinación con lo que cobró. Una jugada es de un
+  tipo: un sistema no se mezcla con una combinada.
 
 **Mercados de goles y de hándicap (#9 y #10)**: debajo de los botones 1/X/2 de cada partido, cuando la API da la línea:
 - **⬆️ Más de 2,5 goles** / **⬇️ Menos de 2,5 goles**: gana si el total de goles es 3 o más (o 2 o menos).

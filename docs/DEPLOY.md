@@ -53,6 +53,10 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Apuestas de sistema (migración 085, 2026-10-25)
+
+- **085** crea `sistemas`, `sistema_patas` y `sistema_combinaciones`. No hay que rellenar nada.
+
 ### Reseñas de Plex (migración 075, 2026-10-23)
 
 - **075** crea `plex_resenas` y `plex_resenas_pedidas` y añade `plex_preferencias.ocultar_resenas`. No hay que rellenar

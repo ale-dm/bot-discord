@@ -610,3 +610,14 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-21 Probar en Discord las apuestas de sistema
+
+Issue #534. Con tres partidos próximos con cuotas.
+
+- [ ] Sumar 2 partidos al boleto: 🎛️ Sistema está deshabilitado. Con 3, se activa.
+- [ ] 🎛️ Sistema → «2 de 3» y 100: la confirmación dice 3 combinaciones, coste 300, lo máximo que se cobra y que se puede fallar 1 partido. No se ha cobrado nada todavía.
+- [ ] ✅ Apostar: se cobran 300 una sola vez y el boleto queda vacío.
+- [ ] En 📋 Mis jugadas → ⏳ En juego sale el sistema con sus partidos y sus 3 combinaciones.
+- [ ] Al liquidar, con un partido fallado, se cobra solo la combinación de los otros dos y sale en 📋 Resueltas.
+- [ ] Con 5 partidos y un importe que haga pasar de 50.000, la confirmación avisa y no deja apostar.

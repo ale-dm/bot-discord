@@ -4,6 +4,7 @@ const db = require("../../../core/db");
 const dinero = require("../../dinero");
 const retos = require("../../retos");
 const combinadas = require("../combinadas");
+const sistemas = require("../sistemas");
 const borradores = require("../borradorQuiniela");
 const { logInfo, logWarn } = require("../../../core/logger");
 const { DIAS_RESULTADOS } = require("../../../services/oddsApi");
@@ -74,6 +75,11 @@ function caducarPartido(p, reembolsar, resumen) {
     }
     // Las combinadas con una pata en ese partido se devuelven enteras.
     combinadas.caducarPartido(p.match_id, (userId, cantidad, descripcion) => reembolsar(userId, cantidad, descripcion));
+    // 🎛️ Sistemas (#534): sus patas en ese partido se anulan (cuota 1,00); si ya no les queda nada pendiente, se cierran.
+    for (const pago of sistemas.caducarPartido(p.match_id)) {
+        if (pago.reembolso) resumen.reembolsos++;
+        resumen.pagos.push(pago);
+    }
     // Los retos 1 contra 1 a ese partido, igual: cada uno recupera lo suyo.
     const devueltos = retos.devolverPorPartido(p.match_id, "el partido se quedó sin resultado");
     resumen.reembolsos += devueltos.pagos.length;
