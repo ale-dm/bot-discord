@@ -702,6 +702,19 @@ Issue #532. Con `ODDS_MERCADOS_EXTRA=btts,double_chance` en `.env` y créditos d
 - [ ] Con un partido ya empezado (y `ODDS_DIRECTO=1`), los botones nuevos no salen y no se puede apostar.
 - [ ] Al liquidar, comprobar el pago con un empate (1X y X2 cobran, 12 no).
 
+## T-18 Probar en Discord los roles temporales
+
+Issue #543. Con un rol de pruebas por debajo del bot y otra cuenta.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → ⏳ Roles temporales → ➕ Dar rol temporal: elegir persona, rol, 1 día y aviso «Sí». El rol aparece al momento y llega el DM.
+- [ ] La lista muestra persona, rol, quién lo dio y cuándo vence.
+- [ ] Elegirlo → 🔁 Renovar 2 días: el vencimiento pasa a 3 días desde el principio.
+- [ ] ➖ Quitar ya → ✅ Sí: el rol desaparece, llega el DM y la lista queda vacía.
+- [ ] Intentar dar un rol de una integración o por encima del bot: explica el motivo y no lo da.
+- [ ] Dar uno de 1 día, apagar el bot, adelantar `vence` en una BD de pruebas y arrancar: el rol se quita al arrancar.
+- [ ] Borrar el rol en Discord: su asignación desaparece de la lista.
+- [ ] 🧾 Auditoría → filtro ⏳ Roles temporales: están todos los cambios.
+
 ## T-22 Probar en Discord el cash-out
 
 Issue #529. Con apuestas a partidos con cuotas recién actualizadas (abrir la lista de partidos las refresca).
