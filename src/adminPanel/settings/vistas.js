@@ -88,7 +88,7 @@ function filasConfigHome(guildId) {
         new ButtonBuilder().setCustomId("paneladmin_cfg_eventos").setLabel("🎉 Eventos").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("paneladmin_com_home").setLabel("📣 Comunidad").setStyle(ButtonStyle.Success),
     );
-    // 🛠️ Modo mantenimiento (#425): el interruptor y el mensaje que ven los demás.
+    // 🛠️ Modo mantenimiento (#425): el interruptor y https://github.com/ale-dm/bot-discord/pull/600/conflict?name=docs%252Fplanificacion%252FTAREAS.md&ancestor_oid=298d91602e71f8c6b52a55e81bb7281db93f84eb&base_oid=9f1fd57b2d2c5fc7cb7db8270b91d3dd196ecedb&head_oid=e4dafbee7d315dcec3332b627fc63d218f0a0a1del mensaje que ven los demás.
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId("paneladmin_cfg_mantenimiento")
