@@ -1,6 +1,6 @@
 // Panel admin → ⚙️ Config Global → 📣 Comunidad: los canales de las felicitaciones de cumpleaños (#427), de la bienvenida con su
 // texto (#435) y del buzón de sugerencias (#428), y la revisión de las sugerencias pendientes (aceptarlas o descartarlas con un
-// motivo opcional; quien las envió lo recibe por DM y la decisión queda en la auditoría).
+// motivo opcional; quien las envió lo recibe por DM y la decisión queda en la auditoría). El botón 🎫 Tickets lleva a adminPanel/tickets.js.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, MessageFlags } = require("discord.js");
 const guildSettings = require("../systems/guildSettings");
 const adminAudit = require("../systems/adminAudit");
@@ -40,12 +40,14 @@ function buildComunidadHome(guildId, aviso = "") {
                 inline: true,
             },
             { name: "💡 Sugerencias", value: `${canalTexto(cfg.sugerencias.canal_id)}\nPendientes: **${pendientes}**`, inline: true },
+            { name: "🎫 Tickets", value: cfg.tickets.canal_id ? `Hilos en <#${cfg.tickets.canal_id}>` : "Sin configurar", inline: true },
         )
         .setTimestamp();
     const acciones = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_com_cumple").setLabel("🎂 Cumpleaños").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_com_bienvenida").setLabel("👋 Bienvenida").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_com_buzon").setLabel("💡 Canal del buzón").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("paneladmin_tic_home").setLabel("🎫 Tickets").setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
             .setCustomId("paneladmin_com_revisar")
             .setLabel(`📋 Revisar sugerencias (${pendientes})`)

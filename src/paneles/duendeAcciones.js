@@ -5,6 +5,7 @@ const adminAudit = require("../systems/adminAudit");
 const apodos = require("../systems/apodos");
 const perfiles = require("../systems/duende/perfiles");
 const paneles = require("./duende");
+const guardiaPanel = require("./duendeGuardia");
 const { esAdmin } = require("../core/permisos");
 const { hablar } = require("../services/duende/chat/hablar");
 const { createLogger } = require("../core/logger");
@@ -36,7 +37,7 @@ const vistaInicio = (interaction, aviso = null) => {
     const personalidad = perfiles.personalidadDeCanal(interaction.channelId)
         ? perfiles.obtenerPersonalidad(perfiles.personalidadDeCanal(interaction.channelId))
         : null;
-    const payload = paneles.buildInicio({ esAdmin: esAdmin(interaction), personalidad });
+    const payload = paneles.buildInicio({ esAdmin: esAdmin(interaction), personalidad, guardia: guardiaPanel.estado(interaction) });
     if (aviso) payload.embeds[0].setDescription(`${aviso}\n\n${payload.embeds[0].data.description}`);
     return payload;
 };
@@ -166,6 +167,7 @@ const acciones = {
         if (id === "duendepanel_hablar") return interaction.showModal(modalHablar());
         if (id === "duendepanel_recuerdos") return interaction.update(vistaRecuerdos(interaction, interaction.user));
         if (id === "duendepanel_personalidad") return interaction.update(vistaPersonalidad(interaction));
+        if (id === guardiaPanel.ID_BOTON || id === guardiaPanel.ID_DEJAR) return guardiaPanel.handleButton(interaction, vistaInicio);
         if (id.startsWith("duendepanel_anotar_") || id.startsWith("duendepanel_olvidar_")) return botonRecuerdos(interaction, id, admin);
 
         // Solo admins: personalidades.
@@ -241,6 +243,7 @@ const acciones = {
             // La respuesta del Duende sale en el canal, como un mensaje normal; el formulario se cierra sin más.
             return hablar(client, adaptarHablar(interaction, interaction.fields.getTextInputValue("texto")));
         }
+        if (id === guardiaPanel.ID_MODAL) return guardiaPanel.handleModal(interaction, vistaInicio);
         if (id.startsWith("duendepanel_modal_anotar_")) {
             const objetivoId = id.replace("duendepanel_modal_anotar_", "");
             if (objetivoId !== interaction.user.id && !esAdmin(interaction)) return noOtra(interaction);

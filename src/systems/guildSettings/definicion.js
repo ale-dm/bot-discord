@@ -105,6 +105,11 @@ const DEFAULT_FLAT = {
     "bienvenida.canal_id": "",
     "bienvenida.texto": "",
     "sugerencias.canal_id": "",
+    // 🎫 Tickets (#537): canal de los hilos y del panel público, rol de staff, canal de transcripciones y categorías (una por línea).
+    "tickets.canal_id": "",
+    "tickets.rol_staff": "",
+    "tickets.canal_logs": "",
+    "tickets.categorias": "General",
     "autoroles.lista": "",
 
     "sonidos.apagado": false,
@@ -229,6 +234,10 @@ const KEY_TYPES = {
     "bienvenida.canal_id": "string",
     "bienvenida.texto": "string",
     "sugerencias.canal_id": "string",
+    "tickets.canal_id": "string",
+    "tickets.rol_staff": "string",
+    "tickets.canal_logs": "string",
+    "tickets.categorias": "string",
     "autoroles.lista": "string",
     "sonidos.apagado": "boolean",
     "sonidos.silencio_desde": "string",

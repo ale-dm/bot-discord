@@ -22,6 +22,7 @@ const FAMILIAS = {
     backup: "💾 Copias",
     tarea: "🕒 Tareas",
     mantenimiento: "🛠️ Mantenimiento",
+    tickets: "🎫 Tickets",
     calendario: "📅 Calendario",
 };
 

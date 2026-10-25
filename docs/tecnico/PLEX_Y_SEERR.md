@@ -113,11 +113,58 @@ controla el admin y es un grupo cerrado y pequeño): nueva sección
 - ⭐ Reseñas (`src/adminPanel/plex/resenas.js`): activar o desactivar los avisos por DM (al activar, `plex.resenas_desde`
   es ahora: sin backfill), el tope diario y el mínimo de votos (con rango y auditoría), los contadores (todas las reseñas,
   también las ocultas, y los avisos sin respuesta) y 🗑️ Borrar una reseña: se busca por título (y año), se elige a la
-  persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación.
+  persona y se confirma. La auditoría es `plex.resena_borrar`, la misma de la moderación. También el canal del feed
+  (`paneladmin_plex_resenas_canal_select`, enrutado por id exacto en `paneladmin.js`) y 🚫 Quitar canal del feed, con
+  la auditoría `plex.resenas.canal` (`{ antes, ahora }`).
+
+- 📣 Feed de reseñas (#573): con `plex.resenas_canal` (vacío = no se publica), cada reseña nueva sale en ese canal justo
+  después de guardarla, desde el formulario del DM o el de la ficha (`commands/plex/resenas.js`, tras contestar a la
+  interacción). Qué se publica lo decide `systems/plexResenas/feed.js` (`aPublicar`): solo si `guardar()` devuelve
+  `nueva: true` (no había reseña de esa persona en ese título), no está oculta (`plex_resenas.oculto`) y la persona no
+  oculta las suyas (`plex_preferencias.ocultar_resenas`). El mensaje (`discord/mensajes/resenaFeed.js`) lleva título,
+  estrellas, un extracto de 300 caracteres y el autor con `allowedMentions: { parse: [] }`; con spoilers, ningún texto,
+  solo «⚠️ contiene spoilers». El envío (`discord/envios/resenaFeed.js`) es best-effort: un canal borrado, de otro
+  servidor, que no es de texto o sin permisos se registra en el log y la reseña queda guardada. **Sin migración**: una
+  edición no se republica porque `guardar()` sabe si la fila ya existía; no se recuerda lo publicado aparte, así que
+  borrar una reseña y escribirla de nuevo cuenta como nueva, y lo reseñado sin canal (o con el envío fallido) no se
+  publica más tarde (sin backfill ni reintentos).
 
 - Reseñas de series (#572): `systems/plexResenas/series.js` reutiliza `plexTrofeos.datosUsuario` (con `rango` desde la
   activación) para saber qué temporadas y series están terminadas. Una temporada guarda su clave `serie:<titulo>|t<n>` y
   el título visible `Serie · temporada N`; la serie entera, `serie:<titulo>`. Un episodio suelto no cuenta.
+
+- 📊 Mi cine (#574): botón `plex_resenas_cine` en la fila de vistas de `/plex` → ⭐ Reseñas (5 botones, el máximo).
+  Las cifras las calcula `systems/plexResenas/miCine.js` (`calcular`, sin Discord y con `deps` inyectables) a partir de
+  la BD: las reseñas propias (`deUsuario`, también las ocultas, porque son suyas), la media del servidor con
+  `mediaPublica` (`consultas.js`, el mismo filtro `PUBLICAS`: no cuentan las reseñas ocultas ni las de quien oculta las
+  suyas), el género y la década con `plexTrofeos.datosUsuario` (películas como en los trofeos y, además, las series con
+  algún episodio visto, una vez por título), la racha con `datosVistos.diasVistos` (la actual llega hasta hoy o ayer; la
+  mejor, `rachaMasLarga`) y la media del servidor con `mejorRacha` de cada vinculado que haya visto algo, sin quien oculta
+  sus logros (`plex_preferencias.ocultar`). El año es el **en curso** (hora de Madrid, del 1 de enero a hoy): reseñas por
+  `creado_en` y horas, películas, episodios y series con `plexWrapped.resumenPersonal`. 🖼️ Imagen del año
+  (`plex_resenas_cine_imagen`) reutiliza `plexWrapped.graficoPersonal` con ese periodo y la manda aparte, efímera; solo se
+  ofrece si hay series ese año (la imagen es de series). El mensaje está en `paneles/plexMiCine.js`; la pantalla es la de
+  `/plex`, que es efímera. Sin migración.
+
+- 🎲 Ruleta de películas (#576): botón `plex_ruleta` en la fila de navegación de `/plex` → ⭐ Reseñas (la de vistas ya
+  tiene 5). La tirada está en `systems/plexRuleta.js` (`tirar`, sin Discord y con `azar` inyectable) y sale **solo de la
+  BD**, sin llamadas a Tautulli por tirada: las películas de `plex_fichas` con `encontrada = 1` (las que ya tienen ficha y
+  las que el repaso de la biblioteca con `get_library_media_info` ha apuntado y aún no la tienen; estas, sin géneros, solo
+  salen sin filtro de género), una vez por título y año (`clavePelicula`: la copia 4K no cuenta aparte). Lo visto es lo de
+  `plex_reproducciones` con `visto = 1` del `tautulliUserId` de `plexLinks`, por `rating_key` o por título y año (otra
+  copia de la misma película), el mismo criterio que `plexResenas.haVisto`: lo que la ruleta propone nunca se puede
+  reseñar todavía, así que ⭐ Puntuar va desactivado. Filtros: género (el id es `slug(canonico(g))`, así «Horror» y
+  «Terror» son el mismo), década y duración máxima; los menús (`plex_sel_ruleta_<campo>_…`) solo ofrecen las opciones con
+  algo sin ver con los otros filtros, como mucho 24 más «todos». 🎬 Otra (`plex_ruleta_otra_…`) excluye la que había en
+  pantalla; si es la única, lo dice y se desactiva. Los filtros y la película en pantalla viajan en el `customId`
+  (`<genero>_<decada>_<duracion>_<rating_key>`, `paneles/plexRuleta.js` → `estadoId`/`leerEstado`). 📝 Quiero ver
+  (`plex_ruleta_quiero_…`) usa `plexAvisos.apuntarDePlex`: la misma tabla `plex_quiero_ver` con el id de TMDB de la ficha,
+  sin preguntar a Seerr y ya con `disponible_en` (está en Plex, así que no llega el DM de «ya ha llegado»); sin id de TMDB
+  en la ficha el botón va desactivado. **Duración**: `get_library_media_info` no la da, así que sale de la ficha:
+  `fichaPelicula` guarda en `plex_fichas.duracion` (migración 078) el `duration` de `get_metadata` (ms) redondeado a
+  minutos, o null si no lo trae. Las fichas pedidas antes de la 078 no la tienen hasta que se refrescan
+  (`REFRESCAR_PELICULA`: cada ficha de película, al cumplir 30 días; 📼 Sincronizar no adelanta las más recientes). Con un máximo elegido, lo que no tiene duración no pasa el filtro
+  (`plexRuleta.cumple`), y el menú de duración solo sale cuando alguna película sin ver la tiene.
 
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de

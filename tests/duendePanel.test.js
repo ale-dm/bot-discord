@@ -49,12 +49,12 @@ beforeEach(() => {
 });
 
 describe("/duende abre el panel", () => {
-    test("muestra Hablar, Recuerdos y Personalidad; los admins ven además añadir y quitar", async () => {
+    test("muestra Hablar, Recuerdos, Personalidad y Guardia; los admins ven además añadir y quitar", async () => {
         const normal = panel();
         await duende.run(null, { ...normal, options: {} });
         const pn = normal.reply.mock.calls[0][0];
         expect(pn.flags).toBe(MessageFlags.Ephemeral);
-        expect(botones(pn)).toEqual(["duendepanel_hablar", "duendepanel_recuerdos", "duendepanel_personalidad"]);
+        expect(botones(pn)).toEqual(["duendepanel_hablar", "duendepanel_recuerdos", "duendepanel_personalidad", "duendepanel_guardia"]);
 
         const admin = panel({ admin: true });
         await duende.run(null, { ...admin, options: {} });
