@@ -58,6 +58,11 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
 - **086** crea `exchange_ordenes` y `exchange_cruces`. No hay que rellenar nada. Una tarea nueva cada minuto devuelve lo no
   cruzado de los partidos que empiezan.
 
+### Roles temporales (migración 079, 2026-10-24)
+
+- **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
+  que se den estén por debajo del suyo. Al arrancar quita los que vencieron mientras estaba apagado.
+
 ### Ambos marcan y doble oportunidad (migración 087, 2026-10-24)
 
 - **087** añade a `apuestas_partidos` las cuotas `cuota_ambos_si`, `cuota_ambos_no`, `cuota_dc_1x`, `cuota_dc_12`,
