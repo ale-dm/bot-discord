@@ -123,6 +123,8 @@ client.once("clientReady", async () => {
     latencias.iniciarLog();
     // 🛡️ Las guardias de voz (#553) vuelven a su canal tras un reinicio; si el canal ya no está, se descartan.
     runJob("Guardias de voz (arranque)", () => require("./systems/guardia").recuperarAlArrancar(client));
+    // 📅 Recordatorios del calendario (#540), cada minuto.
+    require("./app/tareasCalendario").programarCalendario(client);
     // 🔁 Exchange (#533): lo no cruzado de los partidos que empiezan se devuelve (cada minuto).
     require("./app/tareasExchange").programarExchange();
 

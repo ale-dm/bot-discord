@@ -4,6 +4,7 @@ const db = require("../../../core/db");
 const dinero = require("../../dinero");
 const retos = require("../../retos");
 const combinadas = require("../combinadas");
+const sistemas = require("../sistemas");
 const exchange = require("../exchange");
 const borradores = require("../borradorQuiniela");
 const { logInfo, logWarn } = require("../../../core/logger");
@@ -75,6 +76,11 @@ function caducarPartido(p, reembolsar, resumen) {
     }
     // Las combinadas con una pata en ese partido se devuelven enteras.
     combinadas.caducarPartido(p.match_id, (userId, cantidad, descripcion) => reembolsar(userId, cantidad, descripcion));
+    // 🎛️ Sistemas (#534): sus patas en ese partido se anulan (cuota 1,00); si ya no les queda nada pendiente, se cierran.
+    for (const pago of sistemas.caducarPartido(p.match_id)) {
+        if (pago.reembolso) resumen.reembolsos++;
+        resumen.pagos.push(pago);
+    }
     // 🔁 Exchange (#533): cada parte de cada cruce recupera lo suyo.
     for (const pago of exchange.caducarPartido(p.match_id)) {
         resumen.reembolsos++;

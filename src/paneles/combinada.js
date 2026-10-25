@@ -1,6 +1,7 @@
 // 🧩 Combinada (#1): el boleto que se va armando (privado, en un mensaje efímero) y las combinadas en juego.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const combinadas = require("../systems/apuestas/combinadas");
+const sistemas = require("../systems/apuestas/sistemas");
 const mercados = require("../systems/apuestas/mercados");
 const { fmtNumero } = require("../core/formato");
 
@@ -26,6 +27,12 @@ function filasBoleto(patas) {
                 .setLabel("💰 Apostar combinada")
                 .setStyle(ButtonStyle.Success)
                 .setDisabled(patas.length < combinadas.MIN_PATAS),
+            // 🎛️ Sistema (#534): con 3, 4 o 5 partidos, las combinaciones parciales (2 de 3, 3 de 4, 3 de 5).
+            new ButtonBuilder()
+                .setCustomId("combinada_sistema")
+                .setLabel("🎛️ Sistema")
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(!sistemas.tamanosPara(patas.length).length),
             new ButtonBuilder()
                 .setCustomId("combinada_vaciar")
                 .setLabel("🗑️ Vaciar")

@@ -725,6 +725,52 @@ Issue #538. Tras un día de uso con el bot nuevo.
 - [ ] Con 90 días de economía el panel responde sin que el bot se quede colgado.
 - [ ] Con una cuenta sin admin no se puede abrir; en 🧾 Auditoría aparece quién lo abrió (`consulta.estadisticas`).
 
+## T-19 Probar en Discord los avisos y strikes
+
+Issue #542. Con una cuenta de staff (sin ser admin) y otra normal.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → ⚠️ Moderación → 🛡️ Staff y canal: elegir el rol de staff y un canal de log.
+- [ ] Con la cuenta de staff, `/avisar usuario motivo`: el avisado recibe el DM con el motivo y en el canal de log sale la línea (sin notificar a nadie).
+- [ ] Con una cuenta sin permisos, `/avisar` responde que solo el staff puede.
+- [ ] Avisar tres veces a la misma persona: a los admins les llega «Medida sugerida: ⚠️ Aviso serio» y el bot no hace nada más.
+- [ ] 🔎 Consultar a esa persona: salen los tres avisos con motivo, quién y cuándo; retirar uno y limpiar el resto con confirmación.
+- [ ] 📏 Umbrales y caducidad: poner umbrales desordenados da error; unos válidos se guardan.
+- [ ] 🧾 Auditoría → filtro ⚠️ Moderación: están todos los cambios.
+
+## T-20 Probar en Discord el calendario
+
+Issue #540. Con alguna sesión de cine, un cumpleaños guardado y partidos sincronizados.
+
+- [ ] `/calendario`: sale la semana actual agrupada por día, con las horas en tu zona; la sesión de cine enlaza a su mensaje.
+- [ ] ◀ ▶ cambia de semana; 🗓️ Por meses enseña el mes y navega por meses. Una semana vacía lo explica.
+- [ ] El desplegable enseña el detalle de un evento con la fecha completa y la cuenta atrás.
+- [ ] `/paneladmin` → ⚙️ Config Global → 📅 Calendario → ➕ Añadir evento con una fecha en 10 minutos: aparece en `/calendario`.
+- [ ] ⚙️ Ajustes: canal de pruebas y 15 minutos. A los 5 minutos del evento llega un solo recordatorio al canal.
+- [ ] Reiniciar el bot antes de que empiece: no se repite el recordatorio.
+- [ ] Borrar el evento desde el desplegable: desaparece del calendario y queda en 🧾 Auditoría.
+
+## T-22 Probar en Discord el cash-out
+
+Issue #529. Con apuestas a partidos con cuotas recién actualizadas (abrir la lista de partidos las refresca).
+
+- [ ] /juegos → 📋 Mis jugadas → ⏳ En juego: sale el menú 💸 Retirar ya con el valor de cada apuesta.
+- [ ] Elegir una: la confirmación enseña el valor y hasta qué hora vale. Confirmar: llega al efectivo y en Movimientos sale «Cash-out: …».
+- [ ] Esperar más de 60 s y confirmar: dice que caducó y enseña el valor nuevo.
+- [ ] La apuesta retirada ya no sale en ⏳ En juego y en 📋 Resueltas sale «💸 Retirada (+N)». Al liquidar el partido no se paga otra vez.
+- [ ] Una combinada con una pata ya fallada no sale en el menú.
+- [ ] Una apuesta a marcador exacto no se puede retirar.
+
+## T-23 Probar en Discord las apuestas de sistema
+
+Issue #534. Con tres partidos próximos con cuotas.
+
+- [ ] Sumar 2 partidos al boleto: 🎛️ Sistema está deshabilitado. Con 3, se activa.
+- [ ] 🎛️ Sistema → «2 de 3» y 100: la confirmación dice 3 combinaciones, coste 300, lo máximo que se cobra y que se puede fallar 1 partido. No se ha cobrado nada todavía.
+- [ ] ✅ Apostar: se cobran 300 una sola vez y el boleto queda vacío.
+- [ ] En 📋 Mis jugadas → ⏳ En juego sale el sistema con sus partidos y sus 3 combinaciones.
+- [ ] Al liquidar, con un partido fallado, se cobra solo la combinación de los otros dos y sale en 📋 Resueltas.
+- [ ] Con 5 partidos y un importe que haga pasar de 50.000, la confirmación avisa y no deja apostar.
+
 ## T-24 Probar en Discord el exchange de apuestas
 
 Issue #533. Con dos cuentas y un partido próximo.
