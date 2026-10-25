@@ -72,6 +72,8 @@ function filasPartido(partido, match_id) {
             .setCustomId(`apuesta_exacto_${match_id}`)
             .setLabel(`🎯 Marcador exacto (×${marcadorExacto.PREMIO})`)
             .setStyle(ButtonStyle.Secondary),
+        // 🔁 Exchange (#533): apostar contra otros jugadores en el libro de este partido.
+        new ButtonBuilder().setCustomId(`exchange_ver_${match_id}`).setLabel("🔁 Exchange").setStyle(ButtonStyle.Secondary),
     );
 
     // Mercados de goles y de hándicap, si la API dio su cuota para este partido (una fila aparte).

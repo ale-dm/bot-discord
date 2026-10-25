@@ -121,6 +121,8 @@ client.once("clientReady", async () => {
     log.info(`Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
     programarTareas(client);
     latencias.iniciarLog();
+    // 🔁 Exchange (#533): lo no cruzado de los partidos que empiezan se devuelve (cada minuto).
+    require("./app/tareasExchange").programarExchange();
 
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
     // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia

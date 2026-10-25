@@ -610,3 +610,15 @@ Issue #541. Con un canal de pruebas y, si se quiere, un rol y un nivel concretos
 - [ ] Esperar al vencimiento (o adelantar `fin` en una BD de pruebas): el bot elige ganadores entre los que siguen cumpliendo, reparte el premio, edita el mensaje con 🏆 y avisa por DM. No se paga dos veces si se reinicia.
 - [ ] Probar un premio de objeto del catálogo (único y normal): el único entrega una sola unidad; el normal, una por ganador.
 - [ ] Cancelar un sorteo desde el panel: se marca como cancelado, el mensaje se actualiza y queda en Auditoría.
+
+## T-22 Probar en Discord el exchange de apuestas
+
+Issue #533. Con dos cuentas y un partido próximo.
+
+- [ ] En la ficha del partido, 🔁 Exchange abre el libro en privado (vacío al principio).
+- [ ] Cuenta A: ➕ A favor del local @2,5 con 200: la confirmación dice lo que cobra y la comisión; al publicar se le retienen 200 y la orden sale en el libro.
+- [ ] Cuenta B: 🤝 En contra del local hasta 2,5 cubriendo 100: la confirmación dice el riesgo (150); al cruzar se le retiene.
+- [ ] Cuenta A, 📋 Mis órdenes: la orden sale «en parte»; cancelar devuelve los 100 sin cruzar.
+- [ ] Cuenta A no puede cruzar su propia orden.
+- [ ] Al empezar el partido, una orden sin cruzar se devuelve sola.
+- [ ] Al liquidar, quien gana cobra lo suyo y lo del otro menos el 2 % de su ganancia, una sola vez.

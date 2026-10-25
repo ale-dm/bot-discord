@@ -725,6 +725,18 @@ boleto se pierde. Si un partido se caduca sin resultado, la combinada se devuelv
 - Sale en 📋 Mis jugadas (⏳ En juego y 📋 Resueltas, con cada partido y su elección) y cuenta en 📊 Stats. No se puede
   cancelar una vez apostada, ni se incluye el marcador exacto (su premio es fijo).
 
+**🔁 Exchange entre jugadores (#533)**: en la ficha de cada partido, **🔁 Exchange** abre (en privado) el libro del partido: las
+órdenes de otros jugadores por resultado (1X2) y cuota, con lo disponible y la cuota de la casa como referencia.
+- **➕ A favor**: publicas tu cuota (de 1,1 a 50) y cuánto apuestas; se te retiene y esperas a que alguien la cruce.
+- **🤝 En contra**: cruzas las órdenes del libro hasta la cuota que aceptes; se cruza primero la cuota más baja y, a igual
+  cuota, la más antigua, también en parte. Arriesgas lo cubierto × (cuota − 1), que se te retiene. No puedes cruzar las tuyas.
+- **Comisión**: quien gana paga el **2 %** de su ganancia neta; la confirmación lo enseña antes de publicar o cruzar.
+- **📋 Mis órdenes**: las tuyas con lo cruzado y su estado, y lo que has cruzado en contra; desde ahí se cancela lo que nadie
+  ha cruzado (se devuelve). Al empezar el partido, lo no cruzado se devuelve solo.
+- Se liquida con el resultado del partido, una sola vez; si se queda sin resultado, cada uno recupera lo suyo.
+- **Límites**: como mucho el 10 % de tu capital por orden (o riesgo), el 25 % en un mismo partido y 100.000 retenidos en total.
+  En esta versión solo hay órdenes a favor; ir en contra es siempre cruzando el libro.
+
 **Mercados de goles y de hándicap (#9 y #10)**: debajo de los botones 1/X/2 de cada partido, cuando la API da la línea:
 - **⬆️ Más de 2,5 goles** / **⬇️ Menos de 2,5 goles**: gana si el total de goles es 3 o más (o 2 o menos).
 - **🏠 Local −1,5**: gana el local si gana por 2 o más. **✈️ Visitante +1,5**: gana si pierde por 1 o menos (o no pierde).

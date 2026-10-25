@@ -2,6 +2,15 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-25 (exchange de apuestas entre jugadores, #533)
+
+- **🔁 Exchange** en la ficha del partido: libro privado por resultado y cuota, **➕ A favor** (publicar orden con lo apostado retenido) y **🤝 En contra** (cruzar el libro: cuota más baja primero y, a igual cuota, la más antigua; cruces parciales; riesgo retenido). Solo órdenes a favor en esta versión.
+- **Comisión** del 2 % de la ganancia neta, la paga quien gana; se enseña en la confirmación.
+- **📋 Mis órdenes** con estados (sin cruzar, en parte, cruzada, cancelada, liquidada) y cancelar lo no cruzado. Al empezar el partido, lo no cruzado se devuelve solo cada minuto (`src/app/tareasExchange.js`).
+- **Liquidación**: con el mismo resultado que el resto de apuestas, una sola vez por cruce; sin resultado, cada parte recupera lo suyo.
+- **Límites**: 10 % del capital por orden, 25 % por partido y 100.000 en total.
+- **Migración 086** (`exchange_ordenes`, `exchange_cruces`). **✅ Verificación**: tests de reglas, límites, motor de cruces (prioridad, parciales, propias), cancelación, cierre al empezar, liquidación (gana cada parte, comisión, sin doble pago, sin resultado, de punta a punta) e interfaz; `npm run check` en verde.
+
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
 - **📺 Series**: al terminar una temporada llega el DM «Has terminado la temporada N de X», y al terminar la serie entera, «Has terminado X». Sale de los mismos datos que los trofeos, así que un episodio suelto no genera aviso, y solo cuenta lo visto desde que se activan los avisos (sin backfill).
