@@ -58,6 +58,14 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
 - **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
   que se den estén por debajo del suyo. Al arrancar quita los que vencieron mientras estaba apagado.
 
+### Ambos marcan y doble oportunidad (migración 087, 2026-10-24)
+
+- **087** añade a `apuestas_partidos` las cuotas `cuota_ambos_si`, `cuota_ambos_no`, `cuota_dc_1x`, `cuota_dc_12`,
+  `cuota_dc_x2` y `extras_ts`. No hay que rellenar nada.
+- Los mercados nacen **apagados**. Para activarlos, en `.env`: `ODDS_MERCADOS_EXTRA=btts,double_chance`. Cuesta 1 crédito
+  por mercado y partido: con los valores por defecto (10 partidos, cada 6 horas) son hasta 20 créditos por competición y
+  actualización de cuotas. Ajustar `ODDS_EXTRA_MAX` y `ODDS_EXTRA_MINUTOS` al plan de la Odds API.
+
 ### Tickets de soporte (migración 077, 2026-10-24)
 
 - **077** crea `tickets` (autor, categoría, asunto, hilo, mensaje de bienvenida, estado, fechas de apertura y cierre y quién lo

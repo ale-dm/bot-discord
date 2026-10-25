@@ -10,7 +10,8 @@ function partidosDe(userId, { pendientes = true, limite = 10 } = {}) {
     return db
         .prepare(
             `SELECT a.*, p.home_team, p.away_team, p.start_time, p.estado, p.resultado,
-                    p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.cuota_casa, p.cuota_fuera
+                    p.cuota_home, p.cuota_draw, p.cuota_away, p.cuota_mas, p.cuota_menos, p.cuota_casa, p.cuota_fuera,
+                    p.cuota_ambos_si, p.cuota_ambos_no, p.cuota_dc_1x, p.cuota_dc_12, p.cuota_dc_x2
              FROM apuestas_usuario a JOIN apuestas_partidos p ON a.match_id = p.match_id
              WHERE a.user_id = ? AND p.estado ${pendientes ? "= 'abierto'" : "!= 'abierto'"}
              ORDER BY p.start_time ${pendientes ? "ASC" : "DESC"} LIMIT ?`,
