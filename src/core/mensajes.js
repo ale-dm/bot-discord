@@ -228,6 +228,13 @@ function registrarMensajes(client) {
             return;
         }
 
+        // 📊 Mensajes del servidor por día, para las estadísticas del panel admin (#538).
+        try {
+            if (message.guildId) require("../systems/estadisticas").contar(message.guildId, "mensajes");
+        } catch (e) {
+            msgLog.warn(`No se pudo contar el mensaje para las estadísticas: ${e.message}`);
+        }
+
         const tXp = performance.now();
         try {
             const xp = await xpSystem.handleMessageXp(message);
