@@ -127,6 +127,15 @@ const SECCIONES = {
             "**$TTCL**, la moneda del servidor: su precio sube cuando se compra y baja cuando se vende.",
         ],
     },
+    elecciones: {
+        boton: "Elecciones",
+        emoji: "🗳️",
+        titulo: "Elecciones a la presidencia",
+        texto: [
+            "🗳️ **Elecciones a la presidencia**: cuando un admin las abre, `/elecciones inscribirse` (o 🙋 en el panel) para presentarte. En las primarias pasan los 4 más votados; los finalistas escriben su programa (`/elecciones programa`), que te llega por DM al empezar las generales. Al votar eliges si tu voto es 🔒 secreto o 📢 público. `/elecciones estado` te dice en qué fase están.",
+            "👑 `/presidente` — los poderes de quien gana, durante su mandato: `mover`, `desconectar`, `silenciar` y `ensordecer` en voz (nunca a admins ni staff, y con un máximo de minutos), `liberar`, y `crear-canal` / `borrar-canal` en su categoría. `/presidente estado` lo puede ver cualquiera.",
+        ],
+    },
     admin: {
         boton: "Admin",
         emoji: "🛠️",

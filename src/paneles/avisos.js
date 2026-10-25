@@ -1,7 +1,9 @@
 // 🔔 Panel de /avisos (#431): un desplegable con todos los tipos de DM y un botón de «no molestar». Se pinta con el
-// estado de systems/avisosDm.js. Con más de 25 tipos habría que paginar; el desplegable admite 25.
+// estado de systems/avisosDm.js. Cada desplegable admite 25 tipos: los que sobran van en un segundo desplegable.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const avisosDm = require("../systems/avisosDm");
+
+const MAX_OPCIONES = 25;
 
 function buildAvisos(userId) {
     const e = avisosDm.estado(userId);
@@ -17,18 +19,23 @@ function buildAvisos(userId) {
                 "\n\nElige un aviso en el desplegable para encenderlo o apagarlo. Vale para todos los servidores. " +
                 "Las alertas de administración no se pueden apagar desde aquí.",
         );
-    const select = new StringSelectMenuBuilder()
-        .setCustomId("avisos_sel")
-        .setPlaceholder("Enciende o apaga un aviso")
-        .addOptions(
-            e.tipos.map((t) => ({
-                label: t.nombre,
-                value: t.id,
-                emoji: t.emoji,
-                description: t.detalle.slice(0, 100),
-            })),
-        );
-    const filaSelect = new ActionRowBuilder().addComponents(select);
+    // Un desplegable admite 25 opciones: a partir de ahí, los avisos siguen en otro.
+    const filasSelect = [];
+    for (let i = 0; i < e.tipos.length; i += MAX_OPCIONES) {
+        const parte = e.tipos.slice(i, i + MAX_OPCIONES);
+        const select = new StringSelectMenuBuilder()
+            .setCustomId(i === 0 ? "avisos_sel" : `avisos_sel_${i / MAX_OPCIONES + 1}`)
+            .setPlaceholder(i === 0 ? "Enciende o apaga un aviso" : "Más avisos")
+            .addOptions(
+                parte.map((t) => ({
+                    label: t.nombre,
+                    value: t.id,
+                    emoji: t.emoji,
+                    description: t.detalle.slice(0, 100),
+                })),
+            );
+        filasSelect.push(new ActionRowBuilder().addComponents(select));
+    }
     const filaNm = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId("avisos_nm")
@@ -36,7 +43,7 @@ function buildAvisos(userId) {
             .setEmoji("🌙")
             .setStyle(e.noMolestar ? ButtonStyle.Danger : ButtonStyle.Primary),
     );
-    return { embeds: [embed], components: [filaSelect, filaNm] };
+    return { embeds: [embed], components: [...filasSelect, filaNm] };
 }
 
 module.exports = { buildAvisos };

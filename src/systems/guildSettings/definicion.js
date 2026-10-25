@@ -313,4 +313,27 @@ for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_CALENDARIO)) {
     KEY_TYPES[clave] = tipo;
 }
 
+// 🗳️ Elecciones a la presidencia: dónde se publica el panel, el rol y la categoría del presidente, cuánto dura cada fase (en
+// días, admite decimales para probar), quién puede votar y presentarse, y los límites de los poderes del presidente.
+const AJUSTES_ELECCIONES = {
+    "elecciones.canal": ["", "string"],
+    "elecciones.rol_presidente": ["", "string"],
+    "elecciones.categoria_presidente": ["", "string"],
+    "elecciones.dias_inscripcion": [3, "number"],
+    "elecciones.dias_primarias": [30, "number"],
+    "elecciones.dias_programas": [3, "number"],
+    "elecciones.dias_generales": [7, "number"],
+    "elecciones.dias_mandato": [30, "number"],
+    "elecciones.antiguedad_dias": [7, "number"],
+    "elecciones.max_canales": [3, "number"],
+    "elecciones.max_sancion_min": [30, "number"],
+    "elecciones.cooldown_min": [5, "number"],
+    "elecciones.reeleccion": [true, "boolean"],
+    "elecciones.auto_reiniciar": [false, "boolean"],
+};
+for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_ELECCIONES)) {
+    DEFAULT_FLAT[clave] = valor;
+    KEY_TYPES[clave] = tipo;
+}
+
 module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };
