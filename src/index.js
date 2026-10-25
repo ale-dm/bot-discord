@@ -181,6 +181,14 @@ client.on("guildCreate", (g) => gwLog.info(`Añadido a un servidor: ${g.name} ($
 client.on("guildMemberAdd", (member) => {
     bienvenida.enviarBienvenida(member).catch((e) => gwLog.warn(`Error dando la bienvenida a ${member.id}:`, e));
 });
+// ⏳ Un rol borrado cancela sus roles temporales activos (#543).
+client.on("roleDelete", (role) => {
+    try {
+        require("./discord/envios/rolesTemporales").alBorrarRol(role.guild.id, role.id);
+    } catch (e) {
+        log.warn(`No se pudieron cancelar los roles temporales del rol borrado ${role.id}: ${e.message}`);
+    }
+});
 client.on("guildDelete", (g) => gwLog.warn(`Expulsado o eliminado de un servidor: ${g.name ?? "?"} (${g.id})`));
 client.rest.on("rateLimited", (info) =>
     gwLog.warn(

@@ -58,6 +58,11 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
 - **082** crea `calendario_eventos` y `calendario_recordatorios`. No hay que rellenar nada. Comando nuevo **`/calendario`**:
   hay que volver a registrar los comandos. Los recordatorios no salen hasta elegir canal en ⚙️ Config Global → 📅 Calendario.
 
+### Roles temporales (migración 079, 2026-10-24)
+
+- **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
+  que se den estén por debajo del suyo. Al arrancar quita los que vencieron mientras estaba apagado.
+
 ### Ambos marcan y doble oportunidad (migración 087, 2026-10-24)
 
 - **087** añade a `apuestas_partidos` las cuotas `cuota_ambos_si`, `cuota_ambos_no`, `cuota_dc_1x`, `cuota_dc_12`,
