@@ -48,8 +48,7 @@ const recordatorios = require("../systems/apuestas/recordatorios");
 const retos = require("../juegos/retos/retos");
 const duende = require("../juegos/retos/duende");
 const negocios = require("../systems/negocios");
-const avisarSorteos = require("../discord/envios/sorteos").revisar;
-const avisarDepositos = require("../discord/envios/depositos").procesarYAvisar;
+const { programarVencimientos } = require("./tareasPorMinuto");
 const eventos = require("../systems/cripto/eventos");
 const patrimonio = require("../systems/patrimonio");
 const encuesta = require("../commands/general/encuesta");
@@ -263,8 +262,8 @@ function programarRetosYEconomia(client) {
     });
     // 🏪 Negocios: blanquea el dinero negro depositado (24 h) y paga el ingreso diario de cada negocio.
     cron.schedule("*/5 * * * *", () => runJob("Negocios y blanqueo", () => negocios.revisar()), { noOverlap: true });
-    cron.schedule("* * * * *", () => runJob("Sorteos", () => avisarSorteos(client)), { noOverlap: true });
-    cron.schedule("*/5 * * * *", () => runJob("Depósitos a plazo", () => avisarDepositos(client)), { noOverlap: true });
+    // 🎁 Sorteos, 🏦 depósitos a plazo y ⏳ roles temporales vencidos (app/tareasPorMinuto.js).
+    programarVencimientos(client);
     // 💹 Evento diario de TTCL (±5 %, a una hora aleatoria del día): aplica el del día y avisa por DM a quien lo tiene.
     cron.schedule("*/5 * * * *", () => runJob("Evento de TTCL", () => eventos.revisarYAvisar(client)), {
         noOverlap: true,
