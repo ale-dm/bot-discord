@@ -117,6 +117,14 @@ function generosidad(guildId, { orden = "DESC", minVotos = 3, limite = 5 } = {})
         .all(guildId, Math.max(1, Number(minVotos) || 1), limite);
 }
 
+/** La media (0–5) y los votos de todas las reseñas públicas del servidor: lo oculto de cada uno no cuenta (📊 Mi cine). */
+function mediaPublica(guildId) {
+    const r = db
+        .prepare(`SELECT AVG(r.nota) AS nota, COUNT(*) AS votos FROM plex_resenas r ${JOIN_PREF} WHERE r.guildId = ? AND ${PUBLICAS}`)
+        .get(guildId);
+    return { media: r.votos ? Math.round((r.nota / 2) * 10) / 10 : null, votos: r.votos };
+}
+
 /**
  * Las reseñas de un título con ese nombre, también las ocultas: para moderar (el panel admin). `anio` filtra si se da.
  * @returns {Array<object>} filas normalizadas (con `oculto`)
@@ -157,6 +165,7 @@ module.exports = {
     ultimas,
     rankingValoradores,
     generosidad,
+    mediaPublica,
     todasDelTitulo,
     resumenAdmin,
 };

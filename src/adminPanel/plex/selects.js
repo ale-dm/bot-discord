@@ -10,6 +10,7 @@ const { log, buildRolesGordos, buildRankingSemanal } = require("./vistas");
 const resenas = require("./resenas");
 
 async function handlePlexChannelSelect(interaction) {
+    if (interaction.customId.startsWith(resenas.PREFIJO)) return resenas.handleResenasCanal(interaction);
     if (interaction.customId === "paneladmin_plex_ranking_canal_select") {
         const channelId = interaction.values[0];
         guildSettings.setSetting(interaction.guildId, "plex.ranking_canal", channelId);
