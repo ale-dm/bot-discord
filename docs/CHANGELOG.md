@@ -10,6 +10,12 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 - **Auditoría**: `moderacion.aviso`, `moderacion.retirar`, `moderacion.limpiar`, `moderacion.ajustes` y `moderacion.staff`, con su familia en el filtro.
 - **Migración 080** (`strikes`) y ajustes `moderacion.*`. **✅ Verificación**: tests de permisos, acumulación, caducidad, umbrales, retirar, limpiar, `/avisar` (DM, log, admins, DM cerrado) y el panel con y sin admin; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
 
+## 2026-10-24 (panel de estadísticas del servidor, #538)
+
+- **⚙️ Config Global → 📊 Estadísticas**: gráfica de barras (ECharts → PNG, el mismo renderizador de `/cripto`) de mensajes, XP, economía neta, dinero apostado u horas de Plex en 7, 30 o 90 días, con total, media, mejor día y variación respecto al periodo anterior. Caché de 5 minutos por métrica y rango con 🔄 Actualizar deshabilitado mientras dura. Auditoría `consulta.estadisticas` al abrirlo.
+- **Datos nuevos**: el bot no guardaba los mensajes por día y `xp_diaria` se borra a las dos semanas; ahora se cuentan en `estadisticas_diarias` (los mensajes desde este despliegue; la XP arranca con lo que quedaba en `xp_diaria`). Índice nuevo en `historial(fecha)` para las consultas por rango.
+- **Migración 083**. **✅ Verificación**: tests de contadores, series por día de Madrid de cada métrica, resumen y variación, formateo de la gráfica sin renderizar, la migración, el índice y el panel con su caché; `npm run check` en verde.
+
 ## 2026-10-24 (roles temporales, #543)
 
 - **⏳ Roles temporales** en `/paneladmin` → ⚙️ Config Global: dar un rol de 1 a 365 días (7 por defecto) con DM opcional al darlo y al quitarlo, lista de activos (persona, rol, quién lo dio y cuándo vence), 🔁 renovar desde el vencimiento (o desde ahora si ya venció; tope de 365 días) y ➖ quitar antes de tiempo con confirmación.

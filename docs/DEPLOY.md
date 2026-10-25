@@ -59,6 +59,12 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
   Discord al desplegar. Para que lleguen los avisos de umbral, los admins tienen que estar en `alertas.admin_ids`
   (🩺 Sistema → alertas).
 
+### Estadísticas del servidor (migración 083, 2026-10-24)
+
+- **083** crea `estadisticas_diarias` (mensajes y XP por día), la rellena con la XP de `xp_diaria` (dos semanas) y añade un
+  índice en `historial(fecha)`. Puede tardar unos segundos si el historial es grande. Las gráficas de mensajes empiezan
+  vacías: se cuentan desde este despliegue.
+
 ### Roles temporales (migración 079, 2026-10-24)
 
 - **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
