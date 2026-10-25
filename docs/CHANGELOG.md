@@ -2,6 +2,14 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-24 (avisos y strikes de moderación, #542)
+
+- **`/avisar usuario motivo`** (comando nuevo, staff): le llega un DM al avisado con el motivo, suma un strike y se apunta en el canal de log de moderación. Pueden usarlo quienes tengan Moderar miembros, los admins y el rol de staff configurado.
+- **Strikes**: caducan a los 90 días (ajustable) sin borrarse del historial. Al cruzar 3, 5, 7 y 10 (ajustables) se manda a los admins de las alertas la medida sugerida (aviso serio, silenciar 24 h, expulsión o ban). **El bot no sanciona nunca.**
+- **⚙️ Config Global → ⚠️ Moderación**: rol de staff y canal de log, umbrales y caducidad, quién tiene strikes vigentes, historial de una persona, retirar uno o limpiarlos con confirmación.
+- **Auditoría**: `moderacion.aviso`, `moderacion.retirar`, `moderacion.limpiar`, `moderacion.ajustes` y `moderacion.staff`, con su familia en el filtro.
+- **Migración 080** (`strikes`) y ajustes `moderacion.*`. **✅ Verificación**: tests de permisos, acumulación, caducidad, umbrales, retirar, limpiar, `/avisar` (DM, log, admins, DM cerrado) y el panel con y sin admin; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
 ## 2026-10-24 (panel de estadísticas del servidor, #538)
 
 - **⚙️ Config Global → 📊 Estadísticas**: gráfica de barras (ECharts → PNG, el mismo renderizador de `/cripto`) de mensajes, XP, economía neta, dinero apostado u horas de Plex en 7, 30 o 90 días, con total, media, mejor día y variación respecto al periodo anterior. Caché de 5 minutos por métrica y rango con 🔄 Actualizar deshabilitado mientras dura. Auditoría `consulta.estadisticas` al abrirlo.

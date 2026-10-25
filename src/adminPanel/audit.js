@@ -24,6 +24,7 @@ const FAMILIAS = {
     mantenimiento: "🛠️ Mantenimiento",
     tickets: "🎫 Tickets",
     roles: "⏳ Roles temporales",
+    moderacion: "⚠️ Moderación",
 };
 
 function buildAuditPayload(guildId, page = 0, pageSize = 10, familia = null) {
