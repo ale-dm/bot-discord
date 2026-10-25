@@ -79,6 +79,11 @@ function comprobarInicio(interaction, { tertulia, soloEscuchaA }) {
     if (sesiones.has(interaction.guildId)) {
         return { error: "Ya hay una conversación en directo en este servidor. Usa `/conversación` otra vez para terminarla." };
     }
+    // 🛡️ De guardia (#553): la conversación no empieza y la guardia sigue como estaba.
+    const presente = presencia.actual(interaction.guildId);
+    if (presente?.guardia) {
+        return { error: `🛡️ Estoy de guardia en **${presente.canalNombre}** y ahora mismo no puedo hablar.` };
+    }
 
     const voiceChannel = interaction.member?.voice?.channel;
     if (!voiceChannel) return { error: "¡Debes estar en un canal de voz!" };

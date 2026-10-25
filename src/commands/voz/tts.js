@@ -96,7 +96,9 @@ async function obtenerConexion(interaction, channel, guildId) {
         if (presente.canalId === channel.id) return presente.conexion;
         queues.delete(guildId);
         await interaction.editReply({
-            content: `❌ Ahora mismo estoy en **${presente.canalNombre}** por /conectar. Entra ahí, o pide que me salga con /conectar.`,
+            content: presente.guardia
+                ? `❌ Ahora mismo estoy de guardia en **${presente.canalNombre}**. Entra ahí para oírme.`
+                : `❌ Ahora mismo estoy en **${presente.canalNombre}** por /conectar. Entra ahí, o pide que me salga con /conectar.`,
         });
         return null;
     }

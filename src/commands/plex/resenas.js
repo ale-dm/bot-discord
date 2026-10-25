@@ -1,4 +1,4 @@
-// ⭐ Botones, formulario y moderación de las reseñas (#566, #567 y #568). Se llaman desde commands/plex/plex.js.
+// ⭐ Botones, formulario y moderación de las reseñas (#566, #567 y #568), y 📊 Mi cine (#574). Se llaman desde commands/plex/plex.js.
 const { MessageFlags } = require("discord.js");
 const plexResenas = require("../../systems/plexResenas");
 const pedidos = require("../../systems/plexResenas/pedidos");
@@ -6,7 +6,11 @@ const guildSettings = require("../../systems/guildSettings");
 const avisosDm = require("../../systems/avisosDm");
 const { logAdminAction } = require("../../systems/adminAudit");
 const { formularioResena, filaEditar } = require("../../discord/mensajes/resena");
+const { publicarResena } = require("../../discord/envios/resenaFeed");
+const miCine = require("../../systems/plexResenas/miCine");
+const { adjuntoWrapped } = require("../../discord/mensajes/wrapped");
 const { pantallaResenas, pantallaTitulo, esAdmin } = require("../../paneles/plexResenas");
+const { pantallaMiCine } = require("../../paneles/plexMiCine");
 const { pantallaPlex } = require("../../paneles/plex");
 const { efimero } = require("../../discord/respuestas");
 
@@ -24,6 +28,8 @@ async function handlePantalla(client, interaction) {
         plexResenas.setOculto(guildId, userId, !plexResenas.oculto(guildId, userId));
         return interaction.update(pantallaResenas(guildId, userId));
     }
+    if (id === "plex_resenas_cine") return abrirMiCine(interaction);
+    if (id === "plex_resenas_cine_imagen") return imagenDelAnio(interaction);
     if (id.startsWith("plex_resenas_pag_")) {
         const [, , , vista, pagina] = id.split("_");
         return interaction.update(pantallaResenas(guildId, userId, vista, Number(pagina)));
@@ -33,6 +39,20 @@ async function handlePantalla(client, interaction) {
     if (id.startsWith("plex_resenas_puntuar_")) return abrirModal(interaction, id.slice("plex_resenas_puntuar_".length));
     if (id.startsWith("plex_resenas_borrar_")) return borrar(interaction, id.slice("plex_resenas_borrar_".length));
     if (id.startsWith("plex_resenas_reportar_")) return reportar(client, interaction, id.slice("plex_resenas_reportar_".length));
+}
+
+// 📊 Mi cine (#574): se calcula al pulsar (historial y fichas), así que primero se confirma el botón.
+async function abrirMiCine(interaction) {
+    await interaction.deferUpdate();
+    return interaction.editReply(pantallaMiCine(miCine.calcular(interaction.guildId, interaction.user.id)));
+}
+
+// 🖼️ La imagen del Wrapped del año en curso, aparte y solo para quien la pide.
+async function imagenDelAnio(interaction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const r = miCine.imagenDelAnio(interaction.guildId, interaction.user.id);
+    if (!r.ok) return interaction.editReply({ content: `❌ ${r.motivo}` });
+    return interaction.editReply({ content: "🖼️ Tu Plex Wrapped del año, hasta hoy.", files: adjuntoWrapped(r.png) });
 }
 
 function abrirModal(interaction, clave) {
@@ -118,7 +138,9 @@ async function guardarTitulo(interaction) {
         meGusta: interaction.fields.getCheckbox("megusta"),
     });
     if (!r.ok) return interaction.reply(efimero({ content: `❌ ${r.motivo}` }));
-    return interaction.update(pantallaTitulo(guildId, user.id, clave, "✅ Guardada."));
+    await interaction.update(pantallaTitulo(guildId, user.id, clave, "✅ Guardada."));
+    // 📣 Después de contestar: el feed (#573) no hace esperar a quien reseña y, si falla, la reseña ya está guardada.
+    await publicarResena(interaction.client, guildId, r);
 }
 
 async function handleModal(interaction) {
@@ -142,7 +164,8 @@ async function handleModal(interaction) {
     pedidos.marcar(pedido.id, "puntuada");
     const texto = `✅ Reseñada ${plexResenas.estrellasTexto(nota)}`;
     if (interaction.message) await interaction.message.edit({ content: texto, embeds: [], components: [filaEditar(pedido)] });
-    return interaction.reply(efimero({ content: "✅ Guardada." }));
+    await interaction.reply(efimero({ content: "✅ Guardada." }));
+    await publicarResena(interaction.client, pedido.guildId, r);
 }
 
 async function handleButton(client, interaction) {

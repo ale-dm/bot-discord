@@ -121,6 +121,8 @@ client.once("clientReady", async () => {
     log.info(`Conectado como ${client.user.tag} · ${n} servidor${n === 1 ? "" : "es"} · ${client.slashCommands.size} comandos`);
     programarTareas(client);
     latencias.iniciarLog();
+    // 🛡️ Las guardias de voz (#553) vuelven a su canal tras un reinicio; si el canal ya no está, se descartan.
+    runJob("Guardias de voz (arranque)", () => require("./systems/guardia").recuperarAlArrancar(client));
 
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
     // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia
@@ -300,6 +302,8 @@ async function shutdown(motivo, exitCode) {
     log.info(`Apagando El Duende (${motivo})...`);
     // Por si algo se cuelga cerrando: el proceso muere igualmente a los 5 s.
     setTimeout(() => process.exit(exitCode), 5000).unref();
+    // Cerrar Discord cierra la voz: las guardias siguen guardadas para el siguiente arranque.
+    require("./systems/guardia").apagando();
     try {
         await client.destroy();
     } catch (e) {

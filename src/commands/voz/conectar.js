@@ -1,6 +1,6 @@
 // 🔌 /conectar: el bot entra a un canal de voz y se queda el tiempo que elijas (30 minutos por defecto), para que /sonidos
 // suene sin entrar y salir cada vez. Sin canal: si ya está conectado, se sale (o, con tiempo, se renueva); si no, entra al
-// canal de quien lo pide. Ver systems/presencia.js.
+// canal de quien lo pide. Si el bot está de guardia (🛡️ en /duende), no hace nada y lo avisa. Ver systems/presencia.js.
 const { SlashCommandBuilder, ChannelType, MessageFlags } = require("discord.js");
 const presencia = require("../../systems/presencia");
 const sonidos = require("../../systems/sonidos");
@@ -74,7 +74,10 @@ module.exports = {
         const elegido = interaction.options.getChannel("canal");
         const minutos = interaction.options.getInteger("minutos");
         const guildId = interaction.guildId;
-        if (!elegido && presencia.actual(guildId)) {
+        // 🛡️ De guardia (#553): /conectar no la sustituye, ni la renueva, ni la cierra.
+        const presente = presencia.actual(guildId);
+        if (presente?.guardia) return interaction.reply(efimero(presencia.avisoGuardia(presente)));
+        if (!elegido && presente) {
             // Ya estoy conectado: con tiempo, renuevo; sin tiempo, me salgo como siempre.
             if (minutos) {
                 const r = presencia.renovar(guildId, minutos);
