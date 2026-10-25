@@ -58,6 +58,12 @@ Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/mig
 - **086** crea `exchange_ordenes` y `exchange_cruces`. No hay que rellenar nada. Una tarea nueva cada minuto devuelve lo no
   cruzado de los partidos que empiezan.
 
+### Estadísticas del servidor (migración 083, 2026-10-24)
+
+- **083** crea `estadisticas_diarias` (mensajes y XP por día), la rellena con la XP de `xp_diaria` (dos semanas) y añade un
+  índice en `historial(fecha)`. Puede tardar unos segundos si el historial es grande. Las gráficas de mensajes empiezan
+  vacías: se cuentan desde este despliegue.
+
 ### Roles temporales (migración 079, 2026-10-24)
 
 - **079** crea `roles_temporales`. No hay que rellenar nada. El bot necesita el permiso **Gestionar roles** y que los roles
