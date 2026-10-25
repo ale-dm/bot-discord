@@ -765,6 +765,16 @@ con la que se apostó: si la API la cambia después, la apuesta se liquida con l
 la de ±1,5; si la casa no da esas líneas, el botón no sale. Coste: 3 créditos por actualización de cuotas de cada
 competición (ver `ODDS_MERCADOS`).
 
+**Ambos marcan y doble oportunidad (#532)**: en su propia fila, cuando la API da sus cuotas para ese partido:
+- **⚽ Ambos marcan: Sí / No**: ganan si marcan los dos equipos (o si alguno se queda a cero).
+- **🔀 Doble oportunidad: 1X, 12 o X2**: 1X gana con victoria local o empate; 12, con cualquier victoria (pierde con
+  empate); X2, con empate o victoria visitante. La ficha lleva una leyenda corta con lo que significa cada una.
+
+Se pueden sumar a una combinada (una pata por partido, como siempre) y se ven en 🧾 Mis jugadas con su nombre completo. Se
+cierran al empezar el partido, también con las apuestas en directo: sus cuotas no se refrescan con el balón en juego. La
+API solo los da partido a partido y cada uno cuesta un crédito por partido, así que están **apagados** salvo que se active
+`ODDS_MERCADOS_EXTRA` (ver la tabla de variables).
+
 **🧾 Mis jugadas** calcula lo máximo que puedes cobrar de un partido mirando todos los marcadores posibles, así que
 cuenta a la vez el 1X2, el marcador exacto, los goles y el hándicap cuando salen juntos.
 
@@ -1201,6 +1211,8 @@ donde se guardan; por defecto, `data/sonidos`. Migraciones 037 (`sonidos`) y 060
 | `QUINIELA_LOCK_MINUTES` | 15 | Bloqueo de la quiniela antes del primer partido |
 | `ODDS_CACHE_MINUTES` | 30 | Cuánto se reutilizan las cuotas de la Odds API antes de volver a pedirlas (cada mercado de cada petición gasta 1 crédito de 500 al mes) |
 | `ODDS_MERCADOS` | `h2h,totals,spreads` | Mercados que se piden a la Odds API: 1X2, goles y hándicap. Con `h2h` solo, cada actualización cuesta 1 crédito en vez de 3 |
+| `ODDS_MERCADOS_EXTRA` | vacío (apagado) | `btts,double_chance` activa ambos marcan y doble oportunidad (#532). Se piden partido a partido: 1 crédito por mercado y partido |
+| `ODDS_EXTRA_HORAS` / `ODDS_EXTRA_MAX` / `ODDS_EXTRA_MINUTOS` | `48` / `10` / `360` | Ventana de partidos, tope de partidos por actualización y cada cuánto se repite la consulta de un mismo partido |
 | `ODDS_CREDITOS_AVISO` | 50 | Por debajo de estos créditos de la Odds API se avisa por DM a los admins |
 | `LOG_LEVEL` | info | Nivel mínimo en los ficheros: `debug`, `info`, `warn` o `error`. También se cambia en caliente en `/paneladmin` → 🩺 Sistema |
 | `LOG_CONSOLE_LEVEL` | warn | Nivel mínimo que sale por consola (`docker logs`); `off` para nada |
