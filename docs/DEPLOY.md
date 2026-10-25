@@ -53,9 +53,9 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
-### Ambos marcan y doble oportunidad (migración 078, 2026-10-24)
+### Ambos marcan y doble oportunidad (migración 087, 2026-10-24)
 
-- **078** añade a `apuestas_partidos` las cuotas `cuota_ambos_si`, `cuota_ambos_no`, `cuota_dc_1x`, `cuota_dc_12`,
+- **087** añade a `apuestas_partidos` las cuotas `cuota_ambos_si`, `cuota_ambos_no`, `cuota_dc_1x`, `cuota_dc_12`,
   `cuota_dc_x2` y `extras_ts`. No hay que rellenar nada.
 - Los mercados nacen **apagados**. Para activarlos, en `.env`: `ODDS_MERCADOS_EXTRA=btts,double_chance`. Cuesta 1 crédito
   por mercado y partido: con los valores por defecto (10 partidos, cada 6 horas) son hasta 20 créditos por competición y

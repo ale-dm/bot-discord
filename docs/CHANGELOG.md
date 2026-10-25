@@ -8,7 +8,7 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 - **Cuotas del proveedor**: se leen de los mercados adicionales `btts` y `double_chance` de la Odds API, que solo se piden partido a partido. Para no gastar créditos sin querer están **apagados** salvo con `ODDS_MERCADOS_EXTRA=btts,double_chance`, con ventana (`ODDS_EXTRA_HORAS`), tope por pasada (`ODDS_EXTRA_MAX`) y sin repetir un partido hasta `ODDS_EXTRA_MINUTOS`. Un mercado a medias no se ofrece.
 - **Cerrados al empezar**: aunque haya apuestas en directo, estos mercados no se pueden apostar con el partido empezado (sus cuotas no se refrescan en juego).
 - **Arreglo**: el listado de partidos y 🧩 Sumar a mi combinada leen ahora las columnas del partido de una sola lista (`COLUMNAS_PARTIDO`).
-- **Migración 078** (cuotas y `extras_ts` en `apuestas_partidos`). **✅ Verificación**: tests de acierto en victoria local, empate y visitante, lectura de la API, consumo de créditos, ficha, apostar, liquidación sin pagar dos veces y combinadas; `npm run check` en verde.
+- **Migración 087** (cuotas y `extras_ts` en `apuestas_partidos`). **✅ Verificación**: tests de acierto en victoria local, empate y visitante, lectura de la API, consumo de créditos, ficha, apostar, liquidación sin pagar dos veces y combinadas; `npm run check` en verde.
 
 ## 2026-10-24 (reseñas de series y temporadas, #572)
 
