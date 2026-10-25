@@ -226,8 +226,18 @@ const nodoCalendario = (flat) => ({
     ),
 });
 
+/** 🗳️ Elecciones a la presidencia: `elecciones.*` sin el prefijo. */
+const nodoElecciones = (flat) => ({
+    elecciones: Object.fromEntries(
+        Object.entries(flat)
+            .filter(([clave]) => clave.startsWith("elecciones."))
+            .map(([clave, valor]) => [clave.slice("elecciones.".length), valor]),
+    ),
+});
+
 function flattenToNested(flat) {
     return {
+        ...nodoElecciones(flat),
         ...nodoCalendario(flat),
         ...nodoModeracion(flat),
         duende: nodoDuende(flat),

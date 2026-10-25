@@ -26,6 +26,7 @@ const FAMILIAS = {
     roles: "⏳ Roles temporales",
     moderacion: "⚠️ Moderación",
     calendario: "📅 Calendario",
+    elecciones: "🗳️ Elecciones",
 };
 
 function buildAuditPayload(guildId, page = 0, pageSize = 10, familia = null) {

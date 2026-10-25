@@ -80,12 +80,13 @@ function campoSelector(campo) {
             );
         case "canal": {
             // Un canal, o varios si `multiple`. `valor` (uno) o `valores` (varios) dejan marcado lo que ya hay guardado.
+            // `tiposCanal` cambia qué se puede elegir (por defecto, canales de texto).
             const selector = new ChannelSelectMenuBuilder()
                 .setCustomId(campo.id)
                 .setRequired(requerido)
                 .setMinValues(0)
                 .setMaxValues(campo.multiple ? 25 : 1)
-                .setChannelTypes(ChannelType.GuildText)
+                .setChannelTypes(...(campo.tiposCanal || [ChannelType.GuildText]))
                 .setPlaceholder(campo.placeholder || (campo.multiple ? "Elige canales" : "Elige un canal"));
             const marcados = campo.valores ?? (campo.valor ? [campo.valor] : []);
             if (marcados.length) selector.setDefaultChannels(marcados);

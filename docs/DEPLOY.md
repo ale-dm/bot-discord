@@ -53,6 +53,16 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Elecciones a la presidencia (migración 088, 2026-10-25)
+
+- **088** crea `elecciones`, `elecciones_candidatos`, `elecciones_votos`, `presidencia_canales`, `presidencia_sanciones` y
+  `presidencia_acciones`. No hay que rellenar nada.
+- **Comandos nuevos** `/elecciones` y `/presidente`: hay que volver a registrar los comandos en Discord.
+- **Permisos del bot** para los poderes del presidente: Mover miembros, Silenciar miembros, Ensordecer miembros, Gestionar
+  canales (en la categoría del presidente) y Gestionar roles (con su rol por encima del de presidente). Sin ellos, el comando
+  responde que Discord no le deja.
+- Dos tareas nuevas cada minuto: «Elecciones» (cambia de fase) y «Castigos del presidente» (deshace silencios y sorderas).
+
 ### Exchange de apuestas (migración 086, 2026-10-25)
 
 - **086** crea `exchange_ordenes` y `exchange_cruces`. No hay que rellenar nada. Una tarea nueva cada minuto devuelve lo no
