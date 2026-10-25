@@ -7,6 +7,8 @@ const cancelar = require("../systems/apuestas/cancelar");
 const cancelarCombinada = require("../systems/apuestas/cancelarCombinada");
 const alertasCuota = require("../systems/apuestas/alertasCuota");
 const { filasCancelar, buildConfirmarCancelar, buildConfirmarCancelarCombinada } = require("./misJugadasCancelar");
+const { filasCashout, buildConfirmarCashout } = require("./misJugadasCashout");
+const cashout = require("../systems/apuestas/cashout");
 const sistemas = require("../systems/apuestas/sistemas");
 const { textoSistema } = require("./sistemas");
 const mercados = require("../systems/apuestas/mercados");
@@ -39,14 +41,15 @@ function textoPartidoPendiente(a) {
 
 function textoPartidoResuelto(a) {
     // premio NULL: liquidada antes de que se guardara el premio (no se sabe si ganó).
-    const estado =
-        a.estado === "caducado"
-            ? "↩️ Reembolsada (sin resultado)"
-            : a.premio > 0
-              ? `🏆 Ganada (+${a.premio})`
-              : a.premio === 0
-                ? "❌ Perdida"
-                : "✔️ Liquidada";
+    const estado = a.retirada_en
+        ? `💸 Retirada (+${a.premio})`
+        : a.estado === "caducado"
+          ? "↩️ Reembolsada (sin resultado)"
+          : a.premio > 0
+            ? `🏆 Ganada (+${a.premio})`
+            : a.premio === 0
+              ? "❌ Perdida"
+              : "✔️ Liquidada";
     return `**${a.home_team}** vs **${a.away_team}** ${estado}\n🎯 ${eleccionTexto(a)} · ${a.cantidad} 🪙 @${a.cuota}`;
 }
 
@@ -60,9 +63,11 @@ function textoCombinada(c) {
               ? `🏆 Ganada (+${c.premio})`
               : c.estado === "perdida"
                 ? "❌ Perdida"
-                : c.estado === "cancelada"
-                  ? "🚫 Cancelada (devuelta entera)"
-                  : "↩️ Devuelta";
+                : c.estado === "retirada"
+                  ? `💸 Retirada (+${c.premio})`
+                  : c.estado === "cancelada"
+                    ? "🚫 Cancelada (devuelta entera)"
+                    : "↩️ Devuelta";
     const patas = c.patas.map((p) => `• ${p.home_team} vs ${p.away_team} · ${eleccionTexto(p)}`).join("\n");
     return `**${cuando}** ${estado}\n${patas}`;
 }
@@ -217,8 +222,10 @@ function buildMisJugadas(userId, vista = "activas", content = "", paginaCancelar
     const deporte = vista === "historial" ? vistaResueltas(userId, embed) : vistaActivas(userId, embed);
     const components = filaVistas(userId, vista === "historial" ? "historial" : "activas", deporte);
     const menuCancelar = vista === "historial" ? [] : filasCancelar(userId, paginaCancelar);
-    // El menú, antes de las pestañas de /juegos (que siempre van en la última fila).
-    components.splice(components.length - 1, 0, ...menuCancelar);
+    // 💸 Cash-out (#529): una fila con lo que se puede retirar ahora (no pasa de las 5 filas: 2 de vistas, 2 de cancelar).
+    const menuCashout = vista === "historial" ? [] : filasCashout(userId);
+    // Los menús, antes de las pestañas de /juegos (que siempre van en la última fila).
+    components.splice(components.length - 1, 0, ...menuCancelar, ...menuCashout);
     return { content, embeds: [embed], components };
 }
 
@@ -247,12 +254,32 @@ async function soloSuyas(interaction, userId) {
 const componentHandlers = [
     { types: ["button"], prefixes: ["misapuestas_"], method: "handleButton", acl: "juegos" },
     { types: ["stringSelect"], prefixes: ["misapuestas_cancelarsel_"], method: "handleSelect", acl: "juegos" },
+    { types: ["stringSelect"], prefixes: ["misapuestas_cashsel_"], method: "handleCashoutSelect", acl: "juegos" },
 ];
+
+// misapuestas_cashsel_{userId}: lo elegido para retirar («a» o «c» y el id) → oferta bloqueada 60 s y confirmación.
+async function handleCashoutSelect(client, interaction) {
+    const userId = interaction.customId.split("_")[2];
+    if (!(await soloSuyas(interaction, userId))) return;
+    const valor = interaction.values[0];
+    const o = cashout.ofrecer(userId, valor[0] === "c" ? "c" : "a", valor.slice(1));
+    await interaction.update(o.ok ? buildConfirmarCashout(userId, o) : buildMisJugadas(userId, "activas", `❌ ${o.motivo}`));
+}
+
+// misapuestas_cashok_{token}_{userId}: cobra la oferta si sigue valiendo; si no, enseña la recalculada.
+async function confirmarCashout(interaction, token, userId) {
+    if (!(await soloSuyas(interaction, userId))) return;
+    const r = cashout.confirmar(userId, token);
+    if (r.ok) return interaction.update(buildMisJugadas(userId, "activas", r.mensaje));
+    if (r.nueva?.ok) return interaction.update(buildConfirmarCashout(userId, r.nueva, `⚠️ ${r.motivo} Nuevo valor:`));
+    return interaction.update(buildMisJugadas(userId, "activas", `❌ ${r.motivo}`));
+}
 
 // misapuestas_{vista}_{userId}: solo quien las abrió puede cambiar de vista.
 // misapuestas_cancelarok_{apuestaId}_{userId}: confirma la cancelación.
 async function handleButton(client, interaction) {
     const partes = interaction.customId.split("_");
+    if (partes[1] === "cashok") return confirmarCashout(interaction, partes[2], partes[3]);
     if (partes[1] === "cancelarokc") {
         const [, , combinadaId, userId] = partes;
         if (!(await soloSuyas(interaction, userId))) return;
@@ -319,4 +346,5 @@ module.exports = {
     componentHandlers,
     handleButton,
     handleSelect,
+    handleCashoutSelect,
 };
