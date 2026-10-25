@@ -80,8 +80,8 @@ test("al ejecutarse, cada tarea hace su trabajo sin errores", async () => {
 
 const horarios = () => cron.schedule.mock.calls.map(([expr, , opts]) => ({ expr, timezone: opts?.timezone }));
 
-test("se programan 36 tareas de cron, una por cada trabajo del bot", () => {
-    expect(cron.schedule).toHaveBeenCalledTimes(36);
+test("se programan 37 tareas de cron, una por cada trabajo del bot", () => {
+    expect(cron.schedule).toHaveBeenCalledTimes(37);
 });
 
 test("las tareas que dependen de la hora de Madrid llevan esa zona", () => {
@@ -119,6 +119,7 @@ test("las tareas que se lanzan al arrancar están, con su nombre", () => {
         "Felicitaciones de cumpleaños (arranque)",
         "Backup de la BD (arranque)",
         "Mensajes programados (arranque)",
+        "Roles temporales (arranque)",
     ]) {
         expect(nombres).toContain(nombre);
     }

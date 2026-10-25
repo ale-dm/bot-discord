@@ -39,6 +39,7 @@ const { handlePaseButton, handlePaseModal, handlePaseStringSelect, handlePaseCha
 const { handleClasificacionButton, handleClasificacionChannelSelect, handleClasificacionModal } = require("../../adminPanel/clasificacion");
 const { handleComunidadButton, handleComunidadModal, handleComunidadStringSelect } = require("../../adminPanel/comunidad");
 const { handleTicketsButton, handleTicketsModal } = require("../../adminPanel/tickets");
+const { handleRolesTempButton, handleRolesTempModal, handleRolesTempSelect } = require("../../adminPanel/rolesTemporales");
 const { handleModeracionButton, handleModeracionModal, handleModeracionSelect } = require("../../adminPanel/moderacion");
 
 /**
@@ -82,6 +83,7 @@ module.exports = {
                 "paneladmin_sonidos_",
                 "paneladmin_pase_tope_sel",
                 "paneladmin_com_",
+                "paneladmin_rtemp_",
                 "paneladmin_mod_",
             ],
             method: "handleStringSelect",
@@ -157,6 +159,7 @@ module.exports = {
             handleTicketsButton,
             handleSonidosButton,
             handlePaseButton,
+            handleRolesTempButton,
             handleModeracionButton,
         ],
         async (client, interaction) => {
@@ -183,6 +186,7 @@ module.exports = {
         handleClasificacionModal,
         handleComunidadModal,
         handleTicketsModal,
+        handleRolesTempModal,
         handleModeracionModal,
     ]),
 
@@ -213,6 +217,7 @@ module.exports = {
         handleSonidosStringSelect,
         handlePaseStringSelect,
         handleComunidadStringSelect,
+        handleRolesTempSelect,
         handleModeracionSelect,
         handleLevelsStringSelect,
     ]),
