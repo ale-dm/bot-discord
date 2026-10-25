@@ -15,6 +15,20 @@ const log = createLogger("OddsAPI");
 // coste de antes: ODDS_MERCADOS=h2h.
 const MERCADOS = process.env.ODDS_MERCADOS || "h2h,totals,spreads";
 
+// Mercados adicionales (#532): ambos marcan (btts) y doble oportunidad (double_chance). La API solo los da partido a
+// partido (/events/{id}/odds) y cada uno cuesta 1 crédito por partido, así que están apagados salvo que se pidan con
+// ODDS_MERCADOS_EXTRA=btts,double_chance. Se piden para los ODDS_EXTRA_MAX partidos que antes empiezan en las próximas
+// ODDS_EXTRA_HORAS horas, y no se repiten hasta que pase ODDS_EXTRA_MINUTOS.
+const extrasConfig = () => ({
+    mercados: String(process.env.ODDS_MERCADOS_EXTRA || "")
+        .split(",")
+        .map((m) => m.trim())
+        .filter((m) => m === "btts" || m === "double_chance"),
+    horas: Number(process.env.ODDS_EXTRA_HORAS || 48),
+    max: Number(process.env.ODDS_EXTRA_MAX || 10),
+    refrescoMs: Number(process.env.ODDS_EXTRA_MINUTOS || 360) * 60 * 1000,
+});
+
 const BASE_URL = "https://api.the-odds-api.com/v4/sports";
 
 const DEPORTES = {
@@ -120,6 +134,37 @@ function cuotasMercados(match) {
     return out;
 }
 
+/**
+ * Cuotas de ambos marcan y doble oportunidad (#532) de un partido de /events/{id}/odds. Cada pareja o trío va entero o a
+ * null: no se ofrece medio mercado. La doble oportunidad llega como «Local/Draw», «Local/Visitante» y «Draw/Visitante» (o
+ * «1X», «12», «X2»); se reconoce por los nombres, sin depender del orden.
+ */
+function cuotasExtra(match) {
+    const markets = match.bookmakers?.find((b) => b.markets?.some((m) => m.key === "btts" || m.key === "double_chance"))?.markets || [];
+    const out = { cuota_ambos_si: null, cuota_ambos_no: null, cuota_dc_1x: null, cuota_dc_12: null, cuota_dc_x2: null };
+    const btts = markets.find((m) => m.key === "btts");
+    if (btts) {
+        const si = btts.outcomes.find((o) => o.name === "Yes")?.price ?? null;
+        const no = btts.outcomes.find((o) => o.name === "No")?.price ?? null;
+        if (si && no) Object.assign(out, { cuota_ambos_si: si, cuota_ambos_no: no });
+    }
+    const doble = markets.find((m) => m.key === "double_chance");
+    if (doble) {
+        const lado = (parte) => (parte === match.home_team || parte === "1" ? "1" : parte === match.away_team || parte === "2" ? "2" : "X");
+        const clave = (nombre) => {
+            const partes = nombre.includes("/") ? nombre.split("/").map((p) => p.trim()) : [...nombre];
+            return partes
+                .map(lado)
+                .sort((a, b) => "1X2".indexOf(a) - "1X2".indexOf(b))
+                .join("");
+        };
+        const cuotas = Object.fromEntries(doble.outcomes.map((o) => [clave(o.name), o.price]));
+        if (cuotas["1X"] && cuotas["12"] && cuotas.X2)
+            Object.assign(out, { cuota_dc_1x: cuotas["1X"], cuota_dc_12: cuotas["12"], cuota_dc_x2: cuotas.X2 });
+    }
+    return out;
+}
+
 /** Cuotas 1/X/2 de un partido de la API, o null si ninguna casa las da. */
 function cuotasH2H(match) {
     const market = match.bookmakers?.[0]?.markets?.find((m) => m.key === "h2h");
@@ -173,7 +218,38 @@ async function pedirCuotas(deporteKey) {
         }
     }
     log.info(`Cuotas de ${deporte.name}: ${partidos.length} partidos · créditos restantes: ${restantes}`);
+    await pedirMercadosExtra(deporteKey).catch((e) => log.warn(`Mercados adicionales de ${deporte.name}: ${e.message}`));
     return partidos;
+}
+
+/**
+ * Pide ambos marcan y doble oportunidad (#532) de los próximos partidos de una competición, si están activados. Un fallo
+ * en un partido no para a los demás; ese partido se queda sin esos mercados hasta la siguiente vez.
+ * @returns {Promise<number>} partidos consultados
+ */
+async function pedirMercadosExtra(deporteKey, ahora = Date.now()) {
+    const cfg = extrasConfig();
+    const deporte = DEPORTES[deporteKey];
+    if (!cfg.mercados.length || !deporte || !getApiKey()) return 0;
+    const pendientes = repoOdds.partidosSinExtras(deporteKey, {
+        desdeIso: new Date(ahora).toISOString(),
+        hastaIso: new Date(ahora + cfg.horas * 60 * 60 * 1000).toISOString(),
+        antesDeMs: ahora - cfg.refrescoMs,
+        limite: cfg.max,
+    });
+    let pedidos = 0;
+    for (const p of pendientes) {
+        try {
+            const url = `${BASE_URL}/${deporte.apiKey}/events/${encodeURIComponent(p.match_id)}/odds?apiKey={KEY}&regions=eu&markets=${cfg.mercados.join(",")}`;
+            const { data } = await pedir(url, deporte);
+            repoOdds.guardarMercadosExtra(p.match_id, cuotasExtra({ ...p, ...data }), ahora);
+            pedidos++;
+        } catch (e) {
+            log.warn(`Sin mercados adicionales para ${p.home_team} - ${p.away_team}: ${e.message}`);
+        }
+    }
+    if (pedidos) log.info(`Mercados adicionales de ${deporte.name}: ${pedidos} partidos (${cfg.mercados.join(", ")})`);
+    return pedidos;
 }
 
 /**
@@ -224,6 +300,8 @@ function resultadoDeScore(score) {
 
 module.exports = {
     cuotasMercados,
+    cuotasExtra,
+    pedirMercadosExtra,
     refrescarEnDirecto,
     alRefrescarCuotas,
     DEPORTES,
