@@ -725,6 +725,30 @@ Issue #538. Tras un día de uso con el bot nuevo.
 - [ ] Con 90 días de economía el panel responde sin que el bot se quede colgado.
 - [ ] Con una cuenta sin admin no se puede abrir; en 🧾 Auditoría aparece quién lo abrió (`consulta.estadisticas`).
 
+## T-19 Probar en Discord los avisos y strikes
+
+Issue #542. Con una cuenta de staff (sin ser admin) y otra normal.
+
+- [ ] `/paneladmin` → ⚙️ Config Global → ⚠️ Moderación → 🛡️ Staff y canal: elegir el rol de staff y un canal de log.
+- [ ] Con la cuenta de staff, `/avisar usuario motivo`: el avisado recibe el DM con el motivo y en el canal de log sale la línea (sin notificar a nadie).
+- [ ] Con una cuenta sin permisos, `/avisar` responde que solo el staff puede.
+- [ ] Avisar tres veces a la misma persona: a los admins les llega «Medida sugerida: ⚠️ Aviso serio» y el bot no hace nada más.
+- [ ] 🔎 Consultar a esa persona: salen los tres avisos con motivo, quién y cuándo; retirar uno y limpiar el resto con confirmación.
+- [ ] 📏 Umbrales y caducidad: poner umbrales desordenados da error; unos válidos se guardan.
+- [ ] 🧾 Auditoría → filtro ⚠️ Moderación: están todos los cambios.
+
+## T-20 Probar en Discord el calendario
+
+Issue #540. Con alguna sesión de cine, un cumpleaños guardado y partidos sincronizados.
+
+- [ ] `/calendario`: sale la semana actual agrupada por día, con las horas en tu zona; la sesión de cine enlaza a su mensaje.
+- [ ] ◀ ▶ cambia de semana; 🗓️ Por meses enseña el mes y navega por meses. Una semana vacía lo explica.
+- [ ] El desplegable enseña el detalle de un evento con la fecha completa y la cuenta atrás.
+- [ ] `/paneladmin` → ⚙️ Config Global → 📅 Calendario → ➕ Añadir evento con una fecha en 10 minutos: aparece en `/calendario`.
+- [ ] ⚙️ Ajustes: canal de pruebas y 15 minutos. A los 5 minutos del evento llega un solo recordatorio al canal.
+- [ ] Reiniciar el bot antes de que empiece: no se repite el recordatorio.
+- [ ] Borrar el evento desde el desplegable: desaparece del calendario y queda en 🧾 Auditoría.
+
 ## T-22 Probar en Discord el cash-out
 
 Issue #529. Con apuestas a partidos con cuotas recién actualizadas (abrir la lista de partidos las refresca).

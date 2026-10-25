@@ -10,6 +10,21 @@ Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanza
 - **Mis jugadas y estadísticas**: la retirada sale de ⏳ En juego, aparece en 📋 Resueltas como «💸 Retirada (+N)» y cuenta como resuelta con lo cobrado.
 - **Migración 084**. **✅ Verificación**: tests del valor, cuándo hay cuota, bloqueo, movimiento de cuota, doble confirmación, liquidación posterior, combinadas, botones y estadísticas; `npm run check` en verde.
 
+## 2026-10-24 (calendario de eventos, #540)
+
+- **📅 `/calendario`** (comando nuevo, privado): lo programado por semanas o por meses con ◀ ▶, agrupado por día (hora de Madrid) y con la hora en timestamp de Discord. Junta sesiones de cine (con enlace), cumpleaños, partidos de las competiciones elegidas, el cierre de las quinielas abiertas y los eventos de los admins. Sin eventos, lo explica; con muchos, no pasa del límite del embed.
+- **⚙️ Config Global → 📅 Calendario**: canal fijo y minutos de los recordatorios, competiciones y eventos propios (crear y borrar), auditados (`calendario.crear`, `calendario.borrar`, `calendario.ajustes`).
+- **Recordatorios**: cada minuto (`src/app/tareasCalendario.js`, programado al arrancar), una sola vez por evento aunque el bot se reinicie; si el envío falla, se reintenta.
+- **Migración 082** (`calendario_eventos`, `calendario_recordatorios`) y ajustes `calendario.*`. **✅ Verificación**: tests de rangos con cambio de hora, agregación, orden, límites, eventos manuales, recordatorios, vista, `/calendario` y panel; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
+## 2026-10-24 (avisos y strikes de moderación, #542)
+
+- **`/avisar usuario motivo`** (comando nuevo, staff): le llega un DM al avisado con el motivo, suma un strike y se apunta en el canal de log de moderación. Pueden usarlo quienes tengan Moderar miembros, los admins y el rol de staff configurado.
+- **Strikes**: caducan a los 90 días (ajustable) sin borrarse del historial. Al cruzar 3, 5, 7 y 10 (ajustables) se manda a los admins de las alertas la medida sugerida (aviso serio, silenciar 24 h, expulsión o ban). **El bot no sanciona nunca.**
+- **⚙️ Config Global → ⚠️ Moderación**: rol de staff y canal de log, umbrales y caducidad, quién tiene strikes vigentes, historial de una persona, retirar uno o limpiarlos con confirmación.
+- **Auditoría**: `moderacion.aviso`, `moderacion.retirar`, `moderacion.limpiar`, `moderacion.ajustes` y `moderacion.staff`, con su familia en el filtro.
+- **Migración 080** (`strikes`) y ajustes `moderacion.*`. **✅ Verificación**: tests de permisos, acumulación, caducidad, umbrales, retirar, limpiar, `/avisar` (DM, log, admins, DM cerrado) y el panel con y sin admin; `npm run check` en verde. Hay que volver a registrar los comandos al desplegar.
+
 ## 2026-10-24 (panel de estadísticas del servidor, #538)
 
 - **⚙️ Config Global → 📊 Estadísticas**: gráfica de barras (ECharts → PNG, el mismo renderizador de `/cripto`) de mensajes, XP, economía neta, dinero apostado u horas de Plex en 7, 30 o 90 días, con total, media, mejor día y variación respecto al periodo anterior. Caché de 5 minutos por métrica y rango con 🔄 Actualizar deshabilitado mientras dura. Auditoría `consulta.estadisticas` al abrirlo.
