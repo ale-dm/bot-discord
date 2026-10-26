@@ -1098,8 +1098,10 @@ paréntesis, la de por defecto):
    **📢 público** (sale en el panel «quién ha votado a quién»). Un voto por persona, que se puede cambiar hasta el cierre. Mientras
    se vota solo se ve el total; al cerrar se publica la clasificación. Pasan los **4 más votados** (a igualdad de votos, quien
    se inscribió antes).
-3. **📜 Programas** (3 días): cada finalista escribe su programa electoral (✍️ Mi programa o `/elecciones programa`: título y
-   hasta 4.000 caracteres). Quien no lo entrega sigue en la papeleta «sin programa».
+3. **📜 Programas** (3 días): cada finalista elige el **nombre de su partido político** (2 a 40 caracteres, sin repetir el de
+   otro candidato) y su **eslogan** (3 a 100), y escribe su programa electoral (✍️ Mi programa o `/elecciones programa`: título y
+   hasta 4.000 caracteres). El partido y el eslogan salen en el panel, en la papeleta, en el programa que llega por DM y en los
+   resultados. Quien no lo entrega sigue en la papeleta «sin programa».
 4. **🏛️ Generales** (7 días): al empezar, el programa de los finalistas **llega por DM** a todos los que pueden votar (se apaga
    en `/avisos` → 🗳️ Elecciones) y se puede leer con 📜 Programas. Se vota igual que en las primarias. El más votado es el
    presidente; si nadie vota, se cancelan.

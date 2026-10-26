@@ -21,7 +21,8 @@ const EXPLICACION = {
         `Vota a tu candidato con **🗳️ Votar**: los **${fases.FINALISTAS}** más votados pasan a las generales. ` +
         "Eliges si tu voto es 🔒 secreto o 📢 público, y puedes cambiarlo hasta el cierre.",
     programas:
-        "Los finalistas escriben su programa electoral con **✍️ Mi programa**. Cuando empiecen las generales, " +
+        "Los finalistas eligen el nombre de su partido, su eslogan y su programa electoral con **✍️ Mi programa**. " +
+        "Cuando empiecen las generales, " +
         "se envía por privado a todos los que pueden votar.",
     generales:
         "Lee los programas con **📜 Programas** y vota con **🗳️ Votar**. El más votado será el presidente. " +
@@ -38,11 +39,11 @@ const MAX_RESULTADOS = 15;
 const ts = (ms, estilo = "R") => `<t:${Math.floor(ms / 1000)}:${estilo}>`;
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
+/** «🎗️ **Partido** «eslogan»», o «⏳ sin programa» si aún no lo ha entregado. */
+const partidoDe = (c) => (c.partido ? `🎗️ **${c.partido}** «${c.eslogan}»` : "⏳ sin programa");
+
 function lineaCandidato(c, eleccion) {
-    if (eleccion.estado === "programas" || eleccion.estado === "generales") {
-        const programa = c.programa_titulo ? `📜 *${c.programa_titulo}*` : "⏳ sin programa";
-        return `• <@${c.userId}> — ${programa}`;
-    }
+    if (eleccion.estado === "programas" || eleccion.estado === "generales") return `• <@${c.userId}> — ${partidoDe(c)}`;
     return `• <@${c.userId}>`;
 }
 
@@ -80,7 +81,10 @@ function tablaResultados(tabla, limite = MAX_RESULTADOS) {
     return (
         tabla
             .slice(0, limite)
-            .map((c, n) => `${n === 0 ? "🥇" : `${n + 1}.`} <@${c.userId}> — ${plural(c.votos, "voto", "votos")}`)
+            .map(
+                (c, n) =>
+                    `${n === 0 ? "🥇" : `${n + 1}.`} <@${c.userId}>${c.partido ? ` (${c.partido})` : ""} — ${plural(c.votos, "voto", "votos")}`,
+            )
             .join("\n") || "Sin votos."
     );
 }

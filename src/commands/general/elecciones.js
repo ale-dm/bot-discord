@@ -138,6 +138,8 @@ module.exports = {
         const r = candidatos.guardarPrograma({
             guildId: interaction.guildId,
             userId: interaction.user.id,
+            partido: interaction.fields.getTextInputValue("partido"),
+            eslogan: interaction.fields.getTextInputValue("eslogan"),
             titulo: interaction.fields.getTextInputValue("titulo"),
             texto: interaction.fields.getTextInputValue("texto"),
         });
