@@ -53,6 +53,10 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Partido y eslogan en las elecciones (migración 089, 2026-10-26)
+
+- **089** añade `partido` y `eslogan` a `elecciones_candidatos`. No hay que rellenar nada: los escriben los finalistas.
+
 ### Elecciones a la presidencia (migración 088, 2026-10-25)
 
 - **088** crea `elecciones`, `elecciones_candidatos`, `elecciones_votos`, `presidencia_canales`, `presidencia_sanciones` y

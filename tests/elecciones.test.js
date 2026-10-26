@@ -231,7 +231,27 @@ describe("programas", () => {
         ["a", "b"].forEach((u) => inscribir(u));
         avanzar();
     }
-    const guardar = (userId, titulo, texto) => candidatos.guardarPrograma({ guildId: G, userId, titulo, texto, ahora: AHORA });
+    const guardar = (userId, titulo, texto, partido = `Partido ${userId}`, eslogan = "Por un servidor mejor") =>
+        candidatos.guardarPrograma({ guildId: G, userId, partido, eslogan, titulo, texto, ahora: AHORA });
+
+    test("el partido y el eslogan son obligatorios y se guardan limpios con el programa", () => {
+        enProgramas();
+        const texto = "Más canales de voz para todos.";
+        expect(guardar("a", "Mi plan", texto, "x").mensaje).toMatch(/nombre del partido/);
+        expect(guardar("a", "Mi plan", texto, "P".repeat(41)).mensaje).toMatch(/nombre del partido/);
+        expect(guardar("a", "Mi plan", texto, "Los Verdes", "  ").mensaje).toMatch(/eslogan/);
+        expect(guardar("a", "Mi plan", texto, "  Los   Verdes ", " Voz  para todos ").ok).toBe(true);
+        expect(repo.candidato(repo.activa(G).id, "a")).toMatchObject({ partido: "Los Verdes", eslogan: "Voz para todos" });
+    });
+
+    test("dos candidatos no pueden tener el mismo partido, aunque cambien mayúsculas; uno sí puede corregir el suyo", () => {
+        enProgramas();
+        const texto = "Más canales de voz para todos.";
+        expect(guardar("a", "Mi plan", texto, "Los Verdes").ok).toBe(true);
+        expect(guardar("b", "Su plan", texto, "los verdes").mensaje).toMatch(/Ya hay otro candidato con el partido/);
+        expect(guardar("a", "Mi plan 2", texto, "Los Verdes").ok).toBe(true);
+        expect(guardar("b", "Su plan", texto, "Los Azules").ok).toBe(true);
+    });
 
     test("solo los finalistas entregan programa, con título y texto de la longitud debida", () => {
         enProgramas();

@@ -35,6 +35,7 @@ function pasoElegir(eleccion, papeleta, nombres, voto = null) {
         .addOptions(
             papeleta.slice(0, reglas.MAX_CANDIDATOS).map((c) => ({
                 label: nombreDe(nombres, c.userId),
+                ...(c.partido ? { description: `${c.partido} — «${c.eslogan}»`.slice(0, 100) } : {}),
                 value: c.userId,
                 default: voto?.candidatoId === c.userId,
             })),
@@ -69,8 +70,22 @@ function votoHecho(r, candidatoId) {
     return { content: texto, embeds: [], components: [], allowedMentions: { parse: [] } };
 }
 
-/** El formulario del programa electoral, con lo que ya hubiera escrito. */
+/** El formulario del programa electoral (partido, eslogan, título y texto), con lo que ya hubiera escrito. */
 function modalPrograma(eleccionId, candidato = null) {
+    const partido = new TextInputBuilder()
+        .setCustomId("partido")
+        .setLabel("Nombre de tu partido político")
+        .setStyle(TextInputStyle.Short)
+        .setMaxLength(reglas.PARTIDO_MAX)
+        .setRequired(true)
+        .setValue(candidato?.partido || "");
+    const eslogan = new TextInputBuilder()
+        .setCustomId("eslogan")
+        .setLabel("Eslogan del partido")
+        .setStyle(TextInputStyle.Short)
+        .setMaxLength(reglas.ESLOGAN_MAX)
+        .setRequired(true)
+        .setValue(candidato?.eslogan || "");
     const titulo = new TextInputBuilder()
         .setCustomId("titulo")
         .setLabel("Título del programa")
@@ -88,7 +103,12 @@ function modalPrograma(eleccionId, candidato = null) {
     return new ModalBuilder()
         .setCustomId(`elec_programamodal_${eleccionId}`)
         .setTitle("📜 Programa electoral")
-        .addComponents(new ActionRowBuilder().addComponents(titulo), new ActionRowBuilder().addComponents(texto));
+        .addComponents(
+            new ActionRowBuilder().addComponents(partido),
+            new ActionRowBuilder().addComponents(eslogan),
+            new ActionRowBuilder().addComponents(titulo),
+            new ActionRowBuilder().addComponents(texto),
+        );
 }
 
 module.exports = { pasoElegir, pasoModo, votoHecho, modalPrograma };

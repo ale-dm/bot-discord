@@ -21,7 +21,7 @@ function textoAnuncio(r) {
         case "generales":
             return `🏛️ **¡Empiezan las elecciones generales!** Os he enviado por privado el programa de cada candidato. Se vota hasta ${ts(e.fase_fin, "f")}.`;
         case "mandato":
-            return `👑 **¡<@${r.ganador.userId}> es el nuevo presidente del servidor!**\n${tablaResultados(r.clasificacion)}\n\nSu mandato dura hasta ${ts(e.fase_fin, "f")}.`;
+            return `👑 **¡<@${r.ganador.userId}>${r.ganador.partido ? ` (${r.ganador.partido})` : ""} es el nuevo presidente del servidor!**\n${tablaResultados(r.clasificacion)}\n\nSu mandato dura hasta ${ts(e.fase_fin, "f")}.`;
         case "cerrada":
             return `🏁 **Se acabó el mandato de <@${r.presidenteId}>.** Gracias por tu servicio, presidente.`;
         case "cancelada":
@@ -36,9 +36,11 @@ function embedsProgramas(finalistas, nombres = new Map()) {
     return finalistas.slice(0, fases.FINALISTAS).map((c) =>
         new EmbedBuilder()
             .setColor(COLOR_PROGRAMA)
-            .setAuthor({ name: `Candidato: ${nombres.get(c.userId) || c.userId}` })
+            .setAuthor({ name: `${c.partido ? `🎗️ ${c.partido} · ` : ""}${nombres.get(c.userId) || c.userId}` })
             .setTitle(c.programa_titulo ? `📜 ${c.programa_titulo}` : "📜 Sin programa")
-            .setDescription(c.programa_texto || "Este candidato no ha entregado programa electoral."),
+            .setDescription(
+                c.programa_texto ? `*«${c.eslogan}»*\n\n${c.programa_texto}` : "Este candidato no ha entregado programa electoral.",
+            ),
     );
 }
 

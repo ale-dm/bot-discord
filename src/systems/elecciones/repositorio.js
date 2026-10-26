@@ -99,10 +99,11 @@ function marcarFinalistas(eleccionId, userIds) {
     for (const userId of userIds) marcar.run(Number(eleccionId), String(userId));
 }
 
-function guardarPrograma(eleccionId, userId, titulo, texto, ahora) {
+function guardarPrograma(eleccionId, userId, { partido, eslogan, titulo, texto }, ahora) {
     db.prepare(
-        "UPDATE elecciones_candidatos SET programa_titulo = ?, programa_texto = ?, programa_en = ? WHERE eleccion_id = ? AND userId = ?",
-    ).run(titulo, texto, ahora, Number(eleccionId), String(userId));
+        `UPDATE elecciones_candidatos SET partido = ?, eslogan = ?, programa_titulo = ?, programa_texto = ?, programa_en = ?
+         WHERE eleccion_id = ? AND userId = ?`,
+    ).run(partido, eslogan, titulo, texto, ahora, Number(eleccionId), String(userId));
 }
 
 // —— Votos ——
