@@ -134,13 +134,25 @@ describe("ciclo con el cron", () => {
         await envios.abrirYPublicar(client, G, "admin", AHORA);
         ["a", "b"].forEach((u) => candidatos.inscribir({ guildId: G, userId: u, esBot: false, unidoEn: VETERANO, ahora: AHORA }));
         await envios.revisar(client, repo.activa(G).fase_fin, { pausaMs: 0 });
-        candidatos.guardarPrograma({ guildId: G, userId: "a", titulo: "Plan A", texto: "Más canales de voz para todos." });
+        candidatos.guardarPrograma({
+            guildId: G,
+            userId: "a",
+            partido: "Los Verdes",
+            eslogan: "Voz para todos",
+            titulo: "Plan A",
+            texto: "Más canales de voz para todos.",
+        });
         await envios.revisar(client, repo.activa(G).fase_fin, { pausaMs: 0 });
         expect(repo.activa(G).estado).toBe("generales");
         const recibieron = [...ms.values()].filter((x) => x.user.send.mock.calls.length).map((x) => x.id);
         expect(recibieron.sort()).toEqual(["a", "b", "votante"]);
-        const dm = ultimo(ms.get("votante").user.send);
-        expect(dm.embeds.map((e) => e.toJSON().title)).toEqual(["📜 Plan A", "📜 Sin programa"]);
+        const dm = ultimo(ms.get("votante").user.send).embeds.map((e) => e.toJSON());
+        expect(dm.map((e) => e.title)).toEqual(["📜 Plan A", "📜 Sin programa"]);
+        expect(dm[0].author.name).toBe("🎗️ Los Verdes · Nombre a");
+        expect(dm[0].description).toMatch(/^\*«Voz para todos»\*/);
+        const panel = mensajeEleccion(repo.activa(G)).embeds[0].toJSON().fields[0].value;
+        expect(panel).toContain("<@a> — 🎗️ **Los Verdes** «Voz para todos»");
+        expect(panel).toContain("<@b> — ⏳ sin programa");
         expect(canalElecciones.send.mock.calls.some(([p]) => /Empiezan las elecciones generales/.test(p.content))).toBe(true);
     });
 
@@ -368,5 +380,26 @@ describe("panel admin", () => {
         await paneladmin.handleModal(client, mal);
         expect(ultimo(mal.update).embeds[0].toJSON().description).toMatch(/❌ La duración de «mandato»/);
         expect(ajustes.ajustes(G).dias.mandato).toBe(15);
+    });
+});
+
+describe("formulario y papeleta con partido", () => {
+    const { modalPrograma, pasoElegir } = require("../src/paneles/elecciones/votacion");
+    const candidato = { userId: "a", partido: "Los Verdes", eslogan: "Voz para todos", programa_titulo: "Plan", programa_texto: "Texto" };
+
+    test("el formulario pide partido, eslogan, título y texto, con lo ya escrito y etiquetas que caben en Discord", () => {
+        const campos = modalPrograma(1, candidato)
+            .toJSON()
+            .components.map((f) => f.components[0]);
+        expect(campos.map((c) => c.custom_id)).toEqual(["partido", "eslogan", "titulo", "texto"]);
+        expect(campos.map((c) => c.value)).toEqual(["Los Verdes", "Voz para todos", "Plan", "Texto"]);
+        expect(campos.every((c) => c.label.length <= 45)).toBe(true);
+    });
+
+    test("en la papeleta cada candidato lleva su partido y su eslogan", () => {
+        const p = pasoElegir({ id: 1, estado: "generales" }, [candidato, { userId: "b" }], new Map([["a", "Ana"]]));
+        const opciones = p.components[0].toJSON().components[0].options;
+        expect(opciones[0]).toMatchObject({ label: "Ana", description: "Los Verdes — «Voz para todos»" });
+        expect(opciones[1].description).toBeUndefined();
     });
 });

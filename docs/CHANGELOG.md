@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-26 (partido político y eslogan en las elecciones)
+
+- **🎗️ Partido y eslogan**: cada finalista los elige en ✍️ Mi programa junto con su programa (partido de 2 a 40 caracteres, sin repetir el de otro candidato aunque cambien mayúsculas; eslogan de 3 a 100). Salen en el panel de las elecciones, en la papeleta al votar, en los programas que llegan por DM, en los resultados y en el anuncio del nuevo presidente.
+- **Migración 089** (`partido` y `eslogan` en `elecciones_candidatos`). **✅ Verificación**: tests de validación, partido repetido, panel, DM, papeleta y formulario; `npm run check` en verde.
+
 ## 2026-10-25 (elecciones a la presidencia del servidor)
 
 - **🗳️ Elecciones** (`/elecciones` y un panel público que se actualiza solo): 📝 inscripción → 🗳️ primarias (pasan los 4 más votados; empates por orden de inscripción; sin primarias con 4 candidatos o menos) → 📜 programas → 🏛️ generales → 👑 mandato. Cada voto es **🔒 secreto o 📢 público**, a elección de quien vota; uno por persona y fase, cambiable. Votar y presentarse exige 7 días en el servidor.

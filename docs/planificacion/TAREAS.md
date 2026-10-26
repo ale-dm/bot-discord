@@ -792,7 +792,8 @@ pon todas las fases a 0,01 días (unos 15 minutos) y en 🛡️ Límites la anti
 - [ ] Las 5 cuentas se presentan con 🙋; una se retira con 🚪 y vuelve.
 - [ ] Al cerrar la inscripción (o ⏭️ Cerrar fase ya) empiezan las primarias. Votar en 🔒 secreto no sale en el panel; en 📢 público sí («X → Y»). Cambiar el voto no suma otro.
 - [ ] Al cerrar las primarias se anuncia la clasificación y pasan 4.
-- [ ] Los finalistas escriben el programa con ✍️; al empezar las generales llega un DM con los programas (no a quien lo apagó en /avisos).
+- [ ] Los finalistas escriben el programa con ✍️ (partido, eslogan, título y texto); dos no pueden usar el mismo partido. El partido y el eslogan salen en el panel y en la papeleta.
+- [ ] Al empezar las generales llega un DM con los programas, cada uno con su partido y su eslogan (no a quien lo apagó en /avisos).
 - [ ] Al cerrar las generales se anuncia el presidente y recibe el rol.
 - [ ] /presidente mover, desconectar, silenciar 2 y ensordecer 2 a una cuenta normal funcionan; contra la admin o alguien con el rol de staff, los rechaza. Repetir sobre la misma persona pide esperar.
 - [ ] El silencio se quita solo a los 2 minutos.
