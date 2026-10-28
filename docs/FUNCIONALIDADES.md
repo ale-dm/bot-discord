@@ -617,6 +617,10 @@ Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** en
 
 En `/perfil` → 💰 Economía → **📋 Encargos**, cada lunes te tocan **tres retos** de la semana: uno fácil (100 🪙), uno medio (250 🪙) y uno difícil (500 🪙), distintos entre sí y siempre los mismos para ti durante esa semana. Salen de acciones positivas, nunca de gastar dinero: ganar en el casino (solo cuenta lo ganado), acertar apuestas deportivas, robar con éxito, trabajar con éxito, escribir mensajes, pasar minutos en voz, jugar retos y completar logros. El progreso avanza solo con lo que haces de verdad (también con el pase de batalla apagado) y la recompensa se cobra con **🎁 Cobrar** al completarlo, una sola vez (paga el impuesto de ingresos, como cualquier premio). Lo que no completes caduca el domingo a medianoche, sin penalización.
 
+### 📨 Recompensa por invitar (#522)
+
+Cuando alguien entra al servidor con **un enlace de invitación tuyo** (el enlace propio del servidor no cuenta), el bot lo apunta. Si se queda **7 días** y llega al **nivel 5**, cobras **500 🪙**, con premios extra al llegar a 5 (2.500), 10 (5.000) y 25 (15.000) invitados; te llega un DM (se apaga en `/avisos`). Para que no se pueda farmear: cada persona cuenta una sola vez por servidor aunque salga y vuelva, no cuentan las cuentas de Discord de menos de 7 días, ni invitarse a uno mismo, ni las invitaciones cruzadas, ni más de 10 en 24 horas, y si tu invitado se va antes de cumplir, no se paga. `/invitaciones` enseña a quién has invitado (⏳ pendiente, ✅ madurado, 🚪 se fue o 🚫 no cuenta), lo que has cobrado, el próximo hito y quién invita más. Hace falta que el bot tenga el permiso **Gestionar servidor** para ver las invitaciones.
+
 ### 🏦 Patrimonio (F-EC-10)
 
 Impuesto periódico sobre lo que se tiene en el banco, con su propio ciclo. Cada persona tiene su ciclo (**7 días** por
@@ -1101,7 +1105,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto`, `/duende`, `/plex`, `/sonidos` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
-| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones, premios de la lotería, subastas, préstamos entre jugadores) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones, premios de la lotería, subastas, préstamos entre jugadores, invitaciones) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
 | `/autoroles` | 🎭 El menú de roles del servidor: pulsa para ponerte o quitarte uno (✅ los que tienes). En un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Respeta la jerarquía del bot y el modo mantenimiento; la lista la configura un admin (ver [Administración](#12-administración)) |
 | `/favoritos` | ⭐ `seguir equipo:…`, `dejar equipo:…` y `lista`: hasta 10 equipos por persona, con sus próximos partidos y cuotas. Aviso por DM cuando aparece un partido suyo, apagable en `/avisos` (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
@@ -1358,6 +1362,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/invitaciones` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/bingo` | [Casino](#8-casino) |
 | `/carreras` | [Casino](#8-casino) |
 | `/torneo` | [Casino](#8-casino) |

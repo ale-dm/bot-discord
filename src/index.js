@@ -127,6 +127,8 @@ client.once("clientReady", async () => {
     require("./app/tareasCalendario").programarCalendario(client);
     // 🔁 Exchange (#533): lo no cruzado de los partidos que empiezan se devuelve (cada minuto).
     require("./app/tareasExchange").programarExchange();
+    // 📨 Invitaciones (#522): la foto de los usos de cada invitación, para saber al entrar alguien cuál usó.
+    runJob("Invitaciones (arranque)", () => require("./discord/envios/invitaciones").cargar(client));
 
     // ¿El modelo de Gemini de cada servidor existe y usa herramientas? Mejor saberlo al arrancar que por un dato
     // inventado en el chat (una llamada a Gemini por modelo distinto). Si no existe o no usa herramientas, se cambia
@@ -182,6 +184,10 @@ client.on("guildCreate", (g) => gwLog.info(`Añadido a un servidor: ${g.name} ($
 // 👋 Bienvenida a quien entra al servidor (#435): en el canal configurado; los bots no generan mensaje.
 client.on("guildMemberAdd", (member) => {
     bienvenida.enviarBienvenida(member).catch((e) => gwLog.warn(`Error dando la bienvenida a ${member.id}:`, e));
+    // 📨 Quién le invitó (#522).
+    require("./discord/envios/invitaciones")
+        .alEntrar(member)
+        .catch((e) => gwLog.warn(`No se pudo apuntar la invitación de ${member.id}: ${e.message}`));
 });
 // ⏳ Un rol borrado cancela sus roles temporales activos (#543).
 client.on("roleDelete", (role) => {

@@ -53,6 +53,12 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Recompensa por invitar (migración 098, 2026-10-28)
+
+- **098** crea `invitaciones`. Solo cuentan las entradas desde el despliegue.
+- **Permiso**: el bot necesita **Gestionar servidor** para ver las invitaciones; sin él, no se apunta nada (lo dice el log una vez por servidor).
+- Comando nuevo `/invitaciones`: hay que volver a registrar los comandos. Tarea nueva cada hora («Invitaciones»).
+
 ### Bingo de sala (migración 097, 2026-10-28)
 
 - **097** crea `bingo_partidas` y `bingo_jugadores`. No hay que rellenar nada.
