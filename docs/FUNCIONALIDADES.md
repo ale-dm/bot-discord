@@ -736,6 +736,10 @@ Si un admin elige el canal de carreras (⚙️ Config Global → 🛡️ Econom�
 
 `/bingo` abre una sala en el canal y quien la abre entra el primero. Los demás entran con **🎟️ Entrar**, pagando la entrada fija del servidor (100 🪙 por defecto; la cambia un admin en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía), que forma el bote. Caben de 2 a 6 jugadores. Empieza cuando quien la abrió pulsa **▶️ Empezar ya** (con al menos 2), cuando se llena o a los 2 minutos; si para entonces no hay 2 jugadores, se devuelve la entrada. Cada jugador recibe un **cartón de 5×5** (columnas B, I, N, G y O, con el centro libre) que ve con **🎫 Mi cartón**. El bot canta una bola cada 3 segundos y marca solo: gana quien completa el **cartón entero** y se lleva el bote (si lo completan varios con la misma bola, se reparte). Se pueden jugar 10 partidas al día y respeta la autoexclusión del casino.
 
+### 🃏 Póker Texas hold'em (#531)
+
+`/poker abrir [compra]` abre una mesa pública en el canal (una por servidor) y te sienta. Es entre jugadores, sin bots: de **2 a 6**, con **ciegas fijas de 50/100** y sin comisión para la casa. Te sientas con **🪑 Sentarse** comprando de 1.000 a 10.000 fichas con efectivo y, entre manos, con **🚪 Levantarse** cobras las que tengas: el dinero solo entra y sale ahí. Quien abrió la mesa reparte la primera mano con **▶️ Repartir** (o se reparte sola a los 2 minutos si ya hay 2); después, las manos siguen solas mientras haya 2 con fichas. En tu turno: **🏳️ Retirarse**, **✋ Pasar** o **📞 Igualar**, **⬆️ Subir** (con el total en un formulario) y **🔥 All-in**; tus cartas las ves en privado con **🃏 Mis cartas**. Con los all-in se hacen botes laterales y en el showdown gana la mejor mano de 5 cartas entre las 7 (las tuyas y las 5 de la mesa). Tienes **45 segundos** por turno: si se agotan, pasas si puedes y si no te retiras, y tres veces seguidas te dejan sentado fuera hasta que pulses 🔙 Volver a jugar. Si la mesa no se llena en 2 minutos, o pasan 10 sin jugar, se cierra devolviendo las fichas; si el bot se reinicia a media mano, se devuelven las fichas de antes de esa mano. `/poker estadisticas` enseña tus manos jugadas y ganadas.
+
 ### Juegos
 
 | Juego | Cómo es | Pagos |
@@ -1362,6 +1366,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/poker` | [Casino](#8-casino) |
 | `/invitaciones` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/bingo` | [Casino](#8-casino) |
 | `/carreras` | [Casino](#8-casino) |

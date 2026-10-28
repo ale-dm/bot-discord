@@ -883,3 +883,13 @@ Issue #522. Con una cuenta que invite y otra (de más de 7 días) que entre.
 - [ ] Entrar con el enlace del servidor (vanity) no cuenta.
 - [ ] Si B sale y vuelve a entrar, no se apunta otra vez.
 - [ ] Pasados 7 días con B en nivel 5, A cobra 500 🪙 y recibe un DM.
+
+## T-35 Probar en Discord el póker
+
+Issue #531. Con dos o tres cuentas.
+
+- [ ] `/poker abrir compra:2000` abre la mesa y cobra 2.000 de efectivo; las otras cuentas se sientan con 🪑.
+- [ ] ▶️ Repartir (quien abrió): salen las ciegas, cada uno ve sus cartas con 🃏 y solo quien tiene el turno puede actuar.
+- [ ] Jugar una mano entera con una subida y un all-in: el bote y los laterales se reparten bien en el showdown.
+- [ ] Dejar pasar 45 segundos: se pasa o se retira solo.
+- [ ] Levantarse a media mano no deja; entre manos, cobra las fichas al efectivo.

@@ -1,5 +1,5 @@
 // ⏰ Tareas que miran cada pocos minutos si algo ha vencido: sorteos (#541), depósitos a plazo, roles temporales (#543) y
-// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519), los préstamos entre jugadores (#520), los torneos de casino (#525), las carreras (#535), el bingo (#528) y las invitaciones (#522).
+// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519), los préstamos entre jugadores (#520), los torneos de casino (#525), las carreras (#535), el bingo (#528), las invitaciones (#522) y las mesas de póker (#531).
 // Las programa app/tareas.js al arrancar; cada una va envuelta en runJob y sin solaparse.
 const { cron } = require("../core/tareasRegistro");
 const { runJob } = require("../core/interactionLog");
@@ -15,6 +15,7 @@ const torneos = require("../discord/envios/torneos");
 const carreras = require("../discord/envios/carreras");
 const bingo = require("../discord/envios/bingo");
 const invitaciones = require("../discord/envios/invitaciones");
+const poker = require("../discord/envios/poker");
 
 function programarVencimientos(client) {
     cron.schedule("* * * * *", () => runJob("Sorteos", () => avisarSorteos(client)), { noOverlap: true });
@@ -48,6 +49,10 @@ function programarVencimientos(client) {
     cron.schedule("* * * * *", () => runJob("Bingo", () => bingo.revisar(client)), { noOverlap: true });
     // 📨 Invitaciones (#522): cada hora, los invitados que ya llevan 7 días y tienen el nivel pagan a quien los invitó.
     cron.schedule("17 * * * *", () => runJob("Invitaciones", () => invitaciones.revisar(client)), { noOverlap: true });
+    // 🃏 Póker (#531): al arrancar se cierran las mesas que cortó el reinicio (devolviendo las fichas); cada minuto, se empiezan
+    // las que agotan la espera con gente y se cierran las vacías o inactivas.
+    runJob("Póker (arranque)", () => poker.alArrancar());
+    cron.schedule("* * * * *", () => runJob("Póker", () => poker.revisar(client)), { noOverlap: true });
 }
 
 module.exports = { programarVencimientos };

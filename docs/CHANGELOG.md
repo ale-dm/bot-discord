@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (póker Texas hold'em, #531)
+
+- **🃏 /poker**: mesas públicas de Texas hold'em entre jugadores (sin bots), de 2 a 6, con ciegas fijas de 50/100 y sin rake. `/poker abrir [compra]` abre la mesa en el canal; te sientas comprando de 1.000 a 10.000 fichas con efectivo y al levantarte (entre manos) las cobras: el dinero solo entra y sale ahí. Preflop, flop, turn y river con retirarse, pasar, igualar, subir (formulario) y all-in; botes laterales con los all-in y showdown con la mejor mano de 5 entre 7 (empates y kickers; la ficha que sobra va al primero tras el botón). 45 segundos por turno: al agotarse, pasa si puede y si no se retira; tres seguidos te dejan sentado fuera (🔙 para volver). Las manos se reparten solas mientras haya 2 con fichas. Si la mesa no se llena en 2 minutos, o pasan 10 sin manos, se cierra devolviendo las fichas; si un reinicio corta una mano, al arrancar se devuelven las fichas de antes de esa mano. `/poker estadisticas` con manos jugadas y ganadas.
+- **Migración 099** (`poker_mesas`, `poker_asientos`, `poker_stats`). **✅ Verificación**: 33 tests nuevos (evaluador: cada categoría, desempates, kickers, rueda, empates y mejor de 7; la mano: ciegas y turnos a 2 y a 3, acciones válidas, retirada, resubida, showdown, botes laterales, bote dividido y tiempo agotado; las mesas: sentarse y levantarse, fichas y estadísticas, tres tiempos, reinicio y cierre; Discord: botones y turno por tiempo); `npm run check` en verde.
+
 ## 2026-10-28 (recompensa por invitar, #522)
 
 - **📨 Invitaciones**: al entrar alguien, el bot compara los usos de las invitaciones del servidor con la foto anterior para saber cuál usó y quién la creó (la vanity no cuenta). Cuando el invitado lleva 7 días y llega al nivel 5, quien invitó cobra 500 🪙, más 2.500, 5.000 y 15.000 al llegar a 5, 10 y 25 invitados madurados (cron cada hora, con DM; aviso nuevo en `/avisos`). Anti-abuso: una vez por persona y servidor aunque salga y vuelva, sin autoinvitaciones, sin cuentas de Discord de menos de 7 días, sin invitaciones cruzadas y sin ráfagas de más de 10 en 24 h; si el invitado se va antes de madurar, no se paga. `/invitaciones` enseña tus invitados por estado, lo cobrado, el próximo hito y el top 10.

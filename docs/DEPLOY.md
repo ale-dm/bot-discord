@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Póker Texas hold'em (migración 099, 2026-10-28)
+
+- **099** crea `poker_mesas`, `poker_asientos` y `poker_stats`.
+- Comando nuevo `/poker`: hay que volver a registrar los comandos. Al arrancar se cierran las mesas que dejó abiertas el reinicio, devolviendo las fichas; una tarea cada minuto («Póker») empieza o cierra las mesas en espera.
+
 ### Recompensa por invitar (migración 098, 2026-10-28)
 
 - **098** crea `invitaciones`. Solo cuentan las entradas desde el despliegue.
