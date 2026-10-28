@@ -613,6 +613,10 @@ Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** en
 
 `/prestamo proponer usuario cantidad interes dias` ofrece un préstamo a otra persona: el **interés** (total, de 0 a 50 %) y el **plazo** (de 1 a 30 días) los pones tú, y puedes prestar como mucho el **25 % de tu banco**. Le llega un DM con ✅ Aceptar y ❌ Rechazar; la propuesta caduca a las 24 horas. Al aceptar, el dinero pasa de tu banco al suyo. `/prestamo ver` enseña los préstamos dados y recibidos: quien debe puede pagar antes (todo o una parte, del efectivo) y quien propone puede cancelar mientras no se acepte; un préstamo aceptado no se cancela. Al vencer, el bot cobra solo, primero del banco y luego del efectivo, y lo lleva al banco de quien prestó; lo que no llegue queda como **deuda** y se sigue cobrando cada 10 minutos. Avisos por DM a los dos un día antes del vencimiento, al cobrar y si pasa a deuda (se apagan en `/avisos`). Cada persona puede tener 5 préstamos dados o propuestos y deber 3 a la vez.
 
+### 📋 Encargos semanales (#523)
+
+En `/perfil` → 💰 Economía → **📋 Encargos**, cada lunes te tocan **tres retos** de la semana: uno fácil (100 🪙), uno medio (250 🪙) y uno difícil (500 🪙), distintos entre sí y siempre los mismos para ti durante esa semana. Salen de acciones positivas, nunca de gastar dinero: ganar en el casino (solo cuenta lo ganado), acertar apuestas deportivas, robar con éxito, trabajar con éxito, escribir mensajes, pasar minutos en voz, jugar retos y completar logros. El progreso avanza solo con lo que haces de verdad (también con el pase de batalla apagado) y la recompensa se cobra con **🎁 Cobrar** al completarlo, una sola vez (paga el impuesto de ingresos, como cualquier premio). Lo que no completes caduca el domingo a medianoche, sin penalización.
+
 ### 🏦 Patrimonio (F-EC-10)
 
 Impuesto periódico sobre lo que se tiene en el banco, con su propio ciclo. Cada persona tiene su ciclo (**7 días** por

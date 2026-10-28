@@ -159,6 +159,8 @@ function filasEconomia({ viewerId, targetId, propio, c, prestamo }) {
                   .setStyle(ButtonStyle.Secondary)
                   .setDisabled(c.efectivo <= 0),
               movimientos,
+              // 📋 Encargos semanales (#523): tres retos por semana con recompensa.
+              new ButtonBuilder().setCustomId("encargos_ver").setLabel("📋 Encargos").setStyle(ButtonStyle.Primary),
           )
         : new ActionRowBuilder().addComponents(movimientos);
     const devolver =

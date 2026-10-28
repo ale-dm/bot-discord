@@ -836,3 +836,12 @@ Issue #520. Con dos cuentas: A presta y B recibe.
 - [ ] B acepta en el DM: 100 pasan del banco de A al de B y A recibe un DM.
 - [ ] B: `/prestamo ver` → 💰 Pagar una parte de 50 y después 💸 Pagar todo: el préstamo se cierra y A recibe 110 en el banco.
 - [ ] Otro préstamo sin pagar: al vencer se cobra solo; si B no tiene, queda en deuda y los dos reciben un DM.
+
+## T-30 Probar en Discord los encargos semanales
+
+Issue #523.
+
+- [ ] `/perfil` → 💰 Economía → 📋 Encargos enseña tres encargos (fácil, medio y difícil) con su barra y cuándo caducan.
+- [ ] Haz lo que pide uno (por ejemplo, `/trabajar` o escribir mensajes): la barra avanza.
+- [ ] Al completarlo, 🎁 Cobrar se activa, paga la recompensa una sola vez y queda «✅ cobrado».
+- [ ] Con el pase de batalla apagado, los encargos siguen avanzando.

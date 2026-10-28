@@ -136,6 +136,7 @@ function robar(guildId, ladronId, victimaId) {
     dinero.cobrar(victimaId, cantidad);
     dinero.apuntar(victimaId, "robo", "Te han robado", -cantidad);
     dinero.pagarNegro(ladronId, cantidad);
+    require("./encargos").registrarSeguro(guildId, ladronId, "robo");
     dinero.apuntar(ladronId, "robo", "Robo a alguien", cantidad);
     log.info(
         `${ladronId} robó ${cantidad} (dinero negro) a ${victimaId}${candado ? ` (a pesar del candado "${candado}")` : ""}` +

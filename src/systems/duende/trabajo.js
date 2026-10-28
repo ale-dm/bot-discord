@@ -59,6 +59,7 @@ async function trabajar(guildId, user, channelId) {
     const cantidad = exito ? cantidadBase() + nivel * BONUS_POR_NIVEL : 0;
     if (cantidad > 0) {
         dinero.pagarConImpuesto(user.id, guildId, "trabajo", "Trabajar", cantidad);
+        require("../encargos").registrarSeguro(guildId, user.id, "trabajo");
     }
 
     let texto;
