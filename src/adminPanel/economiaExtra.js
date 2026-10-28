@@ -1,11 +1,12 @@
 // ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía: los ajustes de las funciones de economía nuevas (#524 y siguientes),
 // cada una con su formulario: la 🎟️ lotería semanal (canal, precio del boleto y tope por persona) y los 🏆 torneos de casino
-// (crear uno y cancelarlo antes de que empiece, con confirmación) y las 🏇 carreras (canal y apuesta máxima). Todo cambio se
-// audita.
+// (crear uno y cancelarlo antes de que empiece, con confirmación), las 🏇 carreras (canal y apuesta máxima) y el 🎱 bingo
+// (entrada). Todo cambio se audita.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const loteria = require("../systems/loteria");
 const torneos = require("../systems/torneos");
 const carreras = require("../systems/carreras");
+const bingo = require("../systems/bingo");
 const enviosTorneos = require("../discord/envios/torneos");
 const adminAudit = require("../systems/adminAudit");
 const { fmtNumero } = require("../core/formato");
@@ -52,6 +53,10 @@ function buildHome(guildId, aviso = "") {
                     ? `Cada 15 minutos en <#${c.canal}> · apuesta máxima **${fmtNumero(c.maxApuesta)}** 🪙`
                     : "Apagadas: elige un canal para que haya carreras cada 15 minutos.",
             },
+            {
+                name: "🎱 Bingo (`/bingo`)",
+                value: `Entrada **${fmtNumero(bingo.entrada(guildId))}** 🪙 por sala · de ${bingo.MIN_JUGADORES} a ${bingo.MAX_JUGADORES} jugadores · ${bingo.CUPO_DIARIO} partidas al día por persona`,
+            },
         );
     const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`${PREFIJO}loteria`).setLabel("✏️ Lotería").setStyle(ButtonStyle.Primary),
@@ -68,6 +73,7 @@ function buildHome(guildId, aviso = "") {
         new ButtonBuilder().setCustomId(`${PREFIJO}carreras`).setLabel("🏇 Carreras").setStyle(ButtonStyle.Primary),
     );
     const fila2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`${PREFIJO}bingo`).setLabel("🎱 Bingo").setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId("paneladmin_cfg_economia").setLabel("🛡️ Economía").setStyle(ButtonStyle.Secondary),
     );
     return { content: "", embeds: [embed], components: [fila, fila2], allowedMentions: { parse: [] } };
@@ -98,6 +104,19 @@ async function guardarCarreras(interaction) {
         "carreras.max_apuesta": max,
     });
     return pintar(interaction, buildHome(interaction.guildId, "✅ Carreras actualizadas."));
+}
+
+function modalBingo(guildId) {
+    return modalConCampos(`${PREFIJO}bingo_modal`, "Bingo", [
+        { id: "entrada", label: "Entrada de cada sala (1 a 100.000)", value: String(bingo.entrada(guildId)), maxLength: 6 },
+    ]);
+}
+
+async function guardarBingo(interaction) {
+    const valor = entero(interaction.fields.getTextInputValue("entrada"), 1, 100_000);
+    if (valor === null) return pintar(interaction, buildHome(interaction.guildId, "❌ La entrada va de 1 a 100.000."));
+    guardarAuditado(interaction.guildId, interaction.user.id, "settings.bingo.update", { "bingo.entrada": valor });
+    return pintar(interaction, buildHome(interaction.guildId, "✅ Bingo actualizado."));
 }
 
 function modalTorneo() {
@@ -185,6 +204,7 @@ async function handleEconomiaExtraButton(interaction) {
     else if (accion === "loteria") await interaction.showModal(modalLoteria(interaction.guildId));
     else if (accion === "torneo") await interaction.showModal(modalTorneo());
     else if (accion === "carreras") await interaction.showModal(modalCarreras(interaction.guildId));
+    else if (accion === "bingo") await interaction.showModal(modalBingo(interaction.guildId));
     else if (accion === "torneo_cancelar") await interaction.update(confirmarCancelar());
     else if (accion === "torneo_cancelar_si") await cancelarTorneo(interaction);
     else return false;
@@ -196,6 +216,7 @@ async function handleEconomiaExtraModal(interaction) {
     if (interaction.customId === `${PREFIJO}loteria_modal`) await guardarLoteria(interaction);
     else if (interaction.customId === `${PREFIJO}torneo_modal`) await crearTorneo(interaction);
     else if (interaction.customId === `${PREFIJO}carreras_modal`) await guardarCarreras(interaction);
+    else if (interaction.customId === `${PREFIJO}bingo_modal`) await guardarBingo(interaction);
     else return false;
     return true;
 }

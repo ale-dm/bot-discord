@@ -864,3 +864,13 @@ Issue #535.
 - [ ] Apuesta 50 a un caballo: se cobra y el mensaje cuenta la apuesta; una segunda apuesta en la misma carrera se rechaza.
 - [ ] Dos minutos antes de la salida sale el aviso; a la hora, el mensaje se anima y se anuncia el ganador. Si acertaste, cobras lo apostado × la cuota.
 - [ ] Justo después se abre la siguiente carrera.
+
+## T-33 Probar en Discord el bingo
+
+Issue #528. Con dos o tres cuentas.
+
+- [ ] `/bingo` abre la sala y cobra la entrada; las otras cuentas entran con 🎟️ Entrar y el bote sube.
+- [ ] 🎫 Mi cartón enseña tu cartón en privado (a quien no está, se lo dice).
+- [ ] ▶️ Empezar ya solo funciona para quien la abrió; al empezar, el mensaje canta una bola cada 3 segundos.
+- [ ] Al completar un cartón sale «¡Bingo!» y el ganador cobra el bote.
+- [ ] Una sala con un solo jugador se cancela a los 2 minutos y le devuelve la entrada.

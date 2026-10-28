@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Bingo de sala (migración 097, 2026-10-28)
+
+- **097** crea `bingo_partidas` y `bingo_jugadores`. No hay que rellenar nada.
+- Comando nuevo `/bingo`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Bingo») empieza o cancela las salas que agotan la espera y termina las que cortó un reinicio.
+
 ### Carreras con cuotas (migración 096, 2026-10-28)
 
 - **096** crea `carreras` y `carrera_apuestas`. Están apagadas hasta que un admin elige su canal.

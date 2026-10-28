@@ -95,6 +95,7 @@ const SECCIONES = {
             ["juegos", "stats", "Stats", "📊"],
         ],
         texto: [
+            "`/bingo` — 🎱 abre una sala de bingo en el canal (de 2 a 6 jugadores, con la entrada del servidor, que forma el bote). Cada uno recibe un cartón de 5×5; el bot canta una bola cada 3 segundos y marca solo, y gana quien complete el cartón entero (el bote se reparte si son varios). Si no entra nadie más en 2 minutos, se devuelve la entrada.",
             "`/carreras` — 🏇 carreras de caballos cada 15 minutos en el canal de carreras: apuesta a un caballo antes de la salida (una apuesta por carrera); cada uno tiene su cuota fija según sus probabilidades y, si gana el tuyo, cobras lo apostado × la cuota.",
             "`/torneo` — 🏆 el torneo de casino del servidor, cuando un admin organiza uno: te inscribes pagando la entrada (forma el bote) y gana quien más gane en neto en el juego del torneo durante su horario. Premios del bote: 50 % al primero, 30 % al segundo y 20 % al tercero; si no se apuntan al menos 2, se devuelve todo.",
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",

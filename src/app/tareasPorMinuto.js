@@ -1,5 +1,5 @@
 // ⏰ Tareas que miran cada pocos minutos si algo ha vencido: sorteos (#541), depósitos a plazo, roles temporales (#543) y
-// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519), los préstamos entre jugadores (#520), los torneos de casino (#525) y las carreras (#535).
+// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519), los préstamos entre jugadores (#520), los torneos de casino (#525), las carreras (#535) y el bingo (#528).
 // Las programa app/tareas.js al arrancar; cada una va envuelta en runJob y sin solaparse.
 const { cron } = require("../core/tareasRegistro");
 const { runJob } = require("../core/interactionLog");
@@ -13,6 +13,7 @@ const subastas = require("../discord/envios/subastas");
 const prestamosJugadores = require("../discord/envios/prestamosJugadores");
 const torneos = require("../discord/envios/torneos");
 const carreras = require("../discord/envios/carreras");
+const bingo = require("../discord/envios/bingo");
 
 function programarVencimientos(client) {
     cron.schedule("* * * * *", () => runJob("Sorteos", () => avisarSorteos(client)), { noOverlap: true });
@@ -41,6 +42,9 @@ function programarVencimientos(client) {
     // 🏇 Carreras (#535): abrir la siguiente, avisar 2 minutos antes y correrla cuando toca (al arrancar, las que pilló apagado).
     runJob("Carreras (arranque)", () => carreras.revisar(client));
     cron.schedule("* * * * *", () => runJob("Carreras", () => carreras.revisar(client)), { noOverlap: true });
+    // 🎱 Bingo (#528): empezar las salas que agotan la espera (o cancelarlas) y terminar las que quedaron a medias.
+    runJob("Bingo (arranque)", () => bingo.revisar(client));
+    cron.schedule("* * * * *", () => runJob("Bingo", () => bingo.revisar(client)), { noOverlap: true });
 }
 
 module.exports = { programarVencimientos };
