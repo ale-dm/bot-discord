@@ -855,3 +855,12 @@ Issue #525. Con tres cuentas.
 - [ ] Al empezar sale el anuncio; jugando a la tragaperras la clasificación cambia (otros juegos no cuentan).
 - [ ] Al terminar, el bote se reparte 75 / 45 / 30 y se anuncia.
 - [ ] Un torneo con un solo inscrito se cancela al empezar y le devuelve la inscripción.
+
+## T-32 Probar en Discord las carreras
+
+Issue #535.
+
+- [ ] ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras: elige un canal. En el siguiente minuto sale la carrera con 6 botones y sus cuotas.
+- [ ] Apuesta 50 a un caballo: se cobra y el mensaje cuenta la apuesta; una segunda apuesta en la misma carrera se rechaza.
+- [ ] Dos minutos antes de la salida sale el aviso; a la hora, el mensaje se anima y se anuncia el ganador. Si acertaste, cobras lo apostado × la cuota.
+- [ ] Justo después se abre la siguiente carrera.

@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (carreras con cuotas, #535)
+
+- **🏇 Carreras**: con un canal elegido en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras, cada 15 minutos (en punto, y cuarto, y media y menos cuarto) corren 6 caballos. Cada uno tiene un peso al azar y una cuota fija sacada de su probabilidad con un 10 % de margen para la casa. Se apuesta con los botones del mensaje (una apuesta por persona y carrera, de 10 al tope del servidor, 1.000 por defecto; primero el dinero negro, como en el casino, y respetando la autoexclusión y el límite de pérdidas). Aviso 2 minutos antes; a la hora, el servidor decide el ganador con los pesos, paga lo apostado × la cuota y la carrera se anima editando el mensaje 5 veces cada 3 segundos. Una carrera que pilló el bot apagado se resuelve al arrancar, sin animación. `/carreras` enseña la próxima y las últimas.
+- **Migración 096** (`carreras`, `carrera_apuestas`). **✅ Verificación**: 12 tests nuevos (cuotas y margen, ganador ponderado, horario, apostar con sus límites y la autoexclusión, pago único, carrera sin apuestas, cron con aviso y animación, sin animación tras un apagado, fotogramas y formulario); `npm run check` en verde.
+
 ## 2026-10-28 (torneos de casino, #525)
 
 - **🏆 Torneos de casino**: un admin crea uno en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía (canal, juego o todos los del casino, inscripción, cuándo empieza y de 1 a 72 horas). El bot publica el mensaje con 🎟️ Inscribirme; la inscripción (del efectivo) forma el bote, sin aportación de la casa. Durante el torneo cuenta la ganancia neta de las partidas de ese juego en esa ventana (sacada de la tabla del casino), con la clasificación en directo. Al terminar se reparte 50/30/20; los empates suman sus premios y los reparten, y las plazas siguientes se corren. Con menos de 2 inscritos, o si un admin lo cancela antes de empezar, se devuelve todo. Uno a la vez por servidor. `/torneo` enseña el actual.

@@ -1,9 +1,11 @@
 // ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía: los ajustes de las funciones de economía nuevas (#524 y siguientes),
 // cada una con su formulario: la 🎟️ lotería semanal (canal, precio del boleto y tope por persona) y los 🏆 torneos de casino
-// (crear uno y cancelarlo antes de que empiece, con confirmación). Todo cambio se audita.
+// (crear uno y cancelarlo antes de que empiece, con confirmación) y las 🏇 carreras (canal y apuesta máxima). Todo cambio se
+// audita.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const loteria = require("../systems/loteria");
 const torneos = require("../systems/torneos");
+const carreras = require("../systems/carreras");
 const enviosTorneos = require("../discord/envios/torneos");
 const adminAudit = require("../systems/adminAudit");
 const { fmtNumero } = require("../core/formato");
@@ -30,6 +32,7 @@ function buildHome(guildId, aviso = "") {
     const l = loteria.ajustes(guildId);
     const sorteo = loteria.abierto(guildId);
     const torneo = torneos.activo(guildId);
+    const c = carreras.ajustes(guildId);
     const embed = new EmbedBuilder()
         .setTitle("🎟️ Más economía")
         .setColor(COLOR)
@@ -43,6 +46,12 @@ function buildHome(guildId, aviso = "") {
                     `Bote ahora: **${fmtNumero(sorteo.bote)}** 🪙 · sorteo <t:${Math.floor(sorteo.sorteo_en / 1000)}:R>`,
             },
             { name: "🏆 Torneo de casino (`/torneo`)", value: textoTorneo(torneo) },
+            {
+                name: "🏇 Carreras (`/carreras`)",
+                value: c.canal
+                    ? `Cada 15 minutos en <#${c.canal}> · apuesta máxima **${fmtNumero(c.maxApuesta)}** 🪙`
+                    : "Apagadas: elige un canal para que haya carreras cada 15 minutos.",
+            },
         );
     const fila = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`${PREFIJO}loteria`).setLabel("✏️ Lotería").setStyle(ButtonStyle.Primary),
@@ -56,9 +65,12 @@ function buildHome(guildId, aviso = "") {
             .setLabel("✖️ Cancelar torneo")
             .setStyle(ButtonStyle.Danger)
             .setDisabled(torneo?.estado !== "inscripcion"),
+        new ButtonBuilder().setCustomId(`${PREFIJO}carreras`).setLabel("🏇 Carreras").setStyle(ButtonStyle.Primary),
+    );
+    const fila2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId("paneladmin_cfg_economia").setLabel("🛡️ Economía").setStyle(ButtonStyle.Secondary),
     );
-    return { content: "", embeds: [embed], components: [fila], allowedMentions: { parse: [] } };
+    return { content: "", embeds: [embed], components: [fila, fila2], allowedMentions: { parse: [] } };
 }
 
 function modalLoteria(guildId) {
@@ -68,6 +80,24 @@ function modalLoteria(guildId) {
         { id: "precio", label: "Precio del boleto (1 a 100.000)", value: String(l.precio), maxLength: 6 },
         { id: "max", label: "Boletos por persona y sorteo (1 a 50)", value: String(l.maxBoletos), maxLength: 2 },
     ]);
+}
+
+function modalCarreras(guildId) {
+    const c = carreras.ajustes(guildId);
+    return modalConCampos(`${PREFIJO}carreras_modal`, "Carreras de caballos", [
+        { id: "canal", label: "Canal de las carreras (vacío = apagadas)", tipo: "canal", required: false, valor: c.canal },
+        { id: "max", label: "Apuesta máxima por persona (10 a 1.000.000)", value: String(c.maxApuesta), maxLength: 7 },
+    ]);
+}
+
+async function guardarCarreras(interaction) {
+    const max = entero(interaction.fields.getTextInputValue("max"), carreras.MIN_APUESTA, 1_000_000);
+    if (max === null) return pintar(interaction, buildHome(interaction.guildId, "❌ La apuesta máxima va de 10 a 1.000.000."));
+    guardarAuditado(interaction.guildId, interaction.user.id, "settings.carreras.update", {
+        "carreras.canal": canalElegido(interaction.fields, "canal"),
+        "carreras.max_apuesta": max,
+    });
+    return pintar(interaction, buildHome(interaction.guildId, "✅ Carreras actualizadas."));
 }
 
 function modalTorneo() {
@@ -154,6 +184,7 @@ async function handleEconomiaExtraButton(interaction) {
     if (accion === "home") await interaction.update(buildHome(interaction.guildId));
     else if (accion === "loteria") await interaction.showModal(modalLoteria(interaction.guildId));
     else if (accion === "torneo") await interaction.showModal(modalTorneo());
+    else if (accion === "carreras") await interaction.showModal(modalCarreras(interaction.guildId));
     else if (accion === "torneo_cancelar") await interaction.update(confirmarCancelar());
     else if (accion === "torneo_cancelar_si") await cancelarTorneo(interaction);
     else return false;
@@ -164,6 +195,7 @@ async function handleEconomiaExtraButton(interaction) {
 async function handleEconomiaExtraModal(interaction) {
     if (interaction.customId === `${PREFIJO}loteria_modal`) await guardarLoteria(interaction);
     else if (interaction.customId === `${PREFIJO}torneo_modal`) await crearTorneo(interaction);
+    else if (interaction.customId === `${PREFIJO}carreras_modal`) await guardarCarreras(interaction);
     else return false;
     return true;
 }

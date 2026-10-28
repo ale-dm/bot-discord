@@ -724,6 +724,10 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 
 Un admin organiza un torneo en `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → **🏆 Crear torneo**: el canal donde se publica, el juego (uno del casino o todos), la inscripción, cuándo empieza y cuánto dura (de 1 a 72 horas). El bot publica el mensaje del torneo con **🎟️ Inscribirme**: la inscripción se paga con efectivo y forma el bote (la casa no pone nada). Mientras se juega, cuenta la **ganancia neta** (premios menos apuestas) de las partidas de ese juego dentro del horario del torneo, y la clasificación se actualiza sola en el mensaje. Al terminar, el bote se reparte **50 % / 30 % / 20 %** entre los tres primeros: si hay empate, se suman los premios de esas posiciones y se reparten a partes iguales, y las siguientes plazas se corren (con menos de tres jugadores, los porcentajes se reparten en proporción). Si al empezar hay menos de 2 inscritos, o un admin lo cancela antes, se devuelve la inscripción a todos. Hay uno a la vez por servidor; `/torneo` enseña el actual.
 
+### 🏇 Carreras con cuotas (#535)
+
+Si un admin elige el canal de carreras (⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras), cada **15 minutos** se corre una carrera de **6 caballos** en ese canal. Cada caballo tiene su **cuota fija**, calculada con su probabilidad de ganar y un 10 % de margen para la casa. Con los botones del mensaje apuestas a uno (una apuesta por carrera, de 10 🪙 al tope del servidor, 1.000 por defecto); se paga como en el casino (primero el dinero negro) y respeta la autoexclusión y el límite de pérdidas. Dos minutos antes de la salida hay un aviso; a la hora, el ganador lo decide el bot con esas probabilidades, la carrera se anima en el mensaje y quien acertó cobra lo apostado × la cuota. `/carreras` enseña la próxima carrera y quién ganó las últimas.
+
 ### Juegos
 
 | Juego | Cómo es | Pagos |
@@ -1350,6 +1354,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/carreras` | [Casino](#8-casino) |
 | `/torneo` | [Casino](#8-casino) |
 | `/prestamo` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/subastas` | [Economía](#7-economía-banco-tienda-e-inventario) |
