@@ -95,6 +95,7 @@ const SECCIONES = {
             ["juegos", "stats", "Stats", "📊"],
         ],
         texto: [
+            "`/carreras` — 🏇 carreras de caballos cada 15 minutos en el canal de carreras: apuesta a un caballo antes de la salida (una apuesta por carrera); cada uno tiene su cuota fija según sus probabilidades y, si gana el tuyo, cobras lo apostado × la cuota.",
             "`/torneo` — 🏆 el torneo de casino del servidor, cuando un admin organiza uno: te inscribes pagando la entrada (forma el bote) y gana quien más gane en neto en el juego del torneo durante su horario. Premios del bote: 50 % al primero, 30 % al segundo y 20 % al tercero; si no se apuntan al menos 2, se devuelve todo.",
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",
             "**Juegos**: blackjack (×2, blackjack ×2,5; con seguro, rendirse y 💡 consejo), tragaperras con jackpot (y tirada automática), ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20), rasca y gana (×2 a ×50) y piedra, papel o tijera (×2).",

@@ -238,7 +238,7 @@ const nodoPlano = (flat, area) => ({
 /** 🗳️ Elecciones a la presidencia: `elecciones.*` sin el prefijo. */
 const nodoElecciones = (flat) => nodoPlano(flat, "elecciones");
 /** 🎟️ Más economía (#524 y siguientes): cada área nueva, sin su prefijo. */
-const AREAS_ECONOMIA_EXTRA = ["loteria"];
+const AREAS_ECONOMIA_EXTRA = ["loteria", "carreras"];
 const nodoEconomiaExtra = (flat) => Object.assign({}, ...AREAS_ECONOMIA_EXTRA.map((area) => nodoPlano(flat, area)));
 
 function flattenToNested(flat) {

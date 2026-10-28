@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Carreras con cuotas (migración 096, 2026-10-28)
+
+- **096** crea `carreras` y `carrera_apuestas`. Están apagadas hasta que un admin elige su canal.
+- Comando nuevo `/carreras`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Carreras») las abre y las corre.
+
 ### Torneos de casino (migración 095, 2026-10-28)
 
 - **095** crea `torneos` y `torneo_inscritos`. No hay que rellenar nada.

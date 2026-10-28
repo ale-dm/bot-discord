@@ -341,6 +341,9 @@ const AJUSTES_ECONOMIA_EXTRA = {
     "loteria.canal": ["", "string"],
     "loteria.precio": [100, "number"],
     "loteria.max_boletos": [10, "number"],
+    // 🏇 Carreras (#535): sin canal, no hay carreras.
+    "carreras.canal": ["", "string"],
+    "carreras.max_apuesta": [1000, "number"],
 };
 for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_ECONOMIA_EXTRA)) {
     DEFAULT_FLAT[clave] = valor;
