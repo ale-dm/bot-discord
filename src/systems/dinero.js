@@ -43,6 +43,7 @@ const TIPOS = {
     venta: "🏷️ Mercado y ventas",
     codigo: "🎟️ Códigos",
     sueldo: "🧾 Sueldos",
+    loteria: "🎟️ Lotería",
     otro: "📦 Otros",
 };
 

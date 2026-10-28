@@ -67,4 +67,4 @@ function fechaMadridAMs(texto) {
     return ok ? ms : null;
 }
 
-module.exports = { fechaMadridAMs, momentoMadrid, aFecha, sumarDias, diaSemana, lunesDe, semanaAnterior };
+module.exports = { fechaMadridAMs, momentoMadrid, aFecha, sumarDias, diaSemana, lunesDe, semanaAnterior, desfaseMadrid };

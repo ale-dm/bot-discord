@@ -44,6 +44,7 @@ const { handleEstadisticasButton, handleEstadisticasSelect } = require("../../ad
 const { handleModeracionButton, handleModeracionModal, handleModeracionSelect } = require("../../adminPanel/moderacion");
 const { handleCalendarioButton, handleCalendarioModal, handleCalendarioSelect } = require("../../adminPanel/calendario");
 const { handleEleccionesButton, handleEleccionesModal } = require("../../adminPanel/elecciones");
+const { handleEconomiaExtraButton, handleEconomiaExtraModal } = require("../../adminPanel/economiaExtra");
 
 /**
  * Un manejador de componentes del panel. Solo para admins. Si `antes` devuelve true, ya está resuelto. Si no, prueba
@@ -169,6 +170,7 @@ module.exports = {
             handleModeracionButton,
             handleCalendarioButton,
             handleEleccionesButton,
+            handleEconomiaExtraButton,
         ],
         async (client, interaction) => {
             if (interaction.customId !== "paneladmin_home") return false;
@@ -198,6 +200,7 @@ module.exports = {
         handleModeracionModal,
         handleCalendarioModal,
         handleEleccionesModal,
+        handleEconomiaExtraModal,
     ]),
 
     handleUserSelect: manejador("handleUserSelect", "Error al procesar selector.", [

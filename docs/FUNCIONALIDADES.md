@@ -601,6 +601,10 @@ Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** en
 
 ---
 
+### 🎟️ Lotería semanal (#524)
+
+`/loteria` abre el panel: el bote, cuándo es el sorteo, el precio, tus boletos y el último resultado. Cada boleto lleva **4 números distintos del 1 al 20** (🎲 al azar o ✍️ eligiéndolos) y se paga con **efectivo** (no con dinero negro), con un tope por persona y sorteo (100 🪙 y 10 boletos por defecto, en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía). El sorteo es **cada domingo a las 21:00** (hora de Madrid): quien acierta los 4 números se lleva el bote; con varios acertantes se reparte a partes iguales y, si nadie acierta, el bote se acumula para la semana siguiente. Al sortear, si se vendió algún boleto, se suma el **10 % del bote de impuestos** (como mucho 100.000). El resultado se anuncia en el canal elegido y al ganador le llega un DM (se apaga en `/avisos`). Si el bot estaba apagado a la hora, el sorteo se celebra al arrancar y se anuncia como atrasado.
+
 ### 🏦 Patrimonio (F-EC-10)
 
 Impuesto periódico sobre lo que se tiene en el banco, con su propio ciclo. Cada persona tiene su ciclo (**7 días** por
@@ -1073,7 +1077,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto`, `/duende`, `/plex`, `/sonidos` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
-| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones, premios de la lotería) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
 | `/autoroles` | 🎭 El menú de roles del servidor: pulsa para ponerte o quitarte uno (✅ los que tienes). En un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Respeta la jerarquía del bot y el modo mantenimiento; la lista la configura un admin (ver [Administración](#12-administración)) |
 | `/favoritos` | ⭐ `seguir equipo:…`, `dejar equipo:…` y `lista`: hasta 10 equipos por persona, con sus próximos partidos y cuotas. Aviso por DM cuando aparece un partido suyo, apagable en `/avisos` (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
@@ -1330,6 +1334,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/loteria` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/elecciones` | [Utilidades](#️-elecciones-a-la-presidencia) |
 | `/presidente` | [Utilidades](#️-elecciones-a-la-presidencia) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |

@@ -2,6 +2,13 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (lotería semanal, #524)
+
+- **🎟️ /loteria**: boletos de 4 números distintos del 1 al 20 (al azar o eligiéndolos), pagados solo con efectivo y con un tope por persona (100 🪙 y 10 boletos por defecto). Sorteo cada domingo a las 21:00 de Madrid: quien acierta los 4 se lleva el bote (a partes iguales; lo que no se puede repartir pasa al siguiente) y, si nadie acierta, el bote se acumula. Al sortear, si se vendió algún boleto, se suma el 10 % del bote de impuestos (tope 100.000). Si el bot estaba apagado, se sortea al arrancar y se anuncia como atrasado. Anuncio en el canal elegido y DM al ganador (aviso nuevo en `/avisos`).
+- **Panel admin** ⚙️ Config Global → 🛡️ Economía → **🎟️ Más economía**: sección nueva para los ajustes de estas funciones; de momento, la lotería (canal, precio y tope).
+- Tipo nuevo de movimiento **🎟️ Lotería**; el filtro de 📜 Movimientos pasa a dos desplegables al superar los 25 tipos.
+- **Migración 091** (`loteria_sorteos`, `loteria_boletos`). **✅ Verificación**: 14 tests nuevos (fecha del sorteo en invierno y verano, números, compra con efectivo y tope, uno y varios acertantes, bote acumulado, aportación de impuestos con tope, doble sorteo, cron con anuncio y DM, panel y formulario); `npm run check` en verde.
+
 ## 2026-10-28 (listas de películas de Plex, #575)
 
 - **📚 Listas** en `/plex` → ⭐ Reseñas: listas ordenadas («Top 10 de Nolan»), públicas o privadas, con títulos que hay en Plex (películas y series). Buscar sin tildes ni mayúsculas, añadir al final, subir, bajar, quitar y abrir la ⭐ ficha de cada título, aunque no tenga reseñas. Editar, cambiar la visibilidad y borrar (con confirmación) solo el dueño. Hasta 10 listas por persona y 50 títulos por lista. Cierra la épica de reseñas de Plex (#536).
