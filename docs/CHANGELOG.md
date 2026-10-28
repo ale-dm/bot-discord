@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (préstamos entre jugadores, #520)
+
+- **🤝 /prestamo**: `proponer usuario cantidad interes dias` ofrece un préstamo (interés de 0 a 50 %, plazo de 1 a 30 días, como mucho el 25 % de tu banco); le llega un DM con ✅ Aceptar y ❌ Rechazar (caduca a las 24 h). Al aceptar, el dinero pasa de banco a banco. `/prestamo ver` enseña los dados y recibidos, para pagar antes (entero o a plazos, del efectivo) o cancelar una propuesta. Al vencer, el bot cobra solo, primero del banco y luego del efectivo; lo que falte queda como deuda y se reintenta cada 10 minutos. Avisos por DM un día antes, al cobrar y al pasar a deuda (aviso nuevo en `/avisos`). Topes: 5 préstamos dados o propuestos por prestamista y 3 abiertos por prestatario. Un préstamo aceptado no se cancela.
+- **Migración 093** (`prestamos_jugadores`). **✅ Verificación**: 13 tests nuevos (límites, aceptar una sola vez, caducidad, rechazar y cancelar, pagar a plazos, cobro con deuda y reintento, avisos, cron con DM, comando y botones); `npm run check` en verde.
+
 ## 2026-10-28 (casa de subastas de objetos, #519)
 
 - **🔨 /subastas**: se subasta un objeto transferible del inventario (no los de protección) con precio de salida, incremento mínimo y 24 o 48 horas; el objeto queda retenido. Se puja con efectivo, que se retiene y se devuelve al momento a quien queda superado. Anti-sniping: una puja en los 2 últimos minutos alarga el cierre 2 minutos, como mucho 30. Al cerrar, el objeto va al ganador y el dinero al vendedor menos un 5 % de comisión (mínimo 1), que va al bote de impuestos; sin pujas, vuelve al vendedor. Se cancela mientras nadie haya pujado. Hasta 5 abiertas por persona.

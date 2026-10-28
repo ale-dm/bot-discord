@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Préstamos entre jugadores (migración 093, 2026-10-28)
+
+- **093** crea `prestamos_jugadores`. No hay que rellenar nada.
+- Comando nuevo `/prestamo`: hay que volver a registrar los comandos. Una tarea nueva cada 10 minutos cobra los vencidos.
+
 ### Casa de subastas (migración 092, 2026-10-28)
 
 - **092** crea `subastas` y `subasta_pujas`. No hay que rellenar nada.
