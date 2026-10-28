@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Listas de películas de Plex (migración 090, 2026-10-28)
+
+- **090** crea `plex_listas` y `plex_lista_items`. No hay que rellenar nada ni registrar comandos: es un botón nuevo de
+  `/plex` → ⭐ Reseñas.
+
 ### Partido y eslogan en las elecciones (migración 089, 2026-10-26)
 
 - **089** añade `partido` y `eslogan` a `elecciones_candidatos`. No hay que rellenar nada: los escriben los finalistas.

@@ -799,3 +799,13 @@ pon todas las fases a 0,01 días (unos 15 minutos) y en 🛡️ Límites la anti
 - [ ] El silencio se quita solo a los 2 minutos.
 - [ ] /presidente crear-canal crea el canal en la categoría; con el tope lleno lo rechaza; borrar-canal solo borra los suyos.
 - [ ] ⚖️ Destituir (o el fin del mandato) quita el rol, borra sus canales y deshace sus castigos.
+
+## T-26 Probar en Discord las listas de películas
+
+Issue #575. Con dos cuentas y la biblioteca de Plex sincronizada.
+
+- [ ] `/plex` → ⭐ Reseñas → 📚 Listas → ➕ Nueva lista crea la lista y la abre.
+- [ ] ➕ Añadir → buscar «dun» (sin tilde ni mayúscula) enseña lo que hay en Plex; elegir uno lo añade al final. Algo que no está en Plex no sale.
+- [ ] Elegir un título en el desplegable: ⬆️ y ⬇️ lo mueven, ❌ lo quita y ⭐ Ficha abre su ficha (también sin reseñas).
+- [ ] 🔒 Hacer privada: la otra cuenta no la ve en 🌍 Públicas; 🌍 Hacer pública, sí, pero sin botones de dueño.
+- [ ] ✏️ Editar cambia título y descripción; 🗑️ Borrar pide confirmación y la borra.

@@ -28,6 +28,7 @@ const { pantallaSeries, pantallaQuieroVer, pantallaResultados } = require("../..
 const plexAvisos = require("../../systems/plexAvisos");
 const resenas = require("./resenas");
 const ruleta = require("./ruleta");
+const listas = require("./listas");
 const seerrClient = require("../../services/seerrClient");
 const perfilPaneles = require("../../paneles/perfil");
 const { efimero } = require("../../discord/respuestas");
@@ -100,6 +101,8 @@ module.exports = {
             return resenas.handleButton(client, interaction);
         // 🎲 Ruleta de películas (#576), desde ⭐ Reseñas.
         if (id === "plex_ruleta" || id.startsWith("plex_ruleta_")) return ruleta.handleButton(interaction);
+        // 📚 Listas de películas (#575), desde ⭐ Reseñas.
+        if (id.startsWith("plex_listas") || id.startsWith("plex_lista_")) return listas.handleButton(interaction);
 
         // 🎬 Sesión de cine: el mensaje de la sesión (público) con sus botones.
         if (id.startsWith("cine_")) return handleCineBoton(interaction, id);
@@ -143,13 +146,14 @@ module.exports = {
         }
     },
 
-    // Los menús de 📺 Series, 📝 Quiero ver y los filtros de la 🎲 Ruleta.
+    // Los menús de 📺 Series, 📝 Quiero ver, los filtros de la 🎲 Ruleta y las 📚 Listas.
     async handleSelect(client, interaction) {
         const id = interaction.customId;
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
         const valor = interaction.values[0];
         if (id.startsWith("plex_sel_ruleta_")) return ruleta.handleSelect(interaction);
+        if (id.startsWith("plex_sel_lista_")) return listas.handleSelect(interaction);
 
         if (id === "plex_sel_seguir") {
             const serie = plexAvisos.seriesParaSeguir(guildId, userId).find((s) => String(s.serie_key) === valor);
@@ -181,6 +185,7 @@ module.exports = {
     async handleModal(client, interaction) {
         // ⭐ El formulario de la reseña (#566).
         if (interaction.customId.startsWith("plex_modal_resena_")) return resenas.handleModal(interaction);
+        if (interaction.customId.startsWith("plex_modal_lista_")) return listas.handleModal(interaction);
         if (interaction.customId === "plex_modal_quiero") return buscarParaQuieroVer(interaction);
         if (interaction.customId !== "plex_modal_cine") return;
         const peli = interaction.fields.getTextInputValue("peli").trim();

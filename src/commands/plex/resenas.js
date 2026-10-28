@@ -1,6 +1,7 @@
 // ⭐ Botones, formulario y moderación de las reseñas (#566, #567 y #568), y 📊 Mi cine (#574). Se llaman desde commands/plex/plex.js.
 const { MessageFlags } = require("discord.js");
 const plexResenas = require("../../systems/plexResenas");
+const plexListas = require("../../systems/plexListas");
 const pedidos = require("../../systems/plexResenas/pedidos");
 const guildSettings = require("../../systems/guildSettings");
 const avisosDm = require("../../systems/avisosDm");
@@ -58,7 +59,8 @@ async function imagenDelAnio(interaction) {
 function abrirModal(interaction, clave) {
     const { guildId, user } = interaction;
     const mia = plexResenas.de(guildId, user.id, clave);
-    const base = mia || plexResenas.titulo(guildId, clave).resenas[0];
+    // Sin reseñas todavía (abierta desde una 📚 lista), el título sale de Plex.
+    const base = mia || plexResenas.titulo(guildId, clave).resenas[0] || plexListas.enPlex(guildId, clave);
     if (!base) return interaction.reply(efimero({ content: "❌ No encuentro ese título." }));
     return interaction.showModal(
         formularioResena({ titulo: base.titulo, anio: base.anio }, mia, null, `plex_modal_resena_titulo_${clave}`),
@@ -125,7 +127,7 @@ async function guardarTitulo(interaction) {
     const clave = interaction.customId.slice("plex_modal_resena_titulo_".length);
     const { guildId, user } = interaction;
     const mia = plexResenas.de(guildId, user.id, clave);
-    const base = mia || plexResenas.titulo(guildId, clave).resenas[0];
+    const base = mia || plexResenas.titulo(guildId, clave).resenas[0] || plexListas.enPlex(guildId, clave);
     if (!base) return interaction.reply(efimero({ content: "❌ No encuentro ese título." }));
     const r = plexResenas.guardar(guildId, user.id, {
         tipo: clave.startsWith("serie:") ? "show" : "movie",

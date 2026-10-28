@@ -166,6 +166,16 @@ controla el admin y es un grupo cerrado y pequeño): nueva sección
   (`REFRESCAR_PELICULA`: cada ficha de película, al cumplir 30 días; 📼 Sincronizar no adelanta las más recientes). Con un máximo elegido, lo que no tiene duración no pasa el filtro
   (`plexRuleta.cumple`), y el menú de duración solo sale cuando alguna película sin ver la tiene.
 
+- 📚 Listas (#575, la última de la épica #536): botón `plex_listas` en la fila de navegación de ⭐ Reseñas, junto a la
+  Ruleta. Reglas en `systems/plexListas.js`, pantallas en `paneles/plexListas.js` y botones en `commands/plex/listas.js`.
+  Tablas `plex_listas` y `plex_lista_items` (migración 090). Cada título guarda la clave de las reseñas (`peli:<título>|<año>`
+  o `serie:<título>`), así ⭐ Ficha abre `pantallaTitulo`; si el título no tiene reseñas, el título y el año salen de
+  `plexListas.enPlex` (y también el formulario de puntuar). **Solo se añade lo que hay en Plex**: `buscar` y `anadir` miran
+  `plex_fichas` con `encontrada = 1` (películas y series), una vez por clave; si un título deja Plex después, sigue en la
+  lista. Los títulos se eligen por posición (`plex_lista_<sub|baj|quitar|ficha>_<lista>_<pos>`), no por clave, para no
+  pasar de 100 caracteres en el `customId`; en la búsqueda, el valor del desplegable es la clave y se descarta la que no
+  quepa. Las privadas solo las ve su dueño, y solo él edita, ordena o borra. Topes: 10 listas por persona y 50 títulos.
+
 - Ver vínculos actuales (Discord user → usuario Tautulli).
 - Añadir/editar vínculo (selector de usuario de Discord + selector de
   usuario de Tautulli, sacado de `getUsers()` — igual que el buscador de
