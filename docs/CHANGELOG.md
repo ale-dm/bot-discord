@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (torneos de casino, #525)
+
+- **🏆 Torneos de casino**: un admin crea uno en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía (canal, juego o todos los del casino, inscripción, cuándo empieza y de 1 a 72 horas). El bot publica el mensaje con 🎟️ Inscribirme; la inscripción (del efectivo) forma el bote, sin aportación de la casa. Durante el torneo cuenta la ganancia neta de las partidas de ese juego en esa ventana (sacada de la tabla del casino), con la clasificación en directo. Al terminar se reparte 50/30/20; los empates suman sus premios y los reparten, y las plazas siguientes se corren. Con menos de 2 inscritos, o si un admin lo cancela antes de empezar, se devuelve todo. Uno a la vez por servidor. `/torneo` enseña el actual.
+- **Migración 095** (`torneos`, `torneo_inscritos`). **✅ Verificación**: 11 tests nuevos (validaciones, inscripción única, clasificación por juego y ventana, reparto con empates y con dos jugadores, cancelaciones con devolución, pago único al terminar, cron, botón y formulario del panel admin); `npm run check` en verde.
+
 ## 2026-10-28 (encargos semanales de economía, #523)
 
 - **📋 Encargos** en `/perfil` → 💰 Economía: tres retos por persona y semana (lunes a domingo, hora de Madrid), uno fácil, uno medio y uno difícil (100, 250 y 500 🪙), de un catálogo de acciones positivas: ganar en el casino, acertar apuestas, robar con éxito, trabajar, escribir, estar en voz, jugar retos y completar logros. Nunca retos de gastar dinero. Avanzan solos con la actividad real, no pasan de la meta y se cobran con un botón, una sola vez (con el impuesto de ingresos). Lo que no se completa caduca con la semana, sin penalización.
