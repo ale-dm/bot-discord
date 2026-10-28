@@ -95,6 +95,7 @@ const SECCIONES = {
             ["juegos", "stats", "Stats", "📊"],
         ],
         texto: [
+            "`/torneo` — 🏆 el torneo de casino del servidor, cuando un admin organiza uno: te inscribes pagando la entrada (forma el bote) y gana quien más gane en neto en el juego del torneo durante su horario. Premios del bote: 50 % al primero, 30 % al segundo y 20 % al tercero; si no se apuntan al menos 2, se devuelve todo.",
             "`/juegos` — todo lo que es apostar monedas, en pestañas: 🎰 Casino · ⚽ Apuestas · ⚔️ Retos · 📋 Mis jugadas · 📊 Stats.",
             "**Juegos**: blackjack (×2, blackjack ×2,5; con seguro, rendirse y 💡 consejo), tragaperras con jackpot (y tirada automática), ruleta (×2 · docenas ×3 · número ×36), adivinar la carta (hasta ×20), rasca y gana (×2 a ×50) y piedra, papel o tijera (×2).",
             "**Ruleta**: también a **calle** (3 números de una fila del tapete, ×12). **Piedra, papel o tijera** se puede jugar **al mejor de 3** (misma apuesta, gana quien llegue a 2 manos). Tras ganar, 🎲 **Doble o nada**: te juegas la ganancia a cara o cruz (solo una vez por victoria).",

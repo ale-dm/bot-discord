@@ -845,3 +845,13 @@ Issue #523.
 - [ ] Haz lo que pide uno (por ejemplo, `/trabajar` o escribir mensajes): la barra avanza.
 - [ ] Al completarlo, 🎁 Cobrar se activa, paga la recompensa una sola vez y queda «✅ cobrado».
 - [ ] Con el pase de batalla apagado, los encargos siguen avanzando.
+
+## T-31 Probar en Discord los torneos de casino
+
+Issue #525. Con tres cuentas.
+
+- [ ] ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏆 Crear torneo: tragaperras, 50 🪙, empieza en 2 minutos y dura 1 hora. Sale el mensaje en el canal.
+- [ ] Las tres cuentas se inscriben: el bote sube a 150 y el efectivo de cada una baja 50.
+- [ ] Al empezar sale el anuncio; jugando a la tragaperras la clasificación cambia (otros juegos no cuentan).
+- [ ] Al terminar, el bote se reparte 75 / 45 / 30 y se anuncia.
+- [ ] Un torneo con un solo inscrito se cancela al empezar y le devuelve la inscripción.

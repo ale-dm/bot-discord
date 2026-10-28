@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Torneos de casino (migración 095, 2026-10-28)
+
+- **095** crea `torneos` y `torneo_inscritos`. No hay que rellenar nada.
+- Comando nuevo `/torneo`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Torneos de casino») los empieza, los cierra y repinta la clasificación.
+
 ### Encargos semanales (migración 094, 2026-10-28)
 
 - **094** crea `encargos`. Los encargos de cada persona se asignan solos la primera vez que hace algo en la semana o abre la pantalla.

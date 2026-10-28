@@ -720,6 +720,10 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 - Los botones de un panel solo los puede usar quien lo abrió. Las reglas de canales y roles (ACL) se ponen
   sobre `juegos`.
 
+### 🏆 Torneos de casino (#525)
+
+Un admin organiza un torneo en `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → **🏆 Crear torneo**: el canal donde se publica, el juego (uno del casino o todos), la inscripción, cuándo empieza y cuánto dura (de 1 a 72 horas). El bot publica el mensaje del torneo con **🎟️ Inscribirme**: la inscripción se paga con efectivo y forma el bote (la casa no pone nada). Mientras se juega, cuenta la **ganancia neta** (premios menos apuestas) de las partidas de ese juego dentro del horario del torneo, y la clasificación se actualiza sola en el mensaje. Al terminar, el bote se reparte **50 % / 30 % / 20 %** entre los tres primeros: si hay empate, se suman los premios de esas posiciones y se reparten a partes iguales, y las siguientes plazas se corren (con menos de tres jugadores, los porcentajes se reparten en proporción). Si al empezar hay menos de 2 inscritos, o un admin lo cancela antes, se devuelve la inscripción a todos. Hay uno a la vez por servidor; `/torneo` enseña el actual.
+
 ### Juegos
 
 | Juego | Cómo es | Pagos |
@@ -1346,6 +1350,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/torneo` | [Casino](#8-casino) |
 | `/prestamo` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/subastas` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/loteria` | [Economía](#7-economía-banco-tienda-e-inventario) |
