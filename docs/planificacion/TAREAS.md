@@ -874,3 +874,12 @@ Issue #528. Con dos o tres cuentas.
 - [ ] ▶️ Empezar ya solo funciona para quien la abrió; al empezar, el mensaje canta una bola cada 3 segundos.
 - [ ] Al completar un cartón sale «¡Bingo!» y el ganador cobra el bote.
 - [ ] Una sala con un solo jugador se cancela a los 2 minutos y le devuelve la entrada.
+
+## T-34 Probar en Discord la recompensa por invitar
+
+Issue #522. Con una cuenta que invite y otra (de más de 7 días) que entre.
+
+- [ ] Con el permiso Gestionar servidor, la cuenta A crea un enlace y la B entra con él: `/invitaciones` de A enseña a B como ⏳ pendiente.
+- [ ] Entrar con el enlace del servidor (vanity) no cuenta.
+- [ ] Si B sale y vuelve a entrar, no se apunta otra vez.
+- [ ] Pasados 7 días con B en nivel 5, A cobra 500 🪙 y recibe un DM.

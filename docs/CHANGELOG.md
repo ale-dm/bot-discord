@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (recompensa por invitar, #522)
+
+- **📨 Invitaciones**: al entrar alguien, el bot compara los usos de las invitaciones del servidor con la foto anterior para saber cuál usó y quién la creó (la vanity no cuenta). Cuando el invitado lleva 7 días y llega al nivel 5, quien invitó cobra 500 🪙, más 2.500, 5.000 y 15.000 al llegar a 5, 10 y 25 invitados madurados (cron cada hora, con DM; aviso nuevo en `/avisos`). Anti-abuso: una vez por persona y servidor aunque salga y vuelva, sin autoinvitaciones, sin cuentas de Discord de menos de 7 días, sin invitaciones cruzadas y sin ráfagas de más de 10 en 24 h; si el invitado se va antes de madurar, no se paga. `/invitaciones` enseña tus invitados por estado, lo cobrado, el próximo hito y el top 10.
+- Necesita que el bot pueda ver las invitaciones (permiso Gestionar servidor); sin él no se apunta nada y lo dice el log.
+- **Migración 098** (`invitaciones`). **✅ Verificación**: 12 tests nuevos (qué invitación se usó, anti-abuso, maduración con pago único, hitos, invitado que se va, enganche con Discord sin y con permiso, cron con DM y pantalla); `npm run check` en verde.
+
 ## 2026-10-28 (bingo de sala, #528)
 
 - **🎱 /bingo**: abre una sala en el canal; se entra con 🎟️ Entrar pagando la entrada fija del servidor (100 por defecto, en 🎟️ Más economía), que forma el bote. De 2 a 6 jugadores; empieza cuando la abre quien la creó, al llenarse o a los 2 minutos (sin gente, se devuelve todo). Cartones de 5×5 al estilo americano con el centro libre, generados en el servidor; el bot canta una bola cada 3 segundos editando el mensaje y marca solo. Gana quien completa el cartón entero (solo bingo); con varios en la misma bola, se reparte. El orden de las bolas se fija al empezar, así que una partida cortada por un reinicio se termina igual en el cron. 🎫 Mi cartón lo enseña en privado. Cupo de 10 partidas al día por persona y respeta la autoexclusión del casino.

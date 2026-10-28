@@ -1,5 +1,5 @@
 // ⏰ Tareas que miran cada pocos minutos si algo ha vencido: sorteos (#541), depósitos a plazo, roles temporales (#543) y
-// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519), los préstamos entre jugadores (#520), los torneos de casino (#525), las carreras (#535) y el bingo (#528).
+// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519), los préstamos entre jugadores (#520), los torneos de casino (#525), las carreras (#535), el bingo (#528) y las invitaciones (#522).
 // Las programa app/tareas.js al arrancar; cada una va envuelta en runJob y sin solaparse.
 const { cron } = require("../core/tareasRegistro");
 const { runJob } = require("../core/interactionLog");
@@ -14,6 +14,7 @@ const prestamosJugadores = require("../discord/envios/prestamosJugadores");
 const torneos = require("../discord/envios/torneos");
 const carreras = require("../discord/envios/carreras");
 const bingo = require("../discord/envios/bingo");
+const invitaciones = require("../discord/envios/invitaciones");
 
 function programarVencimientos(client) {
     cron.schedule("* * * * *", () => runJob("Sorteos", () => avisarSorteos(client)), { noOverlap: true });
@@ -45,6 +46,8 @@ function programarVencimientos(client) {
     // 🎱 Bingo (#528): empezar las salas que agotan la espera (o cancelarlas) y terminar las que quedaron a medias.
     runJob("Bingo (arranque)", () => bingo.revisar(client));
     cron.schedule("* * * * *", () => runJob("Bingo", () => bingo.revisar(client)), { noOverlap: true });
+    // 📨 Invitaciones (#522): cada hora, los invitados que ya llevan 7 días y tienen el nivel pagan a quien los invitó.
+    cron.schedule("17 * * * *", () => runJob("Invitaciones", () => invitaciones.revisar(client)), { noOverlap: true });
 }
 
 module.exports = { programarVencimientos };
