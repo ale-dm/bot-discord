@@ -88,6 +88,7 @@ function liquidarApuesta(ap, partido, resultado, marcador, resumen, cierre) {
     const gana = mercados.acierta(ap.eleccion, resultado, marcador, ap.linea);
     pase.registrarEnTodos(ap.user_id, "apuesta");
     if (gana) {
+        require("../../encargos").registrarEnTodos(ap.user_id, "apuesta_ganada");
         const premio = Math.round(ap.cantidad * ap.cuota);
         dinero.pagar(ap.user_id, premio);
         dinero.apuntar(ap.user_id, "apuestas", `Apuesta ganada: ${partido.home_team} vs ${partido.away_team}`, premio);

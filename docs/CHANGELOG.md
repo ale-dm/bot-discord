@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (encargos semanales de economía, #523)
+
+- **📋 Encargos** en `/perfil` → 💰 Economía: tres retos por persona y semana (lunes a domingo, hora de Madrid), uno fácil, uno medio y uno difícil (100, 250 y 500 🪙), de un catálogo de acciones positivas: ganar en el casino, acertar apuestas, robar con éxito, trabajar, escribir, estar en voz, jugar retos y completar logros. Nunca retos de gastar dinero. Avanzan solos con la actividad real, no pasan de la meta y se cobran con un botón, una sola vez (con el impuesto de ingresos). Lo que no se completa caduca con la semana, sin penalización.
+- El registro de actividad del pase (`pase.registrarSeguro`) avisa también a los encargos, así que avanzan aunque el pase esté apagado y sin depender de sus tablas; se suman avisos desde robos, trabajo, ganancias del casino y apuestas acertadas.
+- **Migración 094** (`encargos`). **✅ Verificación**: 10 tests nuevos (asignación fija por persona y semana, fin de semana, progreso con tope, cobro único con impuesto, caducidad, enganche con el pase apagado y con el casino, pantalla y botones); `npm run check` en verde.
+
 ## 2026-10-28 (préstamos entre jugadores, #520)
 
 - **🤝 /prestamo**: `proponer usuario cantidad interes dias` ofrece un préstamo (interés de 0 a 50 %, plazo de 1 a 30 días, como mucho el 25 % de tu banco); le llega un DM con ✅ Aceptar y ❌ Rechazar (caduca a las 24 h). Al aceptar, el dinero pasa de banco a banco. `/prestamo ver` enseña los dados y recibidos, para pagar antes (entero o a plazos, del efectivo) o cancelar una propuesta. Al vencer, el bot cobra solo, primero del banco y luego del efectivo; lo que falte queda como deuda y se reintenta cada 10 minutos. Avisos por DM un día antes, al cobrar y al pasar a deuda (aviso nuevo en `/avisos`). Topes: 5 préstamos dados o propuestos por prestamista y 3 abiertos por prestatario. Un préstamo aceptado no se cancela.

@@ -53,6 +53,10 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Encargos semanales (migración 094, 2026-10-28)
+
+- **094** crea `encargos`. Los encargos de cada persona se asignan solos la primera vez que hace algo en la semana o abre la pantalla.
+
 ### Préstamos entre jugadores (migración 093, 2026-10-28)
 
 - **093** crea `prestamos_jugadores`. No hay que rellenar nada.
