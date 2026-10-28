@@ -1,5 +1,5 @@
 // ⏰ Tareas que miran cada pocos minutos si algo ha vencido: sorteos (#541), depósitos a plazo, roles temporales (#543) y
-// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524) y las subastas (#519).
+// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524), las subastas (#519) y los préstamos entre jugadores (#520).
 // Las programa app/tareas.js al arrancar; cada una va envuelta en runJob y sin solaparse.
 const { cron } = require("../core/tareasRegistro");
 const { runJob } = require("../core/interactionLog");
@@ -10,6 +10,7 @@ const elecciones = require("../discord/envios/elecciones");
 const presidencia = require("../discord/envios/presidencia");
 const loteria = require("../discord/envios/loteria");
 const subastas = require("../discord/envios/subastas");
+const prestamosJugadores = require("../discord/envios/prestamosJugadores");
 
 function programarVencimientos(client) {
     cron.schedule("* * * * *", () => runJob("Sorteos", () => avisarSorteos(client)), { noOverlap: true });
@@ -29,6 +30,9 @@ function programarVencimientos(client) {
     // 🔨 Subastas (#519): cada minuto se cierran las vencidas (al arrancar, las que vencieron con el bot apagado).
     runJob("Subastas (arranque)", () => subastas.revisar(client));
     cron.schedule("* * * * *", () => runJob("Subastas", () => subastas.revisar(client)), { noOverlap: true });
+    // 🤝 Préstamos entre jugadores (#520): cobros de los vencidos, reintentos de las deudas, propuestas caducadas y avisos.
+    runJob("Préstamos entre jugadores (arranque)", () => prestamosJugadores.revisar(client));
+    cron.schedule("*/10 * * * *", () => runJob("Préstamos entre jugadores", () => prestamosJugadores.revisar(client)), { noOverlap: true });
 }
 
 module.exports = { programarVencimientos };

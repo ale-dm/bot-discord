@@ -827,3 +827,12 @@ Issue #519. Con tres cuentas: A vende, B y C pujan.
 - [ ] B puja 100 (se le retiene); C puja 105 y le dice que el mínimo es 110; C puja 110 y B recibe un DM con la devolución.
 - [ ] A no puede pujar en lo suyo ni cancelarla ya con pujas.
 - [ ] Al cerrar, C tiene el objeto, A recibe 110 menos 5 de comisión y los dos reciben un DM.
+
+## T-29 Probar en Discord los préstamos entre jugadores
+
+Issue #520. Con dos cuentas: A presta y B recibe.
+
+- [ ] A: `/prestamo proponer` a B con 100, 10 % y 1 día: B recibe un DM con ✅ y ❌.
+- [ ] B acepta en el DM: 100 pasan del banco de A al de B y A recibe un DM.
+- [ ] B: `/prestamo ver` → 💰 Pagar una parte de 50 y después 💸 Pagar todo: el préstamo se cierra y A recibe 110 en el banco.
+- [ ] Otro préstamo sin pagar: al vencer se cobra solo; si B no tiene, queda en deuda y los dos reciben un DM.

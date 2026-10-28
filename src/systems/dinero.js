@@ -286,6 +286,7 @@ module.exports = {
     ingresar,
     sacar,
     transferir,
+    validarCantidad,
     movimientos,
     masRicos,
 };

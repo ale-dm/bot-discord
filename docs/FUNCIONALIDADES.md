@@ -609,6 +609,10 @@ Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** en
 
 `/subastas` complementa el 🏷️ Mercado a precio fijo. Con **➕ Subastar** eliges un objeto de tu inventario (los de protección contra robos no se pueden), el precio de salida, el incremento mínimo entre pujas y si dura **24 o 48 horas**; el objeto queda retenido mientras tanto. Puedes tener 5 subastas abiertas. Se puja con **efectivo** (no con el banco ni con dinero negro): el importe se retiene y, si alguien te supera, se te devuelve al momento con un DM. Una puja en los **2 últimos minutos** alarga el cierre 2 minutos (como mucho 30 en total). Al cerrar, el ganador recibe el objeto y el vendedor el dinero menos un **5 % de comisión** (mínimo 1), que va al bote de impuestos del servidor; sin pujas, el objeto vuelve al vendedor. Quien subasta puede cancelar mientras nadie haya pujado. Pestañas: 🔨 Abiertas, 🙋 Mis pujas (con si vas ganando) y 📦 Mis subastas. Los DM se apagan en `/avisos` → 🔨 Subastas.
 
+### 🤝 Préstamos entre jugadores (#520)
+
+`/prestamo proponer usuario cantidad interes dias` ofrece un préstamo a otra persona: el **interés** (total, de 0 a 50 %) y el **plazo** (de 1 a 30 días) los pones tú, y puedes prestar como mucho el **25 % de tu banco**. Le llega un DM con ✅ Aceptar y ❌ Rechazar; la propuesta caduca a las 24 horas. Al aceptar, el dinero pasa de tu banco al suyo. `/prestamo ver` enseña los préstamos dados y recibidos: quien debe puede pagar antes (todo o una parte, del efectivo) y quien propone puede cancelar mientras no se acepte; un préstamo aceptado no se cancela. Al vencer, el bot cobra solo, primero del banco y luego del efectivo, y lo lleva al banco de quien prestó; lo que no llegue queda como **deuda** y se sigue cobrando cada 10 minutos. Avisos por DM a los dos un día antes del vencimiento, al cobrar y si pasa a deuda (se apagan en `/avisos`). Cada persona puede tener 5 préstamos dados o propuestos y deber 3 a la vez.
+
 ### 🏦 Patrimonio (F-EC-10)
 
 Impuesto periódico sobre lo que se tiene en el banco, con su propio ciclo. Cada persona tiene su ciclo (**7 días** por
@@ -1081,7 +1085,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto`, `/duende`, `/plex`, `/sonidos` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
-| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones, premios de la lotería, subastas) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones, premios de la lotería, subastas, préstamos entre jugadores) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
 | `/autoroles` | 🎭 El menú de roles del servidor: pulsa para ponerte o quitarte uno (✅ los que tienes). En un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Respeta la jerarquía del bot y el modo mantenimiento; la lista la configura un admin (ver [Administración](#12-administración)) |
 | `/favoritos` | ⭐ `seguir equipo:…`, `dejar equipo:…` y `lista`: hasta 10 equipos por persona, con sus próximos partidos y cuotas. Aviso por DM cuando aparece un partido suyo, apagable en `/avisos` (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
@@ -1338,6 +1342,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/prestamo` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/subastas` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/loteria` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/elecciones` | [Utilidades](#️-elecciones-a-la-presidencia) |
