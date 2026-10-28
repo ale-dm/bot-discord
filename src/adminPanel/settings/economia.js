@@ -43,6 +43,8 @@ function buildEconomiaPanel(guildId) {
             .setCustomId("paneladmin_cfg_economia_deposito_edit")
             .setLabel("✏️ Editar depósito")
             .setStyle(ButtonStyle.Primary),
+        // 🎟️ Más economía (#524 y siguientes): la lotería y las funciones nuevas, en su propia sección.
+        new ButtonBuilder().setCustomId("paneladmin_ecox_home").setLabel("🎟️ Más economía").setStyle(ButtonStyle.Success),
     );
     return { embeds: [embed], components: [row, navRow()] };
 }

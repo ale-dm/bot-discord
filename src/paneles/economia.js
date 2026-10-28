@@ -234,23 +234,22 @@ function buildMovimientos(viewerId, targetId, tipo = "todo", pagina = 0) {
         .setDescription(lineas.join("\n").slice(0, 4000) || "No hay movimientos.")
         .setFooter({ text: `Página ${pagina + 1} de ${paginas} · ${total} movimientos` })
         .setColor(0x95a5a6);
-    const selector = new StringSelectMenuBuilder()
-        .setCustomId(`dinero_filtro_${targetId}`)
-        .setPlaceholder("Filtrar por tipo")
-        .addOptions(
-            // Discord admite 25 opciones por selector: "todo" + los tipos, sin el cajón "otro" (sus movimientos salen en Todo).
-            // Si algún día hay más tipos reales, esto necesita paginación.
-            [
-                ["todo", "📋 Todo"],
-                ...Object.entries(dinero.TIPOS)
-                    .filter(([clave]) => clave !== "otro")
-                    .slice(0, 24),
-            ].map(([value, label]) => ({
-                label,
-                value,
-                default: value === tipo,
-            })),
+    // Discord admite 25 opciones por selector: "todo" + los tipos, sin el cajón "otro" (sus movimientos salen en Todo). Los
+    // que no caben en el primero van en un segundo selector («Más tipos»), con el sufijo _2 en el id.
+    const opciones = [["todo", "📋 Todo"], ...Object.entries(dinero.TIPOS).filter(([clave]) => clave !== "otro")].map(([value, label]) => ({
+        label,
+        value,
+        default: value === tipo,
+    }));
+    const selectores = [];
+    for (let i = 0; i < opciones.length; i += 25) {
+        selectores.push(
+            new StringSelectMenuBuilder()
+                .setCustomId(`dinero_filtro_${targetId}${i ? "_2" : ""}`)
+                .setPlaceholder(i ? "Más tipos" : "Filtrar por tipo")
+                .addOptions(opciones.slice(i, i + 25)),
         );
+    }
     const nav = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`dinero_mov_${tipo}_${pagina - 1}_${targetId}`)
@@ -270,7 +269,7 @@ function buildMovimientos(viewerId, targetId, tipo = "todo", pagina = 0) {
             new ButtonBuilder().setCustomId(`dinero_exportar_${tipo}`).setLabel("📤 Exportar").setStyle(ButtonStyle.Secondary),
         );
     }
-    return { content: "", embeds: [embed], components: [new ActionRowBuilder().addComponents(selector), nav] };
+    return { content: "", embeds: [embed], components: [...selectores.map((s) => new ActionRowBuilder().addComponents(s)), nav] };
 }
 
 /** Líneas del ranking de riqueza (efectivo + banco), para la pestaña Rankings. */

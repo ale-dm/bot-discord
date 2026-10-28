@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Lotería semanal (migración 091, 2026-10-28)
+
+- **091** crea `loteria_sorteos` y `loteria_boletos`. El primer sorteo se abre solo.
+- Comando nuevo `/loteria`: hay que volver a registrar los comandos. El canal de anuncios se elige en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía.
+
 ### Listas de películas de Plex (migración 090, 2026-10-28)
 
 - **090** crea `plex_listas` y `plex_lista_items`. No hay que rellenar nada ni registrar comandos: es un botón nuevo de

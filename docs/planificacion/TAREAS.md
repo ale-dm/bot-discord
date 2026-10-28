@@ -809,3 +809,12 @@ Issue #575. Con dos cuentas y la biblioteca de Plex sincronizada.
 - [ ] Elegir un título en el desplegable: ⬆️ y ⬇️ lo mueven, ❌ lo quita y ⭐ Ficha abre su ficha (también sin reseñas).
 - [ ] 🔒 Hacer privada: la otra cuenta no la ve en 🌍 Públicas; 🌍 Hacer pública, sí, pero sin botones de dueño.
 - [ ] ✏️ Editar cambia título y descripción; 🗑️ Borrar pide confirmación y la borra.
+
+## T-27 Probar en Discord la lotería semanal
+
+Issue #524.
+
+- [ ] ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → ✏️ Lotería: elige canal, precio y tope.
+- [ ] `/loteria` → 🎲 Boleto al azar cobra el precio del efectivo y sube el bote; ✍️ Elegir números con «20 3 12 7» guarda «3 7 12 20»; números mal escritos avisan sin cobrar.
+- [ ] Al llegar al tope, los botones de comprar se desactivan.
+- [ ] El domingo a las 21:00 (o al arrancar si estaba apagado) sale el anuncio en el canal; si nadie acierta, el bote pasa al siguiente sorteo.

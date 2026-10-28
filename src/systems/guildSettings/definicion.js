@@ -336,4 +336,15 @@ for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_ELECCIONES)) {
     KEY_TYPES[clave] = tipo;
 }
 
+// 🎟️ Más economía (#524 y siguientes): lotería semanal (precio del boleto, tope por persona y canal de los anuncios).
+const AJUSTES_ECONOMIA_EXTRA = {
+    "loteria.canal": ["", "string"],
+    "loteria.precio": [100, "number"],
+    "loteria.max_boletos": [10, "number"],
+};
+for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_ECONOMIA_EXTRA)) {
+    DEFAULT_FLAT[clave] = valor;
+    KEY_TYPES[clave] = tipo;
+}
+
 module.exports = { DEFAULT_FLAT, KEY_TYPES, JUEGOS_CASINO };
