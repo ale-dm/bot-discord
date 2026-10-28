@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (listas de películas de Plex, #575)
+
+- **📚 Listas** en `/plex` → ⭐ Reseñas: listas ordenadas («Top 10 de Nolan»), públicas o privadas, con títulos que hay en Plex (películas y series). Buscar sin tildes ni mayúsculas, añadir al final, subir, bajar, quitar y abrir la ⭐ ficha de cada título, aunque no tenga reseñas. Editar, cambiar la visibilidad y borrar (con confirmación) solo el dueño. Hasta 10 listas por persona y 50 títulos por lista. Cierra la épica de reseñas de Plex (#536).
+- **Migración 090** (`plex_listas`, `plex_lista_items`). **✅ Verificación**: 17 tests nuevos (búsqueda, permisos, privacidad, orden, topes y pantallas); `npm run check` en verde.
+
 ## 2026-10-26 (partido político y eslogan en las elecciones)
 
 - **🎗️ Partido y eslogan**: cada finalista los elige en ✍️ Mi programa junto con su programa (partido de 2 a 40 caracteres, sin repetir el de otro candidato aunque cambien mayúsculas; eslogan de 3 a 100). Salen en el panel de las elecciones, en la papeleta al votar, en los programas que llegan por DM, en los resultados y en el anuncio del nuevo presidente.
