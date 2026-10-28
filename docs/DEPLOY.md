@@ -53,6 +53,11 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Casa de subastas (migración 092, 2026-10-28)
+
+- **092** crea `subastas` y `subasta_pujas`. No hay que rellenar nada.
+- Comando nuevo `/subastas`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Subastas») cierra las vencidas.
+
 ### Lotería semanal (migración 091, 2026-10-28)
 
 - **091** crea `loteria_sorteos` y `loteria_boletos`. El primer sorteo se abre solo.

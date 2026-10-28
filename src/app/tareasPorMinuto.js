@@ -1,5 +1,5 @@
 // ⏰ Tareas que miran cada pocos minutos si algo ha vencido: sorteos (#541), depósitos a plazo, roles temporales (#543) y
-// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524).
+// las fases de las elecciones, los castigos del presidente y los sorteos de la lotería (#524) y las subastas (#519).
 // Las programa app/tareas.js al arrancar; cada una va envuelta en runJob y sin solaparse.
 const { cron } = require("../core/tareasRegistro");
 const { runJob } = require("../core/interactionLog");
@@ -9,6 +9,7 @@ const rolesTemporales = require("../discord/envios/rolesTemporales");
 const elecciones = require("../discord/envios/elecciones");
 const presidencia = require("../discord/envios/presidencia");
 const loteria = require("../discord/envios/loteria");
+const subastas = require("../discord/envios/subastas");
 
 function programarVencimientos(client) {
     cron.schedule("* * * * *", () => runJob("Sorteos", () => avisarSorteos(client)), { noOverlap: true });
@@ -25,6 +26,9 @@ function programarVencimientos(client) {
     // 🎟️ Lotería (#524): cada 5 minutos se celebran los sorteos cuya hora ha llegado; al arrancar, los que pilló el bot apagado.
     runJob("Lotería (arranque)", () => loteria.revisar(client));
     cron.schedule("*/5 * * * *", () => runJob("Lotería", () => loteria.revisar(client)), { noOverlap: true });
+    // 🔨 Subastas (#519): cada minuto se cierran las vencidas (al arrancar, las que vencieron con el bot apagado).
+    runJob("Subastas (arranque)", () => subastas.revisar(client));
+    cron.schedule("* * * * *", () => runJob("Subastas", () => subastas.revisar(client)), { noOverlap: true });
 }
 
 module.exports = { programarVencimientos };
