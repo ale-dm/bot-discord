@@ -1,8 +1,9 @@
-// ⭐ Pantalla de reseñas de /plex (#567): las listas (mías, últimas, mejores), la ficha de un título y el botón de la
-// 🎲 Ruleta (#576, su pantalla en paneles/plexRuleta.js). Solo payloads.
+// ⭐ Pantalla de reseñas de /plex (#567): las listas (mías, últimas, mejores), la ficha de un título y los botones de la
+// 🎲 Ruleta (#576, su pantalla en paneles/plexRuleta.js) y de las 📚 Listas (#575, en paneles/plexListas.js). Solo payloads.
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const plexResenas = require("../systems/plexResenas");
 const guildSettings = require("../systems/guildSettings");
+const plexListas = require("../systems/plexListas");
 
 const COLOR = 0xe5a00d;
 const POR_PAGINA = 5;
@@ -86,9 +87,10 @@ function pantallaResenas(guildId, userId, vista = "mias", pagina = 0, aviso = ""
                 .setDisabled(p >= total - 1),
         );
     }
-    // 🎲 Ruleta (#576): la primera fila ya está llena, así que va aquí (como mucho 4 botones en esta fila).
+    // 🎲 Ruleta (#576) y 📚 Listas (#575): la primera fila ya está llena, así que van aquí (como mucho 5 botones en esta fila).
     nav.push(
         new ButtonBuilder().setCustomId("plex_ruleta").setLabel("🎲 Ruleta").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("plex_listas").setLabel("📚 Listas").setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId("plex_resenas_inicio").setLabel("⬅️ Plex").setStyle(ButtonStyle.Secondary),
     );
     filas.push(new ActionRowBuilder().addComponents(nav));
@@ -100,8 +102,10 @@ function pantallaTitulo(guildId, userId, clave, aviso = "") {
     const t = plexResenas.titulo(guildId, clave);
     const mia = plexResenas.de(guildId, userId, clave);
     const primero = t.resenas[0];
-    const titulo = mia?.titulo || primero?.titulo || clave;
-    const anio = mia?.anio || primero?.anio || null;
+    // Sin reseñas (por ejemplo, abierta desde una 📚 lista), el título y el año salen de Plex.
+    const dePlex = mia || primero ? null : plexListas.enPlex(guildId, clave);
+    const titulo = mia?.titulo || primero?.titulo || dePlex?.titulo || clave;
+    const anio = mia?.anio || primero?.anio || dePlex?.anio || null;
     const hist = t.histograma
         .filter((h) => h.votos > 0)
         .map((h) => `${plexResenas.estrellasTexto(h.nota)} ${h.votos}`)
