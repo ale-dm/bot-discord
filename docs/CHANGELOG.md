@@ -2,6 +2,12 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (casa de subastas de objetos, #519)
+
+- **🔨 /subastas**: se subasta un objeto transferible del inventario (no los de protección) con precio de salida, incremento mínimo y 24 o 48 horas; el objeto queda retenido. Se puja con efectivo, que se retiene y se devuelve al momento a quien queda superado. Anti-sniping: una puja en los 2 últimos minutos alarga el cierre 2 minutos, como mucho 30. Al cerrar, el objeto va al ganador y el dinero al vendedor menos un 5 % de comisión (mínimo 1), que va al bote de impuestos; sin pujas, vuelve al vendedor. Se cancela mientras nadie haya pujado. Hasta 5 abiertas por persona.
+- Pantallas de abiertas, mis pujas y mis subastas; DM al ser superado, al ganar y al vender (aviso nuevo en `/avisos`). Cron cada minuto para cerrarlas.
+- **Migración 092** (`subastas`, `subasta_pujas`). **✅ Verificación**: 13 tests nuevos (crear y sus validaciones, retención y devolución, puja mínima, propia y sin efectivo, anti-sniping con tope, objetos únicos, cancelar, cerrar con ganador y comisión, desierta, doble cierre, cron con DM y pantallas); `npm run check` en verde.
+
 ## 2026-10-28 (lotería semanal, #524)
 
 - **🎟️ /loteria**: boletos de 4 números distintos del 1 al 20 (al azar o eligiéndolos), pagados solo con efectivo y con un tope por persona (100 🪙 y 10 boletos por defecto). Sorteo cada domingo a las 21:00 de Madrid: quien acierta los 4 se lleva el bote (a partes iguales; lo que no se puede repartir pasa al siguiente) y, si nadie acierta, el bote se acumula. Al sortear, si se vendió algún boleto, se suma el 10 % del bote de impuestos (tope 100.000). Si el bot estaba apagado, se sortea al arrancar y se anuncia como atrasado. Anuncio en el canal elegido y DM al ganador (aviso nuevo en `/avisos`).

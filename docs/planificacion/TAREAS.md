@@ -818,3 +818,12 @@ Issue #524.
 - [ ] `/loteria` → 🎲 Boleto al azar cobra el precio del efectivo y sube el bote; ✍️ Elegir números con «20 3 12 7» guarda «3 7 12 20»; números mal escritos avisan sin cobrar.
 - [ ] Al llegar al tope, los botones de comprar se desactivan.
 - [ ] El domingo a las 21:00 (o al arrancar si estaba apagado) sale el anuncio en el canal; si nadie acierta, el bote pasa al siguiente sorteo.
+
+## T-28 Probar en Discord las subastas
+
+Issue #519. Con tres cuentas: A vende, B y C pujan.
+
+- [ ] A: `/subastas` → ➕ Subastar → elige un objeto, precio 100, incremento 10, 24 h: desaparece de su inventario y sale en 🔨 Abiertas.
+- [ ] B puja 100 (se le retiene); C puja 105 y le dice que el mínimo es 110; C puja 110 y B recibe un DM con la devolución.
+- [ ] A no puede pujar en lo suyo ni cancelarla ya con pujas.
+- [ ] Al cerrar, C tiene el objeto, A recibe 110 menos 5 de comisión y los dos reciben un DM.
