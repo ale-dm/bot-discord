@@ -728,6 +728,10 @@ Un admin organiza un torneo en `/paneladmin` → ⚙️ Config Global → 🛡�
 
 Si un admin elige el canal de carreras (⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras), cada **15 minutos** se corre una carrera de **6 caballos** en ese canal. Cada caballo tiene su **cuota fija**, calculada con su probabilidad de ganar y un 10 % de margen para la casa. Con los botones del mensaje apuestas a uno (una apuesta por carrera, de 10 🪙 al tope del servidor, 1.000 por defecto); se paga como en el casino (primero el dinero negro) y respeta la autoexclusión y el límite de pérdidas. Dos minutos antes de la salida hay un aviso; a la hora, el ganador lo decide el bot con esas probabilidades, la carrera se anima en el mensaje y quien acertó cobra lo apostado × la cuota. `/carreras` enseña la próxima carrera y quién ganó las últimas.
 
+### 🎱 Bingo de sala (#528)
+
+`/bingo` abre una sala en el canal y quien la abre entra el primero. Los demás entran con **🎟️ Entrar**, pagando la entrada fija del servidor (100 🪙 por defecto; la cambia un admin en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía), que forma el bote. Caben de 2 a 6 jugadores. Empieza cuando quien la abrió pulsa **▶️ Empezar ya** (con al menos 2), cuando se llena o a los 2 minutos; si para entonces no hay 2 jugadores, se devuelve la entrada. Cada jugador recibe un **cartón de 5×5** (columnas B, I, N, G y O, con el centro libre) que ve con **🎫 Mi cartón**. El bot canta una bola cada 3 segundos y marca solo: gana quien completa el **cartón entero** y se lleva el bote (si lo completan varios con la misma bola, se reparte). Se pueden jugar 10 partidas al día y respeta la autoexclusión del casino.
+
 ### Juegos
 
 | Juego | Cómo es | Pagos |
@@ -1354,6 +1358,7 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/bingo` | [Casino](#8-casino) |
 | `/carreras` | [Casino](#8-casino) |
 | `/torneo` | [Casino](#8-casino) |
 | `/prestamo` | [Economía](#7-economía-banco-tienda-e-inventario) |

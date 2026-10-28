@@ -344,6 +344,8 @@ const AJUSTES_ECONOMIA_EXTRA = {
     // 🏇 Carreras (#535): sin canal, no hay carreras.
     "carreras.canal": ["", "string"],
     "carreras.max_apuesta": [1000, "number"],
+    // 🎱 Bingo (#528): la entrada fija de cada sala.
+    "bingo.entrada": [100, "number"],
 };
 for (const [clave, [valor, tipo]] of Object.entries(AJUSTES_ECONOMIA_EXTRA)) {
     DEFAULT_FLAT[clave] = valor;

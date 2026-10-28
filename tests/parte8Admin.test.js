@@ -137,7 +137,7 @@ test("sin ser admin no se puede usar", async () => {
     expect(i.update).not.toHaveBeenCalled();
 });
 
-test("quedan 41 comandos, sin los de admin sueltos", () => {
+test("quedan 42 comandos, sin los de admin sueltos", () => {
     const nombres = [];
     const walk = (d) =>
         fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
@@ -153,6 +153,7 @@ test("quedan 41 comandos, sin los de admin sueltos", () => {
             "avisar",
             "avisos",
             "ayuda",
+            "bingo",
             "bola8",
             "calendario",
             "carreras",

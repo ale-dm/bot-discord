@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (bingo de sala, #528)
+
+- **🎱 /bingo**: abre una sala en el canal; se entra con 🎟️ Entrar pagando la entrada fija del servidor (100 por defecto, en 🎟️ Más economía), que forma el bote. De 2 a 6 jugadores; empieza cuando la abre quien la creó, al llenarse o a los 2 minutos (sin gente, se devuelve todo). Cartones de 5×5 al estilo americano con el centro libre, generados en el servidor; el bot canta una bola cada 3 segundos editando el mensaje y marca solo. Gana quien completa el cartón entero (solo bingo); con varios en la misma bola, se reparte. El orden de las bolas se fija al empezar, así que una partida cortada por un reinicio se termina igual en el cron. 🎫 Mi cartón lo enseña en privado. Cupo de 10 partidas al día por persona y respeta la autoexclusión del casino.
+- **Migración 097** (`bingo_partidas`, `bingo_jugadores`). **✅ Verificación**: 13 tests nuevos (cartones, entrar y sus límites, cupo diario, empezar y cancelar con devolución, bola del bingo y pago único, reparto entre varios, canto, partidas huérfanas y pantallas); `npm run check` en verde.
+
 ## 2026-10-28 (carreras con cuotas, #535)
 
 - **🏇 Carreras**: con un canal elegido en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras, cada 15 minutos (en punto, y cuarto, y media y menos cuarto) corren 6 caballos. Cada uno tiene un peso al azar y una cuota fija sacada de su probabilidad con un 10 % de margen para la casa. Se apuesta con los botones del mensaje (una apuesta por persona y carrera, de 10 al tope del servidor, 1.000 por defecto; primero el dinero negro, como en el casino, y respetando la autoexclusión y el límite de pérdidas). Aviso 2 minutos antes; a la hora, el servidor decide el ganador con los pesos, paga lo apostado × la cuota y la carrera se anima editando el mensaje 5 veces cada 3 segundos. Una carrera que pilló el bot apagado se resuelve al arrancar, sin animación. `/carreras` enseña la próxima y las últimas.
