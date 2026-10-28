@@ -2,6 +2,56 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-28 (póker Texas hold'em, #531)
+
+- **🃏 /poker**: mesas públicas de Texas hold'em entre jugadores (sin bots), de 2 a 6, con ciegas fijas de 50/100 y sin rake. `/poker abrir [compra]` abre la mesa en el canal; te sientas comprando de 1.000 a 10.000 fichas con efectivo y al levantarte (entre manos) las cobras: el dinero solo entra y sale ahí. Preflop, flop, turn y river con retirarse, pasar, igualar, subir (formulario) y all-in; botes laterales con los all-in y showdown con la mejor mano de 5 entre 7 (empates y kickers; la ficha que sobra va al primero tras el botón). 45 segundos por turno: al agotarse, pasa si puede y si no se retira; tres seguidos te dejan sentado fuera (🔙 para volver). Las manos se reparten solas mientras haya 2 con fichas. Si la mesa no se llena en 2 minutos, o pasan 10 sin manos, se cierra devolviendo las fichas; si un reinicio corta una mano, al arrancar se devuelven las fichas de antes de esa mano. `/poker estadisticas` con manos jugadas y ganadas.
+- **Migración 099** (`poker_mesas`, `poker_asientos`, `poker_stats`). **✅ Verificación**: 33 tests nuevos (evaluador: cada categoría, desempates, kickers, rueda, empates y mejor de 7; la mano: ciegas y turnos a 2 y a 3, acciones válidas, retirada, resubida, showdown, botes laterales, bote dividido y tiempo agotado; las mesas: sentarse y levantarse, fichas y estadísticas, tres tiempos, reinicio y cierre; Discord: botones y turno por tiempo); `npm run check` en verde.
+
+## 2026-10-28 (recompensa por invitar, #522)
+
+- **📨 Invitaciones**: al entrar alguien, el bot compara los usos de las invitaciones del servidor con la foto anterior para saber cuál usó y quién la creó (la vanity no cuenta). Cuando el invitado lleva 7 días y llega al nivel 5, quien invitó cobra 500 🪙, más 2.500, 5.000 y 15.000 al llegar a 5, 10 y 25 invitados madurados (cron cada hora, con DM; aviso nuevo en `/avisos`). Anti-abuso: una vez por persona y servidor aunque salga y vuelva, sin autoinvitaciones, sin cuentas de Discord de menos de 7 días, sin invitaciones cruzadas y sin ráfagas de más de 10 en 24 h; si el invitado se va antes de madurar, no se paga. `/invitaciones` enseña tus invitados por estado, lo cobrado, el próximo hito y el top 10.
+- Necesita que el bot pueda ver las invitaciones (permiso Gestionar servidor); sin él no se apunta nada y lo dice el log.
+- **Migración 098** (`invitaciones`). **✅ Verificación**: 12 tests nuevos (qué invitación se usó, anti-abuso, maduración con pago único, hitos, invitado que se va, enganche con Discord sin y con permiso, cron con DM y pantalla); `npm run check` en verde.
+
+## 2026-10-28 (bingo de sala, #528)
+
+- **🎱 /bingo**: abre una sala en el canal; se entra con 🎟️ Entrar pagando la entrada fija del servidor (100 por defecto, en 🎟️ Más economía), que forma el bote. De 2 a 6 jugadores; empieza cuando la abre quien la creó, al llenarse o a los 2 minutos (sin gente, se devuelve todo). Cartones de 5×5 al estilo americano con el centro libre, generados en el servidor; el bot canta una bola cada 3 segundos editando el mensaje y marca solo. Gana quien completa el cartón entero (solo bingo); con varios en la misma bola, se reparte. El orden de las bolas se fija al empezar, así que una partida cortada por un reinicio se termina igual en el cron. 🎫 Mi cartón lo enseña en privado. Cupo de 10 partidas al día por persona y respeta la autoexclusión del casino.
+- **Migración 097** (`bingo_partidas`, `bingo_jugadores`). **✅ Verificación**: 13 tests nuevos (cartones, entrar y sus límites, cupo diario, empezar y cancelar con devolución, bola del bingo y pago único, reparto entre varios, canto, partidas huérfanas y pantallas); `npm run check` en verde.
+
+## 2026-10-28 (carreras con cuotas, #535)
+
+- **🏇 Carreras**: con un canal elegido en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras, cada 15 minutos (en punto, y cuarto, y media y menos cuarto) corren 6 caballos. Cada uno tiene un peso al azar y una cuota fija sacada de su probabilidad con un 10 % de margen para la casa. Se apuesta con los botones del mensaje (una apuesta por persona y carrera, de 10 al tope del servidor, 1.000 por defecto; primero el dinero negro, como en el casino, y respetando la autoexclusión y el límite de pérdidas). Aviso 2 minutos antes; a la hora, el servidor decide el ganador con los pesos, paga lo apostado × la cuota y la carrera se anima editando el mensaje 5 veces cada 3 segundos. Una carrera que pilló el bot apagado se resuelve al arrancar, sin animación. `/carreras` enseña la próxima y las últimas.
+- **Migración 096** (`carreras`, `carrera_apuestas`). **✅ Verificación**: 12 tests nuevos (cuotas y margen, ganador ponderado, horario, apostar con sus límites y la autoexclusión, pago único, carrera sin apuestas, cron con aviso y animación, sin animación tras un apagado, fotogramas y formulario); `npm run check` en verde.
+
+## 2026-10-28 (torneos de casino, #525)
+
+- **🏆 Torneos de casino**: un admin crea uno en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía (canal, juego o todos los del casino, inscripción, cuándo empieza y de 1 a 72 horas). El bot publica el mensaje con 🎟️ Inscribirme; la inscripción (del efectivo) forma el bote, sin aportación de la casa. Durante el torneo cuenta la ganancia neta de las partidas de ese juego en esa ventana (sacada de la tabla del casino), con la clasificación en directo. Al terminar se reparte 50/30/20; los empates suman sus premios y los reparten, y las plazas siguientes se corren. Con menos de 2 inscritos, o si un admin lo cancela antes de empezar, se devuelve todo. Uno a la vez por servidor. `/torneo` enseña el actual.
+- **Migración 095** (`torneos`, `torneo_inscritos`). **✅ Verificación**: 11 tests nuevos (validaciones, inscripción única, clasificación por juego y ventana, reparto con empates y con dos jugadores, cancelaciones con devolución, pago único al terminar, cron, botón y formulario del panel admin); `npm run check` en verde.
+
+## 2026-10-28 (encargos semanales de economía, #523)
+
+- **📋 Encargos** en `/perfil` → 💰 Economía: tres retos por persona y semana (lunes a domingo, hora de Madrid), uno fácil, uno medio y uno difícil (100, 250 y 500 🪙), de un catálogo de acciones positivas: ganar en el casino, acertar apuestas, robar con éxito, trabajar, escribir, estar en voz, jugar retos y completar logros. Nunca retos de gastar dinero. Avanzan solos con la actividad real, no pasan de la meta y se cobran con un botón, una sola vez (con el impuesto de ingresos). Lo que no se completa caduca con la semana, sin penalización.
+- El registro de actividad del pase (`pase.registrarSeguro`) avisa también a los encargos, así que avanzan aunque el pase esté apagado y sin depender de sus tablas; se suman avisos desde robos, trabajo, ganancias del casino y apuestas acertadas.
+- **Migración 094** (`encargos`). **✅ Verificación**: 10 tests nuevos (asignación fija por persona y semana, fin de semana, progreso con tope, cobro único con impuesto, caducidad, enganche con el pase apagado y con el casino, pantalla y botones); `npm run check` en verde.
+
+## 2026-10-28 (préstamos entre jugadores, #520)
+
+- **🤝 /prestamo**: `proponer usuario cantidad interes dias` ofrece un préstamo (interés de 0 a 50 %, plazo de 1 a 30 días, como mucho el 25 % de tu banco); le llega un DM con ✅ Aceptar y ❌ Rechazar (caduca a las 24 h). Al aceptar, el dinero pasa de banco a banco. `/prestamo ver` enseña los dados y recibidos, para pagar antes (entero o a plazos, del efectivo) o cancelar una propuesta. Al vencer, el bot cobra solo, primero del banco y luego del efectivo; lo que falte queda como deuda y se reintenta cada 10 minutos. Avisos por DM un día antes, al cobrar y al pasar a deuda (aviso nuevo en `/avisos`). Topes: 5 préstamos dados o propuestos por prestamista y 3 abiertos por prestatario. Un préstamo aceptado no se cancela.
+- **Migración 093** (`prestamos_jugadores`). **✅ Verificación**: 13 tests nuevos (límites, aceptar una sola vez, caducidad, rechazar y cancelar, pagar a plazos, cobro con deuda y reintento, avisos, cron con DM, comando y botones); `npm run check` en verde.
+
+## 2026-10-28 (casa de subastas de objetos, #519)
+
+- **🔨 /subastas**: se subasta un objeto transferible del inventario (no los de protección) con precio de salida, incremento mínimo y 24 o 48 horas; el objeto queda retenido. Se puja con efectivo, que se retiene y se devuelve al momento a quien queda superado. Anti-sniping: una puja en los 2 últimos minutos alarga el cierre 2 minutos, como mucho 30. Al cerrar, el objeto va al ganador y el dinero al vendedor menos un 5 % de comisión (mínimo 1), que va al bote de impuestos; sin pujas, vuelve al vendedor. Se cancela mientras nadie haya pujado. Hasta 5 abiertas por persona.
+- Pantallas de abiertas, mis pujas y mis subastas; DM al ser superado, al ganar y al vender (aviso nuevo en `/avisos`). Cron cada minuto para cerrarlas.
+- **Migración 092** (`subastas`, `subasta_pujas`). **✅ Verificación**: 13 tests nuevos (crear y sus validaciones, retención y devolución, puja mínima, propia y sin efectivo, anti-sniping con tope, objetos únicos, cancelar, cerrar con ganador y comisión, desierta, doble cierre, cron con DM y pantallas); `npm run check` en verde.
+
+## 2026-10-28 (lotería semanal, #524)
+
+- **🎟️ /loteria**: boletos de 4 números distintos del 1 al 20 (al azar o eligiéndolos), pagados solo con efectivo y con un tope por persona (100 🪙 y 10 boletos por defecto). Sorteo cada domingo a las 21:00 de Madrid: quien acierta los 4 se lleva el bote (a partes iguales; lo que no se puede repartir pasa al siguiente) y, si nadie acierta, el bote se acumula. Al sortear, si se vendió algún boleto, se suma el 10 % del bote de impuestos (tope 100.000). Si el bot estaba apagado, se sortea al arrancar y se anuncia como atrasado. Anuncio en el canal elegido y DM al ganador (aviso nuevo en `/avisos`).
+- **Panel admin** ⚙️ Config Global → 🛡️ Economía → **🎟️ Más economía**: sección nueva para los ajustes de estas funciones; de momento, la lotería (canal, precio y tope).
+- Tipo nuevo de movimiento **🎟️ Lotería**; el filtro de 📜 Movimientos pasa a dos desplegables al superar los 25 tipos.
+- **Migración 091** (`loteria_sorteos`, `loteria_boletos`). **✅ Verificación**: 14 tests nuevos (fecha del sorteo en invierno y verano, números, compra con efectivo y tope, uno y varios acertantes, bote acumulado, aportación de impuestos con tope, doble sorteo, cron con anuncio y DM, panel y formulario); `npm run check` en verde.
+
 ## 2026-10-28 (listas de películas de Plex, #575)
 
 - **📚 Listas** en `/plex` → ⭐ Reseñas: listas ordenadas («Top 10 de Nolan»), públicas o privadas, con títulos que hay en Plex (películas y series). Buscar sin tildes ni mayúsculas, añadir al final, subir, bajar, quitar y abrir la ⭐ ficha de cada título, aunque no tenga reseñas. Editar, cambiar la visibilidad y borrar (con confirmación) solo el dueño. Hasta 10 listas por persona y 50 títulos por lista. Cierra la épica de reseñas de Plex (#536).

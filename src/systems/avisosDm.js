@@ -78,6 +78,20 @@ const TIPOS = [
     { id: "retos", emoji: "⚔️", nombre: "Retos", detalle: "Te toca jugar o un reto tuyo está a punto de caducar" },
     { id: "cooldown", emoji: "🔔", nombre: "Cooldowns", detalle: "Cuando /trabajar o /robar vuelven a estar disponibles" },
     { id: "sugerencia", emoji: "💡", nombre: "Sugerencias", detalle: "Cuando un admin acepta o descarta una idea tuya" },
+    {
+        id: "prestamo_jugador",
+        emoji: "🤝",
+        nombre: "Préstamos entre jugadores",
+        detalle: "Propuestas, respuestas, vencimientos y cobros de préstamos con otras personas",
+    },
+    {
+        id: "invitaciones",
+        emoji: "📨",
+        nombre: "Invitaciones",
+        detalle: "Cuando alguien a quien invitaste se queda y cobras la recompensa",
+    },
+    { id: "subastas", emoji: "🔨", nombre: "Subastas", detalle: "Si te superan en una puja, ganas una subasta o se cierra una tuya" },
+    { id: "loteria", emoji: "🎟️", nombre: "Lotería", detalle: "Si uno de tus boletos gana el sorteo del domingo" },
     { id: "elecciones", emoji: "🗳️", nombre: "Elecciones", detalle: "Los programas de los candidatos cuando empiezan las generales" },
 ];
 

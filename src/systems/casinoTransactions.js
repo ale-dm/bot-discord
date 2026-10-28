@@ -82,6 +82,8 @@ function insertarCasino(userId, juego, apuesta, resultado, detalleObj) {
         ).run(userId, juego, new Date().toISOString(), apuesta, resultado, JSON.stringify(detalleObj));
         log.info(`Partida registrada: ${userId} - ${juego} - Apuesta: ${apuesta} - Resultado: ${resultado}`);
         pase.registrarEnTodos(userId, "casino");
+        // 📋 Encargos (#523): solo cuenta lo ganado, nunca lo apostado.
+        if (resultado > 0) require("./encargos").registrarEnTodos(userId, "casino_gana", resultado);
     } catch (error) {
         log.error(`Error insertando en casino:`, error);
         throw error;

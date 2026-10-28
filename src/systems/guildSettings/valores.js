@@ -226,18 +226,25 @@ const nodoCalendario = (flat) => ({
     ),
 });
 
-/** 🗳️ Elecciones a la presidencia: `elecciones.*` sin el prefijo. */
-const nodoElecciones = (flat) => ({
-    elecciones: Object.fromEntries(
+/** Las claves `<area>.*` sin el prefijo, como un nodo `{ <area>: { … } }`. */
+const nodoPlano = (flat, area) => ({
+    [area]: Object.fromEntries(
         Object.entries(flat)
-            .filter(([clave]) => clave.startsWith("elecciones."))
-            .map(([clave, valor]) => [clave.slice("elecciones.".length), valor]),
+            .filter(([clave]) => clave.startsWith(`${area}.`))
+            .map(([clave, valor]) => [clave.slice(area.length + 1), valor]),
     ),
 });
+
+/** 🗳️ Elecciones a la presidencia: `elecciones.*` sin el prefijo. */
+const nodoElecciones = (flat) => nodoPlano(flat, "elecciones");
+/** 🎟️ Más economía (#524 y siguientes): cada área nueva, sin su prefijo. */
+const AREAS_ECONOMIA_EXTRA = ["loteria", "carreras", "bingo"];
+const nodoEconomiaExtra = (flat) => Object.assign({}, ...AREAS_ECONOMIA_EXTRA.map((area) => nodoPlano(flat, area)));
 
 function flattenToNested(flat) {
     return {
         ...nodoElecciones(flat),
+        ...nodoEconomiaExtra(flat),
         ...nodoCalendario(flat),
         ...nodoModeracion(flat),
         duende: nodoDuende(flat),

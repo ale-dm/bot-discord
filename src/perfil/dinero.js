@@ -260,7 +260,7 @@ module.exports = {
         }
         // dinero_filtro_{de quién}
         if (interaction.customId.startsWith("dinero_filtro_")) {
-            const targetId = interaction.customId.replace("dinero_filtro_", "") || userId;
+            const targetId = interaction.customId.replace("dinero_filtro_", "").replace(/_2$/, "") || userId;
             if (!privacidad.puedeVer(userId, targetId)) {
                 return interaction.reply({ content: "🙈 Esa persona ha ocultado su economía.", flags: MessageFlags.Ephemeral });
             }

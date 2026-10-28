@@ -53,6 +53,51 @@ Opcional: en el stack, **GitOps updates** → Polling (p. ej. cada 5 min) despli
 Al arrancar se aplican solas las **migraciones** de BD pendientes (`src/core/migrations/`); en
 `docker logs` / `logs/app-log.txt` aparece cada una como `[Migraciones] Aplicada NNN_...`.
 
+### Póker Texas hold'em (migración 099, 2026-10-28)
+
+- **099** crea `poker_mesas`, `poker_asientos` y `poker_stats`.
+- Comando nuevo `/poker`: hay que volver a registrar los comandos. Al arrancar se cierran las mesas que dejó abiertas el reinicio, devolviendo las fichas; una tarea cada minuto («Póker») empieza o cierra las mesas en espera.
+
+### Recompensa por invitar (migración 098, 2026-10-28)
+
+- **098** crea `invitaciones`. Solo cuentan las entradas desde el despliegue.
+- **Permiso**: el bot necesita **Gestionar servidor** para ver las invitaciones; sin él, no se apunta nada (lo dice el log una vez por servidor).
+- Comando nuevo `/invitaciones`: hay que volver a registrar los comandos. Tarea nueva cada hora («Invitaciones»).
+
+### Bingo de sala (migración 097, 2026-10-28)
+
+- **097** crea `bingo_partidas` y `bingo_jugadores`. No hay que rellenar nada.
+- Comando nuevo `/bingo`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Bingo») empieza o cancela las salas que agotan la espera y termina las que cortó un reinicio.
+
+### Carreras con cuotas (migración 096, 2026-10-28)
+
+- **096** crea `carreras` y `carrera_apuestas`. Están apagadas hasta que un admin elige su canal.
+- Comando nuevo `/carreras`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Carreras») las abre y las corre.
+
+### Torneos de casino (migración 095, 2026-10-28)
+
+- **095** crea `torneos` y `torneo_inscritos`. No hay que rellenar nada.
+- Comando nuevo `/torneo`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Torneos de casino») los empieza, los cierra y repinta la clasificación.
+
+### Encargos semanales (migración 094, 2026-10-28)
+
+- **094** crea `encargos`. Los encargos de cada persona se asignan solos la primera vez que hace algo en la semana o abre la pantalla.
+
+### Préstamos entre jugadores (migración 093, 2026-10-28)
+
+- **093** crea `prestamos_jugadores`. No hay que rellenar nada.
+- Comando nuevo `/prestamo`: hay que volver a registrar los comandos. Una tarea nueva cada 10 minutos cobra los vencidos.
+
+### Casa de subastas (migración 092, 2026-10-28)
+
+- **092** crea `subastas` y `subasta_pujas`. No hay que rellenar nada.
+- Comando nuevo `/subastas`: hay que volver a registrar los comandos. Una tarea nueva cada minuto («Subastas») cierra las vencidas.
+
+### Lotería semanal (migración 091, 2026-10-28)
+
+- **091** crea `loteria_sorteos` y `loteria_boletos`. El primer sorteo se abre solo.
+- Comando nuevo `/loteria`: hay que volver a registrar los comandos. El canal de anuncios se elige en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía.
+
 ### Listas de películas de Plex (migración 090, 2026-10-28)
 
 - **090** crea `plex_listas` y `plex_lista_items`. No hay que rellenar nada ni registrar comandos: es un botón nuevo de

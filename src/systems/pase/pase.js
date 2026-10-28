@@ -89,6 +89,8 @@ function registrarSeguro(guildId, userId, categoria, cantidad = 1, ahora = Date.
     } catch (e) {
         log.warn(`Pase de batalla (${categoria}) de ${userId} en ${guildId}: ${e.message}`);
     }
+    // 📋 Los encargos semanales (#523) avanzan con la misma actividad, aunque el pase esté apagado.
+    require("../encargos").registrarSeguro(guildId, userId, categoria, cantidad, ahora);
 }
 
 /** El objeto de cada nivel que lo da (#364): { nivel: { id, nombre } }, solo los objetos que siguen en el catálogo. */

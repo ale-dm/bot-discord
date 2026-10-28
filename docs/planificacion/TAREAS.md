@@ -809,3 +809,87 @@ Issue #575. Con dos cuentas y la biblioteca de Plex sincronizada.
 - [ ] Elegir un título en el desplegable: ⬆️ y ⬇️ lo mueven, ❌ lo quita y ⭐ Ficha abre su ficha (también sin reseñas).
 - [ ] 🔒 Hacer privada: la otra cuenta no la ve en 🌍 Públicas; 🌍 Hacer pública, sí, pero sin botones de dueño.
 - [ ] ✏️ Editar cambia título y descripción; 🗑️ Borrar pide confirmación y la borra.
+
+## T-27 Probar en Discord la lotería semanal
+
+Issue #524.
+
+- [ ] ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → ✏️ Lotería: elige canal, precio y tope.
+- [ ] `/loteria` → 🎲 Boleto al azar cobra el precio del efectivo y sube el bote; ✍️ Elegir números con «20 3 12 7» guarda «3 7 12 20»; números mal escritos avisan sin cobrar.
+- [ ] Al llegar al tope, los botones de comprar se desactivan.
+- [ ] El domingo a las 21:00 (o al arrancar si estaba apagado) sale el anuncio en el canal; si nadie acierta, el bote pasa al siguiente sorteo.
+
+## T-28 Probar en Discord las subastas
+
+Issue #519. Con tres cuentas: A vende, B y C pujan.
+
+- [ ] A: `/subastas` → ➕ Subastar → elige un objeto, precio 100, incremento 10, 24 h: desaparece de su inventario y sale en 🔨 Abiertas.
+- [ ] B puja 100 (se le retiene); C puja 105 y le dice que el mínimo es 110; C puja 110 y B recibe un DM con la devolución.
+- [ ] A no puede pujar en lo suyo ni cancelarla ya con pujas.
+- [ ] Al cerrar, C tiene el objeto, A recibe 110 menos 5 de comisión y los dos reciben un DM.
+
+## T-29 Probar en Discord los préstamos entre jugadores
+
+Issue #520. Con dos cuentas: A presta y B recibe.
+
+- [ ] A: `/prestamo proponer` a B con 100, 10 % y 1 día: B recibe un DM con ✅ y ❌.
+- [ ] B acepta en el DM: 100 pasan del banco de A al de B y A recibe un DM.
+- [ ] B: `/prestamo ver` → 💰 Pagar una parte de 50 y después 💸 Pagar todo: el préstamo se cierra y A recibe 110 en el banco.
+- [ ] Otro préstamo sin pagar: al vencer se cobra solo; si B no tiene, queda en deuda y los dos reciben un DM.
+
+## T-30 Probar en Discord los encargos semanales
+
+Issue #523.
+
+- [ ] `/perfil` → 💰 Economía → 📋 Encargos enseña tres encargos (fácil, medio y difícil) con su barra y cuándo caducan.
+- [ ] Haz lo que pide uno (por ejemplo, `/trabajar` o escribir mensajes): la barra avanza.
+- [ ] Al completarlo, 🎁 Cobrar se activa, paga la recompensa una sola vez y queda «✅ cobrado».
+- [ ] Con el pase de batalla apagado, los encargos siguen avanzando.
+
+## T-31 Probar en Discord los torneos de casino
+
+Issue #525. Con tres cuentas.
+
+- [ ] ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏆 Crear torneo: tragaperras, 50 🪙, empieza en 2 minutos y dura 1 hora. Sale el mensaje en el canal.
+- [ ] Las tres cuentas se inscriben: el bote sube a 150 y el efectivo de cada una baja 50.
+- [ ] Al empezar sale el anuncio; jugando a la tragaperras la clasificación cambia (otros juegos no cuentan).
+- [ ] Al terminar, el bote se reparte 75 / 45 / 30 y se anuncia.
+- [ ] Un torneo con un solo inscrito se cancela al empezar y le devuelve la inscripción.
+
+## T-32 Probar en Discord las carreras
+
+Issue #535.
+
+- [ ] ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras: elige un canal. En el siguiente minuto sale la carrera con 6 botones y sus cuotas.
+- [ ] Apuesta 50 a un caballo: se cobra y el mensaje cuenta la apuesta; una segunda apuesta en la misma carrera se rechaza.
+- [ ] Dos minutos antes de la salida sale el aviso; a la hora, el mensaje se anima y se anuncia el ganador. Si acertaste, cobras lo apostado × la cuota.
+- [ ] Justo después se abre la siguiente carrera.
+
+## T-33 Probar en Discord el bingo
+
+Issue #528. Con dos o tres cuentas.
+
+- [ ] `/bingo` abre la sala y cobra la entrada; las otras cuentas entran con 🎟️ Entrar y el bote sube.
+- [ ] 🎫 Mi cartón enseña tu cartón en privado (a quien no está, se lo dice).
+- [ ] ▶️ Empezar ya solo funciona para quien la abrió; al empezar, el mensaje canta una bola cada 3 segundos.
+- [ ] Al completar un cartón sale «¡Bingo!» y el ganador cobra el bote.
+- [ ] Una sala con un solo jugador se cancela a los 2 minutos y le devuelve la entrada.
+
+## T-34 Probar en Discord la recompensa por invitar
+
+Issue #522. Con una cuenta que invite y otra (de más de 7 días) que entre.
+
+- [ ] Con el permiso Gestionar servidor, la cuenta A crea un enlace y la B entra con él: `/invitaciones` de A enseña a B como ⏳ pendiente.
+- [ ] Entrar con el enlace del servidor (vanity) no cuenta.
+- [ ] Si B sale y vuelve a entrar, no se apunta otra vez.
+- [ ] Pasados 7 días con B en nivel 5, A cobra 500 🪙 y recibe un DM.
+
+## T-35 Probar en Discord el póker
+
+Issue #531. Con dos o tres cuentas.
+
+- [ ] `/poker abrir compra:2000` abre la mesa y cobra 2.000 de efectivo; las otras cuentas se sientan con 🪑.
+- [ ] ▶️ Repartir (quien abrió): salen las ciegas, cada uno ve sus cartas con 🃏 y solo quien tiene el turno puede actuar.
+- [ ] Jugar una mano entera con una subida y un all-in: el bote y los laterales se reparten bien en el showdown.
+- [ ] Dejar pasar 45 segundos: se pasa o se retira solo.
+- [ ] Levantarse a media mano no deja; entre manos, cobra las fichas al efectivo.

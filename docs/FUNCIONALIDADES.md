@@ -601,6 +601,26 @@ Cada publicación guarda los ganadores: **🏆 Rankings → 🗓️ Semanas** en
 
 ---
 
+### 🎟️ Lotería semanal (#524)
+
+`/loteria` abre el panel: el bote, cuándo es el sorteo, el precio, tus boletos y el último resultado. Cada boleto lleva **4 números distintos del 1 al 20** (🎲 al azar o ✍️ eligiéndolos) y se paga con **efectivo** (no con dinero negro), con un tope por persona y sorteo (100 🪙 y 10 boletos por defecto, en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía). El sorteo es **cada domingo a las 21:00** (hora de Madrid): quien acierta los 4 números se lleva el bote; con varios acertantes se reparte a partes iguales y, si nadie acierta, el bote se acumula para la semana siguiente. Al sortear, si se vendió algún boleto, se suma el **10 % del bote de impuestos** (como mucho 100.000). El resultado se anuncia en el canal elegido y al ganador le llega un DM (se apaga en `/avisos`). Si el bot estaba apagado a la hora, el sorteo se celebra al arrancar y se anuncia como atrasado.
+
+### 🔨 Casa de subastas (#519)
+
+`/subastas` complementa el 🏷️ Mercado a precio fijo. Con **➕ Subastar** eliges un objeto de tu inventario (los de protección contra robos no se pueden), el precio de salida, el incremento mínimo entre pujas y si dura **24 o 48 horas**; el objeto queda retenido mientras tanto. Puedes tener 5 subastas abiertas. Se puja con **efectivo** (no con el banco ni con dinero negro): el importe se retiene y, si alguien te supera, se te devuelve al momento con un DM. Una puja en los **2 últimos minutos** alarga el cierre 2 minutos (como mucho 30 en total). Al cerrar, el ganador recibe el objeto y el vendedor el dinero menos un **5 % de comisión** (mínimo 1), que va al bote de impuestos del servidor; sin pujas, el objeto vuelve al vendedor. Quien subasta puede cancelar mientras nadie haya pujado. Pestañas: 🔨 Abiertas, 🙋 Mis pujas (con si vas ganando) y 📦 Mis subastas. Los DM se apagan en `/avisos` → 🔨 Subastas.
+
+### 🤝 Préstamos entre jugadores (#520)
+
+`/prestamo proponer usuario cantidad interes dias` ofrece un préstamo a otra persona: el **interés** (total, de 0 a 50 %) y el **plazo** (de 1 a 30 días) los pones tú, y puedes prestar como mucho el **25 % de tu banco**. Le llega un DM con ✅ Aceptar y ❌ Rechazar; la propuesta caduca a las 24 horas. Al aceptar, el dinero pasa de tu banco al suyo. `/prestamo ver` enseña los préstamos dados y recibidos: quien debe puede pagar antes (todo o una parte, del efectivo) y quien propone puede cancelar mientras no se acepte; un préstamo aceptado no se cancela. Al vencer, el bot cobra solo, primero del banco y luego del efectivo, y lo lleva al banco de quien prestó; lo que no llegue queda como **deuda** y se sigue cobrando cada 10 minutos. Avisos por DM a los dos un día antes del vencimiento, al cobrar y si pasa a deuda (se apagan en `/avisos`). Cada persona puede tener 5 préstamos dados o propuestos y deber 3 a la vez.
+
+### 📋 Encargos semanales (#523)
+
+En `/perfil` → 💰 Economía → **📋 Encargos**, cada lunes te tocan **tres retos** de la semana: uno fácil (100 🪙), uno medio (250 🪙) y uno difícil (500 🪙), distintos entre sí y siempre los mismos para ti durante esa semana. Salen de acciones positivas, nunca de gastar dinero: ganar en el casino (solo cuenta lo ganado), acertar apuestas deportivas, robar con éxito, trabajar con éxito, escribir mensajes, pasar minutos en voz, jugar retos y completar logros. El progreso avanza solo con lo que haces de verdad (también con el pase de batalla apagado) y la recompensa se cobra con **🎁 Cobrar** al completarlo, una sola vez (paga el impuesto de ingresos, como cualquier premio). Lo que no completes caduca el domingo a medianoche, sin penalización.
+
+### 📨 Recompensa por invitar (#522)
+
+Cuando alguien entra al servidor con **un enlace de invitación tuyo** (el enlace propio del servidor no cuenta), el bot lo apunta. Si se queda **7 días** y llega al **nivel 5**, cobras **500 🪙**, con premios extra al llegar a 5 (2.500), 10 (5.000) y 25 (15.000) invitados; te llega un DM (se apaga en `/avisos`). Para que no se pueda farmear: cada persona cuenta una sola vez por servidor aunque salga y vuelva, no cuentan las cuentas de Discord de menos de 7 días, ni invitarse a uno mismo, ni las invitaciones cruzadas, ni más de 10 en 24 horas, y si tu invitado se va antes de cumplir, no se paga. `/invitaciones` enseña a quién has invitado (⏳ pendiente, ✅ madurado, 🚪 se fue o 🚫 no cuenta), lo que has cobrado, el próximo hito y quién invita más. Hace falta que el bot tenga el permiso **Gestionar servidor** para ver las invitaciones.
+
 ### 🏦 Patrimonio (F-EC-10)
 
 Impuesto periódico sobre lo que se tiene en el banco, con su propio ciclo. Cada persona tiene su ciclo (**7 días** por
@@ -703,6 +723,22 @@ Sustituye a los comandos `/blackjack`, `/ruleta`, `/tragaperras`, `/adivinar`, `
 - La pantalla de Casino tiene también 🏆 Ranking, 📜 Historial (últimas 15 partidas) y 📊 Mis stats del casino.
 - Los botones de un panel solo los puede usar quien lo abrió. Las reglas de canales y roles (ACL) se ponen
   sobre `juegos`.
+
+### 🏆 Torneos de casino (#525)
+
+Un admin organiza un torneo en `/paneladmin` → ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → **🏆 Crear torneo**: el canal donde se publica, el juego (uno del casino o todos), la inscripción, cuándo empieza y cuánto dura (de 1 a 72 horas). El bot publica el mensaje del torneo con **🎟️ Inscribirme**: la inscripción se paga con efectivo y forma el bote (la casa no pone nada). Mientras se juega, cuenta la **ganancia neta** (premios menos apuestas) de las partidas de ese juego dentro del horario del torneo, y la clasificación se actualiza sola en el mensaje. Al terminar, el bote se reparte **50 % / 30 % / 20 %** entre los tres primeros: si hay empate, se suman los premios de esas posiciones y se reparten a partes iguales, y las siguientes plazas se corren (con menos de tres jugadores, los porcentajes se reparten en proporción). Si al empezar hay menos de 2 inscritos, o un admin lo cancela antes, se devuelve la inscripción a todos. Hay uno a la vez por servidor; `/torneo` enseña el actual.
+
+### 🏇 Carreras con cuotas (#535)
+
+Si un admin elige el canal de carreras (⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía → 🏇 Carreras), cada **15 minutos** se corre una carrera de **6 caballos** en ese canal. Cada caballo tiene su **cuota fija**, calculada con su probabilidad de ganar y un 10 % de margen para la casa. Con los botones del mensaje apuestas a uno (una apuesta por carrera, de 10 🪙 al tope del servidor, 1.000 por defecto); se paga como en el casino (primero el dinero negro) y respeta la autoexclusión y el límite de pérdidas. Dos minutos antes de la salida hay un aviso; a la hora, el ganador lo decide el bot con esas probabilidades, la carrera se anima en el mensaje y quien acertó cobra lo apostado × la cuota. `/carreras` enseña la próxima carrera y quién ganó las últimas.
+
+### 🎱 Bingo de sala (#528)
+
+`/bingo` abre una sala en el canal y quien la abre entra el primero. Los demás entran con **🎟️ Entrar**, pagando la entrada fija del servidor (100 🪙 por defecto; la cambia un admin en ⚙️ Config Global → 🛡️ Economía → 🎟️ Más economía), que forma el bote. Caben de 2 a 6 jugadores. Empieza cuando quien la abrió pulsa **▶️ Empezar ya** (con al menos 2), cuando se llena o a los 2 minutos; si para entonces no hay 2 jugadores, se devuelve la entrada. Cada jugador recibe un **cartón de 5×5** (columnas B, I, N, G y O, con el centro libre) que ve con **🎫 Mi cartón**. El bot canta una bola cada 3 segundos y marca solo: gana quien completa el **cartón entero** y se lleva el bote (si lo completan varios con la misma bola, se reparte). Se pueden jugar 10 partidas al día y respeta la autoexclusión del casino.
+
+### 🃏 Póker Texas hold'em (#531)
+
+`/poker abrir [compra]` abre una mesa pública en el canal (una por servidor) y te sienta. Es entre jugadores, sin bots: de **2 a 6**, con **ciegas fijas de 50/100** y sin comisión para la casa. Te sientas con **🪑 Sentarse** comprando de 1.000 a 10.000 fichas con efectivo y, entre manos, con **🚪 Levantarse** cobras las que tengas: el dinero solo entra y sale ahí. Quien abrió la mesa reparte la primera mano con **▶️ Repartir** (o se reparte sola a los 2 minutos si ya hay 2); después, las manos siguen solas mientras haya 2 con fichas. En tu turno: **🏳️ Retirarse**, **✋ Pasar** o **📞 Igualar**, **⬆️ Subir** (con el total en un formulario) y **🔥 All-in**; tus cartas las ves en privado con **🃏 Mis cartas**. Con los all-in se hacen botes laterales y en el showdown gana la mejor mano de 5 cartas entre las 7 (las tuyas y las 5 de la mesa). Tienes **45 segundos** por turno: si se agotan, pasas si puedes y si no te retiras, y tres veces seguidas te dejan sentado fuera hasta que pulses 🔙 Volver a jugar. Si la mesa no se llena en 2 minutos, o pasan 10 sin jugar, se cierra devolviendo las fichas; si el bot se reinicia a media mano, se devuelven las fichas de antes de esa mano. `/poker estadisticas` enseña tus manos jugadas y ganadas.
 
 ### Juegos
 
@@ -1073,7 +1109,7 @@ Duende se gestionan desde `/duende` → 🎭 Personalidad (solo admins).
 | `/ayuda` | Guía de los comandos principales, con botones por sección; en cada sección, botones que abren sus paneles (`/perfil`, `/tienda`, `/juegos`, `/cripto`, `/duende`, `/plex`, `/sonidos` y, a admins, `/paneladmin`) respetando los permisos de cada comando |
 | `/ping` | Latencia del bot y de la API de Discord |
 | `/javier` | Contesta "Eres un mierdas." |
-| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
+| `/avisos` | 🔔 Un interruptor por cada tipo de DM del bot (racha, partidos, equipos favoritos, apuestas cobradas, Wrapped, Plex, Seerr, robos, eventos de TTCL, préstamos, retos, cooldowns, sugerencias, programas de las elecciones, premios de la lotería, subastas, préstamos entre jugadores, invitaciones) y 🌙 no molestar. Global (todos los servidores). Las alertas de administración no se pueden apagar |
 | `/autoroles` | 🎭 El menú de roles del servidor: pulsa para ponerte o quitarte uno (✅ los que tienes). En un grupo exclusivo (por ejemplo, colores) solo se puede tener uno. Respeta la jerarquía del bot y el modo mantenimiento; la lista la configura un admin (ver [Administración](#12-administración)) |
 | `/favoritos` | ⭐ `seguir equipo:…`, `dejar equipo:…` y `lista`: hasta 10 equipos por persona, con sus próximos partidos y cuotas. Aviso por DM cuando aparece un partido suyo, apagable en `/avisos` (ver [Apuestas](#9-apuestas-deportivas-y-quinielas)) |
 | `/encuesta` | 📊 Pregunta con 2 a 5 opciones, un botón por opción, recuento en vivo y un voto por persona (se puede cambiar). Dura 24 h por defecto (1 a 168) o hasta que la cierra quien la creó. Solo se ve el recuento |
@@ -1330,6 +1366,14 @@ contenedor: `docker exec -it duende-bot npm run plex:check`.
 | `/cumpleaños` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/recordar` | [Utilidades](#14-utilidades-y-comandos-varios) |
 | `/encuesta` | [Utilidades](#14-utilidades-y-comandos-varios) |
+| `/poker` | [Casino](#8-casino) |
+| `/invitaciones` | [Economía](#7-economía-banco-tienda-e-inventario) |
+| `/bingo` | [Casino](#8-casino) |
+| `/carreras` | [Casino](#8-casino) |
+| `/torneo` | [Casino](#8-casino) |
+| `/prestamo` | [Economía](#7-economía-banco-tienda-e-inventario) |
+| `/subastas` | [Economía](#7-economía-banco-tienda-e-inventario) |
+| `/loteria` | [Economía](#7-economía-banco-tienda-e-inventario) |
 | `/elecciones` | [Utilidades](#️-elecciones-a-la-presidencia) |
 | `/presidente` | [Utilidades](#️-elecciones-a-la-presidencia) |
 | `/duende` | [El Duende](#2-el-duende-ia-conversacional) |
