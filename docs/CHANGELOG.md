@@ -2,6 +2,10 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-10-29 (test de imágenes del Duende que fallaba a medianoche)
+
+- **🧪 `tests/duendeFase11.test.js`**: el test de cooldown y cuota diaria de imágenes usaba la hora real y fallaba si se ejecutaba justo antes de las 00:00 de Madrid, porque la cuota se reiniciaba a mitad del test (hizo fallar una vez la CI de #620). Ahora usa una hora fija. Comprobado: con la hora a las 23:59 de Madrid fallaba siempre y con la hora fija pasa. Solo cambia el test; `npm run check` en verde.
+
 ## 2026-10-28 (póker Texas hold'em, #531)
 
 - **🃏 /poker**: mesas públicas de Texas hold'em entre jugadores (sin bots), de 2 a 6, con ciegas fijas de 50/100 y sin rake. `/poker abrir [compra]` abre la mesa en el canal; te sientas comprando de 1.000 a 10.000 fichas con efectivo y al levantarte (entre manos) las cobras: el dinero solo entra y sale ahí. Preflop, flop, turn y river con retirarse, pasar, igualar, subir (formulario) y all-in; botes laterales con los all-in y showdown con la mejor mano de 5 entre 7 (empates y kickers; la ficha que sobra va al primero tras el botón). 45 segundos por turno: al agotarse, pasa si puede y si no se retira; tres seguidos te dejan sentado fuera (🔙 para volver). Las manos se reparten solas mientras haya 2 con fichas. Si la mesa no se llena en 2 minutos, o pasan 10 sin manos, se cierra devolviendo las fichas; si un reinicio corta una mano, al arrancar se devuelven las fichas de antes de esa mano. `/poker estadisticas` con manos jugadas y ganadas.

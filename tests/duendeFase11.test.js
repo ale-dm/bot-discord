@@ -91,7 +91,9 @@ describe("cuota diaria de respuestas del Duende por persona (#371)", () => {
 describe("imágenes: cooldown, cuota y historial (#408, #357)", () => {
     test("el cooldown se comparte, la cuota diaria se acaba y un fallo devuelve todo", () => {
         const u = usuario();
-        const t0 = Date.now();
+        // Hora fija (mediodía en Madrid): con la hora real, si el test pasaba por las 00:00 de Madrid entre la primera
+        // reserva y la tercera, la cuota diaria se reiniciaba a mitad y el test fallaba.
+        const t0 = Date.parse("2026-10-14T10:00:00Z");
         expect(imagenesSys.reservar(u, { ahora: t0, limite: 2 })).toMatchObject({ ok: true, restantes: 1 });
         expect(imagenesSys.reservar(u, { ahora: t0 + 1000, limite: 2 })).toMatchObject({ ok: false, motivo: "cooldown", faltan: 44 });
         expect(imagenesSys.reservar(u, { ahora: t0 + 50000, limite: 2 }).ok).toBe(true);
