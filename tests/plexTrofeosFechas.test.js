@@ -83,6 +83,27 @@ describe("solo cuenta lo visto entre las fechas", () => {
     let siempre;
     let horas;
     let serieOctubre;
+    // Un trofeo con fecha de fin deja de verse pasada esa fecha si no está completado (`visibleHasta`, candidatos.js): el
+    // reloj se fija el último día de la ventana para que el test no dependa del día en que se ejecute. Solo se falsea
+    // `Date`; los temporizadores siguen siendo los reales porque la preparación es asíncrona.
+    beforeAll(() => {
+        jest.useFakeTimers({
+            now: new Date("2026-10-31T12:00:00Z"),
+            doNotFake: [
+                "hrtime",
+                "nextTick",
+                "performance",
+                "queueMicrotask",
+                "setImmediate",
+                "clearImmediate",
+                "setInterval",
+                "clearInterval",
+                "setTimeout",
+                "clearTimeout",
+            ],
+        });
+    });
+    afterAll(() => jest.useRealTimers());
     beforeAll(async () => {
         vincular(g, 1);
         for (let i = 0; i < 8; i++) peli(g, `t${i}`, `Terror ${i}`, 1980 + i, { generos: ["Terror"] });
