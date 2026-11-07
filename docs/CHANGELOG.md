@@ -2,6 +2,11 @@
 
 Registro de cambios de esta sesión de trabajo. Se actualiza según se va avanzando.
 
+## 2026-11-07 (test de trofeos de Plex con fecha que caducó en noviembre)
+
+- **🧪 `tests/plexTrofeosFechas.test.js`**: fallaba desde el 1 de noviembre de 2026. Los trofeos de prueba tienen ventana de octubre y, pasada su fecha de fin, uno sin completar deja de verse (`visibleHasta`, `systems/plexTrofeos/candidatos.js`), así que el test recibía `undefined`. Ahora el bloque fija `Date` al 31 de octubre de 2026 (solo `Date`; los temporizadores siguen siendo reales). Sin cambios en el código del bot.
+- **✅ Verificación**: `npm run check` en verde.
+
 ## 2026-10-29 (test de imágenes del Duende que fallaba a medianoche)
 
 - **🧪 `tests/duendeFase11.test.js`**: el test de cooldown y cuota diaria de imágenes usaba la hora real y fallaba si se ejecutaba justo antes de las 00:00 de Madrid, porque la cuota se reiniciaba a mitad del test (hizo fallar una vez la CI de #620). Ahora usa una hora fija. Comprobado: con la hora a las 23:59 de Madrid fallaba siempre y con la hora fija pasa. Solo cambia el test; `npm run check` en verde.
